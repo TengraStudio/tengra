@@ -62,29 +62,29 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
     const getLabelForId = (id: SettingsCategory): string => {
         switch (id) {
             case 'editor':
-                return t('settings.tabs.editor');
+                return t('frontend.settings.tabs.editor');
             case 'appearance':
-                return t('settings.tabs.appearance');
+                return t('frontend.settings.tabs.appearance');
             case 'system':
-                return t('settings.tabs.system');
+                return t('frontend.settings.tabs.system');
             case 'accounts':
-                return t('settings.tabs.accounts');
+                return t('frontend.settings.tabs.accounts');
             case 'models':
-                return t('settings.tabs.models');
+                return t('frontend.settings.tabs.models');
             case 'memory':
-                return t('settings.tabs.memory');
+                return t('frontend.settings.tabs.memory');
             case 'speech':
-                return t('settings.tabs.speech');
+                return t('frontend.settings.tabs.speech');
             case 'statistics':
-                return t('settings.tabs.statistics');
+                return t('frontend.settings.tabs.statistics');
             case 'about':
-                return t('settings.tabs.about');
+                return t('frontend.settings.tabs.about');
             case 'images':
-                return t('settings.tabs.images');
+                return t('frontend.settings.tabs.images');
             case 'extensions':
-                return t('marketplace.tabs.extensions');
+                return t('frontend.marketplace.tabs.extensions');
             default:
-                return t('settings.tabs.general');
+                return t('frontend.settings.tabs.general');
         }
     };
 
@@ -107,7 +107,7 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
             >
                 <div className="flex items-center gap-3">
                     <IconSettings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
-                    <span>{t('sidebar.settings')}</span>
+                    <span>{t('frontend.sidebar.settings')}</span>
                 </div>
                 <IconChevronDown
                     className={cn(
@@ -172,7 +172,7 @@ const CollapsedSettings: React.FC<{
         variant="ghost"
         onClick={() => onOpenSettings()}
         className={cn('nav-item justify-center', currentView === 'settings' && 'nav-item-active')}
-        title={t('sidebar.settings')}
+        title={t('frontend.sidebar.settings')}
     >
         <IconSettings className="w-4 h-4 shrink-0" />
     </Button>

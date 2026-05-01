@@ -43,11 +43,11 @@ export const SettingsSearch: React.FC<SettingsSearchProps> = ({
                 </div>
                 <Input
                     type="text"
-                    placeholder={t('settings.searchPlaceholder')}
+                    placeholder={t('frontend.settings.searchPlaceholder')}
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     className={C_SETTINGSSEARCH_3}
-                    aria-label={t('settings.searchPlaceholder')}
+                    aria-label={t('frontend.settings.searchPlaceholder')}
                     autoComplete="off"
                     autoFocus
                 />
@@ -67,8 +67,8 @@ export const SettingsSearch: React.FC<SettingsSearchProps> = ({
                 <div className="mt-4 text-center animate-in fade-in slide-in-from-top-1 duration-200">
                     <span className={C_SETTINGSSEARCH_5}>
                         {filteredTabsCount > 0
-                            ? t('settings.searchResults', { count: filteredTabsCount })
-                            : t('settings.noResults')}
+                            ? t('frontend.settings.searchResults', { count: filteredTabsCount })
+                            : t('frontend.settings.noResults')}
                     </span>
                 </div>
             )}

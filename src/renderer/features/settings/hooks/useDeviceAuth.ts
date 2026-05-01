@@ -105,7 +105,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
                         username:
                             (settings.github as { username?: string }).username ??
                             pollResult.account?.displayName ??
-                            t('auth.githubUser'),
+                            t('frontend.auth.githubUser'),
                     },
                 };
                 await updateSettings(updated, true);
@@ -116,7 +116,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
                 setDeviceCodeModal(prev => ({
                     ...prev,
                     status: 'error',
-                    errorMessage: pollResult.error || t('auth.githubConnectionFailed'),
+                    errorMessage: pollResult.error || t('frontend.auth.githubConnectionFailed'),
                 }));
             }
         } catch (error) {
@@ -127,7 +127,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
             setDeviceCodeModal(prev => ({
                 ...prev,
                 status: 'error',
-                errorMessage: t('auth.githubConnectionFailed'),
+                errorMessage: t('frontend.auth.githubConnectionFailed'),
             }));
         } finally {
             if (requestId === activeRequestRef.current) {
@@ -194,7 +194,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
                 setDeviceCodeModal(prev => ({
                     ...prev,
                     status: 'error',
-                    errorMessage: pollResult.error || t('auth.copilotConnectionFailed'),
+                    errorMessage: pollResult.error || t('frontend.auth.copilotConnectionFailed'),
                 }));
             }
         } catch (error) {
@@ -205,7 +205,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
             setDeviceCodeModal(prev => ({
                 ...prev,
                 status: 'error',
-                errorMessage: t('auth.copilotConnectionFailed'),
+                errorMessage: t('frontend.auth.copilotConnectionFailed'),
             }));
         } finally {
             if (requestId === activeRequestRef.current) {
@@ -215,7 +215,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
     }, [onRefreshModels, setAuthBusy, setAuthNotice, settings, t, updateSettings]);
 
     const closeDeviceCodeModal = useCallback(() => {
-        resetDeviceAuth(t('auth.connectionCancelled'));
+        resetDeviceAuth(t('frontend.auth.connectionCancelled'));
     }, [resetDeviceAuth, t]);
 
     return {

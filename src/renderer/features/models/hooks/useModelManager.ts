@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { fetchLinkedAccountsSnapshot } from '@/features/settings/hooks/useLinkedAccounts';
 import { pushNotification } from '@/store/notification-center.store';
 import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';
@@ -122,21 +123,7 @@ function mergePreservedProviderModels(
     settings: AppSettings | null,
     linkedProviders: ReadonlySet<string>
 ): ModelInfo[] {
-    if (settings?.copilot?.connected !== true && !linkedProviders.has('copilot')) {
-        return fetchedModels;
-    }
-
-    const fetchedHasCopilot = fetchedModels.some(model => getSelectableProviderId(model) === 'copilot');
-    if (fetchedHasCopilot) {
-        return fetchedModels;
-    }
-
-    const preservedCopilotModels = previousModels.filter(model => getSelectableProviderId(model) === 'copilot');
-    if (preservedCopilotModels.length === 0) {
-        return fetchedModels;
-    }
-
-    return [...fetchedModels, ...preservedCopilotModels];
+    return fetchedModels;
 }
 
 function normalizeSelectionProvider(provider: string | undefined): string {
@@ -211,7 +198,7 @@ export function useModelManager(
 
     const refreshLinkedProviders = useCallback(async () => {
         try {
-            const accounts = await window.electron.getLinkedAccounts();
+            const accounts = await fetchLinkedAccountsSnapshot();
             const normalizedProviders = Array.from(
                 new Set(
                     accounts
@@ -290,10 +277,36 @@ export function useModelManager(
             appLogger.info('ModelManager', 'Received model:updated event from backend, refreshing...');
             void refreshModels(true);
         });
+        let cancelled = false;
+        let timeoutId: number | null = null;
+        const requestIdle = (window as Window & {
+            requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+        }).requestIdleCallback;
 
-        void refreshModels();
+        const triggerInitialRefresh = () => {
+            if (cancelled) {
+                return;
+            }
+            void refreshModels();
+        };
 
-        return () => unsubscribe();
+        if (requestIdle) {
+            requestIdle(() => {
+                triggerInitialRefresh();
+            }, { timeout: 1200 });
+        } else {
+            timeoutId = window.setTimeout(() => {
+                triggerInitialRefresh();
+            }, 180);
+        }
+
+        return () => {
+            cancelled = true;
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+            }
+            unsubscribe();
+        };
     }, [refreshModels]);
 
     useEffect(() => {
@@ -429,8 +442,8 @@ export function useModelManager(
             
             pushNotification({
                 type: 'warning',
-                title: t('modelsPage.defaultModelSwitchedTitle'),
-                message: t('modelsPage.defaultModelSwitchedMessage', { model: fallback.model }),
+                title: t('frontend.modelsPage.defaultModelSwitchedTitle'),
+                message: t('frontend.modelsPage.defaultModelSwitchedMessage', { model: fallback.model }),
                 source: 'models',
             });
             return;

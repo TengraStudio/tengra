@@ -69,7 +69,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                         type="text"
                         value={modelSearch}
                         onChange={e => setModelSearch(e.target.value)}
-                        placeholder={t('workspaces.searchModels')}
+                        placeholder={t('frontend.workspaces.searchModels')}
                         className={C_INSTALLEDMODELSLIST_2}
                     />
                 </div>
@@ -82,12 +82,12 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                     {showHiddenModels ? (
                         <>
                             <IconEyeOff className="w-3.5 h-3.5 text-primary" />
-                            {t('workspaces.hideHidden')}
+                            {t('frontend.workspaces.hideHidden')}
                         </>
                     ) : (
                         <>
                             <IconEye className="w-3.5 h-3.5" />
-                            {t('workspaces.showHidden')}
+                            {t('frontend.workspaces.showHidden')}
                         </>
                     )}
                 </Button>
@@ -140,7 +140,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                     {isDefault && (
                                         <Badge className="rounded-lg border-primary/20 bg-primary/10 px-2.5 py-0.5 typo-body font-medium text-primary">
                                             <IconStar className="w-2.5 h-2.5 mr-1.5 fill-current" />
-                                            {t('workspaces.default')}
+                                            {t('frontend.workspaces.default')}
                                         </Badge>
                                     )}
                                 </div>
@@ -173,7 +173,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                             onClick={() => setDefault(model.id, model.provider)}
                                             className={C_INSTALLEDMODELSLIST_4}
                                         >
-                                            {t('workspaces.makeDefault')}
+                                            {t('frontend.workspaces.makeDefault')}
                                         </Button>
                                     ) : (
                                         <div className="flex-1" />
@@ -193,12 +193,12 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                             {isHidden ? (
                                                 <>
                                                     <IconEye className="w-3.5 h-3.5" />
-                                                    {t('workspaces.show')}
+                                                    {t('frontend.workspaces.show')}
                                                 </>
                                             ) : (
                                                 <>
                                                     <IconEyeOff className="w-3.5 h-3.5" />
-                                                    {t('workspaces.hide')}
+                                                    {t('frontend.workspaces.hide')}
                                                 </>
                                             )}
                                         </Button>

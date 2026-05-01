@@ -73,7 +73,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                     sdCppStatus === 'ready' ? "bg-success" : "bg-warning"
                 )} />
                 <h4 className="text-sm font-bold text-muted-foreground">
-                    {t('settings.images.runtimeManagement')}
+                    {t('frontend.settings.images.runtimeManagement')}
                 </h4>
             </div>
 
@@ -91,11 +91,11 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         <div>
                             <div className="flex items-center gap-3">
                                 <h4 className="text-lg font-bold text-foreground">
-                                    {t('settings.images.runtimeName')}
+                                    {t('frontend.settings.images.runtimeName')}
                                 </h4>
                                 {sdCppStatus === 'ready' && (
                                     <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20 typo-body font-bold px-2 py-0.5 rounded-lg">
-                                        {t('settings.images.runtimeVersion')}
+                                        {t('frontend.settings.images.runtimeVersion')}
                                     </Badge>
                                 )}
                             </div>
@@ -121,7 +121,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         )}
                     >
                         <IconRotate className={cn("w-4 h-4", (isReinstalling || sdCppStatus === 'installing') && "animate-spin")} />
-                        {t('settings.images.reinstall')}
+                        {t('frontend.settings.images.reinstall')}
                     </Button>
                 </div>
 
@@ -133,7 +133,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                                 <div className="flex items-center gap-2">
                                     <IconDownload className="w-3.5 h-3.5 text-primary animate-bounce" />
                                     <p className="typo-body font-bold text-primary leading-none">
-                                        {t('settings.images.downloading')}
+                                        {t('frontend.settings.images.downloading')}
                                     </p>
                                 </div>
                                 <p className="typo-caption text-muted-foreground/80 truncate font-bold opacity-40">
@@ -162,7 +162,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         <IconAlertTriangle className="w-4 h-4" />
                     </div>
                     <p className="typo-body leading-relaxed text-muted-foreground/60 font-bold pt-1 text-justify">
-                        {t('settings.images.reinstallHelp')}
+                        {t('frontend.settings.images.reinstallHelp')}
                     </p>
                 </div>
 
@@ -173,9 +173,9 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                 isOpen={isReinstallModalOpen}
                 onClose={() => setIsReinstallModalOpen(false)}
                 onConfirm={() => { void handleReinstallConfirm(); }}
-                title={t('settings.images.reinstall')}
-                message={t('settings.images.reinstallConfirm')}
-                confirmLabel={t('settings.images.reinstall')}
+                title={t('frontend.settings.images.reinstall')}
+                message={t('frontend.settings.images.reinstallConfirm')}
+                confirmLabel={t('frontend.settings.images.reinstall')}
                 variant="warning"
             />
         </div>

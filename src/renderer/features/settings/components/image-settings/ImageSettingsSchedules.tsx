@@ -70,10 +70,10 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/schedules:text-primary transition-colors">
-                            {t('settings.images.schedulesTitle')}
+                            {t('frontend.settings.images.schedulesTitle')}
                         </h3>
                         <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
-                            {scheduleEntries.length} {t('settings.images.activeSchedules')}
+                            {scheduleEntries.length} {t('frontend.settings.images.activeSchedules')}
                         </p>
                     </div>
                 </div>
@@ -86,7 +86,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                         <Input
                             value={schedulePrompt}
                             onChange={event => setSchedulePrompt(event.target.value)}
-                            placeholder={t('settings.images.schedulePrompt')}
+                            placeholder={t('frontend.settings.images.schedulePrompt')}
                             className={C_IMAGESETTINGSSCHEDULES_3}
                         />
                     </div>
@@ -109,9 +109,9 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                <SelectItem value="low" className="typo-body font-bold">{t('settings.images.priorityLow')}</SelectItem>
-                                <SelectItem value="normal" className="typo-body font-bold">{t('settings.images.priorityNormal')}</SelectItem>
-                                <SelectItem value="high" className="typo-body font-bold text-primary">{t('settings.images.priorityHigh')}</SelectItem>
+                                <SelectItem value="low" className="typo-body font-bold">{t('frontend.settings.images.priorityLow')}</SelectItem>
+                                <SelectItem value="normal" className="typo-body font-bold">{t('frontend.settings.images.priorityNormal')}</SelectItem>
+                                <SelectItem value="high" className="typo-body font-bold text-primary">{t('frontend.settings.images.priorityHigh')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -125,9 +125,9 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                <SelectItem value="balanced" className="typo-body font-bold">{t('settings.images.resourceBalanced')}</SelectItem>
-                                <SelectItem value="quality" className="typo-body font-bold text-primary">{t('settings.images.resourceQuality')}</SelectItem>
-                                <SelectItem value="speed" className="typo-body font-bold text-success">{t('settings.images.resourceSpeed')}</SelectItem>
+                                <SelectItem value="balanced" className="typo-body font-bold">{t('frontend.settings.images.resourceBalanced')}</SelectItem>
+                                <SelectItem value="quality" className="typo-body font-bold text-primary">{t('frontend.settings.images.resourceQuality')}</SelectItem>
+                                <SelectItem value="speed" className="typo-body font-bold text-success">{t('frontend.settings.images.resourceSpeed')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -137,7 +137,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     className={C_IMAGESETTINGSSCHEDULES_5}
                 >
                     <IconPlus className="w-4 h-4" />
-                    {t('settings.images.scheduleCreate')}
+                    {t('frontend.settings.images.scheduleCreate')}
                 </Button>
             </div>
 
@@ -151,9 +151,9 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             <IconBolt className="w-4 h-4" />
                         </div>
                         <div>
-                            <div className="typo-body font-bold text-foreground">{t('settings.images.queueTitle')}</div>
+                            <div className="typo-body font-bold text-foreground">{t('frontend.settings.images.queueTitle')}</div>
                             <div className="typo-body font-bold text-muted-foreground/40 mt-0.5">
-                                {queueStats.running ? t('settings.images.queueRunning') : t('settings.images.queueIdle')}
+                                {queueStats.running ? t('frontend.settings.images.queueRunning') : t('frontend.settings.images.queueIdle')}
                             </div>
                         </div>
                     </div>
@@ -186,7 +186,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                 {scheduleEntries.length === 0 ? (
                     <div className={C_IMAGESETTINGSSCHEDULES_6}>
                         <p className="typo-body font-bold text-muted-foreground px-6">
-                            {t('settings.images.noSchedules')}
+                            {t('frontend.settings.images.noSchedules')}
                         </p>
                     </div>
                 ) : (
@@ -217,7 +217,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                             onClick={() => { void handleCancelSchedule(entry.id); }}
                                             className={C_IMAGESETTINGSSCHEDULES_8}
                                         >
-                                            {t('settings.images.scheduleCancel')}
+                                            {t('frontend.settings.images.scheduleCancel')}
                                         </Button>
                                     )}
                                 </div>

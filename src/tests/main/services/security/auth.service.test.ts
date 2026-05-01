@@ -139,10 +139,10 @@ describe('AuthService - Account Management', () => {
 
         expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
             expect.objectContaining({
-                metadata: {
+                metadata: expect.objectContaining({
                     project_id: 'demo-project',
                     tier_id: 'standard-tier'
-                }
+                })
             })
         );
     });

@@ -61,7 +61,7 @@ export const CopyButton = React.memo(({ text }: { text: string }) => {
         setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK);
     };
     return (
-        <ActionButton label={t('messageBubble.copy')} onClick={() => void handleCopy()}>
+        <ActionButton label={t('frontend.messageBubble.copy')} onClick={() => void handleCopy()}>
             {copied ? (
                 <IconCheck className="w-3.5 h-3.5 text-success" aria-hidden="true" />
             ) : (
@@ -75,7 +75,7 @@ export const BookmarkButton = React.memo(({ active, onClick }: { active: boolean
     const { t } = useTranslation();
     return (
         <ActionButton
-            label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
+            label={active ? t('frontend.messageBubble.removeBookmark') : t('frontend.messageBubble.addBookmark')}
             onClick={onClick}
             active={active}
             activeClassName="text-warning bg-warning/10 border-warning/20 glow-warning"
@@ -97,7 +97,7 @@ export const RatingButtons = React.memo(({
         <div
             className="flex items-center gap-1 border-l border-border/40 pl-2 ml-1"
             role="group"
-            aria-label={t('messageBubble.rating')}
+            aria-label={t('frontend.messageBubble.rating')}
         >
             <button
                 onClick={() => onRate(rating === 1 ? 0 : 1)}
@@ -108,8 +108,8 @@ export const RatingButtons = React.memo(({
                         ? 'text-success bg-success/10'
                         : 'text-muted-foreground hover:text-success hover:bg-success/5'
                 )}
-                title={t('messageBubble.goodAnswer')}
-                aria-label={t('messageBubble.goodAnswer')}
+                title={t('frontend.messageBubble.goodAnswer')}
+                aria-label={t('frontend.messageBubble.goodAnswer')}
                 aria-pressed={rating === 1}
             >
                 <IconThumbUp
@@ -126,8 +126,8 @@ export const RatingButtons = React.memo(({
                         ? 'text-destructive bg-destructive/10'
                         : 'text-muted-foreground hover:text-destructive hover:bg-destructive/5'
                 )}
-                title={t('messageBubble.badAnswer')}
-                aria-label={t('messageBubble.badAnswer')}
+                title={t('frontend.messageBubble.badAnswer')}
+                aria-label={t('frontend.messageBubble.badAnswer')}
                 aria-pressed={rating === -1}
             >
                 <IconThumbDown
@@ -143,14 +143,14 @@ export const CopyMarkdownButton = React.memo(({ text, role }: { text: string; ro
     const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
-        const roleLabel = role === 'user' ? t('messageBubble.user') : t('messageBubble.assistant');
+        const roleLabel = role === 'user' ? t('frontend.messageBubble.user') : t('frontend.messageBubble.assistant');
         const markdown = `**${roleLabel}:**\n\n${text}`;
         await navigator.clipboard.writeText(markdown);
         setCopied(true);
         setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK);
     };
     return (
-        <ActionButton label={t('messageBubble.copyAsMarkdown')} onClick={() => void handleCopy()}>
+        <ActionButton label={t('frontend.messageBubble.copyAsMarkdown')} onClick={() => void handleCopy()}>
             {copied ? (
                 <IconCheck className="w-3.5 h-3.5 text-success" aria-hidden="true" />
             ) : (
@@ -193,10 +193,10 @@ export const MessageActionsGroup = React.memo(({
         <div
             className="absolute left-full ml-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200"
             role="toolbar"
-            aria-label={t('messageBubble.actions')}
+            aria-label={t('frontend.messageBubble.actions')}
         >
             <ActionButton
-                label={isSpeaking ? t('messageBubble.stop') : t('messageBubble.speakAloud')}
+                label={isSpeaking ? t('frontend.messageBubble.stop') : t('frontend.messageBubble.speakAloud')}
                 onClick={
                     isSpeaking
                         ? (onStop ?? (() => {}))
@@ -220,20 +220,20 @@ export const MessageActionsGroup = React.memo(({
             <BookmarkButton active={!!isBookmarked} onClick={() => onBookmark?.(!isBookmarked)} />
 
             <div className="relative group/react">
-                <ActionButton label={t('messageBubble.react')} onClick={() => {}}>
+                <ActionButton label={t('frontend.messageBubble.react')} onClick={() => {}}>
                     <IconMoodSmile className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
                 <div
                     className={C_MESSAGEACTIONS_1}
                     role="group"
-                    aria-label={t('messageBubble.emojiReactions')}
+                    aria-label={t('frontend.messageBubble.emojiReactions')}
                 >
                     {[
-                        { emoji: '\u{1F44D}', label: t('messageBubble.emojiThumbsUp') },
-                        { emoji: '\u{1F44E}', label: t('messageBubble.emojiThumbsDown') },
-                        { emoji: '\u{2764}\u{FE0F}', label: t('messageBubble.emojiHeart') },
-                        { emoji: '\u{1F389}', label: t('messageBubble.emojiCelebrate') },
-                        { emoji: '\u{1F680}', label: t('messageBubble.emojiRocket') },
+                        { emoji: '\u{1F44D}', label: t('frontend.messageBubble.emojiThumbsUp') },
+                        { emoji: '\u{1F44E}', label: t('frontend.messageBubble.emojiThumbsDown') },
+                        { emoji: '\u{2764}\u{FE0F}', label: t('frontend.messageBubble.emojiHeart') },
+                        { emoji: '\u{1F389}', label: t('frontend.messageBubble.emojiCelebrate') },
+                        { emoji: '\u{1F680}', label: t('frontend.messageBubble.emojiRocket') },
                     ].map(({ emoji, label }) => (
                         <button
                             key={emoji}
@@ -249,7 +249,7 @@ export const MessageActionsGroup = React.memo(({
 
             {role === 'assistant' && (
                 <ActionButton
-                    label={t('messageBubble.regenerate')}
+                    label={t('frontend.messageBubble.regenerate')}
                     onClick={() => onRegenerate?.()}
                 >
                     <IconRotate className="w-3.5 h-3.5" aria-hidden="true" />

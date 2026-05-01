@@ -238,6 +238,11 @@ export function registerProxyIpc(
     ipcMain.handle('proxy:getClaudeQuota', createSafeIpcHandler('proxy:getClaudeQuota', async () => {
         return await proxyService.getClaudeQuota();
     }, { accounts: [] }));
+    
+    ipcMain.handle('proxy:forceRefreshQuota', createSafeIpcHandler('proxy:forceRefreshQuota', async () => {
+        await proxyService.triggerQuotaSnapshotRefresh(true);
+        return true;
+    }, false));
 
 
     // Sync auth files - now handled automatically by HTTP auth API

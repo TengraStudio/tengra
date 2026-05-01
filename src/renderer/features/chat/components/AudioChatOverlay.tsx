@@ -59,16 +59,16 @@ function getStateConfig(state: AudioState, t: (key: string) => string): StateCon
             blurClass: 'bg-primary/30',
             shadowStyle: '0 0 80px rgba(var(--primary), 0.4)',
             icon: IconMicrophone,
-            title: t('audioChat.listening'),
-            desc: t('audioChat.listeningDesc'),
+            title: t('frontend.audioChat.listening'),
+            desc: t('frontend.audioChat.listeningDesc'),
         },
         speaking: {
             bgClass: 'bg-success text-foreground',
             blurClass: 'bg-success/30',
             shadowStyle: '0 0 80px hsl(var(--success) / 0.4)',
             icon: IconVolume,
-            title: t('audioChat.speaking'),
-            desc: t('audioChat.speakingDesc'),
+            title: t('frontend.audioChat.speaking'),
+            desc: t('frontend.audioChat.speakingDesc'),
         },
         processing: {
             bgClass: 'bg-muted text-muted-foreground',
@@ -76,8 +76,8 @@ function getStateConfig(state: AudioState, t: (key: string) => string): StateCon
             shadowStyle: 'none',
             icon: IconLoader2,
             iconClass: 'animate-spin opacity-50',
-            title: t('audioChat.thinking'),
-            desc: t('audioChat.thinkingDesc'),
+            title: t('frontend.audioChat.thinking'),
+            desc: t('frontend.audioChat.thinkingDesc'),
         },
     };
     return configs[state];
@@ -165,7 +165,7 @@ const Controls: React.FC<ControlsProps> = ({
                 onClick={onStopSpeaking}
                 className="bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20"
                 icon={IconPlayerStop}
-                label={t('audioChat.stopSpeaking')}
+                label={t('frontend.audioChat.stopSpeaking')}
             />
         )}
         {!isListening && !isSpeaking && (
@@ -173,7 +173,7 @@ const Controls: React.FC<ControlsProps> = ({
                 onClick={startListening}
                 className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
                 icon={IconMicrophone}
-                label={t('audioChat.resumeListening')}
+                label={t('frontend.audioChat.resumeListening')}
             />
         )}
         {isListening && (
@@ -181,7 +181,7 @@ const Controls: React.FC<ControlsProps> = ({
                 onClick={stopListening}
                 className="bg-muted/30 text-muted-foreground border border-border/50 hover:bg-muted/40"
                 icon={IconPlayerStop}
-                label={t('audioChat.pauseListening')}
+                label={t('frontend.audioChat.pauseListening')}
             />
         )}
     </div>

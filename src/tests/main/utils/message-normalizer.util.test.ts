@@ -95,21 +95,15 @@ describe('MessageNormalizer', () => {
 
             expect(normalized).toEqual([
                 {
-                    role: 'assistant',
-                    content: [{
-                        type: 'function_call',
-                        call_id: 'tool-0',
-                        name: 'list_directory',
-                        arguments: '{"path":"C:/Users/mockuser/Desktop"}',
-                    }],
+                    type: 'function_call',
+                    call_id: 'tool-0',
+                    name: 'list_directory',
+                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
                 },
                 {
-                    role: 'user',
-                    content: [{
-                        type: 'function_call_output',
-                        call_id: 'tool-0',
-                        output: '{"entries":["a","b"]}',
-                    }],
+                    type: 'function_call_output',
+                    call_id: 'tool-0',
+                    output: '{"entries":["a","b"]}',
                 },
             ]);
         });

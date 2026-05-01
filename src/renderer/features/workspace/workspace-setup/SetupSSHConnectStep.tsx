@@ -52,7 +52,7 @@ export const SetupSSHConnectStep: React.FC<SetupSSHConnectStepProps> = ({
                                 setSshForm(p => ({ ...p, host: e.target.value }))
                             }
                             className="h-12"
-                            placeholder={t('workspaceWizard.placeholder.example')}
+                            placeholder={t('frontend.workspaceWizard.placeholder.example')}
                         />
                     </div>
                     <div>
@@ -65,7 +65,7 @@ export const SetupSSHConnectStep: React.FC<SetupSSHConnectStepProps> = ({
                                 setSshForm(p => ({ ...p, port: e.target.value }))
                             }
                             className="h-12"
-                            placeholder={t('ssh.placeholders.port')}
+                            placeholder={t('frontend.ssh.placeholders.port')}
                         />
                     </div>
                 </div>
@@ -80,7 +80,7 @@ export const SetupSSHConnectStep: React.FC<SetupSSHConnectStepProps> = ({
                             setSshForm(p => ({ ...p, username: e.target.value }))
                         }
                         className="h-12"
-                        placeholder={t('ssh.placeholders.username')}
+                        placeholder={t('frontend.ssh.placeholders.username')}
                     />
                 </div>
 
@@ -141,13 +141,13 @@ export const SetupSSHConnectStep: React.FC<SetupSSHConnectStepProps> = ({
                                     setSshForm(p => ({ ...p, privateKey: e.target.value }))
                                 }
                                 className="h-24 font-mono typo-caption resize-none"
-                                placeholder={t('ssh.placeholders.privateKey')}
+                                placeholder={t('frontend.ssh.placeholders.privateKey')}
                             />
                         </div>
                         <div>
                             <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                                 {t('common.passphrase')}{' '}
-                                <span className="opacity-60">{t('workspaceWizard.optional')}</span>
+                                <span className="opacity-60">{t('frontend.workspaceWizard.optional')}</span>
                             </Label>
                             <Input
                                 type="password"

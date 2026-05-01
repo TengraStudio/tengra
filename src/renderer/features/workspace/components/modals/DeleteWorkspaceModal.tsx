@@ -34,12 +34,12 @@ export const DeleteWorkspaceModal: React.FC<DeleteWorkspaceModalProps> = ({ work
     return (
         <AnimatePresence>
             {workspace && (
-                <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.deleteWorkspace')}>
+                <Modal isOpen={!!workspace} onClose={onClose} title={t('frontend.workspaces.deleteWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive">
-                                {t('workspaces.deleteConfirmation')} <span className="font-bold text-foreground">{workspace.title}</span>?
-                                <span className="block mt-1 typo-caption text-destructive/70 font-medium">{t('workspaces.deleteWarning')}</span>
+                                {t('frontend.workspaces.deleteConfirmation')} <span className="font-bold text-foreground">{workspace.title}</span>?
+                                <span className="block mt-1 typo-caption text-destructive/70 font-medium">{t('frontend.workspaces.deleteWarning')}</span>
                             </p>
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />

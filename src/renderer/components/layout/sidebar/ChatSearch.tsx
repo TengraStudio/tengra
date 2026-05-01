@@ -39,7 +39,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                 <IconSearch className={C_CHATSEARCH_1} />
                 <input
                     type="text"
-                    placeholder={t('sidebar.searchChats')}
+                    placeholder={t('frontend.sidebar.searchChats')}
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     className={C_CHATSEARCH_2}
@@ -52,7 +52,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                 className={C_CHATSEARCH_3}
             >
                 <IconFolderPlus className="w-3.5 h-3.5 mr-2" />
-                {t('sidebar.newFolder')}
+                {t('frontend.sidebar.newFolder')}
             </Button>
         </div>
     );

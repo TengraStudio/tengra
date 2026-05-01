@@ -10,7 +10,7 @@
 
 import { JsonValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { IconChevronDown, IconCopy } from '@tabler/icons-react';
+import { IconChevronDown, IconCopy, IconExternalLink, IconHistory, IconRefresh } from '@tabler/icons-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
@@ -36,6 +36,7 @@ import { PlanSection } from './PlanSection';
 import { RawToggle } from './RawToggle';
 import { ResponseProgress } from './ResponseProgress';
 import { ToolRecoveryNotice } from './ToolRecoveryNotice';
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 type ToolCallView = {
@@ -86,6 +87,30 @@ function buildToolResultMap(message: Message): Map<string, ToolResult> {
     return map;
 }
 
+function readThoughtSegments(message: Message): string[] {
+    if (Array.isArray(message.reasonings) && message.reasonings.length > 0) {
+        return message.reasonings.filter(
+            (segment): segment is string =>
+                typeof segment === 'string' && segment.trim().length > 0
+        );
+    }
+
+    const aiPresentation = message.metadata?.aiPresentation;
+    if (!aiPresentation || typeof aiPresentation !== 'object' || Array.isArray(aiPresentation)) {
+        return [];
+    }
+
+    const reasoningSegments = (aiPresentation as Record<string, unknown>).reasoningSegments;
+    if (!Array.isArray(reasoningSegments)) {
+        return [];
+    }
+
+    return reasoningSegments.filter(
+        (segment): segment is string =>
+            typeof segment === 'string' && segment.trim().length > 0
+    );
+}
+
 interface BubbleContentSectionProps {
     contentProps: MessageBubbleContentProps;
     message: Message;
@@ -95,24 +120,24 @@ interface BubbleContentSectionProps {
 }
 
 const BubbleContentSection = memo(
-    ({ contentProps, message, showToggle, setShowRawMarkdown, t }: BubbleContentSectionProps) => (
-        <div className="flex flex-col gap-2">
-            <MessageImages images={contentProps.images} t={t} />
-            {showToggle && (
-                <RawToggle
-                    active={contentProps.showRawMarkdown}
-                    onClick={() => setShowRawMarkdown(!contentProps.showRawMarkdown)}
-                    t={t}
-                />
-            )}
-            <MessageBubbleContent {...contentProps} />
-            <MessageSources
-                sources={message.sources ?? []}
-                onSourceClick={contentProps.onSourceClick}
-                t={t}
-            />
-        </div>
-    )
+    ({ contentProps, message, showToggle, setShowRawMarkdown, t }: BubbleContentSectionProps) => {
+        // Sources removed as per user request
+
+        return (
+            <div className="flex flex-col gap-2">
+                <MessageImages images={contentProps.images} t={t} />
+                {showToggle && (
+                    <RawToggle
+                        active={contentProps.showRawMarkdown}
+                        onClick={() => setShowRawMarkdown(!contentProps.showRawMarkdown)}
+                        t={t}
+                    />
+                )}
+                <MessageBubbleContent {...contentProps} />
+
+            </div>
+        );
+    }
 );
 
 BubbleContentSection.displayName = 'BubbleContentSection';
@@ -130,7 +155,8 @@ interface MessageBubbleInnerProps {
 type ToolLineStatus = 'running' | 'completed' | 'failed';
 type ToolActivityAction =
     | { type: 'open_file'; path: string; readOnly?: boolean }
-    | { type: 'open_diff'; path: string };
+    | { type: 'open_diff'; path: string; diffId?: string };
+
 type TerminalCardData = {
     kind: 'terminal';
     title: string;
@@ -496,10 +522,10 @@ function buildToolActivityLines(
         if (paths.length === 0) {
             return [{ key: toolCall.id, text: status === 'running' ? 'Creating file(s)...' : 'Created file(s)', status }];
         }
-        const verb = status === 'running' ? 'Creating' : status === 'failed' ? 'Failed' : 'Created';
+        const verb = status === 'running' ? 'Write' : status === 'failed' ? 'Failed to write' : 'Wrote';
         return paths.map((p, i) => ({
             key: `${toolCall.id}:${i}`,
-            text: `${verb} 1 file(s): ${basename(p)}${status === 'failed' && errorText ? ` — ${errorText}` : ''}`,
+            text: `${verb} file ${toDisplayPath(p)}${status === 'failed' && errorText ? ` — ${errorText}` : ''}`,
             status,
             action: status === 'failed' ? undefined : { type: 'open_file', path: p, readOnly: true },
         }));
@@ -507,12 +533,11 @@ function buildToolActivityLines(
 
     if (isFsRead) {
         const pathValue = typeof args.path === 'string' ? args.path : (typeof args.file === 'string' ? args.file : '');
-        const fileName = basename(pathValue || '');
+        const displayPath = pathValue ? toDisplayPath(pathValue) : 'file';
         const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
         return [{
             key: toolCall.id,
-            // Keep it minimal: just the file name. Status is shown via the dot.
-            text: `${fileName || 'file'}${suffix}`,
+            text: `Read file ${displayPath}${suffix}`,
             status,
             action: status === 'failed' || !pathValue ? undefined : { type: 'open_file', path: pathValue, readOnly: true },
         }];
@@ -532,7 +557,7 @@ function buildToolActivityLines(
             ? ((payload as Record<string, unknown>).entries as unknown[])
             : [];
         const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        const baseName = basename(basePath || argPath || '');
+        const baseName = (basePath || argPath || '').split(/[\\/]/).pop() || '';
         return [{
             key: toolCall.id,
             text: `${status === 'failed' ? 'Failed' : 'Found'} ${entries.length} item(s) in ${baseName || 'folder'} folder${suffix}`,
@@ -542,7 +567,7 @@ function buildToolActivityLines(
 
     if (isFsMkdir) {
         const pathValue = typeof args.path === 'string' ? args.path : '';
-        const folderName = basename(pathValue || '');
+        const folderName = (pathValue || '').split(/[\\/]/).pop() || '';
         const verb = status === 'running' ? 'Creating' : status === 'failed' ? 'Failed' : 'Created';
         const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
         return [{
@@ -554,7 +579,7 @@ function buildToolActivityLines(
 
     if (isFsDeleteFile || isFsDeleteDir) {
         const pathValue = typeof args.path === 'string' ? args.path : '';
-        const nameValue = basename(pathValue || '');
+        const nameValue = (pathValue || '').split(/[\\/]/).pop() || '';
         const noun = isFsDeleteDir ? 'folder' : 'file';
         const verb = status === 'running' ? 'Deleting' : status === 'failed' ? 'Failed' : 'Deleted';
         const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
@@ -568,8 +593,8 @@ function buildToolActivityLines(
     if (isFsRename) {
         const oldPath = typeof (args as Record<string, JsonValue>).oldPath === 'string' ? String((args as Record<string, JsonValue>).oldPath) : '';
         const newPath = typeof (args as Record<string, JsonValue>).newPath === 'string' ? String((args as Record<string, JsonValue>).newPath) : '';
-        const fromName = basename(oldPath || '');
-        const toName = basename(newPath || '');
+        const fromName = (oldPath || '').split(/[\\/]/).pop() || '';
+        const toName = (newPath || '').split(/[\\/]/).pop() || '';
         const verb = status === 'running' ? 'Renaming' : status === 'failed' ? 'Failed' : 'Renamed';
         const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
         return [{
@@ -626,14 +651,23 @@ function buildToolActivityLines(
 
     if (isPatch) {
         const pathValue = typeof args.path === 'string' ? args.path : (typeof args.file === 'string' ? args.file : '');
-        const fileName = basename(pathValue || '');
-        const verb = status === 'running' ? 'Updating' : status === 'failed' ? 'Failed' : 'Updated';
+        const displayPath = pathValue ? toDisplayPath(pathValue) : 'file';
+        const verb = status === 'running' ? 'Patch' : status === 'failed' ? 'Failed to patch' : 'Patched';
         const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
+        const diffId = (() => {
+            const payload = toolResult?.result;
+            if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+                const d = (payload as Record<string, unknown>).diffId;
+                return typeof d === 'string' ? d : undefined;
+            }
+            return undefined;
+        })();
+
         return [{
             key: toolCall.id,
-            text: `${verb} ${fileName || 'file'}${suffix}`,
+            text: `${verb} file ${displayPath}${suffix}`,
             status,
-            action: status === 'failed' || !pathValue ? undefined : { type: 'open_diff', path: pathValue },
+            action: status === 'failed' || !pathValue ? undefined : { type: 'open_diff', path: pathValue, diffId },
         }];
     }
 
@@ -738,7 +772,7 @@ const ThoughtTimeline = memo(({
 }) => {
     const toolCalls = buildToolCalls(message);
     const toolResultMap = buildToolResultMap(message);
-    const thoughts = Array.isArray(message.reasonings) ? message.reasonings : [];
+    const thoughts = readThoughtSegments(message);
 
     const maxThoughtIndex = Math.max(
         thoughts.length - 1,
@@ -808,9 +842,9 @@ const ThoughtTimeline = memo(({
             {Array.from({ length: maxThoughtIndex + 1 }).map((_, idx) => {
                 const thoughtText = thoughts[idx] ?? '';
                 const expanded = Boolean(expandedMap[idx] ?? true);
-                const headerBase = t('workspaceAgent.thoughtStep', { index: idx + 1 });
+                const headerBase = t('frontend.workspaceAgent.thoughtStep', { index: idx + 1 });
                 const durationSuffix = typeof message.responseTime === 'number' && Number.isFinite(message.responseTime)
-                    ? ` • ${(message.responseTime / 1000).toFixed(1)}${t('messageBubble.secondsShort')}`
+                    ? ` • ${(message.responseTime / 1000).toFixed(1)}${t('frontend.messageBubble.secondsShort')}`
                     : '';
                 const header = `${headerBase}${durationSuffix}`;
 
@@ -950,7 +984,7 @@ const ThoughtTimeline = memo(({
                                 'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
                                 expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
                             )}
-                            aria-label={expanded ? t('chat.collapse') : t('chat.expand')}
+                            aria-label={expanded ? t('frontend.chat.collapse') : t('frontend.chat.expand')}
                         >
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className={cn('h-2 w-2 rounded-full', statusDot)} />
@@ -993,7 +1027,7 @@ const ThoughtTimeline = memo(({
                                                             if (line.action?.type === 'open_file') {
                                                                 navigateToWorkspace({ type: 'open_file', path: line.action.path, readOnly: line.action.readOnly });
                                                             } else if (line.action?.type === 'open_diff') {
-                                                                navigateToWorkspace({ type: 'open_diff', path: line.action.path });
+                                                                navigateToWorkspace({ type: 'open_diff', path: line.action.path, diffId: line.action.diffId });
                                                             }
                                                         }}
                                                     >
@@ -1045,8 +1079,6 @@ const FileChangesCard = memo(({
         setIsUndoing(true);
         try {
             for (const id of diffIds) {
-                // Best-effort. If one fails, keep going.
-
                 await window.electron.files.revertFileChange(id);
             }
         } finally {
@@ -1059,56 +1091,59 @@ const FileChangesCard = memo(({
         if (!first) {
             return;
         }
-        navigateToWorkspace({ type: 'open_diff', path: first.path });
+        navigateToWorkspace({ type: 'open_diff', path: first.path, diffId: first.diffId });
     }, [changes]);
 
     return (
-        <div className="mt-3 rounded-xl border border-border/30 bg-muted/10 px-3 py-2">
-            <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground/90">
+        <div className="mt-4 rounded-xl border border-border/30 bg-muted/5 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/20 bg-muted/10">
+                <div className="flex items-center gap-2 text-sm">
+                    <span className="font-semibold text-foreground/90">
                         {changes.length} {changes.length === 1 ? 'file changed' : 'files changed'}
                     </span>
-                    <span className="ml-2 text-primary/90">+{totals.additions}</span>
-                    <span className="ml-1 text-destructive/90">-{totals.deletions}</span>
+                    <span className="text-primary font-medium">+{totals.additions}</span>
+                    <span className="text-destructive font-medium">-{totals.deletions}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                     <button
                         type="button"
                         onClick={onUndo}
                         disabled={!canUndo}
                         className={cn(
-                            'text-sm font-medium',
-                            canUndo ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
+                            'flex items-center gap-1.5 text-xs font-medium transition-colors',
+                            canUndo ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/30 cursor-not-allowed'
                         )}
-                        aria-label={t('chat.undo')}
                     >
-                        {isUndoing ? t('common.loading') : 'Undo'}
+                        {isUndoing ? <IconRefresh className="w-3.5 h-3.5 animate-spin" /> : <IconHistory className="w-3.5 h-3.5" />}
+                        <span>{isUndoing ? 'Undoing...' : 'Undo'}</span>
                     </button>
                     <button
                         type="button"
                         onClick={onReview}
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                        aria-label={t('chat.review')}
+                        className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        Review
+                        <span>Review</span>
+                        <IconExternalLink className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
 
-            <div className="mt-2 space-y-1">
+            <div className="divide-y divide-border/10">
                 {changes.map((c, idx) => (
                     <button
                         key={`${c.path}:${c.diffId ?? ''}:${idx}`}
                         type="button"
-                        onClick={() => navigateToWorkspace({ type: 'open_diff', path: c.path })}
-                        className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1 text-left text-sm text-foreground/80 hover:bg-muted/20"
+                        onClick={() => navigateToWorkspace({ type: 'open_diff', path: c.path, diffId: c.diffId })}
+                        className="flex w-full items-center justify-between gap-4 px-4 py-2.5 text-left text-sm hover:bg-muted/15 transition-colors group"
                     >
-                        <span className="min-w-0 break-words">{c.displayPath}</span>
-                        <span className="flex-shrink-0 tabular-nums">
-                            <span className="text-primary/90">+{c.additions}</span>
-                            <span className="ml-2 text-destructive/90">-{c.deletions}</span>
-                        </span>
+                        <span className="truncate text-muted-foreground group-hover:text-foreground transition-colors">{c.displayPath}</span>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className="tabular-nums text-xs font-medium">
+                                <span className="text-primary/80">+{c.additions}</span>
+                                <span className="ml-2 text-destructive/80">-{c.deletions}</span>
+                            </span>
+                            <IconChevronDown className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors -rotate-90" />
+                        </div>
                     </button>
                 ))}
             </div>

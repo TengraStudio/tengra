@@ -31,14 +31,77 @@ export interface ChatStreamChunk {
 const STREAM_WAIT_TICK_MS = 1000;
 const STREAM_WAIT_LOG_EVERY_TICKS = 10;
 
-function normalizeChunk(chunk: ChatStreamChunk): ChatStreamChunk[] {
+/**
+ * Per-stream state for incremental `<think>` tag extraction across chunks.
+ * Ollama models (e.g. DeepSeek-R1) embed reasoning in `<think>` tags inside the
+ * content delta rather than using a separate `reasoning_content` field.
+ * We track open/close state across chunks so partial tags are handled correctly.
+ */
+interface ThinkTagState {
+    open: boolean;
+}
+
+function extractThinkTagsFromContent(
+    content: string,
+    state: ThinkTagState
+): { reasoning: string; cleanedContent: string } {
+    let reasoning = '';
+    let cleanedContent = '';
+    let cursor = 0;
+
+    while (cursor < content.length) {
+        if (state.open) {
+            // We're inside a <think> block — look for the closing tag
+            const closeIdx = content.toLowerCase().indexOf('</think>', cursor);
+            if (closeIdx === -1) {
+                // Entire remaining content is reasoning (tag still open)
+                reasoning += content.slice(cursor);
+                cursor = content.length;
+            } else {
+                // Found closing tag
+                reasoning += content.slice(cursor, closeIdx);
+                state.open = false;
+                cursor = closeIdx + '</think>'.length;
+            }
+        } else {
+            // Not inside a <think> block — look for an opening tag
+            const openIdx = content.toLowerCase().indexOf('<think>', cursor);
+            if (openIdx === -1) {
+                // No more <think> tags — rest is regular content
+                cleanedContent += content.slice(cursor);
+                cursor = content.length;
+            } else {
+                // Content before the tag is regular content
+                cleanedContent += content.slice(cursor, openIdx);
+                state.open = true;
+                cursor = openIdx + '<think>'.length;
+            }
+        }
+    }
+
+    return { reasoning, cleanedContent };
+}
+
+function normalizeChunk(chunk: ChatStreamChunk, thinkState: ThinkTagState): ChatStreamChunk[] {
     const results: ChatStreamChunk[] = [];
     if (typeof chunk.reasoning === 'string' && chunk.reasoning.length > 0) {
         // Preserve reasoning before visible content so thought accordions render in sequence.
         results.push({ type: 'reasoning', reasoning: chunk.reasoning });
     }
     if (typeof chunk.content === 'string' && chunk.content.length > 0) {
-        results.push({ type: 'content', content: chunk.content });
+        // Check for <think> tags embedded in content (Ollama/DeepSeek-R1 pattern).
+        // Only run extraction if the content could contain tags or we're already inside one.
+        if (thinkState.open || chunk.content.toLowerCase().includes('<think>')) {
+            const { reasoning, cleanedContent } = extractThinkTagsFromContent(chunk.content, thinkState);
+            if (reasoning.length > 0) {
+                results.push({ type: 'reasoning', reasoning });
+            }
+            if (cleanedContent.length > 0) {
+                results.push({ type: 'content', content: cleanedContent });
+            }
+        } else {
+            results.push({ type: 'content', content: chunk.content });
+        }
     }
     if (chunk.images) {
         results.push({ type: 'images', images: chunk.images });
@@ -77,6 +140,7 @@ export async function* chatStream(
     let yieldedChunkCount = 0;
     let ignoredChunkCount = 0;
     let waitTickCount = 0;
+    const thinkTagState: ThinkTagState = { open: false };
 
     const clearWaitTimer = (): void => {
         if (waitTimer) {
@@ -169,7 +233,7 @@ export async function* chatStream(
         while (outerIterations < MAX_OUTER_ITERATIONS) {
             let chunk: ChatStreamChunk | undefined;
             while ((chunk = queue.shift()) !== undefined) {
-                for (const normalized of normalizeChunk(chunk)) {
+                for (const normalized of normalizeChunk(chunk, thinkTagState)) {
                     yieldedChunkCount++;
                     yield normalized;
                 }

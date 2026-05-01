@@ -109,12 +109,14 @@ export const PROXY_PERFORMANCE_BUDGETS = {
   HEALTH_CHECK_MS: 5000,
   INITIALIZE_MS: 10000,
   CONFIG_GENERATION_MS: 2000,
-  GET_MODELS_MS: 15000
+  GET_MODELS_MS: 5000
 } as const;
 const PROXY_REQUEST_TIMEOUT_MS = 15_000;
+const PROXY_MODEL_REQUEST_TIMEOUT_MS = 4_000;
+const PROXY_MODEL_CACHE_TTL_MS = 10_000;
 const QUOTA_STREAM_RECONNECT_DELAY_MS = 3000;
 const QUOTA_STREAM_CHANNEL = 'proxy:quota:updated';
-const QUOTA_SNAPSHOT_TIMEOUT_MS = 1200;
+const QUOTA_SNAPSHOT_TIMEOUT_MS = 5000;
 const QUOTA_REFRESH_MIN_GAP_MS = 1500;
 
 export interface DeviceCodeResponse {
@@ -199,7 +201,7 @@ interface ProxyMarketplaceSkill {
   enabled_by_default: boolean;
 }
 
-interface ProxyQuotaStreamAccount {
+interface ProxyQuotaStreamAccount extends JsonObject {
   provider?: string;
   account_id?: string;
   email?: string;
@@ -252,6 +254,9 @@ export class ProxyService extends BaseService {
   private latestQuotaFingerprint = '';
   private quotaRefreshInFlight: Promise<void> | null = null;
   private quotaRefreshLastAttemptAt = 0;
+  private proxyModelsCache: ModelItem[] = [];
+  private proxyModelsCacheAt = 0;
+  private proxyModelsInFlight: Promise<ModelItem[]> | null = null;
 
   constructor(private options: ProxyServiceOptions) {
     super('ProxyService');
@@ -375,7 +380,11 @@ export class ProxyService extends BaseService {
           request.destroy();
         });
         request.on('error', (error) => {
-          this.logWarn(`Quota stream request failed: ${error.message}`);
+          if (error.message.includes('ECONNREFUSED')) {
+            this.logDebug(`Quota stream not ready yet: ${error.message}`);
+          } else {
+            this.logWarn(`Quota stream request failed: ${error.message}`);
+          }
           this.clearQuotaStreamRequest();
           this.scheduleQuotaStreamReconnect();
         });
@@ -411,11 +420,16 @@ export class ProxyService extends BaseService {
       }
       this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as unknown as RuntimeValue);
     } catch (error) {
-      this.logWarn(`Initial quota snapshot fetch failed: ${getErrorMessage(error)}`);
+      const message = getErrorMessage(error);
+      if (message.includes('ECONNREFUSED')) {
+        this.logDebug(`Initial quota snapshot not ready yet: ${message}`);
+      } else {
+        this.logWarn(`Initial quota snapshot fetch failed: ${message}`);
+      }
     }
   }
 
-  private async triggerQuotaSnapshotRefresh(waitForCompletion: boolean): Promise<void> {
+  public async triggerQuotaSnapshotRefresh(waitForCompletion: boolean): Promise<void> {
     const now = Date.now();
     if (this.quotaRefreshInFlight) {
       if (waitForCompletion) {
@@ -529,7 +543,9 @@ export class ProxyService extends BaseService {
 
   private processAccountQuota(account: ProxyQuotaStreamAccount, collectors: QuotaCollectors): void {
     const provider = (account.provider ?? '').toLowerCase();
-    const quotaObject = this.asObject(account.quota);
+    // Since we flattened the QuotaResult into the account object in Rust,
+    // the 'account' object now contains 'models', 'quota', 'success', etc.
+    const quotaObject = account as Record<string, RuntimeValue>;
 
     if (provider === 'antigravity' || provider === 'google') {
       this.processAntigravityQuota(account, quotaObject, collectors.quotaAccounts);
@@ -548,6 +564,17 @@ export class ProxyService extends BaseService {
     target: Array<QuotaResponse & { accountId?: string; email?: string }>
   ): void {
     if (account.success !== true) {
+      target.push({
+        status: 'Error',
+        next_reset: '-',
+        models: [],
+        success: false,
+        authExpired: (account.error ?? '').toLowerCase().includes('401') || (account.error ?? '').toLowerCase().includes('unauthorized'),
+        accountId: account.account_id,
+        email: account.email,
+        isActive: account.is_active,
+        error: account.error,
+      });
       return;
     }
 
@@ -555,12 +582,12 @@ export class ProxyService extends BaseService {
     const modelsRaw = (Array.isArray(quotaObject?.models) ? quotaObject.models : []) as RuntimeValue[];
     const models: ModelQuotaItem[] = modelsRaw.map((item) => {
       const modelObj = this.asObject(item);
-      const remainingFraction = this.asNumber(modelObj?.remaining_fraction) ?? 0;
-      const remainingQuota = this.asNumber(modelObj?.remaining_quota);
-      const totalQuota = this.asNumber(modelObj?.total_quota);
-      const resetTime = this.asString(modelObj?.reset_time);
+      const remainingFraction = this.asNumber(modelObj?.remaining_fraction ?? modelObj?.remainingFraction) ?? 0;
+      const remainingQuota = this.asNumber(modelObj?.remaining_quota ?? modelObj?.remainingQuota);
+      const totalQuota = this.asNumber(modelObj?.total_quota ?? modelObj?.totalQuota);
+      const resetTime = this.asString(modelObj?.reset_time ?? modelObj?.resetTime);
       const modelId = this.asString(modelObj?.id) ?? 'unknown-model';
-      const modelName = this.asString(modelObj?.name) ?? modelId;
+      const modelName = this.asString(modelObj?.name ?? modelObj?.displayName) ?? modelId;
 
       return {
         id: modelId,
@@ -577,6 +604,7 @@ export class ProxyService extends BaseService {
           totalQuota: totalQuota ?? 0,
           resetTime: resetTime ?? undefined,
         },
+        metadata: modelObj?.metadata as JsonValue | undefined,
       };
     });
 
@@ -599,6 +627,14 @@ export class ProxyService extends BaseService {
     target: Array<CopilotQuota & { accountId?: string; email?: string }>
   ): void {
     if (account.success !== true) {
+      target.push({
+        remaining: 0,
+        limit: 0,
+        reset: undefined,
+        accountId: account.account_id,
+        email: account.email,
+        error: account.error,
+      });
       return;
     }
 
@@ -606,11 +642,15 @@ export class ProxyService extends BaseService {
     const remaining = this.asNumber(quotaInfo?.remaining) ?? 0;
     const total = this.asNumber(quotaInfo?.total) ?? 0;
     const reset = this.asString(quotaInfo?.reset_at);
+    const session_limits = this.asObject(quotaInfo?.session_limits);
+    const session_usage = this.asObject(quotaInfo?.session_usage);
 
     target.push({
       remaining,
       limit: total,
       reset: reset ?? undefined,
+      session_limits: session_limits as CopilotQuota['session_limits'],
+      session_usage: session_usage as CopilotQuota['session_usage'],
       accountId: account.account_id,
       email: account.email,
     });
@@ -641,11 +681,17 @@ export class ProxyService extends BaseService {
     const weeklyUsedPercent = this.asNumber(quotaInfo?.weekly_used_percent);
     const fiveHourResetAt = this.asString(quotaInfo?.five_hour_reset_at);
     const weeklyResetAt = this.asString(quotaInfo?.weekly_reset_at);
-    const hasPercentWindows = fiveHourUsedPercent !== null || weeklyUsedPercent !== null;
 
-    if ((remaining === null || total === null || total <= 0) && !hasPercentWindows) {
+    // If quota info is entirely missing, don't show an error, just return zeroed usage
+    if (!quotaInfo) {
       target.push({
-        usage: { error: 'Quota payload missing required Codex fields' },
+        usage: {
+          remainingRequests: 0,
+          totalRequests: 0,
+          dailyUsedPercent: 0,
+          weeklyUsedPercent: 0,
+          resetAt: undefined,
+        },
         accountId,
         email,
       });
@@ -654,7 +700,9 @@ export class ProxyService extends BaseService {
 
     const remainingPercent = (remaining !== null && total !== null && total > 0)
       ? Math.max(0, Math.min(100, (remaining / total) * 100))
-      : Math.max(0, Math.min(100, 100 - (weeklyUsedPercent ?? fiveHourUsedPercent ?? 100)));
+      : (weeklyUsedPercent !== null || fiveHourUsedPercent !== null)
+        ? Math.max(0, Math.min(100, 100 - (weeklyUsedPercent ?? fiveHourUsedPercent ?? 0)))
+        : (total === 0 ? 0 : 100); // If total is explicitly 0, treat as exhausted. Otherwise default to 100% if no info.
     const usedPercent = Math.max(0, Math.min(100, 100 - remainingPercent));
 
     target.push({
@@ -1491,16 +1539,41 @@ export class ProxyService extends BaseService {
   }
 
   private async getProxyModels(apiKey: string): Promise<ModelItem[]> {
+    const cacheAgeMs = Date.now() - this.proxyModelsCacheAt;
+    if (this.proxyModelsCache.length > 0 && cacheAgeMs < PROXY_MODEL_CACHE_TTL_MS) {
+      this.logDebug(`getProxyModels: Returning cached catalog (${this.proxyModelsCache.length} models, age=${cacheAgeMs}ms)`);
+      return this.proxyModelsCache;
+    }
+
+    if (this.proxyModelsInFlight) {
+      this.logDebug('getProxyModels: Awaiting in-flight catalog request');
+      return this.proxyModelsInFlight;
+    }
+
+    this.proxyModelsInFlight = this.fetchProxyModels(apiKey).finally(() => {
+      this.proxyModelsInFlight = null;
+    });
+
+    return this.proxyModelsInFlight;
+  }
+
+  private async fetchProxyModels(apiKey: string): Promise<ModelItem[]> {
     try {
       this.logDebug(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
-      const res = await this.makeRequest('/v1/models', apiKey, 'GET', undefined);
+      const res = await this.makeRequestWithTimeout('/v1/models', {
+        timeoutMs: PROXY_MODEL_REQUEST_TIMEOUT_MS,
+        apiKey,
+        method: 'GET',
+      });
       if ('data' in res && Array.isArray(res.data)) {
-        return res.data as ModelItem[];
+        this.proxyModelsCache = res.data as ModelItem[];
+        this.proxyModelsCacheAt = Date.now();
+        return this.proxyModelsCache;
       }
     } catch (error) {
       this.logWarn(`getProxyModels: Primary proxy fetch failed. ${getErrorMessage(error)}`);
     }
-    return [];
+    return this.proxyModelsCache;
   }
 
   private normalizeQuota(

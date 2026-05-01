@@ -36,6 +36,8 @@ vi.mock('electron', () => ({
 
 // Mock fs
 vi.mock('fs', () => ({
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
     writeFileSync: vi.fn()
 }));
 

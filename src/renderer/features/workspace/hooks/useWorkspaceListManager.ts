@@ -121,10 +121,38 @@ export function useWorkspaceListManager() {
     }, []);
 
     useEffect(() => {
-        void (async () => {
-            await loadFolders();
-            await loadWorkspaces();
-        })();
+        let cancelled = false;
+        let timeoutId: number | null = null;
+        const requestIdle = (window as Window & {
+            requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+        }).requestIdleCallback;
+
+        const loadWorkspaceState = () => {
+            if (cancelled) {
+                return;
+            }
+            void (async () => {
+                await loadFolders();
+                await loadWorkspaces();
+            })();
+        };
+
+        if (requestIdle) {
+            requestIdle(() => {
+                loadWorkspaceState();
+            }, { timeout: 1500 });
+        } else {
+            timeoutId = window.setTimeout(() => {
+                loadWorkspaceState();
+            }, 250);
+        }
+
+        return () => {
+            cancelled = true;
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+            }
+        };
     }, [loadFolders, loadWorkspaces]);
 
     const { workspaces, folders, selectedWorkspace, terminalTabs, activeTerminalId } = state;

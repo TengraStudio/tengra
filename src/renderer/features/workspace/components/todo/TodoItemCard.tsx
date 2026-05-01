@@ -49,7 +49,7 @@ export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRe
             </p>
             <div className="flex items-center gap-2 mt-1.5">
                 <span className="text-sm font-mono text-muted-foreground/40 text-primary/40">
-                    {t('workspace.todoLinePrefix')} {todo.line}
+                    {t('frontend.workspace.todoLinePrefix')} {todo.line}
                 </span>
                 {(onUndo || onRedo) && (
                     <div className="ml-auto flex items-center gap-1">
@@ -62,7 +62,7 @@ export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRe
                                 }}
                                 disabled={!canUndo}
                                 className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
-                                title={t('workspace.todoUndoTitle')}
+                                title={t('frontend.workspace.todoUndoTitle')}
                             >
                                 <IconRotate className="w-3 h-3" />
                             </button>
@@ -76,7 +76,7 @@ export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRe
                                 }}
                                 disabled={!canRedo}
                                 className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
-                                title={t('workspace.todoRedoTitle')}
+                                title={t('frontend.workspace.todoRedoTitle')}
                             >
                                 <IconRotate className="w-3 h-3" />
                             </button>

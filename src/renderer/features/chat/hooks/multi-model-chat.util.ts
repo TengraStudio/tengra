@@ -172,7 +172,7 @@ export async function generateMultiModelResponse(params: GenerateMultiModelRespo
                 streamStartTime,
             });
         } catch (error) {
-            const errText = `${t('chat.error')}: ${formatChatError(error as CatchError)}`;
+            const errText = `${t('frontend.chat.error')}: ${formatChatError(error as CatchError)}`;
             return {
                 model: modelInfo.model,
                 provider: modelInfo.provider,
@@ -327,7 +327,7 @@ async function finalizeMultiModelResponse(params: FinalizeMultiModelResponsePara
     if (chat) {
         let title = chat.title;
         if (chat.messages.length <= 2 && finalContent) {
-            title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat');
+            title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('frontend.sidebar.newChat');
         }
         updateChatInStore(chatId, {
             title,

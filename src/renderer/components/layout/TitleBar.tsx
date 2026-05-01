@@ -84,11 +84,11 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                     <div className="flex items-center gap-2">
                         <img
                             src={logo}
-                            alt={t('app.name')}
+                            alt={t('frontend.app.name')}
                             className="h-8 w-8 object-contain"
                         />
                         <span className="text-sm font-bold text-foreground/80">
-                            {t('app.name')}
+                            {t('frontend.app.name')}
                         </span>
                     </div>
                     {leftContent}
@@ -101,7 +101,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                     <div className="flex items-center gap-2 px-2">
                         <div
                             className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 typo-overline text-muted-foreground"
-                            title={t('titleBar.lazyServicesStatus', {
+                            title={t('frontend.titleBar.lazyServicesStatus', {
                                 loaded: lazyStatus.loaded,
                                 registered: lazyStatus.registered
                             })}
@@ -113,8 +113,8 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             <button
                                 onClick={onExtensionClick}
                                 className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-info/10 hover:text-info"
-                                title={t('titleBar.extension')}
-                                aria-label={t('titleBar.extension')}
+                                title={t('frontend.titleBar.extension')}
+                                aria-label={t('frontend.titleBar.extension')}
                             >
                                 <IconPuzzle className="h-4 w-4" />
                             </button>
@@ -122,24 +122,24 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                         <button
                             onClick={handleMinimize}
                             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                            title={t('titleBar.minimize')}
-                            aria-label={t('titleBar.minimize')}
+                            title={t('frontend.titleBar.minimize')}
+                            aria-label={t('frontend.titleBar.minimize')}
                         >
                             <IconMinus className="h-4 w-4" />
                         </button>
                         <button
                             onClick={handleMaximize}
                             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                            title={t('titleBar.maximize')}
-                            aria-label={t('titleBar.maximize')}
+                            title={t('frontend.titleBar.maximize')}
+                            aria-label={t('frontend.titleBar.maximize')}
                         >
                             <IconSquare className="h-3.5 w-3.5" />
                         </button>
                         <button
                             onClick={handleClose}
                             className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground"
-                            title={t('titleBar.close')}
-                            aria-label={t('titleBar.close')}
+                            title={t('frontend.titleBar.close')}
+                            aria-label={t('frontend.titleBar.close')}
                         >
                             <IconX className="h-4 w-4" />
                         </button>

@@ -30,9 +30,9 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
     const [status, setStatus] = useState('');
 
     const commands = useMemo<DiagnosticCommand[]>(() => [
-        { id: 'auth', command: 'whoami && id', label: t('ssh.recoveryAuthDiagnostic') },
-        { id: 'network', command: 'hostname && ip route || route -n', label: t('ssh.recoveryNetworkDiagnostic') },
-        { id: 'permission', command: 'pwd && ls -ld . && ls -la', label: t('ssh.recoveryPermissionDiagnostic') },
+        { id: 'auth', command: 'whoami && id', label: t('frontend.ssh.recoveryAuthDiagnostic') },
+        { id: 'network', command: 'hostname && ip route || route -n', label: t('frontend.ssh.recoveryNetworkDiagnostic') },
+        { id: 'permission', command: 'pwd && ls -ld . && ls -la', label: t('frontend.ssh.recoveryPermissionDiagnostic') },
     ], [t]);
 
     const runDiagnostic = async (entry: DiagnosticCommand): Promise<void> => {
@@ -42,21 +42,21 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
         setOutput(`${result.stdout}\n${result.stderr}`.trim());
         setStatus(
             success
-                ? t('ssh.recoveryDiagnosticOk')
-                : t('ssh.recoveryDiagnosticFailed', { code: result.code })
+                ? t('frontend.ssh.recoveryDiagnosticOk')
+                : t('frontend.ssh.recoveryDiagnosticFailed', { code: result.code })
         );
         setRunningId(null);
     };
 
     const copySnippet = async (snippet: string): Promise<void> => {
         await window.electron.clipboard.writeText(snippet);
-        setStatus(t('ssh.recoverySnippetCopied'));
+        setStatus(t('frontend.ssh.recoverySnippetCopied'));
     };
 
     return (
         <div className="p-4 space-y-3">
-            <div className="text-sm font-semibold">{t('ssh.recoveryToolkit')}</div>
-            <div className="typo-caption text-muted-foreground">{t('ssh.recoveryToolkitSubtitle')}</div>
+            <div className="text-sm font-semibold">{t('frontend.ssh.recoveryToolkit')}</div>
+            <div className="typo-caption text-muted-foreground">{t('frontend.ssh.recoveryToolkitSubtitle')}</div>
             <div className="flex flex-wrap gap-2">
                 {commands.map(entry => (
                     <button
@@ -65,12 +65,12 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
                         disabled={runningId !== null}
                         onClick={() => { void runDiagnostic(entry); }}
                     >
-                        {runningId === entry.id ? t('ssh.recoveryRunning') : entry.label}
+                        {runningId === entry.id ? t('frontend.ssh.recoveryRunning') : entry.label}
                     </button>
                 ))}
             </div>
             <div className="space-y-2">
-                <div className="typo-caption font-medium">{t('ssh.recoveryRepairSteps')}</div>
+                <div className="typo-caption font-medium">{t('frontend.ssh.recoveryRepairSteps')}</div>
                 <div className="grid gap-2">
                     {[
                         'sudo systemctl status ssh',
@@ -80,7 +80,7 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
                         <div key={snippet} className="flex items-center justify-between gap-2 border border-border/40 rounded px-2 py-1">
                             <code className="typo-caption truncate">{snippet}</code>
                             <button className="secondary-btn typo-caption px-2 py-1" onClick={() => { void copySnippet(snippet); }}>
-                                {t('ssh.recoveryCopySnippet')}
+                                {t('frontend.ssh.recoveryCopySnippet')}
                             </button>
                         </div>
                     ))}

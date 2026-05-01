@@ -117,7 +117,7 @@ export function useTerminalClipboardActions({
                         .join('\n')
                         .slice(0, 240);
                     const confirmed = confirmDialog(
-                        t('terminal.pasteConfirmLines', {
+                        t('frontend.terminal.pasteConfirmLines', {
                             count: text.split(/\r?\n/).length,
                             preview
                         })

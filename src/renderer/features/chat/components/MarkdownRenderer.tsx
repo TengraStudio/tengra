@@ -80,7 +80,7 @@ const MermaidDiagram = ({ code, t }: { code: string; t: TranslationFn }) => {
             <div className="my-4 flex justify-center bg-muted/30 p-8 rounded-xl border border-border/50">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">{t('markdown.loadingDiagram')}</span>
+                    <span className="text-sm">{t('frontend.markdown.loadingDiagram')}</span>
                 </div>
             </div>
         );
@@ -138,7 +138,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     },
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
-                            <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className={C_MARKDOWNRENDERER_1} onClick={() => { if (src) { window.electron.openExternal(src); } }} />
+                            <img src={src} alt={alt ?? t('frontend.messageBubble.imageAlt')} className={C_MARKDOWNRENDERER_1} onClick={() => { if (src) { window.electron.openExternal(src); } }} />
                             {alt && <span className="typo-caption text-muted-foreground mt-1 block font-medium">{alt}</span>}
                             {src && !isUser && onCodeConvert && (
                                 <button
@@ -149,7 +149,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                                     className={C_MARKDOWNRENDERER_2}
                                 >
                                     <IconCode className="w-3.5 h-3.5" />
-                                    {t('workspace.convertToCode')}
+                                    {t('frontend.workspace.convertToCode')}
                                 </button>
                             )}
                         </span>

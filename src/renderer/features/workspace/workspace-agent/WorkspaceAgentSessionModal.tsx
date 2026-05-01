@@ -9,7 +9,7 @@
  */
 
 import type { WorkspaceAgentSessionSummary } from '@shared/types/workspace-agent-session';
-import { IconArchive, IconArchiveOff, IconCheck, IconMessageDots, IconPencil, IconSparkles, IconX } from '@tabler/icons-react';
+import { IconArchive, IconArchiveOff, IconCheck, IconMessageDots, IconPencil, IconSparkles, IconTrash, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -17,34 +17,43 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '@/utils/format.util';
 
 interface WorkspaceAgentSessionModalProps {
     isOpen: boolean;
     sessions: WorkspaceAgentSessionSummary[];
     currentSessionId: string | null;
+    language?: string;
     onClose: () => void;
     onSelectSession: (sessionId: string | null) => void;
     onArchiveSession: (sessionId: string, archived: boolean) => void;
+    onDeleteSession: (sessionId: string) => void;
     onRenameSession: (sessionId: string, title: string) => Promise<RendererDataValue>;
     t: (key: string) => string;
 }
 
-function formatUpdatedAt(updatedAt: number): string {
-    return new Date(updatedAt).toLocaleString();
+function formatCreatedAt(createdAt: number, language: string): string {
+    return formatRelativeTime(new Date(createdAt), language);
 }
 
 export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProps> = ({
     isOpen,
     sessions,
     currentSessionId,
+    language = 'en',
     onClose,
     onSelectSession,
     onArchiveSession,
+    onDeleteSession,
     onRenameSession,
     t,
 }) => {
     const [editingSessionId, setEditingSessionId] = React.useState<string | null>(null);
     const [draftTitle, setDraftTitle] = React.useState('');
+    const sortedSessions = React.useMemo(
+        () => [...sessions].sort((left, right) => right.updatedAt - left.updatedAt),
+        [sessions]
+    );
 
     const startEditing = React.useCallback((session: WorkspaceAgentSessionSummary) => {
         setEditingSessionId(session.id);
@@ -70,12 +79,12 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={t('workspace.aiAssistant')}
+            title={t('frontend.workspace.aiAssistant')}
             size="2xl"
         >
             <ScrollArea className="max-h-screen pr-2">
                 <div className="grid gap-3">
-                    {sessions.map(session => (
+                    {sortedSessions.map(session => (
                         <div
                             key={session.id}
                             className={cn(
@@ -158,13 +167,22 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => void onArchiveSession(session.id, !session.archived)}
-                                        title={session.archived ? t('common.unarchive') : t('common.delete')}
+                                        title={session.archived ? t('common.unarchive') : 'Archive'}
                                     >
                                         {session.archived ? (
                                             <IconArchiveOff className="h-4 w-4" />
                                         ) : (
                                             <IconArchive className="h-4 w-4" />
                                         )}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => void onDeleteSession(session.id)}
+                                        title={t('common.delete')}
+                                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                    >
+                                        <IconTrash className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -178,8 +196,8 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                     <IconMessageDots className="h-3.5 w-3.5" />
                                     {session.messageCount}
                                 </span>
-                                <span>{formatUpdatedAt(session.updatedAt)}</span>
-                                {session.modes.council && <span>{t('workspaceAgent.councilMode')}</span>}
+                                <span>{formatCreatedAt(session.createdAt, language)}</span>
+                                {session.modes.council && <span>{t('frontend.workspaceAgent.councilMode')}</span>}
                             </div>
                         </div>
                     ))}

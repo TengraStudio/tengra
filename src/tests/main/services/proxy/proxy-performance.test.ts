@@ -93,7 +93,7 @@ describe('ProxyService performance instrumentation', () => {
         });
 
         it('should define GET_MODELS_MS budget', () => {
-            expect(PROXY_PERFORMANCE_BUDGETS.GET_MODELS_MS).toBe(15000);
+            expect(PROXY_PERFORMANCE_BUDGETS.GET_MODELS_MS).toBe(5000);
         });
 
         it('should have all budget values as positive finite numbers', () => {

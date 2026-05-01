@@ -96,7 +96,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
             aliases: [],
             action: { type: 'execute', command: newCommandAction },
             category: 'custom',
-            description: t('voice.commands.customDescription', { phrase: newCommandPhrase }),
+            description: t('frontend.voice.commands.customDescription', { phrase: newCommandPhrase }),
             enabled: true,
         };
 
@@ -112,12 +112,12 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
             {/* Enable Voice Control */}
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('voice.settings.enableVoice')}</CardTitle>
+                    <CardTitle>{t('frontend.voice.settings.enableVoice')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
-                            {t('voice.settings.enableVoiceDescription')}
+                            {t('frontend.voice.settings.enableVoiceDescription')}
                         </span>
                         <Switch
                             checked={localSettings.enabled}
@@ -130,22 +130,22 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
             {/* Wake Word Settings */}
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('voice.settings.wakeWord')}</CardTitle>
+                    <CardTitle>{t('frontend.voice.settings.wakeWord')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            {t('voice.settings.wakeWordLabel')}
+                            {t('frontend.voice.settings.wakeWordLabel')}
                         </label>
                         <Input
                             value={localSettings.wakeWord}
                             onChange={(e) => handleSettingChangeSafe('wakeWord', e.target.value)}
-                            placeholder={t('placeholder.wakeWord')}
+                            placeholder={t('frontend.placeholder.wakeWord')}
                         />
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
-                            {t('voice.settings.continuousListening')}
+                            {t('frontend.voice.settings.continuousListening')}
                         </span>
                         <Switch
                             checked={localSettings.continuousListening}
@@ -158,20 +158,20 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
             {/* Speech Settings */}
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('voice.settings.speech')}</CardTitle>
+                    <CardTitle>{t('frontend.voice.settings.speech')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {/* Voice Selection */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            {t('voice.settings.voice')}
+                            {t('frontend.voice.settings.voice')}
                         </label>
                         <Select
                             value={localSettings.synthesisVoice}
                             onValueChange={(value) => handleSettingChangeSafe('synthesisVoice', value)}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder={t('voice.settings.selectVoice')} />
+                                <SelectValue placeholder={t('frontend.voice.settings.selectVoice')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {voices.map((voice: VoiceInfo) => (
@@ -186,7 +186,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                     {/* Speech Rate */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            {t('voice.settings.speechRate')}: {localSettings.speechRate.toFixed(1)}
+                            {t('frontend.voice.settings.speechRate')}: {localSettings.speechRate.toFixed(1)}
                         </label>
                         <input
                             type="range"
@@ -202,7 +202,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                     {/* Speech Pitch */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            {t('voice.settings.speechPitch')}: {localSettings.speechPitch.toFixed(1)}
+                            {t('frontend.voice.settings.speechPitch')}: {localSettings.speechPitch.toFixed(1)}
                         </label>
                         <input
                             type="range"
@@ -218,7 +218,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                     {/* Speech Volume */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            {t('voice.settings.speechVolume')}: {Math.round(localSettings.speechVolume * 100)}%
+                            {t('frontend.voice.settings.speechVolume')}: {Math.round(localSettings.speechVolume * 100)}%
                         </label>
                         <input
                             type="range"
@@ -236,12 +236,12 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
             {/* Feedback Settings */}
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('voice.settings.feedback')}</CardTitle>
+                    <CardTitle>{t('frontend.voice.settings.feedback')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
-                            {t('voice.settings.audioFeedback')}
+                            {t('frontend.voice.settings.audioFeedback')}
                         </span>
                         <Switch
                             checked={localSettings.audioFeedback}
@@ -250,7 +250,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
-                            {t('voice.settings.visualFeedback')}
+                            {t('frontend.voice.settings.visualFeedback')}
                         </span>
                         <Switch
                             checked={localSettings.visualFeedback}
@@ -259,7 +259,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
-                            {t('voice.settings.accessibilityMode')}
+                            {t('frontend.voice.settings.accessibilityMode')}
                         </span>
                         <Switch
                             checked={localSettings.accessibilityMode}
@@ -272,7 +272,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
             {/* Custom Commands */}
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('voice.settings.customCommands')}</CardTitle>
+                    <CardTitle>{t('frontend.voice.settings.customCommands')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {/* Existing Commands */}
@@ -306,13 +306,13 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         <Input
                             value={newCommandPhrase}
                             onChange={(e) => setNewCommandPhrase(e.target.value)}
-                            placeholder={t('voice.settings.commandPhrase')}
+                            placeholder={t('frontend.voice.settings.commandPhrase')}
                             className="flex-1"
                         />
                         <Input
                             value={newCommandAction}
                             onChange={(e) => setNewCommandAction(e.target.value)}
-                            placeholder={t('voice.settings.commandAction')}
+                            placeholder={t('frontend.voice.settings.commandAction')}
                             className="flex-1"
                         />
                         <Button onClick={() => { void handleAddCommand(); }}>

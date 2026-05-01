@@ -73,7 +73,7 @@ export const ModelSelectorContent: React.FC<ModelSelectorContentProps> = ({
                     <IconSearch className="w-3.5 h-3.5 text-muted-foreground" />
                     <input
                         type="text"
-                        placeholder={t('modelSelector.searchModels')}
+                        placeholder={t('frontend.modelSelector.searchModels')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className={C_MODELSELECTORCONTENT_2}

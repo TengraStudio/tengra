@@ -102,9 +102,17 @@ export function shouldPreserveToolLoopFallbackContent(
 
 export function shouldRecoverFromLowSignalFinalContent(
     assistantContent: string,
-    accumulatedToolMessages: Message[]
+    accumulatedToolMessages: Message[],
+    reasoning?: string
 ): boolean {
     const trimmedContent = assistantContent.trim();
+    const hasReasoning = typeof reasoning === 'string' && reasoning.trim().length > 0;
+    
+    // If we have reasoning, it's not a low-signal turn even if content is minimal
+    if (hasReasoning) {
+        return false;
+    }
+
     return accumulatedToolMessages.length > 0
         && trimmedContent.length > 0
         && isLowSignalProgressContent(trimmedContent);

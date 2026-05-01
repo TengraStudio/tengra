@@ -67,7 +67,7 @@ export const SetupDetailsStep: React.FC<SetupDetailsStepProps> = ({
                     transition={{ duration: 0.3 }}
                 >
                     <Label className="typo-caption font-bold text-muted-foreground mb-2 block ml-1">
-                        {t('workspaceWizard.workspaceName')}
+                        {t('frontend.workspaceWizard.workspaceName')}
                     </Label>
                     <div className="relative group">
                         <Input
@@ -77,7 +77,7 @@ export const SetupDetailsStep: React.FC<SetupDetailsStepProps> = ({
                                 setFormData(p => ({ ...p, name: e.target.value }))
                             }
                             className="w-full px-5 py-4 text-lg font-semibold h-auto"
-                            placeholder={t('workspaceWizard.namePlaceholder')}
+                            placeholder={t('frontend.workspaceWizard.namePlaceholder')}
                         />
                     </div>
                 </motion.div>
@@ -88,7 +88,7 @@ export const SetupDetailsStep: React.FC<SetupDetailsStepProps> = ({
                     transition={{ duration: 0.3, delay: 0.1 }}
                 >
                     <Label className="typo-caption font-bold text-muted-foreground mb-3 block ml-1">
-                        {t('workspaces.categoryLabel')}
+                        {t('frontend.workspaces.categoryLabel')}
                     </Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         {categories.map((cat, idx) => (
@@ -162,7 +162,7 @@ export const SetupDetailsStep: React.FC<SetupDetailsStepProps> = ({
                     transition={{ duration: 0.3, delay: 0.2 }}
                 >
                     <Label className="typo-caption font-bold text-muted-foreground mb-2 block ml-1">
-                        {t('workspaceWizard.selectFolder')}
+                        {t('frontend.workspaceWizard.selectFolder')}
                     </Label>
                     <Input
                         value={formData.customPath}
@@ -170,7 +170,7 @@ export const SetupDetailsStep: React.FC<SetupDetailsStepProps> = ({
                             setFormData(p => ({ ...p, customPath: e.target.value }))
                         }
                         className="w-full px-4 py-3"
-                        placeholder={t('workspaceWizard.selectRootDesc')}
+                        placeholder={t('frontend.workspaceWizard.selectRootDesc')}
                     />
                 </motion.div>
 
@@ -180,7 +180,7 @@ export const SetupDetailsStep: React.FC<SetupDetailsStepProps> = ({
                     transition={{ duration: 0.3, delay: 0.25 }}
                 >
                     <Label className="typo-caption font-bold text-muted-foreground mb-2 block ml-1">
-                        {t('workspaceWizard.description')}
+                        {t('frontend.workspaceWizard.description')}
                     </Label>
                     <Textarea
                         value={formData.description}
@@ -188,7 +188,7 @@ export const SetupDetailsStep: React.FC<SetupDetailsStepProps> = ({
                             setFormData(p => ({ ...p, description: e.target.value }))
                         }
                         className="w-full h-28 px-4 py-3 resize-none"
-                        placeholder={t('workspaceWizard.descPlaceholder')}
+                        placeholder={t('frontend.workspaceWizard.descPlaceholder')}
                     />
                 </motion.div>
 

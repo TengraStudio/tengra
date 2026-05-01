@@ -76,7 +76,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                     className={C_WORKSPACECONTEXTMENU_2}
                 >
                     <IconTrash className="w-3.5 h-3.5" />
-                    {t('workspace.removeMount')}
+                    {t('frontend.workspace.removeMount')}
                 </button>
             )}
 
@@ -91,7 +91,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                     className={C_WORKSPACECONTEXTMENU_3}
                                 >
                                     <IconSquareArrowUp className="w-3.5 h-3.5" />
-                                    {t('workspaceDashboard.stage')}
+                                    {t('frontend.workspaceDashboard.stage')}
                                 </button>
                             )}
                             {hasStagedChanges && (
@@ -100,7 +100,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                     className={C_WORKSPACECONTEXTMENU_4}
                                 >
                                     <IconSquareArrowDown className="w-3.5 h-3.5" />
-                                    {t('workspaceDashboard.unstage')}
+                                    {t('frontend.workspaceDashboard.unstage')}
                                 </button>
                             )}
                             <button
@@ -108,7 +108,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                 className={C_WORKSPACECONTEXTMENU_5}
                             >
                                 <IconHistory className="w-3.5 h-3.5" />
-                                {t('agent.history')}
+                                {t('frontend.agent.history')}
                             </button>
                             <div className="h-px bg-border/50 my-1 mx-2" />
                         </>
@@ -120,14 +120,14 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                 className={C_WORKSPACECONTEXTMENU_6}
                             >
                                 <IconFilePlus className="w-3.5 h-3.5" />
-                                {t('workspace.newFile')}
+                                {t('frontend.workspace.newFile')}
                             </button>
                             <button
                                 onClick={() => onContextAction('createFolder')}
                                 className={C_WORKSPACECONTEXTMENU_7}
                             >
                                 <IconFolderPlus className="w-3.5 h-3.5" />
-                                {t('workspace.newFolder')}
+                                {t('frontend.workspace.newFolder')}
                             </button>
                             <div className="h-px bg-border/50 my-1 mx-2" />
                         </>
@@ -137,7 +137,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                         className={C_WORKSPACECONTEXTMENU_8}
                     >
                         <IconPencil className="w-3.5 h-3.5" />
-                        {t('workspace.rename')}
+                        {t('frontend.workspace.rename')}
                     </button>
                     <button
                         onClick={() => onContextAction('delete')}

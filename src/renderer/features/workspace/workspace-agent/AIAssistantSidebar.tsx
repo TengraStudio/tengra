@@ -10,6 +10,7 @@
 
 import React from 'react';
 
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspaceAgentSessions } from '@/features/workspace/hooks/useWorkspaceAgentSessions';
 import { WorkspaceAgentComposer } from '@/features/workspace/workspace-agent/WorkspaceAgentComposer';
@@ -20,6 +21,7 @@ import { WorkspaceAgentSessionModal } from '@/features/workspace/workspace-agent
 import { Language } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
 import type { Workspace } from '@/types';
+import { formatRelativeTime } from '@/utils/format.util';
 
 interface AIAssistantSidebarProps {
     workspace: Workspace;
@@ -60,12 +62,11 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             className="flex h-full min-w-3 flex-col overflow-hidden bg-background backdrop-blur-2xl"
         >
             <WorkspaceAgentPanelHeader
-                recentSessions={panel.recentSessions}
                 currentSession={panel.currentSession}
-                onSelectSession={sessionId => void panel.selectSession(sessionId)}
                 onArchiveSession={(sessionId, archived) =>
                     void panel.archiveSession(sessionId, archived)
                 }
+                onDeleteSession={sessionId => void panel.deleteSession(sessionId)}
                 onOpenSessionPicker={() => panel.setShowSessionPicker(true)}
                 onCreateSession={() => void panel.openEmptySession()}
                 t={t}
@@ -98,7 +99,13 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                         messages={panel.currentMessages}
                         language={language}
                         isLoading={panel.isLoading}
+                        streamingContent={panel.currentStreamingState?.content}
+                        streamingReasoning={panel.currentStreamingState?.reasoning}
+                        streamingSpeed={panel.currentStreamingState?.speed}
+                        streamingToolCalls={panel.currentStreamingState?.toolCalls}
                         chatError={panel.chatError}
+                        selectedProvider={panel.selectedProvider}
+                        selectedModel={panel.selectedModel}
                         modes={panel.currentModes}
                         proposal={panel.currentCouncilState.proposal}
                         timeline={panel.currentCouncilState.timeline}
@@ -109,9 +116,42 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     />
                 )
             ) : (
-                <div className="flex flex-1 items-center justify-center px-8 text-center">
-                    <div className="max-w-sm text-sm text-muted-foreground">
-                        {t('agents.welcomeMessage')}
+                <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-3 py-6">
+                    <div className="w-full max-w-md space-y-5 text-center">
+                        <div className="space-y-2">
+                            <div className="text-sm text-muted-foreground">
+                                {t('frontend.agents.welcomeMessage')}
+                            </div>
+                        </div>
+
+                        {panel.recentSessions.length > 0 ? (
+                            <section className="space-y-2 text-left">
+                                <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                    <span>Recent sessions</span>
+                                    <span>{panel.recentSessions.length}</span>
+                                </div>
+                                <div className="space-y-1.5">
+                                    {panel.recentSessions.map(session => (
+                                        <button
+                                            key={session.id}
+                                            type="button"
+                                            onClick={() => void panel.selectSession(session.id)}
+                                            className="flex w-full items-center justify-between rounded-md border border-border/60 bg-background px-3 py-2 text-left transition-colors hover:bg-accent/30"
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="truncate text-sm text-foreground">{session.title}</div>
+                                                <div className="truncate text-xs text-muted-foreground">
+                                                    {session.lastMessagePreview || session.strategy}
+                                                </div>
+                                            </div>
+                                            <div className="ml-3 shrink-0 text-xs text-muted-foreground">
+                                                {formatRelativeTime(new Date(session.createdAt), language)}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+                        ) : null}
                     </div>
                 </div>
             )}
@@ -122,6 +162,9 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                 currentPermissionPolicy={panel.currentPermissionPolicy}
                 composerValue={panel.composerValue}
                 setComposerValue={panel.setComposerValue}
+                deliveryMode={panel.deliveryMode}
+                setDeliveryMode={panel.setDeliveryMode}
+                queuedMessageCount={panel.queuedMessageCount}
                 onSend={() => void panel.handleSend()}
                 onStop={() => void panel.stopGeneration()}
                 onToggleCouncil={() => void panel.toggleCouncil()}
@@ -148,11 +191,13 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                 isOpen={panel.showSessionPicker}
                 sessions={panel.sessions}
                 currentSessionId={panel.currentSessionId}
+                language={language}
                 onClose={() => panel.setShowSessionPicker(false)}
                 onSelectSession={sessionId => void panel.selectSession(sessionId)}
                 onArchiveSession={(sessionId, archived) =>
                     void panel.archiveSession(sessionId, archived)
                 }
+                onDeleteSession={sessionId => void panel.deleteSession(sessionId)}
                 onRenameSession={(sessionId, title) =>
                     panel.renameSession(sessionId, title)
                 }

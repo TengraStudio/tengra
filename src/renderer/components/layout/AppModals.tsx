@@ -50,7 +50,7 @@ export function AppModals({
 }: AppModalsProps) {
     return (<>
         <Modal
-            isOpen={isAuthModalOpen} onClose={() => { setIsAuthModalOpen(false); }} title={t('auth.authError')}
+            isOpen={isAuthModalOpen} onClose={() => { setIsAuthModalOpen(false); }} title={t('frontend.auth.authError')}
             footer={<button onClick={() => {
                 void (async () => {
                     await handleAntigravityLogout();
@@ -58,9 +58,9 @@ export function AppModals({
                     setCurrentView('settings');
                     setSettingsCategory('accounts');
                 })();
-            }} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">{t('auth.goToAccounts')}</button>}
+            }} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">{t('frontend.auth.goToAccounts')}</button>}
         >
-            <div className="p-6 flex flex-col items-center justify-center"><p className="text-base text-muted-foreground text-center">{t('auth.connectionFailed')}</p></div>
+            <div className="p-6 flex flex-col items-center justify-center"><p className="text-base text-muted-foreground text-center">{t('frontend.auth.connectionFailed')}</p></div>
         </Modal>
         <AnimatePresence>
             {showShortcuts && <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => { setShowShortcuts(false); }} language={language} />}

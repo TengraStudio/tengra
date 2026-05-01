@@ -145,10 +145,10 @@ export const PromptTemplateLibrary: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-foreground">
-                                {t('prompts.library.title')}
+                                {t('frontend.prompts.library.title')}
                             </h3>
                             <p className="typo-caption text-muted-foreground font-medium opacity-80">
-                                {t('prompts.library.subtitle')}
+                                {t('frontend.prompts.library.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -156,7 +156,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                         onClick={startCreate}
                         className={C_PROMPTTEMPLATELIBRARY_1}
                     >
-                        <IconPlus className="w-4 h-4 mr-2" /> {t('prompts.library.newPrompt')}
+                        <IconPlus className="w-4 h-4 mr-2" /> {t('frontend.prompts.library.newPrompt')}
                     </Button>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 relative z-10">
@@ -164,7 +164,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                         <IconSearch className={C_PROMPTTEMPLATELIBRARY_2} />
                         <Input
                             type="text"
-                            placeholder={t('prompts.library.searchPlaceholder')}
+                            placeholder={t('frontend.prompts.library.searchPlaceholder')}
                             value={search}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 setSearch(e.target.value)
@@ -175,7 +175,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                     {categories.length > 0 && (
                         <Select value={filterCategory} onValueChange={setFilterCategory}>
                             <SelectTrigger className={C_PROMPTTEMPLATELIBRARY_3}>
-                                <SelectValue placeholder={t('prompts.library.allCategories')} />
+                                <SelectValue placeholder={t('frontend.prompts.library.allCategories')} />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
                                 <SelectItem
@@ -183,7 +183,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                     onClick={() => setFilterCategory('')}
                                     className="typo-caption font-bold"
                                 >
-                                    {t('prompts.library.allCategories')}
+                                    {t('frontend.prompts.library.allCategories')}
                                 </SelectItem>
                                 {categories.map(c => (
                                     <SelectItem
@@ -206,18 +206,18 @@ export const PromptTemplateLibrary: React.FC = () => {
                         <div className="w-1.5 h-5 bg-primary rounded-full" />
                         <h4 className="text-sm font-bold text-foreground">
                             {editingId === '__new__'
-                                ? t('prompts.library.createNew')
-                                : t('prompts.library.editTemplate')}
+                                ? t('frontend.prompts.library.createNew')
+                                : t('frontend.prompts.library.editTemplate')}
                         </h4>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="typo-body font-bold text-muted-foreground/70 ml-1">
-                                {t('prompts.library.namePlaceholder')}
+                                {t('frontend.prompts.library.namePlaceholder')}
                             </label>
                             <Input
                                 type="text"
-                                placeholder={t('prompts.library.namePlaceholder')}
+                                placeholder={t('frontend.prompts.library.namePlaceholder')}
                                 value={draft.name}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     setDraft({ ...draft, name: e.target.value })
@@ -227,11 +227,11 @@ export const PromptTemplateLibrary: React.FC = () => {
                         </div>
                         <div className="space-y-2">
                             <label className="typo-body font-bold text-muted-foreground/70 ml-1">
-                                {t('prompts.library.categoryPlaceholder')}
+                                {t('frontend.prompts.library.categoryPlaceholder')}
                             </label>
                             <Input
                                 type="text"
-                                placeholder={t('prompts.library.categoryPlaceholder')}
+                                placeholder={t('frontend.prompts.library.categoryPlaceholder')}
                                 value={draft.category}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     setDraft({ ...draft, category: e.target.value })
@@ -242,11 +242,11 @@ export const PromptTemplateLibrary: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                         <label className="typo-body font-bold text-muted-foreground/70 ml-1">
-                            {t('prompts.library.descriptionPlaceholder')}
+                            {t('frontend.prompts.library.descriptionPlaceholder')}
                         </label>
                         <Input
                             type="text"
-                            placeholder={t('prompts.library.descriptionPlaceholder')}
+                            placeholder={t('frontend.prompts.library.descriptionPlaceholder')}
                             value={draft.description}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 setDraft({ ...draft, description: e.target.value })
@@ -256,10 +256,10 @@ export const PromptTemplateLibrary: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                         <label className="typo-body font-bold text-muted-foreground/70 ml-1">
-                            {t('prompts.library.templatePlaceholder')}
+                            {t('frontend.prompts.library.templatePlaceholder')}
                         </label>
                         <Textarea
-                            placeholder={t('prompts.library.templatePlaceholder')}
+                            placeholder={t('frontend.prompts.library.templatePlaceholder')}
                             value={draft.template}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                 setDraft({ ...draft, template: e.target.value })
@@ -318,7 +318,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                     )}
                                 </div>
                                 <div className="typo-caption text-muted-foreground font-medium line-clamp-2 leading-relaxed opacity-80">
-                                    {tp.description || t('prompts.library.noDescription')}
+                                    {tp.description || t('frontend.prompts.library.noDescription')}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0 self-center">
@@ -368,10 +368,10 @@ export const PromptTemplateLibrary: React.FC = () => {
                         <IconBook className="w-12 h-12 text-muted-foreground" />
                         <div>
                             <p className="text-sm font-bold text-muted-foreground">
-                                {t('prompts.library.empty')}
+                                {t('frontend.prompts.library.empty')}
                             </p>
                             <p className="text-sm font-medium mt-1">
-                                {t('prompts.library.emptyHint')}
+                                {t('frontend.prompts.library.emptyHint')}
                             </p>
                         </div>
                         <Button
@@ -379,7 +379,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                             onClick={startCreate}
                             className="rounded-full h-10 px-6 border-primary/30 text-primary hover:bg-primary/5 font-bold typo-body"
                         >
-                            {t('prompts.library.createFirstPrompt')}
+                            {t('frontend.prompts.library.createFirstPrompt')}
                         </Button>
                     </div>
                 )}

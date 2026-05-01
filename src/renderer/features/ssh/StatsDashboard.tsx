@@ -58,14 +58,14 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
         };
     }, [connectionId]);
 
-    if (!stats) { return <div className="flex items-center justify-center p-8 text-muted-foreground/50">{t('ssh.loadingStats')}</div>; }
+    if (!stats) { return <div className="flex items-center justify-center p-8 text-muted-foreground/50">{t('frontend.ssh.loadingStats')}</div>; }
 
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
             {/* CPU */}
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.cpuUsage')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('frontend.ssh.cpuUsage')}</CardTitle>
                     <IconCpu size={16} className="text-primary" />
                 </CardHeader>
                 <CardContent>
@@ -85,7 +85,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             {/* RAM */}
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.memoryUsage')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('frontend.ssh.memoryUsage')}</CardTitle>
                     <IconActivity size={16} className="text-primary/80" />
                 </CardHeader>
                 <CardContent>
@@ -106,13 +106,13 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             {/* Disk */}
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-success/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.diskUsage')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('frontend.ssh.diskUsage')}</CardTitle>
                     <IconDatabase size={16} className="text-success" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-bold text-foreground">{stats.disk}%</span>
-                        <span className="typo-caption text-muted-foreground/40 mb-1">{t('ssh.rootPartition')}</span>
+                        <span className="typo-caption text-muted-foreground/40 mb-1">{t('frontend.ssh.rootPartition')}</span>
                     </div>
                     <div className="mt-3 h-2 w-full bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
@@ -127,14 +127,14 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             {/* Uptime */}
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.uptime')}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('frontend.ssh.uptime')}</CardTitle>
                     <IconClock size={16} className="text-primary/70" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-lg font-bold text-foreground truncate" title={stats.uptime}>
-                        {stats.uptime !== '' ? stats.uptime : t('ssh.unknown')}
+                        {stats.uptime !== '' ? stats.uptime : t('frontend.ssh.unknown')}
                     </div>
-                    <p className="typo-caption text-muted-foreground/40 mt-1">{t('ssh.serverUptime')}</p>
+                    <p className="typo-caption text-muted-foreground/40 mt-1">{t('frontend.ssh.serverUptime')}</p>
                 </CardContent>
             </Card>
         </div>

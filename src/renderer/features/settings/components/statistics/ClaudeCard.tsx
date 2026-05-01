@@ -29,55 +29,59 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
     if (!claudeQuota?.accounts || claudeQuota.accounts.length === 0) { return null; }
 
     return (
-        <div className="col-span-1 space-y-3 rounded-2xl border border-border/20 bg-background p-4">
-            <div className="text-sm font-medium text-foreground">{t('statistics.claudeTitle')}</div>
-            <div className="space-y-3">
-                {claudeQuota.accounts.map((acc, idx: number) => {
-                    const status = acc.error ? 'error' : 'active';
-                    const statusText = acc.error ? t('common.error') : t('statistics.active');
+        <div className="space-y-4">
+            {claudeQuota.accounts.map((acc, idx: number) => {
+                const status = acc.error ? 'error' : 'active';
+                const statusText = acc.error ? t('common.error') : t('frontend.statistics.active');
 
-                    return (
-                        <div key={acc.accountId ?? idx} className={cn('space-y-3 rounded-xl border border-border/15 bg-muted/4 px-4 py-3', idx > 0 && 'mt-2')}>
-                            <div className="flex flex-wrap items-center gap-4">
-                                <div className="truncate text-sm font-medium text-foreground/90">
-                                    {acc.email ?? t('statistics.claudeAccount')}
-                                </div>
-                                {(acc.error || acc.isActive) && <StatusBadge status={status} text={statusText} />}
-                                {acc.error && <span className="typo-overline text-destructive truncate ml-2">{acc.error}</span>}
+                return (
+                    <div key={acc.accountId ?? idx} className="overflow-hidden rounded-2xl border border-border/15 bg-background shadow-sm">
+                        <div className="flex items-center justify-between border-b border-border/10 bg-muted/5 px-4 py-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <span className="truncate text-sm font-semibold text-foreground">
+                                    {acc.email ?? t('frontend.statistics.claudeAccount')}
+                                </span>
                             </div>
-
-                            {!acc.error && (
-                                <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
-                                    {acc.fiveHour && (
-                                        <div className="space-y-2">
-                                            <div className="typo-overline flex items-center justify-between font-medium">
-                                                <span className="text-muted-foreground truncate pr-2">{t('statistics.fiveHourStatus')}</span>
-                                                <span className="text-foreground/80 tabular-nums shrink-0">{100 - acc.fiveHour.utilization}%</span>
-                                            </div>
-                                            <HorizontalProgressBar percentage={100 - acc.fiveHour.utilization} color={getQuotaColor(100 - acc.fiveHour.utilization)} />
-                                            <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                                {t('statistics.resetsAt', { time: formatReset(acc.fiveHour.resetsAt, locale) })}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {acc.sevenDay && (
-                                        <div className="space-y-2">
-                                            <div className="typo-overline flex items-center justify-between font-medium">
-                                                <span className="text-muted-foreground truncate pr-2">{t('statistics.sevenDayStatus')}</span>
-                                                <span className="text-foreground/80 tabular-nums shrink-0">{100 - acc.sevenDay.utilization}%</span>
-                                            </div>
-                                            <HorizontalProgressBar percentage={100 - acc.sevenDay.utilization} color={getQuotaColor(100 - acc.sevenDay.utilization)} />
-                                            <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                                {t('statistics.resetsAt', { time: formatReset(acc.sevenDay.resetsAt, locale) })}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            <StatusBadge status={status} text={statusText} />
                         </div>
-                    );
-                })}
-            </div>
+
+                        {!acc.error && (
+                            <div className="divide-y divide-border/5">
+                                {[
+                                    acc.fiveHour && { id: '5h', name: t('frontend.statistics.fiveHourStatus'), ...acc.fiveHour },
+                                    acc.sevenDay && { id: '7d', name: t('frontend.statistics.sevenDayStatus'), ...acc.sevenDay }
+                                ].filter(Boolean).map((q: any) => {
+                                    const percentage = 100 - (q.utilization || 0);
+                                    return (
+                                        <div key={q.id} className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/5 transition-colors">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="truncate text-sm font-medium text-foreground/90">{q.name}</span>
+                                                    <span className="text-sm font-medium text-muted-foreground/60 tabular-nums">
+                                                        {t('frontend.statistics.resetsAt', { time: formatReset(q.resetsAt, locale) })}
+                                                    </span>
+                                                </div>
+                                                <span className={cn(
+                                                    "text-sm font-bold",
+                                                    percentage <= 10 ? "text-destructive" : "text-foreground/80"
+                                                )}>
+                                                    {Math.round(percentage)}%
+                                                </span>
+                                            </div>
+                                            <HorizontalProgressBar percentage={percentage} color={getQuotaColor(percentage)} />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        {acc.error && (
+                            <div className="px-4 py-3 bg-destructive/5">
+                                <span className="text-sm text-destructive font-medium">{acc.error}</span>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 };

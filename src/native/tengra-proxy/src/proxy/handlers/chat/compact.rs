@@ -744,6 +744,7 @@ mod tests {
             temperature: None,
             max_tokens: Some(4096),
             max_completion_tokens: None,
+            n: None,
             top_p: None,
             stop: None,
             reasoning_effort: None,

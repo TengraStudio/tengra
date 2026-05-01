@@ -33,14 +33,14 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
             <div className="p-4 border-b border-border/40 flex items-center justify-between bg-muted/20">
                 <div className="flex items-center gap-2 font-bold">
                     <IconHistory className="w-4 h-4 text-primary" />
-                    {t('memory.historyTitle')}
+                    {t('frontend.memory.historyTitle')}
                 </div>
                 <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">×</Button>
             </div>
 
             <div className="flex-1 overflow-auto p-4 space-y-4">
                 {history.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">{t('memory.noHistory')}</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">{t('frontend.memory.noHistory')}</p>
                 ) : (
                     history.map((version, index) => (
                         <div key={index} className="space-y-2 group">
@@ -56,7 +56,7 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
                                         className="h-6 px-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         <IconRotate className="w-3 h-3 mr-1" />
-                                        {t('memory.rollback')}
+                                        {t('frontend.memory.rollback')}
                                     </Button>
                                 )}
                             </div>

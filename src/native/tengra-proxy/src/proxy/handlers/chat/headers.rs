@@ -69,7 +69,6 @@ pub fn apply_headers(
                 .header("Editor-Version", "gh/2.61.0")
                 .header("Editor-Plugin-Version", "gh-copilot/1.0.0")
                 .header("Openai-Intent", "conversation-panel")
-                .header("X-GitHub-Api-Version", "2026-03-10")
                 .header("X-Request-Id", uuid::Uuid::new_v4().to_string())
                 .header("Openai-Organization", "github-copilot")
                 .header(
@@ -84,10 +83,10 @@ pub fn apply_headers(
         "codex" => {
             builder = builder
                 .header("Authorization", format!("Bearer {}", auth_token))
-                .header("Version", "0.21.0")
+                .header("Version", "0.125.0")
                 .header("Openai-Beta", "responses=experimental")
-                .header("User-Agent", "codex_cli_rs/1.0.1 (Windows 10; x64)")
-                .header("Originator", "codex_cli_rs")
+                .header("User-Agent", "codex-cli/0.125.0 (Windows 10; x64)")
+                .header("Originator", "codex-cli")
                 .header("Accept", "*/*");
 
             // Extract Chatgpt-Account-Id from metadata

@@ -27,9 +27,9 @@ interface ToolExecutionResponse {
 
 const TOOL_EXECUTION_TIMEOUT_DEFAULT_MS = 45000;
 const TOOL_EXECUTION_TIMEOUT_BY_NAME = new Map<string, number>([
-    ['execute_command', 70000],
-    ['generate_image', 90000],
-    ['terminal_session_wait', 130000],
+    ['execute_command', 190000],
+    ['generate_image', 120000],
+    ['terminal_session_wait', 190000],
 ]);
 
 function resolveToolExecutionTimeoutMs(
@@ -186,7 +186,7 @@ export async function executeToolCall(
     const executionStartAt = Date.now();
     const toolArgs = typeof toolCall.function.arguments === 'string'
         ? toolCall.function.arguments.length > 100000
-            ? (() => { throw new Error(t('chat.toolArgumentsTooLarge')); })()
+            ? (() => { throw new Error(t('frontend.chat.toolArgumentsTooLarge')); })()
             : safeJsonParse(toolCall.function.arguments, {})
         : toolCall.function.arguments;
 
@@ -216,7 +216,7 @@ export async function executeToolCall(
         return {
             toolMessage: buildToolMessage(toolCall, {
                 success: false,
-                error: validationFailure.error ?? t('chat.error'),
+                error: validationFailure.error ?? t('frontend.chat.error'),
                 errorType: validationFailure.errorType ?? 'invalid_args',
                 tool: toolCall.function.name,
                 details: validationFailure.result,
@@ -264,7 +264,7 @@ export async function executeToolCall(
         )
         : {
             success: false,
-            error: toolExecResult.error ?? t('chat.error'),
+            error: toolExecResult.error ?? t('frontend.chat.error'),
             errorType: toolExecResult.errorType ?? 'unknown',
             tool: toolCall.function.name,
             details: toolExecResult.result ?? toolExecResult.data,

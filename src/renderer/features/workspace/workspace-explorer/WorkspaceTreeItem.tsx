@@ -321,7 +321,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                     ))}
                     {children.length === 0 && loaded && (
                         <div className="text-sm text-muted-foreground/40 pl-8 py-0.5">
-                            {t('workspace.emptyFolder')}
+                            {t('frontend.workspace.emptyFolder')}
                         </div>
                     )}
                 </div>

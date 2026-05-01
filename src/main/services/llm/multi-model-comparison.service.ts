@@ -30,11 +30,20 @@ export interface ComparisonResponse {
     results: Record<string, { success: boolean; data?: OpenAIResponse; error?: string }>;
 }
 
+export interface ComparisonHistoryEntry {
+    chatId: string;
+    comparedAt: string;
+    models: Array<{ provider: string; model: string }>;
+    successCount: number;
+    failureCount: number;
+}
+
 const COMPARISON_MEMORY_TIMEOUT_MS = 450;
 const COMPARISON_MEMORY_MATCH_LIMIT = 3;
 
 export class MultiModelComparisonService extends BaseService {
     private readonly memoryContext: MemoryContextService;
+    private readonly history: ComparisonHistoryEntry[] = [];
 
     constructor(
         private llmService: LLMService,
@@ -86,6 +95,7 @@ export class MultiModelComparisonService extends BaseService {
             // Let's modify the execute wrapper to notify us.
 
             await this.waitForComparison(promises, results, request.models.length);
+            this.recordHistory(request, results);
 
             return { success: true, result: { results } };
         } catch (error) {
@@ -117,6 +127,15 @@ export class MultiModelComparisonService extends BaseService {
 
     override async cleanup(): Promise<void> {
         // Stateless service; nothing to dispose currently.
+    }
+
+    async getHistory(): Promise<ComparisonHistoryEntry[]> {
+        return [...this.history];
+    }
+
+    async clearHistory(): Promise<{ success: boolean }> {
+        this.history.length = 0;
+        return { success: true };
     }
 
     private async getResolutionMemoryContext(messages: ChatMessage[]): Promise<string | undefined> {
@@ -190,6 +209,24 @@ export class MultiModelComparisonService extends BaseService {
                 return '[image]';
             })
             .join('\n');
+    }
+
+    private recordHistory(
+        request: ComparisonRequest,
+        results: Record<string, { success: boolean; data?: OpenAIResponse; error?: string }>
+    ): void {
+        const entries = Object.values(results);
+        this.history.unshift({
+            chatId: request.chatId,
+            comparedAt: new Date().toISOString(),
+            models: request.models,
+            successCount: entries.filter(entry => entry.success).length,
+            failureCount: entries.filter(entry => !entry.success).length
+        });
+
+        if (this.history.length > 50) {
+            this.history.length = 50;
+        }
     }
 
 }

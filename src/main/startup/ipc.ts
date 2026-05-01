@@ -10,6 +10,7 @@
 
 import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerAgentIpc } from '@main/ipc/agent';
+import { registerAuditIpc } from '@main/ipc/audit';
 import { registerAuthIpc } from '@main/ipc/auth';
 import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerClipboardIpc } from '@main/ipc/clipboard';
@@ -46,12 +47,14 @@ import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
 import { registerRuntimeIpc } from '@main/ipc/runtime';
 import { registerSdCppIpc } from '@main/ipc/sd-cpp';
+import { registerImageStudioIpc } from '@main/ipc/image-studio';
 import { registerSecurityIpc } from '@main/ipc/security';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { registerSessionIpc } from '@main/ipc/session';
 import { registerSessionConversationIpc } from '@main/ipc/session-conversation';
+import { registerSessionCouncilIpc } from '@main/ipc/session-council';
 import { registerSessionWorkspaceIpc } from '@main/ipc/session-workspace';
-import { registerSettingsIpc } from '@main/ipc/settings';
+import { registerSettingsIpc, syncStartupBehavior } from '@main/ipc/settings';
 import { registerSharedPromptsIpc } from '@main/ipc/shared-prompts';
 import { registerSshIpc } from '@main/ipc/ssh';
 import { registerTerminalIpc } from '@main/ipc/terminal';
@@ -96,6 +99,8 @@ export function registerMinimalIpcHandlers(
         updateOpenAIConnection: () => {},
         updateOllamaConnection: async () => {},
     });
+    // Sync startup behavior early if enabled
+    syncStartupBehavior(settingsService.getSettings());
     registerLoggingIpc();
     registerDialogIpc(getMainWindow);
 }
@@ -115,6 +120,8 @@ export function registerIpcHandlers(
     const dockerService = container.resolve<DockerService>('dockerService');
     // Registers
     registerWindowIpc(getMainWindow, allowedFileRoots, services.settingsService);
+    // Sync startup behavior on startup
+    syncStartupBehavior(services.settingsService.getSettings());
     registerClipboardIpc(getMainWindow);
     registerLazyServicesIpc();
     registerContractIpc();
@@ -137,6 +144,13 @@ export function registerIpcHandlers(
         getMainWindow,
         services.eventBusService
     );
+
+    registerImageStudioIpc({
+        llmService: services.llmService,
+        localImageService: services.localImageService,
+        modelRegistryService: services.modelRegistryService,
+        imagePersistenceService: container.resolve('imagePersistenceService'),
+    });
 
     registerAuthIpc({
         proxyService: services.proxyService,
@@ -233,7 +247,14 @@ export function registerIpcHandlers(
         },
     });
 
-    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.fileChangeTracker);
+    registerFilesIpc(
+        getMainWindow,
+        services.fileSystemService,
+        allowedFileRoots,
+        services.auditLogService,
+        services.fileChangeTracker
+    );
+    registerAuditIpc(getMainWindow, services.auditLogService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerCollaborationIpc(getMainWindow, services.modelCollaborationService);
@@ -244,6 +265,7 @@ export function registerIpcHandlers(
         services.eventBusService
     );
 
+    registerSessionCouncilIpc(getMainWindow, services.databaseService);
     registerSessionWorkspaceIpc(getMainWindow, services.databaseService);
     registerWorkspaceAgentSessionIpc(
         getMainWindow,

@@ -62,7 +62,7 @@ export function SearchResults({ results, workspaceRoot, searchQuery, onSelect, t
     if (results.length === 0) {
         return (
             <div className="text-center text-muted-foreground mt-10">
-                {t('workspaceDashboard.noResults')}
+                {t('frontend.workspaceDashboard.noResults')}
             </div>
         );
     }
@@ -105,15 +105,15 @@ export function DangerZone({ onDelete, t }: DangerZoneProps) {
         <div className="mt-12 pt-8 border-t border-destructive/20">
             <h3 className="text-lg font-bold text-destructive mb-4 flex items-center gap-2">
                 <IconTrash className="w-5 h-5" />
-                {t('workspace.dangerZone')}
+                {t('frontend.workspace.dangerZone')}
             </h3>
             <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-6 flex items-center justify-between">
                 <div>
                     <h4 className="text-foreground font-medium mb-1">
-                        {t('workspaces.deleteWorkspace')}
+                        {t('frontend.workspaces.deleteWorkspace')}
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                        {t('workspaces.deleteWarning').trim()}
+                        {t('frontend.workspaces.deleteWarning').trim()}
                     </p>
                 </div>
                 <button

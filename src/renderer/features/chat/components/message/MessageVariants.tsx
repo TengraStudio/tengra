@@ -79,7 +79,7 @@ const MessageVariantCard = memo(
                         />
                         <div className="flex flex-col">
                             <span className="typo-caption font-bold text-foreground/90">
-                                {variant.model ?? t('messageBubble.unknownModel')}
+                                {variant.model ?? t('frontend.messageBubble.unknownModel')}
                             </span>
                             <span className="text-sm text-muted-foreground">
                                 {variant.provider}
@@ -89,7 +89,7 @@ const MessageVariantCard = memo(
                     <div className="flex items-center gap-2">
                         {variantInterrupted && (
                             <span className="rounded-full bg-destructive/10 px-2 py-1 text-sm font-semibold text-destructive">
-                                {t('tools.failed')}
+                                {t('frontend.tools.failed')}
                             </span>
                         )}
                         {isSelected && (
@@ -244,7 +244,7 @@ export const VariantsView = memo(
                         <IconSparkles className="w-4 h-4 text-primary" />
                     </div>
                     <span className="typo-caption font-bold text-muted-foreground">
-                        {t('chat.modelComparison')}
+                        {t('frontend.chat.modelComparison')}
                     </span>
                 </div>
                 <MessageVariantsGrid
@@ -297,7 +297,7 @@ export const MessageVariants = memo(
                         {(
                             v.label ??
                             v.model ??
-                            t('messageBubble.responseShort', { index: idx + 1 })
+                            t('frontend.messageBubble.responseShort', { index: idx + 1 })
                         ).slice(0, 20)}{' '}
                         {idx === variantIndex && <IconCheck className="w-2.5 h-2.5" />}
                     </button>

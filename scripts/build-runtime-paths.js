@@ -43,6 +43,10 @@ function getManagedRuntimeCacheRoot() {
     return ensureDirectory(path.join(getAppDataRoot(), 'Tengra', RUNTIME_FOLDER_NAME, RUNTIME_CACHE_FOLDER));
 }
 
+function getNativeTargetReleaseDir() {
+    return path.resolve(__dirname, '..', 'src', 'native', 'target', 'release');
+}
+
 function getManagedRuntimeBinDir() {
     return ensureDirectory(path.join(getManagedRuntimeRoot(), 'bin'));
 }
@@ -70,4 +74,5 @@ module.exports = {
     getManagedRuntimeRoot,
     getManagedRuntimeTempDir,
     getBuildBinDir,
+    getNativeTargetReleaseDir
 };

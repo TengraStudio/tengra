@@ -21,14 +21,10 @@ const COPILOT_REFRESH_THRESHOLD_MS: i64 = 2 * 60 * 1000;
 const REFRESH_MAX_RETRIES: usize = 3;
 
 pub async fn background_refresh_loop() {
-    eprintln!("[LOG] Token Background refresh loop started.");
-
     let client = reqwest::Client::new();
 
     loop {
-        if let Err(error) = refresh_due_tokens_once(&client).await {
-            eprintln!("[ERROR] Token loop: {}", error);
-        }
+        if let Err(_error) = refresh_due_tokens_once(&client).await {}
         sleep(Duration::from_secs(REFRESH_SCAN_INTERVAL_SECS)).await;
     }
 }
@@ -60,12 +56,8 @@ async fn refresh_due_tokens_once(client: &reqwest::Client) -> Result<(), String>
         }
     }
 
-    if !tokens_to_refresh.is_empty() {
-        println!("[DEBUG] Tokens to refresh: {}", tokens_to_refresh.len());
-    }
-
     for (account_id, provider, token) in tokens_to_refresh {
-        let _ = refresh_token_with_retries(client, &account_id, &provider, token).await?;
+        let _ = refresh_token_with_retries(client, &account_id, &provider, token).await;
     }
 
     Ok(())
@@ -95,7 +87,6 @@ async fn refresh_token_with_retries(
     provider: &str,
     token: AuthToken,
 ) -> Result<Option<AuthToken>, String> {
-    println!("[DEBUG] Refreshing token for {} ({})", account_id, provider);
     let (client_id, client_secret_opt) = load_provider_client_config(provider).await;
 
     for attempt in 1..=REFRESH_MAX_RETRIES {
@@ -128,10 +119,6 @@ async fn persist_refresh_response(
     db::update_token_data(account_id, provider, json_val)
         .await
         .map_err(|error| format!("Refresh DB save failed: {}", error))?;
-    println!(
-        "[DEBUG] Refresh successful for {} ({})",
-        account_id, provider
-    );
     Ok(Some(new_token))
 }
 
@@ -141,10 +128,6 @@ async fn handle_refresh_failure(
     attempt: usize,
     response: &refresh::RefreshResponse,
 ) -> Result<(), String> {
-    eprintln!(
-        "[WARN] Failed to refresh {} ({}, attempt {}/{}): {:?}",
-        account_id, provider, attempt, REFRESH_MAX_RETRIES, response.error
-    );
     if response.invalidate_account {
         db::clear_account_tokens(account_id, provider)
             .await
@@ -154,10 +137,6 @@ async fn handle_refresh_failure(
                     account_id, provider, error
                 )
             })?;
-        eprintln!(
-            "[WARN] Invalidated stored tokens for {} ({}) after refresh auth failure",
-            account_id, provider
-        );
         return Err("Stored OAuth token was invalidated".to_string());
     }
     if attempt < REFRESH_MAX_RETRIES {
@@ -216,12 +195,9 @@ fn build_refresh_candidate_with_master_key(
             email: None,
         });
 
-    auth_token.access_token =
-        decrypt_refresh_token_field(auth_token.access_token, master_key);
-    auth_token.refresh_token =
-        decrypt_refresh_token_field(auth_token.refresh_token, master_key);
-    auth_token.session_token =
-        decrypt_refresh_token_field(auth_token.session_token, master_key);
+    auth_token.access_token = decrypt_refresh_token_field(auth_token.access_token, master_key);
+    auth_token.refresh_token = decrypt_refresh_token_field(auth_token.refresh_token, master_key);
+    auth_token.session_token = decrypt_refresh_token_field(auth_token.session_token, master_key);
 
     if auth_token.expires_at.is_none() {
         auth_token.expires_at = extract_expiry(account);
@@ -283,20 +259,13 @@ fn decrypt_refresh_token_field(token: Option<String>, master_key: Option<&[u8]>)
     let key = match master_key {
         Some(key) => key,
         None => {
-            eprintln!("[WARN] Token loop: master key unavailable for encrypted refresh candidate");
             return None;
         }
     };
 
     match crate::security::decrypt_token(&value, key) {
         Ok(decrypted) => Some(decrypted),
-        Err(error) => {
-            eprintln!(
-                "[WARN] Token loop: failed to decrypt refresh candidate token: {}",
-                error
-            );
-            None
-        }
+        Err(_error) => None,
     }
 }
 
@@ -335,18 +304,15 @@ fn extract_expiry(account: &serde_json::Value) -> Option<i64> {
 
     let metadata = extract_token_payload(account)?;
 
-    if let Some(explicit) = metadata.get("expires_at").and_then(|value| value.as_i64()) {
-        return Some(explicit);
+    if let Some(expires_at) = metadata.get("expires_at").and_then(|value| value.as_i64()) {
+        return Some(expires_at);
     }
 
-    if let Some(expire_iso) = metadata.get("expire").and_then(|value| value.as_str()) {
-        if let Ok(parsed) = chrono::DateTime::parse_from_rfc3339(expire_iso) {
-            return Some(parsed.timestamp_millis());
+    // Check nested token object
+    if let Some(token) = metadata.get("token") {
+        if let Some(expires_at) = token.get("expires_at").and_then(|v| v.as_i64()) {
+            return Some(expires_at);
         }
-    }
-
-    if let Some(expires_in) = metadata.get("expires_in").and_then(|value| value.as_i64()) {
-        return Some(chrono::Utc::now().timestamp_millis() + (expires_in * 1000));
     }
 
     None

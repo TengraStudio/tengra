@@ -64,7 +64,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
         <div className={C_PROMPTTEMPLATELIBRARY_1}>
             <div className="flex items-center gap-2 p-3 border-b border-border">
                 <IconNotebook className="w-4 h-4 text-primary" />
-                <span className="text-sm font-bold text-foreground">{t('prompts.library.title')}</span>
+                <span className="text-sm font-bold text-foreground">{t('frontend.prompts.library.title')}</span>
                 <div className="flex-1" />
                 <button onClick={onClose} className="p-1 rounded hover:bg-muted/30">
                     <IconX className="w-4 h-4 text-muted-foreground" />
@@ -76,7 +76,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                     type="text"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder={t('prompts.library.searchPlaceholder')}
+                    placeholder={t('frontend.prompts.library.searchPlaceholder')}
                     className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
             </div>
@@ -86,7 +86,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                         onClick={() => setActiveCategory('')}
                         className={cn('px-2 py-0.5 rounded typo-caption whitespace-nowrap', !activeCategory ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/20')}
                     >
-                        {t('prompts.library.all')}
+                        {t('frontend.prompts.library.all')}
                     </button>
                     {categories.map(c => (
                         <button
@@ -118,7 +118,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                     </button>
                 ))}
                 {filtered.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-6">{t('prompts.library.empty')}</p>
+                    <p className="text-sm text-muted-foreground text-center py-6">{t('frontend.prompts.library.empty')}</p>
                 )}
             </div>
         </div>

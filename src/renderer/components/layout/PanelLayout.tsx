@@ -75,7 +75,7 @@ const PanelLayoutContext = createContext<PanelLayoutContextType | null>(null);
 export const usePanelLayout = () => {
     const { t } = useTranslation();
     const context = useContext(PanelLayoutContext);
-    if (!context) { throw new Error(t('errors.context.usePanelLayoutProvider')); }
+    if (!context) { throw new Error(t('frontend.errors.context.usePanelLayoutProvider')); }
     return context;
 };
 
@@ -143,7 +143,7 @@ const PanelHeader: React.FC<{
                     <button
                         onClick={onToggleCollapse}
                         className="rounded p-1 text-muted-foreground hover:bg-muted"
-                        title={group.collapsed ? t('panelLayout.expand') : t('panelLayout.collapse')}
+                        title={group.collapsed ? t('frontend.panelLayout.expand') : t('frontend.panelLayout.collapse')}
                     >
                         {group.collapsed ? <IconChevronRight className="w-4 h-4" /> : <IconChevronDown className="w-4 h-4" />}
                     </button>
@@ -152,7 +152,7 @@ const PanelHeader: React.FC<{
                     <button
                         onClick={onMaximize}
                         className="rounded p-1 text-muted-foreground hover:bg-muted"
-                        title={t('panelLayout.maximize')}
+                        title={t('frontend.panelLayout.maximize')}
                     >
                         <IconMaximize className="w-3.5 h-3.5" />
                     </button>

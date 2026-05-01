@@ -71,8 +71,8 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
                 'w-full flex items-center bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 font-bold h-10 group overflow-hidden relative',
                 isCollapsed ? 'p-0 rounded-xl' : 'rounded-xl px-4'
             )}
-            title={t('sidebar.newChat')}
-            aria-label={t('sidebar.newChat')}
+            title={t('frontend.sidebar.newChat')}
+            aria-label={t('frontend.sidebar.newChat')}
         >
             <IconPlus
                 className={cn(
@@ -82,7 +82,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
             />
             {!isCollapsed && (
                 <span className="animate-in fade-in slide-in-from-left-2">
-                    {t('sidebar.newChat')}
+                    {t('frontend.sidebar.newChat')}
                 </span>
             )}
             {!isCollapsed && (
@@ -105,7 +105,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSea
     return (
         <div className="p-4 border-t border-border/20 bg-muted/5">
             <div className="flex items-center justify-between text-sm text-muted-foreground/40 font-bold px-1">
-                <span>{t('app.versionShort', { version: '1.2.0' })}</span>
+                <span>{t('frontend.app.versionShort', { version: '1.2.0' })}</span>
                 <div className="flex items-center gap-2">
                     <IconSearch
                         className="w-3 h-3 hover:text-primary cursor-pointer transition-colors"
@@ -122,7 +122,7 @@ const SidebarAppName = () => {
     const { t } = useTranslation();
     return (
         <span className="text-sm font-bold text-foreground animate-in fade-in slide-in-from-left-2">
-            {t('app.name')}
+            {t('frontend.app.name')}
         </span>
     );
 };
@@ -141,8 +141,8 @@ const SidebarToggleButton = ({
             size="icon"
             onClick={toggleSidebar}
             className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-            aria-label={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+            title={isCollapsed ? t('frontend.sidebar.expand') : t('frontend.sidebar.collapse')}
+            aria-label={isCollapsed ? t('frontend.sidebar.expand') : t('frontend.sidebar.collapse')}
         >
             {isCollapsed ? (
                 <IconLayoutSidebar className="w-4 h-4" />

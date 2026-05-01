@@ -82,11 +82,11 @@ export function useModelComparison(): UseModelComparisonReturn {
 
     const startComparison = useCallback(async () => {
         if (selectedModels.length < 2) {
-            setError(t('modelComparison.noModels'));
+            setError(t('frontend.modelComparison.noModels'));
             return;
         }
         if (!prompt.trim()) {
-            setError(t('modelComparison.enterPrompt'));
+            setError(t('frontend.modelComparison.enterPrompt'));
             return;
         }
 
@@ -119,7 +119,7 @@ export function useModelComparison(): UseModelComparisonReturn {
             setResults(mapped);
         } catch (err) {
             if (!abortRef.current) {
-                setError(err instanceof Error ? err.message : t('modelComparison.compareFailed'));
+                setError(err instanceof Error ? err.message : t('frontend.modelComparison.compareFailed'));
             }
         } finally {
             setIsComparing(false);

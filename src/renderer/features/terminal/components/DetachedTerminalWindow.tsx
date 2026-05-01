@@ -33,7 +33,7 @@ export function DetachedTerminalWindow() {
     const { theme } = useTheme();
     const params = useMemo(() => new URLSearchParams(window.location.search), []);
     const sessionId = params.get('sessionId')?.trim() ?? '';
-    const title = params.get('title')?.trim() || t('terminal.title');
+    const title = params.get('title')?.trim() || t('frontend.terminal.title');
     const shell = params.get('shell')?.trim() ?? '';
     const cwd = params.get('cwd')?.trim() ?? '';
 
@@ -168,7 +168,7 @@ export function DetachedTerminalWindow() {
     if (!sessionId) {
         return (
             <div className="h-screen w-screen bg-background text-foreground flex items-center justify-center">
-                <p className="text-sm text-destructive">{t('terminal.sessionFailed')}</p>
+                <p className="text-sm text-destructive">{t('frontend.terminal.sessionFailed')}</p>
             </div>
         );
     }
@@ -186,14 +186,14 @@ export function DetachedTerminalWindow() {
                     <button
                         onClick={() => { window.electron.minimize(); }}
                         className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label={t('titleBar.minimize')}
+                        aria-label={t('frontend.titleBar.minimize')}
                     >
                         <IconMinimize className="w-3.5 h-3.5" />
                     </button>
                     <button
                         onClick={() => { window.electron.close(); }}
                         className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                        aria-label={t('titleBar.close')}
+                        aria-label={t('frontend.titleBar.close')}
                     >
                         <IconX className="w-3.5 h-3.5" />
                     </button>
@@ -203,7 +203,7 @@ export function DetachedTerminalWindow() {
                 <div ref={containerRef} className="h-full w-full" />
                 {isExited && (
                     <div className="absolute inset-x-0 bottom-0 bg-background/80 border-t border-border px-3 py-2 typo-caption text-muted-foreground">
-                        {t('terminal.detachedExited')}
+                        {t('frontend.terminal.detachedExited')}
                     </div>
                 )}
             </div>

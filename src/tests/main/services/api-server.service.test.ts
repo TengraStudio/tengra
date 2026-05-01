@@ -105,7 +105,7 @@ describe('ApiServerService – AUD-2026-02-27-02 hardening', () => {
             });
             expect(res.status).toBe(400);
             expect(res.body.error).toBe('Bad Request');
-            expect((res.body.message as string)).toContain('query string');
+            expect((res.body.message as string)).toContain('auto.tokenViaQueryStringIsNotAllowedUseAuthor');
         });
 
         it('should reject ?api_token= with 400', async () => {
@@ -144,7 +144,7 @@ describe('ApiServerService – AUD-2026-02-27-02 hardening', () => {
             const res = await request(port, '/api/auth/token');
             expect(res.status).toBe(401);
             expect(res.body.error).toBe('Unauthorized');
-            expect((res.body.message as string)).toContain('challenge');
+            expect((res.body.message as string)).toContain('auto.missingOrInvalidTokenChallenge');
         });
 
         it('should reject /api/auth/token with invalid challenge (401)', async () => {
@@ -200,7 +200,7 @@ describe('ApiServerService – AUD-2026-02-27-02 hardening', () => {
             });
             expect(res.status).toBe(403);
             expect(res.body.error).toBe('Forbidden');
-            expect((res.body.message as string)).toContain('Local access required');
+            expect((res.body.message as string)).toContain('auto.localAccessRequired');
         });
 
         it('should reject /api/auth/token when IconX-Forwarded-For is set', async () => {

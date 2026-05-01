@@ -94,7 +94,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                             className="flex items-center gap-2 hover:bg-success/10 hover:text-success rounded-xl font-bold"
                         >
                             <IconArchive className="w-4 h-4" />
-                            {t('workspaces.bulkArchive')}
+                            {t('frontend.workspaces.bulkArchive')}
                         </Button>
                         <Button
                             variant="ghost"
@@ -103,7 +103,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                             className="flex items-center gap-2 hover:bg-destructive/10 hover:text-destructive rounded-xl font-bold"
                         >
                             <IconTrash className="w-4 h-4" />
-                            {t('workspaces.bulkDelete')}
+                            {t('frontend.workspaces.bulkDelete')}
                         </Button>
                     </div>
                 )}
@@ -157,16 +157,16 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-border/40 shadow-2xl">
                             <SelectItem value="recent" className="text-sm font-medium focus:bg-primary/10">
-                                {t('workspace.listPresetRecent')}
+                                {t('frontend.workspace.listPresetRecent')}
                             </SelectItem>
                             <SelectItem value="oldest" className="text-sm font-medium focus:bg-primary/10">
-                                {t('workspace.listPresetOldest')}
+                                {t('frontend.workspace.listPresetOldest')}
                             </SelectItem>
                             <SelectItem value="name-az" className="text-sm font-medium focus:bg-primary/10">
-                                {t('workspace.listPresetNameAz')}
+                                {t('frontend.workspace.listPresetNameAz')}
                             </SelectItem>
                             <SelectItem value="name-za" className="text-sm font-medium focus:bg-primary/10">
-                                {t('workspace.listPresetNameZa')}
+                                {t('frontend.workspace.listPresetNameZa')}
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -176,7 +176,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                         size="icon"
                         onClick={onExportList}
                         className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background rounded-lg transition-all"
-                        title={t('aria.exportList')}
+                        title={t('frontend.aria.exportList')}
                     >
                         <IconDownload className="w-4 h-4" />
                     </Button>
@@ -193,7 +193,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-background'
                         )}
-                        title={t('aria.gridView')}
+                        title={t('frontend.aria.gridView')}
                     >
                         <IconLayoutGrid className="w-4 h-4" />
                     </Button>
@@ -207,7 +207,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-background'
                         )}
-                        title={t('aria.listView')}
+                        title={t('frontend.aria.listView')}
                     >
                         <IconList className="w-4 h-4" />
                     </Button>

@@ -22,6 +22,7 @@ interface EditorTabContextMenuProps {
     onCloseAll: () => void;
     onCloseToRight: () => void;
     onCloseOthers: () => void;
+    onRevertTab: () => void;
     onCopyPath: () => void;
     onCopyRelativePath: () => void;
     onRevealInExplorer: () => void;
@@ -43,6 +44,7 @@ export const EditorTabContextMenu: React.FC<EditorTabContextMenuProps> = ({
     onCloseAll,
     onCloseToRight,
     onCloseOthers,
+    onRevertTab,
     onCopyPath,
     onCopyRelativePath,
     onRevealInExplorer,
@@ -57,29 +59,33 @@ export const EditorTabContextMenu: React.FC<EditorTabContextMenuProps> = ({
             onContextMenu={event => event.preventDefault()}
         >
             <button onClick={onPinToggle} className={MENU_ITEM_CLASS}>
-                {isPinned ? t('workspace.unpinTab') : t('workspace.pinTab')}
+                {isPinned ? t('frontend.workspace.unpinTab') : t('frontend.workspace.pinTab')}
             </button>
             <button onClick={onCloseTab} className={MENU_ITEM_CLASS}>
-                {t('workspace.closeTab')}
+                {t('frontend.workspace.closeTab')}
             </button>
             <button onClick={onCloseAll} disabled={!canCloseAll} className={MENU_ITEM_CLASS}>
-                {t('workspace.closeAllTabs')}
+                {t('frontend.workspace.closeAllTabs')}
             </button>
             <button onClick={onCloseToRight} disabled={!canCloseToRight} className={MENU_ITEM_CLASS}>
-                {t('workspace.closeTabsToRight')}
+                {t('frontend.workspace.closeTabsToRight')}
             </button>
             <button onClick={onCloseOthers} disabled={!canCloseOthers} className={MENU_ITEM_CLASS}>
-                {t('workspace.closeOtherTabs')}
+                {t('frontend.workspace.closeOtherTabs')}
+            </button>
+            <div className="h-px bg-border/50 my-1 mx-2" />
+            <button onClick={onRevertTab} className={MENU_ITEM_CLASS}>
+                {t('frontend.workspace.revertTab')}
             </button>
             <div className="h-px bg-border/50 my-1 mx-2" />
             <button onClick={onCopyPath} className={MENU_ITEM_CLASS}>
-                {t('workspace.copyPath')}
+                {t('frontend.workspace.copyPath')}
             </button>
             <button onClick={onCopyRelativePath} className={MENU_ITEM_CLASS}>
-                {t('workspace.copyRelativePath')}
+                {t('frontend.workspace.copyRelativePath')}
             </button>
             <button onClick={onRevealInExplorer} className={MENU_ITEM_CLASS}>
-                {t('workspace.revealInExplorer')}
+                {t('frontend.workspace.revealInExplorer')}
             </button>
             <div className="h-px bg-border/50 my-1 mx-2" />
             <button onClick={onClose} className={MENU_ITEM_CLASS}>

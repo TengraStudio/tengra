@@ -35,19 +35,19 @@ const CHAT_INPUT_SCHEMA = z.string().max(CHAT_INPUT_MAX_LENGTH);
 const CHAT_INPUT_ERROR = {
     INPUT_VALIDATION: {
         code: 'CHAT_INPUT_VALIDATION_ERROR',
-        messageKey: 'errors.unexpected'
+        messageKey: 'frontend.errors.unexpected'
     },
     SEND_BLOCKED: {
         code: 'CHAT_SEND_BLOCKED',
-        messageKey: 'errors.unexpected'
+        messageKey: 'frontend.errors.unexpected'
     },
     SEND_FAILED: {
         code: 'CHAT_SEND_FAILED',
-        messageKey: 'errors.unexpected'
+        messageKey: 'frontend.errors.unexpected'
     },
     ENHANCE_FAILED: {
         code: 'CHAT_ENHANCE_FAILED',
-        messageKey: 'errors.unexpected'
+        messageKey: 'frontend.errors.unexpected'
     }
 } as const;
 
@@ -226,7 +226,7 @@ export function useChatInputController() {
                 {
                     id: '1',
                     role: 'system',
-                    content: t('input.enhancePromptSystem'),
+                    content: t('frontend.input.enhancePromptSystem'),
                     timestamp: new Date()
                 },
                 { id: '2', role: 'user', content: input, timestamp: new Date() }

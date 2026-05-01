@@ -28,15 +28,15 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
     t
 }) => {
     const tabs = [
-        { id: 'overview', icon: IconLayout, title: t('workspaceDashboard.overview') },
-        { id: 'tasks', icon: IconListCheck, title: t('workspaceDashboard.todoList') },
-        { id: 'search', icon: IconSearch, title: t('workspaceDashboard.search') },
-        { id: 'git', icon: IconGitBranch, title: t('workspaceDashboard.git') },
-        { id: 'settings', icon: IconSettings, title: t('workspaceDashboard.settings') },
+        { id: 'overview', icon: IconLayout, title: t('frontend.workspaceDashboard.overview') },
+        { id: 'tasks', icon: IconListCheck, title: t('frontend.workspaceDashboard.todoList') },
+        { id: 'search', icon: IconSearch, title: t('frontend.workspaceDashboard.search') },
+        { id: 'git', icon: IconGitBranch, title: t('frontend.workspaceDashboard.git') },
+        { id: 'settings', icon: IconSettings, title: t('frontend.workspaceDashboard.settings') },
     ] as const;
 
     return (
-        <div className="flex items-center bg-muted/40 rounded-lg p-0.5 border border-border/30 shadow-sm gap-0.5">
+        <div className="flex items-center bg-muted/40 rounded-xl p-1 border border-border/30 shadow-sm gap-1">
             {tabs.map((tab, idx) => {
                 const Icon = tab.icon;
                 const isActive = dashboardTab === tab.id;
@@ -47,21 +47,25 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
                             <button
                                 onClick={handleRunWorkspace}
                                 data-testid="workspace-run-button"
-                                className="p-1.5 rounded-md hover:bg-muted/60 text-success transition-colors"
-                                title={t('workspace.run')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-success/10 text-success transition-all font-medium"
+                                title={t('frontend.workspace.run')}
                             >
-                                <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
+                                <IconPlayerPlay className="w-4 h-4 fill-current" />
+                                <span className="text-xs">{t('frontend.workspace.run')}</span>
                             </button>
                         )}
                         <button
                             onClick={() => onDashboardTabChange?.(tab.id)}
                             className={cn(
-                                "p-1.5 rounded-md transition-all",
-                                isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all",
+                                isActive 
+                                    ? "bg-primary text-primary-foreground shadow-sm" 
+                                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                             )}
                             title={tab.title}
                         >
-                            <Icon className="w-3.5 h-3.5" />
+                            <Icon className="w-4 h-4" />
+                            {isActive && <span className="text-xs font-medium">{tab.title}</span>}
                         </button>
                     </React.Fragment>
                 );

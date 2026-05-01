@@ -78,6 +78,7 @@ export interface QuotaResponse {
     accountId?: string;
     email?: string;
     isActive?: boolean;
+    error?: string;
     usageSource?: 'openai' | 'anthropic' | 'copilot' | 'local' | 'none' | 'chatgpt';
     copilot?: CopilotQuota;
     claudeQuota?: ClaudeQuota;
@@ -114,6 +115,18 @@ export interface CopilotQuota {
         remaining: number;
         reset: string;
     };
+    session_limits?: {
+        weekly?: { limit: number; current: number; reset_at?: string };
+        session?: { limit: number; current: number; reset_at?: string };
+    };
+    session_usage?: {
+        input_tokens: number;
+        output_tokens: number;
+        cache_read_tokens: number;
+        cache_write_tokens: number;
+        reasoning_tokens?: number;
+    };
+    analytics_tracking_id?: string;
     error?: string;
 }
 

@@ -40,25 +40,25 @@ const ERROR_STYLES: Record<ChatErrorKind, { border: string; bg: string; icon: st
 };
 
 const ERROR_TITLE_KEYS: Record<ChatErrorKind, string> = {
-    provider_unavailable: 'chat.errorProviderUnavailable',
-    quota_exhausted: 'chat.errorQuotaExhausted',
-    capacity_exhausted: 'chat.errorCapacityExhausted',
-    rate_limited: 'chat.errorRateLimited',
-    timeout: 'chat.errorTimeout',
-    auth: 'chat.errorAuth',
-    permission_denied: 'chat.errorPermissionDenied',
-    generic: 'chat.errorGeneric',
+    provider_unavailable: 'frontend.chat.errorProviderUnavailable',
+    quota_exhausted: 'frontend.chat.errorQuotaExhausted',
+    capacity_exhausted: 'frontend.chat.errorCapacityExhausted',
+    rate_limited: 'frontend.chat.errorRateLimited',
+    timeout: 'frontend.chat.errorTimeout',
+    auth: 'frontend.chat.errorAuth',
+    permission_denied: 'frontend.chat.errorPermissionDenied',
+    generic: 'frontend.chat.errorGeneric',
 };
 
 const ERROR_ACTION_KEYS: Record<ChatErrorKind, string> = {
-    provider_unavailable: 'chat.errorProviderUnavailableAction',
-    quota_exhausted: 'chat.errorQuotaExhaustedAction',
-    capacity_exhausted: 'chat.errorCapacityExhaustedAction',
-    rate_limited: 'chat.errorRateLimitedAction',
-    timeout: 'chat.errorTimeoutAction',
-    auth: 'chat.errorAuthAction',
-    permission_denied: 'chat.errorPermissionDeniedAction',
-    generic: 'chat.errorRetry',
+    provider_unavailable: 'frontend.chat.errorProviderUnavailableAction',
+    quota_exhausted: 'frontend.chat.errorQuotaExhaustedAction',
+    capacity_exhausted: 'frontend.chat.errorCapacityExhaustedAction',
+    rate_limited: 'frontend.chat.errorRateLimitedAction',
+    timeout: 'frontend.chat.errorTimeoutAction',
+    auth: 'frontend.chat.errorAuthAction',
+    permission_denied: 'frontend.chat.errorPermissionDeniedAction',
+    generic: 'frontend.chat.errorRetry',
 };
 
 /** Icon component per error kind */
@@ -97,7 +97,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
         if (!error.resetsAt) {
             return null;
         }
-        return t('chat.errorQuotaResetHint', { time: new Date(error.resetsAt * 1000).toLocaleString() });
+        return t('frontend.chat.errorQuotaResetHint', { time: new Date(error.resetsAt * 1000).toLocaleString() });
     }, [error.resetsAt, t]);
 
     return (
@@ -148,7 +148,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                                 className={C_CHATERRORSTATE_2}
                             >
                                 <IconArrowsRightLeft className="w-3.5 h-3.5" />
-                                {t('chat.errorSwitchModel')}
+                                {t('frontend.chat.errorSwitchModel')}
                             </button>
                         )}
                     </div>
@@ -157,7 +157,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                 <button
                     onClick={onDismiss}
                     className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/50"
-                    aria-label={t('chat.errorDismiss')}
+                    aria-label={t('frontend.chat.errorDismiss')}
                 >
                     <IconX className="w-4 h-4" />
                 </button>

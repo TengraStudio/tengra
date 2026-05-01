@@ -196,8 +196,8 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                         <IconCode className="h-6 w-6" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-foreground">{t('settings.editorTitle')}</h2>
-                        <p className="typo-body text-muted-foreground/60">{t('settings.editorDescription')}</p>
+                        <h2 className="text-2xl font-bold text-foreground">{t('frontend.settings.editorTitle')}</h2>
+                        <p className="typo-body text-muted-foreground/60">{t('frontend.settings.editorDescription')}</p>
                     </div>
                 </div>
             </div>
@@ -208,14 +208,14 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                     
                     {/* Typography */}
                     <SettingsPanel
-                        title={t('settings.editor.typographyTitle') || "Typography"}
+                        title={t('frontend.settings.editor.typographyTitle')}
                         description="Font settings and character spacing."
                         icon={IconTypography}
                         className="border-none bg-transparent p-0 shadow-none space-y-6"
                     >
                         <div className="grid gap-6 md:grid-cols-2">
                             <SettingsField 
-                                label={t('settings.editor.option.fontSize')} 
+                                label={t('frontend.settings.editor.option.fontSize')} 
                                 description="Adjust the editor font size."
                             >
                                 <div className="flex items-center gap-4">
@@ -234,7 +234,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                             </SettingsField>
 
                             <SettingsField 
-                                label={t('settings.editor.option.lineHeight')}
+                                label={t('frontend.settings.editor.option.lineHeight')}
                                 description="Fine-tune text vertical spacing."
                             >
                                 <div className="flex items-center gap-4">
@@ -252,7 +252,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 </div>
                             </SettingsField>
 
-                             <SettingsField label={t('settings.editor.option.fontFamily')}>
+                             <SettingsField label={t('frontend.settings.editor.option.fontFamily')}>
                                 <Select
                                     value={editorSettings.fontFamily || 'default'}
                                     onValueChange={val => updateEditor({ fontFamily: val === 'default' ? '' : val })}
@@ -270,7 +270,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 </Select>
                             </SettingsField>
 
-                            <SettingsField label={t('settings.editor.option.fontWeight')}>
+                            <SettingsField label={t('frontend.settings.editor.option.fontWeight')}>
                                 <Select
                                     value={editorSettings.fontWeight}
                                     onValueChange={val => updateEditor({ fontWeight: val })}
@@ -290,13 +290,13 @@ export const EditorTab: React.FC<EditorTabProps> = ({
 
                     {/* Interface Layout */}
                     <SettingsPanel
-                        title={t('settings.editor.layoutTitle')}
+                        title={t('frontend.settings.editor.layoutTitle')}
                         description="Visual appearance and geometry."
                         icon={IconLayersLinked}
                         className="border-none bg-transparent p-0 shadow-none space-y-6"
                     >
                         <div className="grid gap-6 md:grid-cols-2">
-                            <SettingsField label={t('settings.editor.option.tabSize')}>
+                            <SettingsField label={t('frontend.settings.editor.option.tabSize')}>
                                 <Select
                                     value={editorSettings.tabSize.toString()}
                                     onValueChange={val => updateEditor({ tabSize: parseInt(val, 10) })}
@@ -314,7 +314,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 </Select>
                             </SettingsField>
 
-                            <SettingsField label={t('settings.editor.option.lineNumbers')}>
+                            <SettingsField label={t('frontend.settings.editor.option.lineNumbers')}>
                                 <Select
                                     value={editorSettings.lineNumbers}
                                     onValueChange={value => updateEditor({ lineNumbers: value as typeof LINE_NUMBER_OPTIONS[number] })}
@@ -325,14 +325,14 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                     <SelectContent className="rounded-xl border-border/30">
                                         {LINE_NUMBER_OPTIONS.map(option => (
                                             <SelectItem key={option} value={option}>
-                                                {t(`settings.editor.lineNumbers.${option}`) || option}
+                                                {t(`settings.editor.lineNumbers.${option}`)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </SettingsField>
 
-                             <SettingsField label={t('settings.editor.option.minimapSide')}>
+                             <SettingsField label={t('frontend.settings.editor.option.minimapSide')}>
                                 <Select
                                     value={editorSettings.minimapSide}
                                     onValueChange={value => updateEditor({ minimapSide: value as typeof MINIMAP_SIDE_OPTIONS[number] })}
@@ -348,7 +348,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 </Select>
                             </SettingsField>
 
-                             <SettingsField label={t('settings.editor.option.renderLineHighlight')}>
+                             <SettingsField label={t('frontend.settings.editor.option.renderLineHighlight')}>
                                 <Select
                                     value={editorSettings.renderLineHighlight}
                                     onValueChange={value => updateEditor({ renderLineHighlight: value as typeof RENDER_LINE_HIGHLIGHT_OPTIONS[number] })}
@@ -364,7 +364,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 </Select>
                             </SettingsField>
 
-                             <SettingsField label={t('settings.editor.option.showFoldingControls')}>
+                             <SettingsField label={t('frontend.settings.editor.option.showFoldingControls')}>
                                 <Select
                                     value={editorSettings.showFoldingControls}
                                     onValueChange={value => updateEditor({ showFoldingControls: value as typeof FOLDING_CONTROLS_OPTIONS[number] })}
@@ -380,7 +380,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 </Select>
                             </SettingsField>
 
-                             <SettingsField label={t('settings.editor.option.renderFinalNewline')}>
+                             <SettingsField label={t('frontend.settings.editor.option.renderFinalNewline')}>
                                 <Select
                                     value={editorSettings.renderFinalNewline}
                                     onValueChange={value => updateEditor({ renderFinalNewline: value as typeof FINAL_NEWLINE_OPTIONS[number] })}
@@ -400,77 +400,77 @@ export const EditorTab: React.FC<EditorTabProps> = ({
 
                     {/* Features & Behavior */}
                     <SettingsPanel
-                        title={t('settings.editor.behaviorTitle')}
+                        title={t('frontend.settings.editor.behaviorTitle')}
                         description="Intelligent features and interactions."
                         icon={IconBolt}
                         className="border-none bg-transparent p-0 shadow-none space-y-6"
                     >
                         <div className="grid gap-4 md:grid-cols-2">
                              <MonacoToggleRow
-                                label={t('settings.editor.option.minimap')}
+                                label={t('frontend.settings.editor.option.minimap')}
                                 description="High-level code overview"
                                 checked={editorSettings.minimap}
                                 icon={IconEye}
                                 onCheckedChange={checked => updateEditor({ minimap: checked })}
                             />
                             <MonacoToggleRow
-                                label={t('settings.editor.option.wordWrap')}
+                                label={t('frontend.settings.editor.option.wordWrap')}
                                 description="Wrap long lines automatically"
                                 checked={editorSettings.wordWrap !== 'off'}
                                 icon={IconAlignLeft}
                                 onCheckedChange={checked => updateEditor({ wordWrap: checked ? 'on' : 'off' })}
                             />
                             <MonacoToggleRow
-                                label={t('settings.editor.option.bracketPairColorization')}
+                                label={t('frontend.settings.editor.option.bracketPairColorization')}
                                 description="Highlight matching brackets"
                                 checked={editorSettings.bracketPairColorization}
                                 icon={IconSparkles}
                                 onCheckedChange={checked => updateEditor({ bracketPairColorization: checked })}
                             />
                             <MonacoToggleRow
-                                label={t('settings.editor.option.stickyScroll')}
+                                label={t('frontend.settings.editor.option.stickyScroll')}
                                 description="Pin scope headers during scroll"
                                 checked={editorSettings.stickyScroll}
                                 icon={IconLayersLinked}
                                 onCheckedChange={checked => updateEditor({ stickyScroll: checked })}
                             />
                              <MonacoToggleRow
-                                label={t('settings.editor.option.scrollBeyondLastLine')}
+                                label={t('frontend.settings.editor.option.scrollBeyondLastLine')}
                                 description="Scroll past final line"
                                 checked={editorSettings.scrollBeyondLastLine}
                                 icon={IconPointer}
                                 onCheckedChange={checked => updateEditor({ scrollBeyondLastLine: checked })}
                             />
                              <MonacoToggleRow
-                                label={t('settings.editor.option.smoothScrolling')}
+                                label={t('frontend.settings.editor.option.smoothScrolling')}
                                 description="Fluid editor movement"
                                 checked={editorSettings.smoothScrolling}
                                 icon={IconActivity}
                                 onCheckedChange={checked => updateEditor({ smoothScrolling: checked })}
                             />
                              <MonacoToggleRow
-                                label={t('settings.editor.option.fontLigatures')}
+                                label={t('frontend.settings.editor.option.fontLigatures')}
                                 description="Combine characters into symbols"
                                 checked={editorSettings.fontLigatures}
                                 icon={IconSettings2}
                                 onCheckedChange={checked => updateEditor({ fontLigatures: checked })}
                             />
                              <MonacoToggleRow
-                                label={t('settings.editor.option.renderControlCharacters')}
+                                label={t('frontend.settings.editor.option.renderControlCharacters')}
                                 description="Show non-printable symbols"
                                 checked={editorSettings.renderControlCharacters}
                                 icon={IconCode}
                                 onCheckedChange={checked => updateEditor({ renderControlCharacters: checked })}
                             />
                              <MonacoToggleRow
-                                label={t('settings.editor.option.roundedSelection')}
+                                label={t('frontend.settings.editor.option.roundedSelection')}
                                 description="Use rounded selection corners"
                                 checked={editorSettings.roundedSelection}
                                 icon={IconSparkles}
                                 onCheckedChange={checked => updateEditor({ roundedSelection: checked })}
                             />
                              <MonacoToggleRow
-                                label={t('settings.editor.option.occurrenceHighlight')}
+                                label={t('frontend.settings.editor.option.occurrenceHighlight')}
                                 description="Highlight occurrences of symbols"
                                 checked={editorSettings.occurrenceHighlight}
                                 icon={IconActivity}
@@ -488,7 +488,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                     >
                         <div className="grid gap-6">
                             <div className="grid gap-6 md:grid-cols-2">
-                                <SettingsField label={t('settings.editor.option.cursorStyle')}>
+                                <SettingsField label={t('frontend.settings.editor.option.cursorStyle')}>
                                     <Select
                                         value={editorSettings.cursorStyle}
                                         onValueChange={value => updateEditor({ cursorStyle: value as typeof CURSOR_STYLE_OPTIONS[number] })}
@@ -504,7 +504,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                     </Select>
                                 </SettingsField>
 
-                                <SettingsField label={t('settings.editor.option.cursorBlinking')}>
+                                <SettingsField label={t('frontend.settings.editor.option.cursorBlinking')}>
                                     <Select
                                         value={editorSettings.cursorBlinking}
                                         onValueChange={value => updateEditor({ cursorBlinking: value as typeof CURSOR_BLINK_OPTIONS[number] })}
@@ -522,7 +522,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                     </Select>
                                 </SettingsField>
 
-                                <SettingsField label={t('settings.editor.option.renderWhitespace')}>
+                                <SettingsField label={t('frontend.settings.editor.option.renderWhitespace')}>
                                     <Select
                                         value={editorSettings.renderWhitespace}
                                         onValueChange={value => updateEditor({ renderWhitespace: value as typeof RENDER_WHITESPACE_OPTIONS[number] })}
@@ -540,7 +540,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                     </Select>
                                 </SettingsField>
 
-                                <SettingsField label={t('settings.editor.option.acceptSuggestionOnEnter')}>
+                                <SettingsField label={t('frontend.settings.editor.option.acceptSuggestionOnEnter')}>
                                     <Select
                                         value={editorSettings.acceptSuggestionOnEnter}
                                         onValueChange={value => updateEditor({ acceptSuggestionOnEnter: value as typeof ACCEPT_SUGGESTION_OPTIONS[number] })}
@@ -556,7 +556,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                     </Select>
                                 </SettingsField>
 
-                                 <SettingsField label={t('settings.editor.option.multiCursorModifier')}>
+                                 <SettingsField label={t('frontend.settings.editor.option.multiCursorModifier')}>
                                     <Select
                                         value={editorSettings.multiCursorModifier}
                                         onValueChange={value => updateEditor({ multiCursorModifier: value as typeof MULTI_CURSOR_MODIFIER_OPTIONS[number] })}
@@ -574,7 +574,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                             </div>
 
                              <SettingsField 
-                                label={t('settings.editor.option.additionalOptions')}
+                                label={t('frontend.settings.editor.option.additionalOptions')}
                                 description="JSON configuration overrides."
                             >
                                 <div className="group relative">
@@ -590,7 +590,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                         rows={8}
                                         spellCheck={false}
                                         className="relative min-h-160 resize-none rounded-2xl border border-border/20 bg-background/60 p-5 font-mono typo-caption shadow-inner focus:ring-primary/20"
-                                        placeholder={t('settings.editor.additionalOptionsPlaceholder')}
+                                        placeholder={t('frontend.settings.editor.additionalOptionsPlaceholder')}
                                     />
                                 </div>
                             </SettingsField>

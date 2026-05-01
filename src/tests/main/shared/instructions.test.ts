@@ -12,29 +12,29 @@ import { buildSystemPrompt } from '@shared/instructions';
 import { describe, expect, it } from 'vitest';
 
 describe('buildSystemPrompt', () => {
-    it('uses Turkish rules and reminder when language is Turkish', () => {
+    it('uses multilingual language rules and reminder', () => {
         const prompt = buildSystemPrompt({
             language: 'tr',
             provider: 'codex',
         });
 
-        expect(prompt).toContain('DIL KURALLARI (TURKCE)');
-        expect(prompt).toContain('Turkce yanit ver');
+        expect(prompt).toContain('LANGUAGE RULES');
+        expect(prompt).toContain("Respond in the user's language with natural fluency and clarity.");
         expect(prompt).toContain('After a successful list_directory result');
         expect(prompt).toContain('Do not expose raw hidden chain-of-thought');
     });
 
-    it('uses known locale rules for supported non-English locales', () => {
+    it('handles non-English locale tags with multilingual directive', () => {
         const prompt = buildSystemPrompt({
             language: 'de-DE',
             provider: 'ollama',
         });
 
-        expect(prompt).toContain('LANGUAGE RULES (GERMAN)');
-        expect(prompt).toContain('Respond in German');
+        expect(prompt).toContain('LANGUAGE RULES');
+        expect(prompt).toContain("Respond in the user's language with natural fluency and clarity.");
     });
 
-    it('uses locale-aware instructions for marketplace-installed locales', () => {
+    it('handles locale metadata with multilingual directive', () => {
         const prompt = buildSystemPrompt({
             language: 'pt-BR',
             localeMetadata: {
@@ -45,8 +45,7 @@ describe('buildSystemPrompt', () => {
             provider: 'ollama',
         });
 
-        expect(prompt).toContain('LANGUAGE RULES (LOCALE-AWARE)');
-        expect(prompt).toContain('Portugues (Brasil)');
-        expect(prompt).toContain('Respond in the user\'s selected locale (Portugues (Brasil))');
+        expect(prompt).toContain('LANGUAGE RULES');
+        expect(prompt).toContain("Respond in the user's language with natural fluency and clarity.");
     });
 });

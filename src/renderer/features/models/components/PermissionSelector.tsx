@@ -97,12 +97,12 @@ function getPresetLabel(
     t: (key: string) => string
 ): string {
     if (preset === 'high') {
-        return t('workspaceAgent.permissions.policy.blocked');
+        return t('frontend.workspaceAgent.permissions.policy.blocked');
     }
     if (preset === 'full') {
-        return t('workspaceAgent.permissions.policy.full-access');
+        return t('frontend.workspaceAgent.permissions.policy.full-access');
     }
-    return t('workspaceAgent.permissions.policy.ask-every-time');
+    return t('frontend.workspaceAgent.permissions.policy.ask-every-time');
 }
 
 export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
@@ -116,7 +116,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
 
     return (
         <div className={cn('flex items-center gap-1.5', className)}>
-            <Tooltip content={t('workspaceAgent.permissions.title')} side="bottom">
+            <Tooltip content={t('frontend.workspaceAgent.permissions.title')} side="bottom">
                 <span className="inline-flex">
                     <Select
                         value={preset}
@@ -143,7 +143,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                             <SelectItem value="high" className="py-2 typo-body font-bold">
                                 <div className="flex items-center gap-2">
                                     <IconShieldCheck className="h-3 w-3 text-primary" />
-                                    {t('workspaceAgent.permissions.policy.blocked')}
+                                    {t('frontend.workspaceAgent.permissions.policy.blocked')}
                                 </div>
                             </SelectItem>
                             <SelectItem
@@ -152,13 +152,13 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                             >
                                 <div className="flex items-center gap-2">
                                     <IconShield className="h-3 w-3 text-warning" />
-                                    {t('workspaceAgent.permissions.policy.ask-every-time')}
+                                    {t('frontend.workspaceAgent.permissions.policy.ask-every-time')}
                                 </div>
                             </SelectItem>
                             <SelectItem value="full" className="py-2 typo-body font-bold">
                                 <div className="flex items-center gap-2 text-destructive">
                                     <IconShieldExclamation className="h-3 w-3" />
-                                    {t('workspaceAgent.permissions.policy.full-access')}
+                                    {t('frontend.workspaceAgent.permissions.policy.full-access')}
                                 </div>
                             </SelectItem>
                         </SelectContent>
@@ -167,7 +167,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
             </Tooltip>
 
             {onOpenSettings && (
-                <Tooltip content={t('workspaceAgent.permissions.title')} side="bottom">
+                <Tooltip content={t('frontend.workspaceAgent.permissions.title')} side="bottom">
                     <span className="inline-flex">
                         <button
                             type="button"

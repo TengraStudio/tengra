@@ -430,8 +430,7 @@ async fn send_upstream_request(
     request_body: &Value,
     base_url_override: Option<&str>,
 ) -> Result<reqwest::Response, (StatusCode, Json<serde_json::Value>)> {
-    let upstream_url =
-        get_upstream_url(provider, payload.stream, active_key_row, base_url_override);
+    let upstream_url = get_upstream_url(provider, payload, active_key_row, base_url_override);
 
     let session_key = generate_session_key(active_key_row, payload);
     let (session_id, prior_signature) = {
@@ -630,7 +629,7 @@ fn is_quota_exhausted(row: &serde_json::Value) -> bool {
 
 fn get_upstream_url(
     provider: &str,
-    stream: bool,
+    payload: &ChatCompletionRequest,
     active_key_row: &Value,
     base_url_override: Option<&str>,
 ) -> String {
@@ -643,7 +642,7 @@ fn get_upstream_url(
             let base = base_url_override
                 .map(str::to_string)
                 .unwrap_or_else(|| antigravity_base_url(active_key_row));
-            if stream {
+            if payload.stream {
                 format!("{}/v1internal:streamGenerateContent?alt=sse", base)
             } else {
                 format!("{}/v1internal:generateContent", base)
@@ -659,26 +658,32 @@ fn get_upstream_url(
             let _model = _model_owned.as_str();
             let plan = get_copilot_plan(active_key_row);
             let subdomain = match plan.as_str() {
-                "individual" => "api.individual.githubcopilot.com",
                 "business" => "api.business.githubcopilot.com",
                 "enterprise" => "api.enterprise.githubcopilot.com",
                 _ => "api.githubcopilot.com",
             };
 
-            format!("https://{}/v1/chat/completions", subdomain)
+            format!("https://{}/chat/completions", subdomain)
         }
 
         // NVIDIA NIM
         "nvidia" => "https://integrate.api.nvidia.com/v1/chat/completions".to_string(),
 
         // OpenAI API (sk-... keys)
-        "openai" => "https://api.openai.com/v1/chat/completions".to_string(),
+        "openai" => {
+            if is_openai_image_model(&payload.model) {
+                "https://api.openai.com/v1/images/generations".to_string()
+            } else {
+                "https://api.openai.com/v1/chat/completions".to_string()
+            }
+        }
 
         // Google Gemini API (API key)
         "gemini" => {
-            let model_owned = extract_model_from_row(active_key_row).unwrap_or_else(|| "gemini-2.0-flash".to_string());
+            let model_owned = extract_model_from_row(active_key_row)
+                .unwrap_or_else(|| "gemini-2.0-flash".to_string());
             let model = model_owned.as_str();
-            if stream {
+            if payload.stream {
                 format!(
                     "https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?alt=sse",
                     model
@@ -720,6 +725,14 @@ fn get_upstream_url(
     }
 }
 
+fn is_openai_image_model(model: &str) -> bool {
+    let trimmed = model.trim().to_ascii_lowercase();
+    let without_prefix = trimmed.strip_prefix("openai/").unwrap_or(trimmed.as_str());
+    without_prefix.starts_with("gpt-image")
+        || without_prefix == "chatgpt-image-latest"
+        || without_prefix.starts_with("dall-e")
+}
+
 fn extract_model_from_row(row: &Value) -> Option<String> {
     row.get("model")
         .and_then(Value::as_str)
@@ -727,7 +740,11 @@ fn extract_model_from_row(row: &Value) -> Option<String> {
         .or_else(|| {
             row.get("metadata")
                 .and_then(parse_metadata_map)
-                .and_then(|m| m.get("model").and_then(Value::as_str).map(|s| s.to_string()))
+                .and_then(|m| {
+                    m.get("model")
+                        .and_then(Value::as_str)
+                        .map(|s| s.to_string())
+                })
         })
 }
 

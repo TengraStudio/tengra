@@ -42,8 +42,8 @@ export const ExtensionsTab: React.FC<ExtensionsTabProps> = ({
         <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h3 className="text-lg font-semibold">{t('settings.tabs.extensions')}</h3>
-                    <p className="text-sm text-muted-foreground">{t('settings.extensions.description')}</p>
+                    <h3 className="text-lg font-semibold">{t('frontend.settings.tabs.extensions')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('frontend.settings.extensions.description')}</p>
                 </div> 
                 <Button 
                     variant="outline" 
@@ -57,9 +57,9 @@ export const ExtensionsTab: React.FC<ExtensionsTabProps> = ({
 
             <div className="inline-flex rounded-lg border border-border/40 bg-muted/20 p-1">
                 {([
-                    ['plugins', t('settings.tabs.plugins')],
-                    ['mcp', t('settings.tabs.mcpServers')],
-                    ['skills', t('settings.tabs.skills')],
+                    ['plugins', t('frontend.settings.tabs.plugins')],
+                    ['mcp', t('frontend.settings.tabs.mcpServers')],
+                    ['skills', t('frontend.settings.tabs.skills')],
                 ] as Array<[ExtensionSettingsSection, string]>).map(([id, label]) => {
                     const hasUpdate = (registry?.[id === 'plugins' ? 'extensions' : id === 'mcp' ? 'mcp' : 'skills'] || [])
                         .some(item => item.updateAvailable);

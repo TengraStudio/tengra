@@ -66,7 +66,7 @@ export const SidebarChatList = React.memo(
             // 1. Pinned
             if (pinnedChats.length > 0) {
                 if (!isCollapsed) {
-                    items.push({ type: 'header', label: t('sidebar.pinned'), icon: PinIcon });
+                    items.push({ type: 'header', label: t('frontend.sidebar.pinned'), icon: PinIcon });
                 }
                 pinnedChats.forEach(chat => {
                     items.push({ type: 'chat', chat });
@@ -79,8 +79,8 @@ export const SidebarChatList = React.memo(
                 if (!isCollapsed) {
                     items.push({
                         type: 'header',
-                        label: t('sidebar.folders'),
-                        action: { label: t('sidebar.newFolder'), icon: IconFolderPlus, onClick: () => createFolder(t('sidebar.newFolder')) }
+                        label: t('frontend.sidebar.folders'),
+                        action: { label: t('frontend.sidebar.newFolder'), icon: IconFolderPlus, onClick: () => createFolder(t('frontend.sidebar.newFolder')) }
                     });
                 }
 
@@ -104,7 +104,7 @@ export const SidebarChatList = React.memo(
                                 items.push({ type: 'chat', chat, isIndented: true });
                             });
                         } else if (!isCollapsed) {
-                            items.push({ type: 'empty-state', label: t('sidebar.emptyFolder') });
+                            items.push({ type: 'empty-state', label: t('frontend.sidebar.emptyFolder') });
                         }
                     }
                 });
@@ -116,8 +116,8 @@ export const SidebarChatList = React.memo(
                 if (!isCollapsed) {
                     items.push({
                         type: 'header',
-                        label: t('sidebar.recent'),
-                        action: onClearAll ? { label: t('sidebar.clearHistory'), icon: Trash2, onClick: onClearAll } : undefined
+                        label: t('frontend.sidebar.recent'),
+                        action: onClearAll ? { label: t('frontend.sidebar.clearHistory'), icon: Trash2, onClick: onClearAll } : undefined
                     });
                 }
                 recentChats.forEach(chat => {
@@ -126,7 +126,7 @@ export const SidebarChatList = React.memo(
             }
 
             if (chatsCount === 0 && !isCollapsed && searchQuery === '') {
-                items.push({ type: 'empty-state', label: t('sidebar.noChats') });
+                items.push({ type: 'empty-state', label: t('frontend.sidebar.noChats') });
             }
 
             return items;
@@ -180,7 +180,7 @@ export const SidebarChatList = React.memo(
                 case 'empty-state':
                     return (
                         <div className="flex flex-col items-center justify-center py-4 px-2 text-muted-foreground/30 overflow-hidden w-full">
-                            {item.label === t('sidebar.noChats') && <IconMessage className="w-6 h-6 mb-2 opacity-20" />}
+                            {item.label === t('frontend.sidebar.noChats') && <IconMessage className="w-6 h-6 mb-2 opacity-20" />}
                             <p className="text-center typo-overline font-medium truncate w-full">{item.label}</p>
                         </div>
                     );
@@ -200,7 +200,7 @@ export const SidebarChatList = React.memo(
                             <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
                             <input
                                 type="text"
-                                placeholder={t('sidebar.searchChats')}
+                                placeholder={t('frontend.sidebar.searchChats')}
                                 value={searchQuery}
                                 onChange={onSearchChange}
                                 className="w-full rounded-lg border border-border/40 bg-muted/30 py-2 pl-8 pr-3 text-sm font-medium outline-none transition-colors focus:border-primary/50"

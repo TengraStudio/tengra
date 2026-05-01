@@ -46,8 +46,8 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
     if (!visible) { return null; }
 
     const label = newMessageCount && newMessageCount > 0
-        ? t('chat.scrollToBottomWithCount', { count: newMessageCount })
-        : t('chat.scrollToBottom');
+        ? t('frontend.chat.scrollToBottomWithCount', { count: newMessageCount })
+        : t('frontend.chat.scrollToBottom');
 
     return (
         <button

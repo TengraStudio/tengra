@@ -159,7 +159,7 @@ export const TranslationExport: React.FC = () => {
         <div className="space-y-4">
             <div className="flex items-center gap-2">
                 <IconGlobe className="w-5 h-5 text-primary" />
-                <h3 className="text-sm font-semibold">{t('settings.translationExport.title')}</h3>
+                <h3 className="text-sm font-semibold">{t('frontend.settings.translationExport.title')}</h3>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -190,14 +190,14 @@ export const TranslationExport: React.FC = () => {
                     className={C_TRANSLATIONEXPORT_1}
                 >
                     <IconDownload className="w-3.5 h-3.5" />
-                    {t('settings.translationExport.exportJSON')}
+                    {t('frontend.settings.translationExport.exportJSON')}
                 </button>
                 <button
                     onClick={handleExportCSV}
                     className={C_TRANSLATIONEXPORT_2}
                 >
                     <IconDownload className="w-3.5 h-3.5" />
-                    {t('settings.translationExport.exportCSV')}
+                    {t('frontend.settings.translationExport.exportCSV')}
                 </button>
             </div>
         </div>

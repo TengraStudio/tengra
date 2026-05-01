@@ -197,41 +197,41 @@ function getToolSummaryText(
     if (isExecuting) {
         if (toolName === 'read_file') {
             const path = primaryPath || fileList;
-            return path ? t('tools.analyzingFile', { path }) : t('tools.readingFiles');
+            return path ? t('frontend.tools.analyzingFile', { path }) : t('frontend.tools.readingFiles');
         }
         if (toolName === 'list_directory' || toolName === 'list_files' || toolName === 'list_dir') {
-            return primaryPath ? t('tools.analyzingPath', { path: primaryPath }) : t('tools.analyzingProject');
+            return primaryPath ? t('frontend.tools.analyzingPath', { path: primaryPath }) : t('frontend.tools.analyzingProject');
         }
         if (toolName === 'write_file' || toolName === 'write_files') {
-            return t('tools.writingFiles', { count: fileNames.length || 1 });
+            return t('frontend.tools.writingFiles', { count: fileNames.length || 1 });
         }
         const key = FriendlyToolNames[toolName] || 'usingTool';
         return t(`tools.${key}`);
     }
 
     if (hasError) {
-        return t('tools.failed');
+        return t('frontend.tools.failed');
     }
 
     if (toolName === 'list_directory' || toolName === 'list_files') {
-        return t('tools.listDirSummary', {
+        return t('frontend.tools.listDirSummary', {
             count: countResultItems(result?.result ?? []),
         });
     }
     if (toolName === 'read_file') {
-        return t('tools.readFileSummary', { path: primaryPath });
+        return t('frontend.tools.readFileSummary', { path: primaryPath });
     }
     if (toolName === 'write_file' || toolName === 'write_files') {
-        return t('tools.filesWrittenSummary', {
+        return t('frontend.tools.filesWrittenSummary', {
             count: fileNames.length || 1,
             files: fileList || primaryPath,
         });
     }
     if (toolName === 'patch_file' || toolName === 'edit_file') {
-        return t('tools.editFileSummary', { path: primaryPath });
+        return t('frontend.tools.editFileSummary', { path: primaryPath });
     }
 
-    return t('tools.completed');
+    return t('frontend.tools.completed');
 }
 
 function readToolError(result?: ToolResult): string | undefined {
@@ -434,7 +434,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                     }}
                     className="block w-full truncate rounded-md px-2 py-1 text-left text-sm text-foreground/80 hover:bg-muted/15 hover:text-primary"
                 >
-                    {fileName || t('tools.openFile')}
+                    {fileName || t('frontend.tools.openFile')}
                 </button>
             </div>
         );
@@ -478,7 +478,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                 })}
                 {hiddenCount > 0 && (
                     <div className="px-2 py-1 text-sm text-muted-foreground/70">
-                        {t('tools.andMore', { count: hiddenCount })}
+                        {t('frontend.tools.andMore', { count: hiddenCount })}
                     </div>
                 )}
             </div>
@@ -511,7 +511,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                     })}
                     {hiddenCount > 0 && (
                         <div className="px-2 py-1 text-sm text-muted-foreground/70">
-                            {t('tools.andMore', { count: hiddenCount })}
+                            {t('frontend.tools.andMore', { count: hiddenCount })}
                         </div>
                     )}
                 </div>
@@ -539,7 +539,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                     ))}
                     {hiddenCount > 0 && (
                         <div className="px-2 py-1 text-sm text-muted-foreground/70">
-                            {t('tools.andMore', { count: hiddenCount })}
+                            {t('frontend.tools.andMore', { count: hiddenCount })}
                         </div>
                     )}
                 </div>
@@ -550,7 +550,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
     if (name === 'capture_screenshot') {
         const imageUrl = extractImageUrl(result);
         if (imageUrl) {
-            return <img src={imageUrl} alt={t('chat.screenshotAlt')} className="max-w-full rounded-md border border-border/40" />;
+            return <img src={imageUrl} alt={t('frontend.chat.screenshotAlt')} className="max-w-full rounded-md border border-border/40" />;
         }
     }
 
@@ -605,7 +605,7 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                     'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
                     expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
                 )}
-                aria-label={expanded ? t('chat.collapse') : t('chat.expand')}
+                aria-label={expanded ? t('frontend.chat.collapse') : t('frontend.chat.expand')}
             >
                 <div className="flex min-w-0 items-center gap-2">
                     <span
@@ -635,7 +635,7 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                     {isExecuting && !result && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <IconLoader2 className="h-3 w-3 animate-spin" />
-                            <span>{t('tools.executing')}</span>
+                            <span>{t('frontend.tools.executing')}</span>
                         </div>
                     )}
 

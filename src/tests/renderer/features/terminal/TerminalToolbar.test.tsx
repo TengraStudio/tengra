@@ -100,7 +100,7 @@ describe('TerminalToolbar edge cases', () => {
     it('shows a no-shells empty state when no shell is available', () => {
         render(<TerminalToolbar {...createBaseProps()} />);
 
-        expect(screen.getByText('terminal.noShellsFound')).toBeInTheDocument();
+        expect(screen.getByText('frontend.terminal.noShellsFound')).toBeInTheDocument();
     });
 
     it('shows loading state while launch options are loading', () => {
@@ -123,7 +123,7 @@ describe('TerminalToolbar edge cases', () => {
         );
 
         expect(
-            screen.getByText('terminal.no_ssh_profiles / terminal.no_containers')
+            screen.getByText('frontend.terminal.no_ssh_profiles / frontend.terminal.no_containers')
         ).toBeInTheDocument();
     });
  

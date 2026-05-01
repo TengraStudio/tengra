@@ -76,12 +76,12 @@ export function WorkspaceExplorerBulkActions({
                     {t('common.itemsSelected', { count: selectedEntries.length })}
                 </span>
                 <ToolbarActionButton
-                    ariaLabel={t('workspace.rename')}
+                    ariaLabel={t('frontend.workspace.rename')}
                     onClick={() => onStartAction('rename')}
-                    title={t('workspace.rename')}
+                    title={t('frontend.workspace.rename')}
                 >
                     <IconPencil className="h-3.5 w-3.5" />
-                    <span>{t('workspace.rename')}</span>
+                    <span>{t('frontend.workspace.rename')}</span>
                 </ToolbarActionButton>
                 <ToolbarActionButton
                     ariaLabel={t('common.copy')}
@@ -93,10 +93,10 @@ export function WorkspaceExplorerBulkActions({
                     <span>{t('common.copy')}</span>
                 </ToolbarActionButton>
                 <ToolbarActionButton
-                    ariaLabel={t('workspace.notifications.entryMoved')}
+                    ariaLabel={t('frontend.workspace.notifications.entryMoved')}
                     disabled={!canUsePathAction}
                     onClick={() => onStartAction('move')}
-                    title={t('workspace.notifications.entryMoved')}
+                    title={t('frontend.workspace.notifications.entryMoved')}
                 >
                     <IconFolderSymlink className="h-3.5 w-3.5" />
                 </ToolbarActionButton>
@@ -128,8 +128,8 @@ export function WorkspaceExplorerBulkActions({
                         className={C_WORKSPACEEXPLORERBULKACTIONS_2}
                         placeholder={
                             bulkAction.type === 'rename'
-                                ? t('workspace.placeholders.name')
-                                : t('workspace.placeholders.rootPath')
+                                ? t('frontend.workspace.placeholders.name')
+                                : t('frontend.workspace.placeholders.rootPath')
                         }
                     />
                     <button

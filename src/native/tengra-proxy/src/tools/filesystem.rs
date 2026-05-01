@@ -39,7 +39,9 @@ async fn extract_strings(args: Value) -> ToolDispatchResponse {
         Ok(bytes) => {
             let re = match regex::bytes::Regex::new(&format!(r"[[:print:]]{{{},}}", min_length)) {
                 Ok(re) => re,
-                Err(e) => return error_response(&format!("Failed to build extraction regex: {}", e)),
+                Err(e) => {
+                    return error_response(&format!("Failed to build extraction regex: {}", e))
+                }
             };
             let strings: Vec<String> = re
                 .find_iter(&bytes)
@@ -94,13 +96,18 @@ async fn unzip_file(args: Value) -> ToolDispatchResponse {
             if let Some(p) = outpath.parent() {
                 if !p.exists() {
                     if let Err(e) = std::fs::create_dir_all(p) {
-                        return error_response(&format!("Failed to create zip parent directory: {}", e));
+                        return error_response(&format!(
+                            "Failed to create zip parent directory: {}",
+                            e
+                        ));
                     }
                 }
             }
             let mut outfile = match std::fs::File::create(&outpath) {
                 Ok(outfile) => outfile,
-                Err(e) => return error_response(&format!("Failed to create extracted file: {}", e)),
+                Err(e) => {
+                    return error_response(&format!("Failed to create extracted file: {}", e))
+                }
             };
             if let Err(e) = std::io::copy(&mut file, &mut outfile) {
                 return error_response(&format!("Failed to write extracted file: {}", e));

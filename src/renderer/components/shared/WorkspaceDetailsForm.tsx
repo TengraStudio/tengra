@@ -61,7 +61,7 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                 transition={{ duration: 0.3 }}
             >
                 <label className="text-sm font-semibold text-foreground/80 uppercase ">
-                    {t('workspaceWizard.workspaceName')}
+                    {t('frontend.workspaceWizard.workspaceName')}
                 </label>
                 <div className="relative group">
                     <input
@@ -69,7 +69,7 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                         value={formData.name}
                         onChange={e => onFormChange(p => ({ ...p, name: e.target.value }))}
                         className="w-full h-11 px-4 text-base font-medium bg-muted/20 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm"
-                        placeholder={t('workspaceWizard.namePlaceholder')}
+                        placeholder={t('frontend.workspaceWizard.namePlaceholder')}
                     />
                 </div>
             </motion.div>
@@ -81,7 +81,7 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                 transition={{ duration: 0.3, delay: 0.1 }}
             >
                 <label className="text-sm font-semibold text-foreground/80 uppercase ">
-                    {t('workspaces.categoryLabel')}
+                    {t('frontend.workspaces.categoryLabel')}
                 </label>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {categories.map((cat, idx) => (
@@ -130,14 +130,14 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                 transition={{ duration: 0.3, delay: 0.2 }}
             >
                 <label className="text-sm font-semibold text-foreground/80 uppercase ">
-                    {t('workspaceWizard.selectFolder')}
+                    {t('frontend.workspaceWizard.selectFolder')}
                 </label>
                 <div className="flex gap-2">
                     <input
                         value={formData.customPath}
                         onChange={e => onFormChange(p => ({ ...p, customPath: e.target.value }))}
                         className="flex-1 min-w-0 h-9 px-3 text-sm font-mono bg-muted/20 border border-border/50 rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all custom-scrollbar"
-                        placeholder={t('workspaceWizard.selectRootDesc')}
+                        placeholder={t('frontend.workspaceWizard.selectRootDesc')}
                     />
                     <button
                         type="button"
@@ -149,7 +149,7 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                             });
                         }}
                         className="flex items-center justify-center w-9 h-9 min-w-9 bg-muted/30 border border-border/50 rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all cursor-pointer shadow-sm"
-                        title={t('workspaceWizard.selectFolder')}
+                        title={t('frontend.workspaceWizard.selectFolder')}
                     >
                         <IconFolderOpen className="w-4 h-4" />
                     </button>
@@ -163,13 +163,13 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                 transition={{ duration: 0.3, delay: 0.25 }}
             >
                 <label className="text-sm font-semibold text-foreground/80 uppercase ">
-                    {t('workspaceWizard.description')}
+                    {t('frontend.workspaceWizard.description')}
                 </label>
                 <textarea
                     value={formData.description}
                     onChange={e => onFormChange(p => ({ ...p, description: e.target.value }))}
                     className="w-full min-h-80 p-3 text-sm bg-muted/20 border border-border/50 rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all resize-y custom-scrollbar"
-                    placeholder={t('workspaceWizard.descPlaceholder')}
+                    placeholder={t('frontend.workspaceWizard.descPlaceholder')}
                 />
             </motion.div>
 

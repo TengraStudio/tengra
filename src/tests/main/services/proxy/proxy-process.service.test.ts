@@ -123,18 +123,14 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             proxyApiKey: 'proxy-api-key',
         });
         expect(fs.promises.writeFile).not.toHaveBeenCalled();
-        expect(authService.linkAccount).toHaveBeenCalledWith('nvidia', { 
-            accessToken: 'nvidia-key',
-            metadata: { type: 'api_key', auth_type: 'api_key' }
-        });
         expect(settingsService.saveSettings).toHaveBeenCalledWith(expect.objectContaining({
             proxy: {
                 enabled: true,
                 url: 'http://127.0.0.1:8317/v1',
                 key: '',
-                apiKey: '',
+                apiKey: 'proxy-api-key',
                 authStoreKey: '',
-                managementPassword: '',
+                managementPassword: 'management-password',
                 port: 8317,
             },
         }));

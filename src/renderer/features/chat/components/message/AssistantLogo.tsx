@@ -14,7 +14,11 @@ import LogoAntigravity from '@assets/antigravity.svg?url';
 import LogoOpenAI from '@assets/chatgpt.svg?url';
 import LogoClaude from '@assets/claude.svg?url';
 import LogoCopilot from '@assets/copilot.svg?url';
+import LogoGemini from '@assets/gemini.png';
+import LogoHuggingFace from '@assets/huggingface.svg?url';
+import LogoNvidia from '@assets/nvidia.svg?url';
 import LogoOllama from '@assets/ollama.svg?url';
+import LogoOpenCode from '@assets/opencode.svg?url';
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { cn } from '@/lib/utils';
 
@@ -55,12 +59,12 @@ const MessageIcon = ({ short, color, title }: MessageIconProps) => (
 
 const getSpecialModelLogo = (name: string, t: TranslationFn) => {
     const families = [
-        { key: 'llama', short: 'LL', color: 'blue', title: t('messageBubble.modelFamilies.llama') },
-        { key: 'mistral', short: 'M', color: 'orange', title: t('messageBubble.modelFamilies.mistral') },
-        { key: 'mixtral', short: 'M', color: 'orange', title: t('messageBubble.modelFamilies.mistral') },
-        { key: 'deepseek', short: 'DS', color: 'indigo', title: t('messageBubble.modelFamilies.deepseek') },
-        { key: 'qwen', short: 'Q', color: 'purple', title: t('messageBubble.modelFamilies.qwen') },
-        { key: 'phi', short: 'Φ', color: 'cyan', title: t('messageBubble.modelFamilies.phi') },
+        { key: 'llama', short: 'LL', color: 'blue', title: t('frontend.messageBubble.modelFamilies.llama') },
+        { key: 'mistral', short: 'M', color: 'orange', title: t('frontend.messageBubble.modelFamilies.mistral') },
+        { key: 'mixtral', short: 'M', color: 'orange', title: t('frontend.messageBubble.modelFamilies.mistral') },
+        { key: 'deepseek', short: 'DS', color: 'indigo', title: t('frontend.messageBubble.modelFamilies.deepseek') },
+        { key: 'qwen', short: 'Q', color: 'purple', title: t('frontend.messageBubble.modelFamilies.qwen') },
+        { key: 'phi', short: 'Φ', color: 'cyan', title: t('frontend.messageBubble.modelFamilies.phi') },
     ];
     const match = families.find(f => name.includes(f.key));
     if (match) {
@@ -72,31 +76,47 @@ const getSpecialModelLogo = (name: string, t: TranslationFn) => {
 const getInferredProvider = (name: string) => {
     if (name.startsWith('gpt-') || name.startsWith('o1-')) { return 'openai'; }
     if (name.startsWith('claude-')) { return 'anthropic'; }
+    if (name.startsWith('gemini-')) { return 'gemini'; }
     if (name.startsWith('grok-')) { return 'groq'; }
     if (name.startsWith('antigravity-')) { return 'antigravity'; }
+    if (name.startsWith('qwen/') || name.startsWith('deepseek/') || name.startsWith('glm/') || name.startsWith('kimi/')) { return 'opencode'; }
     return null;
 };
 
 const getProviderLogoInfo = (modelName: string, provider?: string, backend?: string) => {
     const name = modelName.toLowerCase();
     const inferred = getInferredProvider(name);
-    const effective = (provider ?? backend ?? inferred ?? 'ollama').toLowerCase();
 
     const logoMap: Record<string, { logo: string | null; key: string; color: MessageIconColor; short?: string }> = {
+        opencode: { logo: LogoOpenCode, key: 'opencode', color: 'blue' },
         openai: { logo: LogoOpenAI, key: 'openai', color: 'emerald' },
         codex: { logo: LogoOpenAI, key: 'openai', color: 'emerald' },
         gpt: { logo: LogoOpenAI, key: 'openai', color: 'emerald' },
         anthropic: { logo: LogoClaude, key: 'anthropic', color: 'orange' },
         claude: { logo: LogoClaude, key: 'anthropic', color: 'orange' },
         antigravity: { logo: LogoAntigravity, key: 'antigravity', color: 'yellow' },
+        gemini: { logo: LogoGemini, key: 'gemini', color: 'cyan' },
+        google: { logo: LogoGemini, key: 'gemini', color: 'cyan' },
+        huggingface: { logo: LogoHuggingFace, key: 'huggingface', color: 'yellow' },
+        nvidia: { logo: LogoNvidia, key: 'nvidia', color: 'emerald' },
+        ollama: { logo: LogoOllama, key: 'ollama', color: 'muted' },
         github: { logo: LogoCopilot, key: 'copilot', color: 'black' },
         copilot: { logo: LogoCopilot, key: 'copilot', color: 'black' },
         groq: { logo: null, key: 'groq', color: 'red', short: 'G' },
     };
 
-    const matchedKey = Object.keys(logoMap).find(k => effective.includes(k));
-    if (matchedKey) { return logoMap[matchedKey]; }
-    return { logo: LogoOllama, key: effective, color: 'muted' as MessageIconColor, short: undefined };
+    const candidates = [provider, backend, inferred, name]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .map(value => value.toLowerCase());
+
+    for (const candidate of candidates) {
+        const matchedKey = Object.keys(logoMap).find(key => candidate.includes(key));
+        if (matchedKey) {
+            return logoMap[matchedKey];
+        }
+    }
+
+    return { logo: LogoOllama, key: inferred ?? 'ollama', color: 'muted' as MessageIconColor, short: undefined };
 };
 
 export interface AssistantLogoProps {
@@ -133,7 +153,7 @@ export const AssistantLogo = memo(({ displayModel, provider, backend, t }: Assis
                     src={info.logo}
                     className={cn(
                         'w-full h-full opacity-70 transition-all duration-300',
-                        info.key !== 'antigravity' && 'theme-logo-invert'
+                        !['antigravity', 'gemini', 'huggingface', 'nvidia'].includes(info.key) && 'theme-logo-invert'
                     )}
                     alt={info.key}
                 />

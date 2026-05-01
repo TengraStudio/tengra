@@ -80,7 +80,7 @@ function TerminalPreview({
                     <div className="h-3 w-3 rounded-full bg-[#ffbd2e] opacity-80 hover:opacity-100" />
                     <div className="h-3 w-3 rounded-full bg-[#27c93f] opacity-80 hover:opacity-100" />
                 </div>
-                <div className="ml-4 flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">
+                <div className="ml-4 flex items-center gap-2 text-sm font-bold text-white/20 uppercase ">
                     <IconTerminal className="h-3 w-3" />
                     <span>zsh — tengra-terminal</span>
                 </div>
@@ -103,7 +103,7 @@ function TerminalPreview({
                         <span style={{ color: theme.blue }}>projects/tengra</span>
                         <span className="text-white/30 font-light text-[0.9em]">git:(<span style={{ color: theme.red }}>main</span>)</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                         <span style={{ color: theme.cyan }}>➜</span>
                         <span className="text-white/90">npm run dev</span>
@@ -116,7 +116,7 @@ function TerminalPreview({
                     </div>
 
                     <div className="pt-2 flex items-center gap-2">
-                        <span style={{ color: theme.green }}>✓</span> 
+                        <span style={{ color: theme.green }}>✓</span>
                         <span className="text-white/80">VITE v8.0.10 ready in 432ms</span>
                     </div>
 
@@ -141,7 +141,8 @@ function TerminalPreview({
                 </div>
             </div>
 
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @keyframes terminal-blink {
                     from, to { opacity: 1; }
                     50% { opacity: 0; }
@@ -151,14 +152,14 @@ function TerminalPreview({
     );
 }
 
-function LiveAppPreview({ 
-    font, 
-    fontSize, 
-    t 
-}: { 
-    font: { display: string; sans: string }; 
-    fontSize: number; 
-    t: (key: string) => string 
+function LiveAppPreview({
+    font,
+    fontSize,
+    t
+}: {
+    font: { display: string; sans: string };
+    fontSize: number;
+    t: (key: string) => string
 }) {
     return (
         <div className="group relative h-72 w-full overflow-hidden rounded-2xl border border-border/40 bg-background shadow-2xl transition-all hover:border-border/60">
@@ -169,8 +170,8 @@ function LiveAppPreview({
                     <div className="h-2.5 w-2.5 rounded-full bg-border/20" />
                     <div className="h-2.5 w-2.5 rounded-full bg-border/20" />
                 </div>
-                <div className="mx-auto text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.3em] select-none">
-                    {t('app.name')}
+                <div className="mx-auto text-sm font-bold text-muted-foreground/30 uppercase  select-none">
+                    {t('frontend.app.name')}
                 </div>
                 <div className="w-10" /> {/* Spacer */}
             </div>
@@ -179,7 +180,7 @@ function LiveAppPreview({
             <div className="p-6 space-y-5">
                 <div className="flex items-start gap-4">
                     <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10 shadow-sm">
-                         <div className="h-4 w-4 rounded-sm bg-primary/30 animate-pulse" />
+                        <div className="h-4 w-4 rounded-sm bg-primary/30 animate-pulse" />
                     </div>
                     <div className="space-y-2.5 flex-1 pt-1.5">
                         <div className="h-2 w-3/4 rounded-full bg-foreground/10" />
@@ -196,20 +197,20 @@ function LiveAppPreview({
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-border/15 bg-muted/30 p-5 shadow-inner transition-colors group-hover:bg-muted/40">
-                    <div 
+                    <div
                         className="text-2xl font-bold text-foreground mb-2 leading-none"
                         style={{ fontFamily: font.display }}
                     >
-                        {t('settings.previewHeading')}
+                        {t('frontend.settings.previewHeading')}
                     </div>
-                    <div 
+                    <div
                         className="text-sm text-muted-foreground/80 leading-relaxed"
-                        style={{ 
+                        style={{
                             fontFamily: font.sans,
                             fontSize: `${fontSize}px`
                         }}
                     >
-                        {t('settings.previewBody')}
+                        {t('frontend.settings.previewBody')}
                     </div>
                 </div>
             </div>
@@ -288,9 +289,9 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
     }, [availableThemes]);
 
     const typographyScaleOptions = [
-        { value: 'compact', label: t('settings.typographyScaleCompact') },
-        { value: 'balanced', label: t('settings.typographyScaleBalanced') },
-        { value: 'comfortable', label: t('settings.typographyScaleComfortable') },
+        { value: 'compact', label: t('frontend.settings.typographyScaleCompact') },
+        { value: 'balanced', label: t('frontend.settings.typographyScaleBalanced') },
+        { value: 'comfortable', label: t('frontend.settings.typographyScaleComfortable') },
     ];
 
     const terminalThemeOptions = TERMINAL_THEME_PRESETS.map(preset => ({
@@ -329,10 +330,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         const featureVars = keys.length - layoutVars - terminalVars - iconVars;
 
         return [
-            { label: t('settings.themeManifestLayoutVars'), count: layoutVars },
-            { label: t('settings.themeManifestTerminalVars'), count: terminalVars },
-            { label: t('settings.themeManifestIconVars'), count: iconVars },
-            { label: t('settings.themeManifestFeatureVars'), count: featureVars },
+            { label: t('frontend.settings.themeManifestLayoutVars'), count: layoutVars },
+            { label: t('frontend.settings.themeManifestTerminalVars'), count: terminalVars },
+            { label: t('frontend.settings.themeManifestIconVars'), count: iconVars },
+            { label: t('frontend.settings.themeManifestFeatureVars'), count: featureVars },
         ].filter(group => group.count > 0);
     }, [currentThemeVars, t]);
 
@@ -350,7 +351,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
             await refreshThemes();
             setThemeActionStatus({
                 tone: 'success',
-                message: t('settings.themeManifestImportSuccess', {
+                message: t('frontend.settings.themeManifestImportSuccess', {
                     name: themeManifest.displayName ?? themeManifest.id,
                 }),
             });
@@ -359,8 +360,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 tone: 'error',
                 message:
                     error instanceof SyntaxError
-                        ? t('settings.themeManifestImportInvalidJson')
-                        : t('settings.themeManifestImportFailed'),
+                        ? t('frontend.settings.themeManifestImportInvalidJson')
+                        : t('frontend.settings.themeManifestImportFailed'),
             });
         }
     }, [refreshThemes, t]);
@@ -381,7 +382,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
         setThemeActionStatus({
             tone: 'success',
-            message: t('settings.themeManifestDownloadSuccess', {
+            message: t('frontend.settings.themeManifestDownloadSuccess', {
                 name: currentThemeManifest.displayName,
             }),
         });
@@ -392,12 +393,12 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
             await themeIpc.openThemesDirectory();
             setThemeActionStatus({
                 tone: 'success',
-                message: t('settings.themeManifestOpenFolderSuccess'),
+                message: t('frontend.settings.themeManifestOpenFolderSuccess'),
             });
         } catch {
             setThemeActionStatus({
                 tone: 'error',
-                message: t('settings.themeManifestOpenFolderFailed'),
+                message: t('frontend.settings.themeManifestOpenFolderFailed'),
             });
         }
     }, [t]);
@@ -426,12 +427,12 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-foreground">
-                            {t('settings.appearanceTitle')}
+                            {t('frontend.settings.appearanceTitle')}
                         </h3>
                     </div>
                 </div>
                 <p className="max-w-2xl px-1 text-sm leading-relaxed text-muted-foreground/70">
-                    {t('settings.appearanceDescription')}
+                    {t('frontend.settings.appearanceDescription')}
                 </p>
             </div>
 
@@ -440,14 +441,14 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     <div className="flex items-center gap-2 px-1">
                         <IconDeviceDesktop className="h-4 w-4 text-primary/80" />
                         <h4 className="text-sm font-bold uppercase text-muted-foreground/80">
-                            {t('settings.interfaceConfiguration')}
+                            {t('frontend.settings.interfaceConfiguration')}
                         </h4>
                     </div>
 
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                {t('settings.theme')}
+                                {t('frontend.settings.theme')}
                             </label>
                             <Select
                                 value={settings?.general.theme ?? 'graphite'}
@@ -476,7 +477,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                             <div className="space-y-2">
                                 <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                    {t('settings.baseFontSize')}
+                                    {t('frontend.settings.baseFontSize')}
                                 </label>
                                 <Input
                                     type="number"
@@ -493,7 +494,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             </div>
                             <div className="space-y-2">
                                 <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                    {t('settings.typographyScale')}
+                                    {t('frontend.settings.typographyScale')}
                                 </label>
                                 <Select
                                     value={settings?.general.typographyScale ?? 'balanced'}
@@ -523,12 +524,12 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     <div className="mb-6 flex items-center gap-2 px-1">
                         <IconTypography className="h-4 w-4 text-primary/80" />
                         <h4 className="text-sm font-bold uppercase text-muted-foreground/80">
-                            {t('settings.livePreview')}
+                            {t('frontend.settings.livePreview')}
                         </h4>
                     </div>
 
                     <div className="flex-1 flex flex-col justify-center min-w-0">
-                        <LiveAppPreview 
+                        <LiveAppPreview
                             font={resolvedAppFont}
                             fontSize={settings?.general.fontSize ?? 14}
                             t={t}
@@ -536,14 +537,14 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     </div>
 
                     <div className="mt-8 flex flex-col gap-3 border-t border-border/10 px-1 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 font-mono text-sm uppercase  text-muted-foreground/50">
                             <span className="text-primary/70 font-bold">
                                 {themeOptions.find(option => option.value === (settings?.general.theme ?? 'graphite'))?.label}
                             </span>
                             <div className="h-1 w-1 rounded-full bg-border/40" />
                             <span>{resolvedAppFont.label}</span>
                         </div>
-                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 font-mono text-[10px] font-bold text-muted-foreground/60">
+                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 font-mono text-sm font-bold text-muted-foreground/60">
                             {settings?.general.fontSize}PX
                         </Badge>
                     </div>
@@ -558,10 +559,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-foreground">
-                            {t('settings.windowConfigurationTitle')}
+                            {t('frontend.settings.windowConfigurationTitle')}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground/70">
-                            {t('settings.windowConfigurationDesc')}
+                            {t('frontend.settings.windowConfigurationDesc')}
                         </p>
                     </div>
                 </div>
@@ -570,7 +571,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                {t('settings.windowResolution')}
+                                {t('frontend.settings.windowResolution')}
                             </label>
                             <Select
                                 value={settings?.general.resolution ?? 'auto'}
@@ -589,7 +590,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div> 
+                        </div>
                     </div>
                 </div>
             </div>
@@ -602,10 +603,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-foreground">
-                            {t('settings.terminalAppearanceTitle')}
+                            {t('frontend.settings.terminalAppearanceTitle')}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground/70">
-                            {t('settings.appearanceDescription')}
+                            {t('frontend.settings.appearanceDescription')}
                         </p>
                     </div>
                 </div>
@@ -615,7 +616,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('terminal.theme')}</label>
+                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.terminal.theme')}</label>
                                     <Select
                                         value={terminalAppearance.themePresetId}
                                         onValueChange={value => {
@@ -636,7 +637,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('terminal.cursorStyle')}</label>
+                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.terminal.cursorStyle')}</label>
                                     <Select
                                         value={terminalAppearance.cursorStyle}
                                         onValueChange={value => {
@@ -662,7 +663,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('settings.terminalFontSize')}</label>
+                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.settings.terminalFontSize')}</label>
                                     <Input
                                         type="number"
                                         min={8}
@@ -676,7 +677,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('terminal.lineHeight')}</label>
+                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.terminal.lineHeight')}</label>
                                     <Input
                                         type="number"
                                         min={1}
@@ -695,8 +696,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                         <div className="space-y-4 border-t border-border/10 pt-6">
                             <AppearanceRow
-                                title={t('terminal.fontLigatures')}
-                                description={t('settings.previewBody')}
+                                title={t('frontend.terminal.fontLigatures')}
+                                description={t('frontend.settings.previewBody')}
                                 control={(
                                     <Switch
                                         checked={terminalAppearance.ligatures}
@@ -706,8 +707,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                 icon={<IconLuggage className="h-3.5 w-3.5 text-primary opacity-60" />}
                             />
                             <AppearanceRow
-                                title={t('terminal.cursorBlink')}
-                                description={t('settings.terminalAppearanceTitle')}
+                                title={t('frontend.terminal.cursorBlink')}
+                                description={t('frontend.settings.terminalAppearanceTitle')}
                                 control={(
                                     <Switch
                                         checked={terminalAppearance.cursorBlink}
@@ -740,7 +741,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-foreground">
-                            {t('settings.accessibility.title')}
+                            {t('frontend.settings.accessibility.title')}
                         </h3>
                     </div>
                 </div>
@@ -748,8 +749,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-x-10 xl:gap-y-6">
                     <div className="space-y-4">
                         <AppearanceRow
-                            title={t('settings.accessibility.highContrast')}
-                            description={t('settings.accessibility.highContrastDesc')}
+                            title={t('frontend.settings.accessibility.highContrast')}
+                            description={t('frontend.settings.accessibility.highContrastDesc')}
                             control={(
                                 <Switch
                                     checked={a11ySettings.highContrast}
@@ -759,8 +760,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             icon={<IconLuggage className="h-3.5 w-3.5 text-success opacity-60" />}
                         />
                         <AppearanceRow
-                            title={t('settings.accessibility.reducedMotion')}
-                            description={t('settings.accessibility.reducedMotionDesc')}
+                            title={t('frontend.settings.accessibility.reducedMotion')}
+                            description={t('frontend.settings.accessibility.reducedMotionDesc')}
                             control={(
                                 <Switch
                                     checked={a11ySettings.reducedMotion}
@@ -773,8 +774,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                     <div className="space-y-4">
                         <AppearanceRow
-                            title={t('settings.accessibility.enhancedFocus')}
-                            description={t('settings.accessibility.enhancedFocusDesc')}
+                            title={t('frontend.settings.accessibility.enhancedFocus')}
+                            description={t('frontend.settings.accessibility.enhancedFocusDesc')}
                             control={(
                                 <Switch
                                     checked={a11ySettings.enhancedFocusIndicators}
@@ -784,8 +785,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             icon={<IconPointer className="h-3.5 w-3.5 text-success opacity-60" />}
                         />
                         <AppearanceRow
-                            title={t('settings.accessibility.screenReader')}
-                            description={t('settings.accessibility.screenReaderDesc')}
+                            title={t('frontend.settings.accessibility.screenReader')}
+                            description={t('frontend.settings.accessibility.screenReaderDesc')}
                             control={(
                                 <Switch
                                     checked={a11ySettings.screenReaderAnnouncements}

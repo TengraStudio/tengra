@@ -73,6 +73,7 @@ export class LlamaService extends BaseService {
         host: '127.0.0.1',
         backend: 'auto'
     };
+    private activeDownloadAbortController: AbortController | null = null;
 
     constructor(
         dataService?: DataService,
@@ -581,6 +582,12 @@ export class LlamaService extends BaseService {
         return this.modelsDir;
     }
 
+    async setModelsDir(dir: string): Promise<boolean> {
+        this.modelsDir = dir;
+        await fs.promises.mkdir(this.modelsDir, { recursive: true });
+        return true;
+    }
+
     getBinDir(): string {
         return this.binDir;
     }
@@ -619,13 +626,15 @@ export class LlamaService extends BaseService {
         const { createWriteStream } = await import('fs');
 
         return new Promise((resolve) => {
+            const abortController = new AbortController();
+            this.activeDownloadAbortController = abortController;
             const outputPath = path.join(this.modelsDir, filename);
             const file = createWriteStream(outputPath);
 
             const protocol = url.startsWith('https') ? https : httpModule;
 
             const download = (downloadUrl: string) => {
-                protocol.get(downloadUrl, (response: http.IncomingMessage) => {
+                const request = protocol.get(downloadUrl, (response: http.IncomingMessage) => {
                     if (response.statusCode === 302 || response.statusCode === 301) {
                         const redirectUrl = response.headers.location;
                         if (redirectUrl) {
@@ -647,20 +656,38 @@ export class LlamaService extends BaseService {
 
                     file.on('finish', () => {
                         file.close();
+                        this.activeDownloadAbortController = null;
                         resolve({ success: true, path: outputPath });
                     });
 
                     file.on('error', (err: Error) => {
                         file.close();
+                        this.activeDownloadAbortController = null;
                         resolve({ success: false, error: err.message });
                     });
                 }).on('error', (err: Error) => {
+                    this.activeDownloadAbortController = null;
                     resolve({ success: false, error: err.message });
                 });
+
+                abortController.signal.addEventListener('abort', () => {
+                    request.destroy(new Error('Download aborted'));
+                    file.close();
+                    this.activeDownloadAbortController = null;
+                    resolve({ success: false, error: 'Download aborted' });
+                }, { once: true });
             };
 
             download(url);
         });
+    }
+
+    async abortDownload(_modelId: string): Promise<boolean> {
+        if (!this.activeDownloadAbortController) {
+            return false;
+        }
+        this.activeDownloadAbortController.abort();
+        return true;
     }
 
     async deleteModel(modelPath: string): Promise<{ success: boolean; error?: string }> {

@@ -46,16 +46,23 @@ export function useAppInitialization() {
         document.documentElement.lang = language;
     }, [language]);
 
+    useEffect(() => {
+        const performanceMode = window.localStorage.getItem('tengra.performanceMode') !== 'false';
+        document.documentElement.classList.toggle('tengra-performance-mode', performanceMode);
+        document.documentElement.dataset.performanceMode = performanceMode ? 'on' : 'off';
+    }, []);
+
     // Load theme registry on app start
     useEffect(() => {
         void themeRegistry.loadThemes().catch(error => {
             appLogger.error('AppInit', 'Failed to load runtime theme registry', error as Error);
         });
 
-        // Check for marketplace updates on startup (silent)
-        void marketplaceStore.checkLiveUpdates(true).catch(error => {
-            appLogger.error('AppInit', 'Failed to check for marketplace live updates', error as Error);
-        });
+        const liveUpdateTimer = window.setTimeout(() => {
+            void marketplaceStore.checkLiveUpdates(true).catch(error => {
+                appLogger.error('AppInit', 'Failed to check for marketplace live updates', error as Error);
+            });
+        }, 15_000);
 
         const loadLocales = async () => {
             try {
@@ -75,6 +82,10 @@ export function useAppInitialization() {
                 void loadLocales();
             }, 200);
         }
+
+        return () => {
+            window.clearTimeout(liveUpdateTimer);
+        };
     }, []);
 
     useEffect(() => {

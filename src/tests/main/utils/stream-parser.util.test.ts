@@ -260,6 +260,43 @@ describe('StreamParser', () => {
         expect(chunks[0]?.content).toBe('Hello from done');
     });
 
+    it('should emit reasoning from summary_text items in response.output_item.done events', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.done","item":{"id":"msg_4","type":"message","content":[{"type":"summary_text","text":"Checking files first."}]}}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.reasoning).toBe('Checking files first.');
+    });
+
+    it('should emit both content and reasoning from mixed response.output_item.done items', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.done","item":{"id":"msg_5","type":"message","content":[{"type":"summary_text","text":"Inspecting lint setup."},{"type":"output_text","text":"There are 3 lint errors."}]}}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(2);
+        expect(chunks[0]?.content).toBe('There are 3 lint errors.');
+        expect(chunks[1]?.reasoning).toBe('Inspecting lint setup.');
+    });
+
     it('should parse response.reasoning_text.done events as reasoning chunks', async () => {
         const stream = new ReadableStream({
             start(controller) {

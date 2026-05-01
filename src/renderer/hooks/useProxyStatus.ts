@@ -67,17 +67,17 @@ interface RawProxyStatus {
 function errorCodeToMessageKey(code: string): string {
   const mapping: Record<string, string> = {
     PROXY_START_FAILED: 'errors.proxy.startFailed',
-    PROXY_STOP_FAILED: 'errors.proxy.stopFailed',
-    PROXY_CONNECTION_FAILED: 'errors.proxy.connectionFailed',
-    PROXY_REQUEST_FAILED: 'errors.proxy.requestFailed',
-    PROXY_PORT_IN_USE: 'errors.proxy.portInUse',
-    PROXY_BINARY_NOT_FOUND: 'errors.proxy.binaryNotFound',
-    PROXY_NOT_INITIALIZED: 'errors.proxy.notInitialized',
-    PROXY_INVALID_CONFIG: 'errors.proxy.invalidConfig',
-    PROXY_AUTH_FAILED: 'errors.proxy.authFailed',
-    PROXY_TIMEOUT: 'errors.proxy.timeout',
+    PROXY_STOP_FAILED: 'frontend.errors.proxy.stopFailed',
+    PROXY_CONNECTION_FAILED: 'frontend.errors.proxy.connectionFailed',
+    PROXY_REQUEST_FAILED: 'frontend.errors.proxy.requestFailed',
+    PROXY_PORT_IN_USE: 'frontend.errors.proxy.portInUse',
+    PROXY_BINARY_NOT_FOUND: 'frontend.errors.proxy.binaryNotFound',
+    PROXY_NOT_INITIALIZED: 'frontend.errors.proxy.notInitialized',
+    PROXY_INVALID_CONFIG: 'frontend.errors.proxy.invalidConfig',
+    PROXY_AUTH_FAILED: 'frontend.errors.proxy.authFailed',
+    PROXY_TIMEOUT: 'frontend.errors.proxy.timeout',
   };
-  return mapping[code] ?? 'errors.proxy.requestFailed';
+  return mapping[code] ?? 'frontend.errors.proxy.requestFailed';
 }
 
 /**
@@ -103,7 +103,7 @@ export function useProxyStatus(enabled = true) {
       if (raw.error || raw.errorCode) {
         const messageKey = raw.errorCode
           ? errorCodeToMessageKey(raw.errorCode)
-          : 'errors.proxy.requestFailed';
+          : 'frontend.errors.proxy.requestFailed';
         setSnapshot({
           uiState: 'error',
           running: false,

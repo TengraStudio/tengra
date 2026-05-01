@@ -23,6 +23,8 @@ export interface PrepareMessagesOptions {
     selectedProvider: string;
     language: string;
     activeWorkspacePath?: string | undefined;
+    workspaceTitle?: string | undefined;
+    workspaceDescription?: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast';
     toolingEnabled?: boolean | undefined;
 }
@@ -75,7 +77,22 @@ export function prepareMessages(options: PrepareMessagesOptions): {
             activeWorkspacePath.trim().length > 0
             ? {
                 role: 'system',
-                content: `Current workspace root: ${activeWorkspacePath}. Use this as default cwd for terminal_session_start, execute_command, and relative file paths unless the user explicitly requests another location. Prefer persistent terminal sessions for multi-step shell work and dev servers. When creating a new codebase, create a single top-level project folder once and keep all subsequent files/commands inside that same folder unless the user asks for multiple folders.`,
+                content: `
+You are currently operating in a specialized Coding Environment for the following workspace:
+- Title: ${options.workspaceTitle || 'Unnamed Workspace'}
+- Description: ${options.workspaceDescription || 'No description provided.'}
+- Root Path: ${activeWorkspacePath}
+
+Your primary identity in this mode is a Senior Software Architect and Coding Expert. 
+You have direct access to the files in this workspace. Use the available tools to explore, analyze, and modify the codebase.
+
+Guidelines:
+1. Use '${activeWorkspacePath}' as the default working directory for all terminal and file operations.
+2. When creating new codebases, stick to a consistent project structure.
+3. If the user asks for multi-step tasks, prefer persistent terminal sessions.
+4. Focus exclusively on technical, architectural, and coding-related assistance. You are a tool-use expert; use your available tools to solve problems instead of just talking about them.
+5. You are operating within a sandboxed environment where you are expected to be the primary developer. Take initiative in exploration and implementation.
+                `.trim(),
                 id: generateId(),
                 timestamp: new Date(),
             }

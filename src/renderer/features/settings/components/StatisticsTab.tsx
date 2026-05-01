@@ -79,7 +79,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                 <div className="flex flex-col h-96 items-center justify-center space-y-6">
                     <IconLoader2 className="h-12 w-12 animate-spin text-primary" />
                     <div className="typo-body font-medium text-muted-foreground/50 animate-pulse">
-                        {t('statistics.synchronizingMetrics')}
+                        {t('frontend.statistics.synchronizingMetrics')}
                     </div>
                 </div>
             );
@@ -95,25 +95,25 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                             </div>
                             <div>
                                 <h3 className="text-2xl font-semibold text-foreground leading-none">
-                                    {t('statistics.title')}
+                                    {t('frontend.statistics.title')}
                                 </h3>
                                 <div className="flex items-center gap-2 mt-2">
                                     <div className="h-1 w-8 bg-primary rounded-full" />
                                     <p className="typo-body font-medium text-muted-foreground opacity-60">
-                                        {t('statistics.telemetryAnalytics')}
+                                        {t('frontend.statistics.telemetryAnalytics')}
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <p className="max-w-lg text-sm leading-relaxed text-muted-foreground/70">
-                            {t('statistics.visualizeTokenConsumption')}
+                            {t('frontend.statistics.visualizeTokenConsumption')}
                         </p>
                     </div>
 
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-2 px-1">
                             <IconCalendar className="w-3 h-3 text-primary/60" />
-                            <span className="typo-body font-medium text-muted-foreground/60">{t('statistics.temporalFilter')}</span>
+                            <span className="typo-body font-medium text-muted-foreground/60">{t('frontend.statistics.temporalFilter')}</span>
                         </div>
                         <PeriodSelector
                             period={statsPeriod}
@@ -127,9 +127,9 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                     <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                             <IconActivity className="w-4 h-4 text-primary" />
-                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('statistics.consumptionMatrix')}</h4>
+                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('frontend.statistics.consumptionMatrix')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 border-primary/20 px-2 typo-body font-medium text-primary">{t('statistics.liveFeed')}</Badge>
+                        <Badge variant="outline" className="h-5 border-primary/20 px-2 typo-body font-medium text-primary">{t('frontend.statistics.liveFeed')}</Badge>
                     </div>
 
                     <div className="relative z-10 mt-6">
@@ -141,11 +141,11 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                     <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                             <IconTrendingUp className="w-4 h-4 text-primary" />
-                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('statistics.propagationCurve')}</h4>
+                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('frontend.statistics.propagationCurve')}</h4>
                         </div>
                         <div className="flex items-center gap-2 typo-body font-medium text-muted-foreground/60">
                             <IconClock className="w-3 h-3" />
-                            <span>{t('statistics.realtimeTracking')}</span>
+                            <span>{t('frontend.statistics.realtimeTracking')}</span>
                         </div>
                     </div>
 

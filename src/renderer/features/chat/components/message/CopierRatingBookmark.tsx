@@ -29,8 +29,8 @@ export const CopyButton = memo(({ text, t }: { text: string; t: TranslationFn })
                 void handleCopy();
             }}
             className="p-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground"
-            title={t('messageBubble.copy')}
-            aria-label={t('messageBubble.copy')}
+            title={t('frontend.messageBubble.copy')}
+            aria-label={t('frontend.messageBubble.copy')}
         >
             {copied ? (
                 <IconCheck className="w-3.5 h-3.5 text-success" />
@@ -53,8 +53,8 @@ export const BookmarkButton = memo(
                     ? 'text-warning bg-warning/10 glow-warning'
                     : 'text-muted-foreground hover:text-foreground'
             )}
-            title={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
-            aria-label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
+            title={active ? t('frontend.messageBubble.removeBookmark') : t('frontend.messageBubble.addBookmark')}
+            aria-label={active ? t('frontend.messageBubble.removeBookmark') : t('frontend.messageBubble.addBookmark')}
             aria-pressed={active}
         >
             <IconBookmark className={cn('w-3.5 h-3.5', active && 'fill-current')} />
@@ -83,8 +83,8 @@ export const RatingButtons = memo(
                         ? 'text-success bg-success/10'
                         : 'text-muted-foreground hover:text-success hover:bg-success/5'
                 )}
-                title={t('messageBubble.goodAnswer')}
-                aria-label={t('messageBubble.goodAnswer')}
+                title={t('frontend.messageBubble.goodAnswer')}
+                aria-label={t('frontend.messageBubble.goodAnswer')}
                 aria-pressed={rating === 1}
             >
                 <IconThumbUp className={cn('w-3.5 h-3.5', rating === 1 && 'fill-current')} />
@@ -98,8 +98,8 @@ export const RatingButtons = memo(
                         ? 'text-destructive bg-destructive/10'
                         : 'text-muted-foreground hover:text-destructive hover:bg-destructive/5'
                 )}
-                title={t('messageBubble.badAnswer')}
-                aria-label={t('messageBubble.badAnswer')}
+                title={t('frontend.messageBubble.badAnswer')}
+                aria-label={t('frontend.messageBubble.badAnswer')}
                 aria-pressed={rating === -1}
             >
                 <IconThumbDown className={cn('w-3.5 h-3.5', rating === -1 && 'fill-current')} />

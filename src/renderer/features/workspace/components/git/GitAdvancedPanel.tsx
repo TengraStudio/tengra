@@ -52,13 +52,13 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
     return (
         <div className="space-y-6">
             <div className="space-y-3">
-                <span className="typo-overline font-semibold text-muted-foreground uppercase px-1">{t('git.advanced.branchManagement')}</span>
+                <span className="typo-overline font-semibold text-muted-foreground uppercase px-1">{t('frontend.git.advanced.branchManagement')}</span>
                 <div className="p-4 rounded-lg bg-card border border-border/40 space-y-4">
                     <div className="flex gap-2">
                         <Input
                             value={newBranchName}
                             onChange={e => setNewBranchName(e.target.value)}
-                            placeholder={t('git.advanced.enterNewBranchName')}
+                            placeholder={t('frontend.git.advanced.enterNewBranchName')}
                             className="h-8 text-sm bg-background/50 border-border/20"
                         />
                         <Button
@@ -83,11 +83,11 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
             </div>
 
             <div className="space-y-3">
-                <span className="typo-overline font-semibold text-muted-foreground uppercase px-1">{t('git.advanced.maintenance')}</span>
+                <span className="typo-overline font-semibold text-muted-foreground uppercase px-1">{t('frontend.git.advanced.maintenance')}</span>
                 <div className="flex flex-col gap-2">
                     <Button variant="outline" className="justify-start h-9 text-sm font-medium border-border/20 hover:bg-muted/40 transition-colors" onClick={() => git.refreshAll()}>
                         <IconRefresh className="w-3.5 h-3.5 mr-2 text-muted-foreground/40" />
-                        {t('git.advanced.pruneAndRefresh')}
+                        {t('frontend.git.advanced.pruneAndRefresh')}
                     </Button>
                 </div>
             </div>
@@ -96,8 +96,8 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                 isOpen={isConfirmDeleteOpen}
                 onClose={() => setIsConfirmDeleteOpen(false)}
                 onConfirm={confirmDeleteBranch}
-                title={t('git.advanced.deleteBranchTitle') || 'Delete Branch'}
-                message={t('git.advanced.confirmDeleteBranch', { name: git.currentBranch || '' })}
+                title={t('frontend.git.advanced.deleteBranchTitle')}
+                message={t('frontend.git.advanced.confirmDeleteBranch', { name: git.currentBranch || '' })}
                 variant="danger"
             />
         </div>

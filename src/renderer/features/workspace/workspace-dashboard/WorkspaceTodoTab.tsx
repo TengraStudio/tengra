@@ -569,7 +569,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                         <Input
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder={t('workspaceTodo.filterBoardPlaceholder')}
+                            placeholder={t('frontend.workspaceTodo.filterBoardPlaceholder')}
                             className="h-9 w-64 pl-9 pr-4 rounded-xl border-border/10 bg-background/20 text-sm focus-visible:ring-1 focus-visible:ring-primary/20 shadow-sm"
                         />
                     </div>
@@ -638,7 +638,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                                 <Label htmlFor="title" className="text-sm font-medium text-muted-foreground/70">Task Title</Label>
                                 <Input
                                     id="title"
-                                    placeholder={t('workspaceTodo.taskOverviewPlaceholder')}
+                                    placeholder={t('frontend.workspaceTodo.taskOverviewPlaceholder')}
                                     value={formData.title}
                                     onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                                     className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-sm"
@@ -649,7 +649,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                                 <Label htmlFor="desc" className="text-sm font-medium text-muted-foreground/70">Description</Label>
                                 <Textarea
                                     id="desc"
-                                    placeholder={t('workspaceTodo.taskContextPlaceholder')}
+                                    placeholder={t('frontend.workspaceTodo.taskContextPlaceholder')}
                                     value={formData.description}
                                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                                     className="min-h-32 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 resize-none typo-overline leading-relaxed"
@@ -664,7 +664,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                                         onValueChange={(val: TaskPriority) => setFormData(prev => ({ ...prev, priority: val }))}
                                     >
                                         <SelectTrigger className="h-10 border-border/20 bg-background/40 focus:ring-primary/20 text-sm">
-                                            <SelectValue placeholder={t('workspaceTodo.selectPriority')} />
+                                            <SelectValue placeholder={t('frontend.workspaceTodo.selectPriority')} />
                                         </SelectTrigger>
                                         <SelectContent className="border-border/40 backdrop-blur-xl bg-background/95">
                                             <SelectItem value="low" className="text-sm">Low</SelectItem>

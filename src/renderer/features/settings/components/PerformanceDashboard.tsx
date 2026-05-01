@@ -112,7 +112,7 @@ export const PerformanceDashboard: React.FC = () => {
                 setData(response.data);
                 setError(null);
             } else {
-                setError(response.error ?? t('settings.performanceDashboard.fetchError'));
+                setError(response.error ?? t('frontend.settings.performanceDashboard.fetchError'));
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -135,7 +135,7 @@ export const PerformanceDashboard: React.FC = () => {
             void fetchData();
         } catch (err) {
             setError(
-                err instanceof Error ? err.message : t('settings.performanceDashboard.gcError')
+                err instanceof Error ? err.message : t('frontend.settings.performanceDashboard.gcError')
             );
         }
     };
@@ -174,10 +174,10 @@ export const PerformanceDashboard: React.FC = () => {
                 <div>
                     <h3 className="typo-caption font-bold text-muted-foreground flex items-center gap-2">
                         <IconActivity className="w-3.5 h-3.5 text-primary" />
-                        {t('settings.performanceDashboard.title')}
+                        {t('frontend.settings.performanceDashboard.title')}
                     </h3>
                     <p className="text-sm text-muted-foreground/60 mt-1">
-                        {t('settings.performanceDashboard.subtitle')}
+                        {t('frontend.settings.performanceDashboard.subtitle')}
                     </p>
                 </div>
                 <Button
@@ -189,7 +189,7 @@ export const PerformanceDashboard: React.FC = () => {
                     className={C_PERFORMANCEDASHBOARD_1}
                 >
                     <IconRefresh className="w-3 h-3" />
-                    {t('settings.performanceDashboard.clearMemory')}
+                    {t('frontend.settings.performanceDashboard.clearMemory')}
                 </Button>
             </div>
 
@@ -197,9 +197,9 @@ export const PerformanceDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <StatCard
                     icon={<IconCpu className="w-3.5 h-3.5" />}
-                    label={t('settings.performanceDashboard.cards.totalCpu')}
+                    label={t('frontend.settings.performanceDashboard.cards.totalCpu')}
                     value={`${totalCpu.toFixed(1)}%`}
-                    subValue={t('settings.performanceDashboard.cards.activeProcesses').replace(
+                    subValue={t('frontend.settings.performanceDashboard.cards.activeProcesses').replace(
                         '{{count}}',
                         String(data.processes.length)
                     )}
@@ -207,9 +207,9 @@ export const PerformanceDashboard: React.FC = () => {
                 />
                 <StatCard
                     icon={<IconCpu className="w-3.5 h-3.5" />}
-                    label={t('settings.performanceDashboard.cards.totalMemory')}
+                    label={t('frontend.settings.performanceDashboard.cards.totalMemory')}
                     value={formatBytes(totalMem)}
-                    subValue={t('settings.performanceDashboard.cards.mainMemory').replace(
+                    subValue={t('frontend.settings.performanceDashboard.cards.mainMemory').replace(
                         '{{memory}}',
                         formatBytes(mainProcess?.memory ?? 0)
                     )}
@@ -217,9 +217,9 @@ export const PerformanceDashboard: React.FC = () => {
                 />
                 <StatCard
                     icon={<IconHourglass className="w-3.5 h-3.5" />}
-                    label={t('settings.performanceDashboard.cards.startupTime')}
+                    label={t('frontend.settings.performanceDashboard.cards.startupTime')}
                     value={formatDuration(data.startup.totalTime)}
-                    subValue={t('settings.performanceDashboard.cards.readyTime').replace(
+                    subValue={t('frontend.settings.performanceDashboard.cards.readyTime').replace(
                         '{{duration}}',
                         formatDuration(
                             data.startup.readyTime ? data.startup.readyTime - data.startup.startTime : 0
@@ -229,12 +229,12 @@ export const PerformanceDashboard: React.FC = () => {
                 />
                 <StatCard
                     icon={<IconActivity className="w-3.5 h-3.5" />}
-                    label={t('settings.performanceDashboard.cards.alerts')}
+                    label={t('frontend.settings.performanceDashboard.cards.alerts')}
                     value={String(data.alerts.length)}
                     subValue={
                         data.alerts.length > 0
-                            ? t('settings.performanceDashboard.cards.issuesDetected')
-                            : t('settings.performanceDashboard.cards.healthOptimal')
+                            ? t('frontend.settings.performanceDashboard.cards.issuesDetected')
+                            : t('frontend.settings.performanceDashboard.cards.healthOptimal')
                     }
                     tone={data.alerts.length > 0 ? 'destructive' : 'success'}
                 />
@@ -244,7 +244,7 @@ export const PerformanceDashboard: React.FC = () => {
             <div className="premium-glass overflow-hidden border border-border/40">
                 <div className="bg-muted/5 px-4 py-2 border-b border-border/40">
                     <span className="text-sm font-bold text-muted-foreground">
-                        {t('settings.performanceDashboard.processTree')}
+                        {t('frontend.settings.performanceDashboard.processTree')}
                     </span>
                 </div>
                 <div className="overflow-x-auto">
@@ -252,19 +252,19 @@ export const PerformanceDashboard: React.FC = () => {
                         <thead className="text-muted-foreground border-b border-border/20">
                             <tr>
                                 <th className="px-4 py-2 font-bold">
-                                    {t('settings.performanceDashboard.table.type')}
+                                    {t('frontend.settings.performanceDashboard.table.type')}
                                 </th>
                                 <th className="px-4 py-2 font-bold">
-                                    {t('settings.performanceDashboard.table.pid')}
+                                    {t('frontend.settings.performanceDashboard.table.pid')}
                                 </th>
                                 <th className="px-4 py-2 font-bold text-right">
-                                    {t('settings.performanceDashboard.table.cpu')}
+                                    {t('frontend.settings.performanceDashboard.table.cpu')}
                                 </th>
                                 <th className="px-4 py-2 font-bold text-right">
-                                    {t('settings.performanceDashboard.table.memory')}
+                                    {t('frontend.settings.performanceDashboard.table.memory')}
                                 </th>
                                 <th className="px-4 py-2 font-bold text-right">
-                                    {t('settings.performanceDashboard.table.name')}
+                                    {t('frontend.settings.performanceDashboard.table.name')}
                                 </th>
                             </tr>
                         </thead>
@@ -310,7 +310,7 @@ export const PerformanceDashboard: React.FC = () => {
             {data.alerts.length > 0 && (
                 <div className="space-y-2">
                     <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                        {t('settings.performanceDashboard.diagnosticAlerts')}
+                        {t('frontend.settings.performanceDashboard.diagnosticAlerts')}
                     </h3>
                     <div className="space-y-1.5">
                         {data.alerts

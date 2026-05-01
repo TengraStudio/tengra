@@ -188,6 +188,7 @@ const API_KEY_PROVIDER_HINTS = new Set([
     'openrouter',
     'nvidia',
     'huggingface',
+    'opencode',
 ]);
 type CredentialKind = 'oauth' | 'api_key';
 
@@ -1932,8 +1933,8 @@ export class AuthService extends BaseService {
             'google_token': 'antigravity',
             'gemini': 'antigravity',
             'gemini_key': 'antigravity',
-            'anthropic': 'anthropic',
-            'anthropic_key': 'anthropic',
+            'anthropic': 'claude',
+            'anthropic_key': 'claude',
             'claude': 'claude',
             'openai': 'codex',
             'openai_key': 'codex',

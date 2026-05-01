@@ -29,15 +29,15 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     selectedConnectionId
 }) => {
     const quickActions = [
-        { id: 'restart-service', label: t('ssh.quickActionRestartService'), command: 'sudo systemctl restart nginx' },
-        { id: 'tail-logs', label: t('ssh.quickActionTailLogs'), command: 'tail -n 200 /var/log/syslog' },
-        { id: 'run-tests', label: t('ssh.quickActionRunTests'), command: 'npm test' },
+        { id: 'restart-service', label: t('frontend.ssh.quickActionRestartService'), command: 'sudo systemctl restart nginx' },
+        { id: 'tail-logs', label: t('frontend.ssh.quickActionTailLogs'), command: 'tail -n 200 /var/log/syslog' },
+        { id: 'run-tests', label: t('frontend.ssh.quickActionRunTests'), command: 'npm test' },
     ];
 
     return (
         <div className="flex h-full p-4 flex-col bg-background">
             <div className={C_SSHTERMINAL_1}>
-                {terminalOutput !== '' ? terminalOutput : t('ssh.terminalOutput')}
+                {terminalOutput !== '' ? terminalOutput : t('frontend.ssh.terminalOutput')}
             </div>
             <div className="flex flex-wrap gap-2 mb-3">
                 {quickActions.map(action => (
@@ -57,7 +57,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
             <div className="flex gap-2">
                 <input
                     type="text"
-                    placeholder={t('ssh.runCommand')}
+                    placeholder={t('frontend.ssh.runCommand')}
                     className="flex-1 p-2 bg-muted border-none text-foreground text-sm rounded outline-none"
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {

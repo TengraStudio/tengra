@@ -129,20 +129,20 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                 <IconFileText className="w-8 h-8 text-primary/40" />
                             </div>
                             <h3 className="text-lg font-semibold text-foreground mb-2">
-                                {t('workspaceDashboard.filesTab.noFileSelected')}
+                                {t('frontend.workspaceDashboard.filesTab.noFileSelected')}
                             </h3>
                             <p className="text-sm text-muted-foreground text-center max-w-sm mb-8 leading-relaxed opacity-60">
-                                {t('workspaceDashboard.filesTab.noFileDesc')}
+                                {t('frontend.workspaceDashboard.filesTab.noFileDesc')}
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
                                 <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/50 flex flex-col items-center gap-2 shadow-sm">
                                     <span className="typo-overline font-bold uppercase text-muted-foreground/40">
-                                        {t('workspaceDashboard.filesTab.shortcuts')}
+                                        {t('frontend.workspaceDashboard.filesTab.shortcuts')}
                                     </span>
                                     <div className="flex items-center gap-2">
                                         <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
-                                            {t('shortcuts.ctrl')}
+                                            {t('frontend.shortcuts.ctrl')}
                                         </kbd>
                                         <span className="typo-overline text-muted-foreground/40">+</span>
                                         <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
@@ -150,16 +150,16 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                         </kbd>
                                     </div>
                                     <span className="typo-overline text-muted-foreground/60">
-                                        {t('workspaceDashboard.filesTab.quickSearch')}
+                                        {t('frontend.workspaceDashboard.filesTab.quickSearch')}
                                     </span>
                                 </div>
                                 <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/50 flex flex-col items-center gap-2 shadow-sm">
                                     <span className="typo-overline font-bold uppercase text-muted-foreground/40">
-                                        {t('workspaceDashboard.filesTab.navigation')}
+                                        {t('frontend.workspaceDashboard.filesTab.navigation')}
                                     </span>
                                     <div className="flex items-center gap-2">
                                         <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
-                                            {t('shortcuts.ctrl')}
+                                            {t('frontend.shortcuts.ctrl')}
                                         </kbd>
                                         <span className="typo-overline text-muted-foreground/40">+</span>
                                         <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
@@ -167,7 +167,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                         </kbd>
                                     </div>
                                     <span className="typo-overline text-muted-foreground/60">
-                                        {t('workspaceDashboard.filesTab.toggleExplorer')}
+                                        {t('frontend.workspaceDashboard.filesTab.toggleExplorer')}
                                     </span>
                                 </div>
                             </div>

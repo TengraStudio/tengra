@@ -30,8 +30,8 @@ export const SetupSelectionStep: React.FC<SetupSelectionStepProps> = ({
     const options: WizardOption[] = [
         {
             id: 'import',
-            title: t('workspaceWizard.alreadyExists'),
-            description: t('workspaceWizard.alreadyExistsDesc'),
+            title: t('frontend.workspaceWizard.alreadyExists'),
+            description: t('frontend.workspaceWizard.alreadyExistsDesc'),
             icon: IconFolderOpen,
             accentColor: 'text-primary',
             accentBg: 'bg-primary/10',
@@ -39,8 +39,8 @@ export const SetupSelectionStep: React.FC<SetupSelectionStepProps> = ({
         },
         {
             id: 'ssh',
-            title: t('workspaceWizard.remoteSSH'),
-            description: t('workspaceWizard.remoteSSHDesc'),
+            title: t('frontend.workspaceWizard.remoteSSH'),
+            description: t('frontend.workspaceWizard.remoteSSHDesc'),
             icon: IconServer,
             accentColor: 'text-accent-foreground',
             accentBg: 'bg-accent/40',
@@ -48,8 +48,8 @@ export const SetupSelectionStep: React.FC<SetupSelectionStepProps> = ({
         },
         {
             id: 'create',
-            title: t('workspaceWizard.localWorkspace'),
-            description: t('workspaceWizard.localWorkspaceDesc'),
+            title: t('frontend.workspaceWizard.localWorkspace'),
+            description: t('frontend.workspaceWizard.localWorkspaceDesc'),
             icon: IconPlus,
             accentColor: 'text-info',
             accentBg: 'bg-info/10',

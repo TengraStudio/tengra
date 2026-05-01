@@ -46,6 +46,9 @@ interface ModelSelectorProps {
     onChatModeChange?: (mode: 'instant' | 'thinking' | 'agent') => void;
     permissionPolicy?: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy;
     onUpdatePermissionPolicy?: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
+    showChatModeControls?: boolean;
+    showModeBadge?: boolean;
+    triggerVariant?: 'default' | 'compact';
 }
 
 export const ModelSelector = memo(({
@@ -71,7 +74,10 @@ export const ModelSelector = memo(({
     chatMode = 'instant',
     onChatModeChange,
     permissionPolicy,
-    onUpdatePermissionPolicy
+    onUpdatePermissionPolicy,
+    showChatModeControls = true,
+    showModeBadge = true,
+    triggerVariant = 'default',
 }: ModelSelectorProps) => {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
@@ -88,6 +94,8 @@ export const ModelSelector = memo(({
     const [activeCodexAccountEmail, setActiveCodexAccountEmail] = useState<string | null>(null);
     const [activeAntigravityAccountId, setActiveAntigravityAccountId] = useState<string | null>(null);
     const [activeAntigravityAccountEmail, setActiveAntigravityAccountEmail] = useState<string | null>(null);
+    const [activeOpencodeAccountId, setActiveOpencodeAccountId] = useState<string | null>(null);
+    const [activeOpencodeAccountEmail, setActiveOpencodeAccountEmail] = useState<string | null>(null);
     const [searchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const onOpenChangeRef = useRef(onOpenChange);
@@ -169,7 +177,8 @@ export const ModelSelector = memo(({
                 codexAccount,
                 openaiAccount,
                 antigravityAccount,
-                googleAccount
+                googleAccount,
+                opencodeAccount
             ] = await Promise.all([
                 window.electron.getCopilotQuota().catch(() => ({ accounts: [] })),
                 window.electron.getClaudeQuota().catch(() => ({ accounts: [] })),
@@ -182,13 +191,15 @@ export const ModelSelector = memo(({
                 window.electron.getActiveLinkedAccount('codex').catch(() => null),
                 window.electron.getActiveLinkedAccount('openai').catch(() => null),
                 window.electron.getActiveLinkedAccount('antigravity').catch(() => null),
-                window.electron.getActiveLinkedAccount('google').catch(() => null)
+                window.electron.getActiveLinkedAccount('google').catch(() => null),
+                window.electron.getActiveLinkedAccount('opencode').catch(() => null)
             ]);
 
             const activeCopilotAccount = copilotAccount ?? githubAccount;
             const activeClaudeAccount = claudeAccount ?? anthropicAccount;
             const activeCodexAccount = codexAccount ?? openaiAccount;
             const activeAntigravityAccount = antigravityAccount ?? googleAccount;
+            const activeOpencodeAccount = opencodeAccount;
 
             setResolvedCopilotQuota(copilotQuotaResult);
             setResolvedClaudeQuota(claudeQuotaResult);
@@ -202,6 +213,8 @@ export const ModelSelector = memo(({
             setActiveCodexAccountEmail(activeCodexAccount?.email?.toLowerCase() ?? null);
             setActiveAntigravityAccountId(activeAntigravityAccount?.id ?? null);
             setActiveAntigravityAccountEmail(activeAntigravityAccount?.email?.toLowerCase() ?? null);
+            setActiveOpencodeAccountId(activeOpencodeAccount?.id ?? null);
+            setActiveOpencodeAccountEmail(activeOpencodeAccount?.email?.toLowerCase() ?? null);
         })().catch(() => {
             setResolvedCopilotQuota(copilotQuota);
             setResolvedClaudeQuota(claudeQuota);
@@ -318,14 +331,15 @@ export const ModelSelector = memo(({
     const providedCategories = useMemo(() => {
         return categories.filter(cat => {
             if (cat.id === 'favorites') {return true;}
-            if (['ollama', 'local', 'lm_studio', 'custom'].includes(cat.id)) {return true;}
+            if (['ollama', 'local', 'lm_studio', 'custom', 'opencode'].includes(cat.id)) {return true;}
             if (cat.id === 'copilot') {return !!activeCopilotAccountId;}
             if (cat.id === 'claude') {return !!activeClaudeAccountId;}
             if (cat.id === 'codex') {return !!activeCodexAccountId;}
             if (cat.id === 'antigravity') {return !!activeAntigravityAccountId || (resolvedAntigravityQuota?.accounts && resolvedAntigravityQuota.accounts.length > 0);}
+            if (cat.id === 'opencode') {return !!activeOpencodeAccountId || cat.models.length > 0;}
             return cat.models.length > 0;
         });
-    }, [categories, activeCopilotAccountId, activeClaudeAccountId, activeCodexAccountId, activeAntigravityAccountId, resolvedAntigravityQuota]);
+    }, [categories, activeCopilotAccountId, activeClaudeAccountId, activeCodexAccountId, activeAntigravityAccountId, activeOpencodeAccountId, resolvedAntigravityQuota]);
 
     return (
         <div className="relative">
@@ -342,6 +356,8 @@ export const ModelSelector = memo(({
                 t={t}
                 isIconOnly={isIconOnly}
                 chatMode={chatMode}
+                showModeBadge={showModeBadge}
+                triggerVariant={triggerVariant}
             />
 
             <ModelSelectorPopover
@@ -361,6 +377,7 @@ export const ModelSelector = memo(({
                 t={t}
                 chatMode={chatMode}
                 onChatModeChange={onChatModeChange}
+                showChatModeControls={showChatModeControls}
                 thinkingLevel={effectiveThinkingLevel}
                 onThinkingLevelChange={onThinkingLevelChange}
                 copilotQuota={resolvedCopilotQuota}

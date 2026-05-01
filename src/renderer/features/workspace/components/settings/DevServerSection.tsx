@@ -23,22 +23,22 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
         <div className="flex flex-col gap-1.5">
             <h2 className="text-2xl font-bold flex items-center gap-2">
                 <IconServer className="w-6 h-6 text-primary" />
-                {t('workspaces.devServer')}
+                {t('frontend.workspaces.devServer')}
             </h2>
-            <p className="text-muted-foreground">{t('workspaces.devServerDesc')}</p>
+            <p className="text-muted-foreground">{t('frontend.workspaces.devServerDesc')}</p>
         </div>
 
         <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
                     <IconPower className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-base font-semibold">{t('workspaces.serverRuntime')}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('frontend.workspaces.serverRuntime')}</CardTitle>
                 </div>
-                <CardDescription>{t('workspaces.devServerDescShort')}</CardDescription>
+                <CardDescription>{t('frontend.workspaces.devServerDescShort')}</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t('workspaces.startCommand')}</Label>
+                    <Label className="text-sm font-medium">{t('frontend.workspaces.startCommand')}</Label>
                     <div className="relative">
                         <IconPlayerPlay className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                         <Input
@@ -48,14 +48,14 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                                 setFormData(prev => ({ ...prev, devCommand: e.target.value }))
                             }
                             className="pl-9 bg-background/50 font-mono"
-                            placeholder={t('placeholder.devCommand')}
+                            placeholder={t('frontend.placeholder.devCommand')}
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium">{t('workspaces.port')}</Label>
+                        <Label className="text-sm font-medium">{t('frontend.workspaces.port')}</Label>
                         <Input
                             type="number"
                             value={formData.devPort}
@@ -66,12 +66,12 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                                 }))
                             }
                             className="bg-background/50 font-mono"
-                            placeholder={t('placeholder.portNumber')}
+                            placeholder={t('frontend.placeholder.portNumber')}
                         />
                     </div>
 
                     <div className="flex items-center justify-between p-3 px-4 bg-background/40 rounded-xl border border-border/20 self-end h-40">
-                        <Label className="text-sm font-medium translate-y-1px">{t('workspaces.autoStart')}</Label>
+                        <Label className="text-sm font-medium translate-y-1px">{t('frontend.workspaces.autoStart')}</Label>
                         <Switch
                             checked={formData.devAutoStart}
                             onCheckedChange={(checked) =>

@@ -41,7 +41,7 @@ function failureResult(errorCode: string): WorkspaceMountValidationResult {
         success: false,
         parsedPort: 22,
         errorCode,
-        messageKey: 'errors.unexpected',
+        messageKey: 'frontend.errors.unexpected',
         uiState: 'failure',
     };
 }

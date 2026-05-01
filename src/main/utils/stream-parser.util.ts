@@ -261,12 +261,19 @@ export class StreamParser {
                     openCodeState.processedMessageIds.add(itemId);
                 }
                 const text = contentItems
-                    .filter((c) => c.type === 'output_text')
+                    .filter((c) => c.type === 'output_text' || c.type === 'summary_text')
+                    .map((c) => c.text ?? '')
+                    .join('');
+                const reasoning = contentItems
+                    .filter((c) => c.type === 'reasoning')
                     .map((c) => c.text ?? '')
                     .join('');
                 if (text && text !== openCodeState.lastContent) {
                     openCodeState.lastContent = text;
                     yield { content: text };
+                }
+                if (reasoning) {
+                    yield { reasoning };
                 }
             }
             return;
@@ -297,10 +304,17 @@ export class StreamParser {
             yield* this.handleOpenCodeText(json.delta, openCodeState);
         } else if (
             json.type === 'response.reasoning_text.delta'
-            || json.type === 'response.reasoning_summary_text.delta'
         ) {
             if (json.delta) {
                 yield* this.handleOpenCodeReasoning(json.delta);
+            }
+        } else if (json.type === 'response.reasoning_summary_text.delta') {
+            if (json.delta) {
+                yield* this.handleOpenCodeReasoning(json.delta);
+            }
+        } else if (json.type === 'response.summary_text.delta') {
+            if (json.delta) {
+                yield* this.handleOpenCodeText(json.delta, openCodeState);
             }
         } else if (
             json.type === 'response.output_text.done'
@@ -323,11 +337,30 @@ export class StreamParser {
                 yield { reasoning: json.text };
             }
         } else if (
+            json.type === 'response.reasoning_summary_text.done'
+        ) {
+            if (json.text) {
+                yield { reasoning: json.text };
+            }
+        } else if (
+            json.type === 'response.summary_text.done'
+        ) {
+            if (json.text && json.text !== openCodeState.lastContent) {
+                openCodeState.lastContent = json.text;
+                yield { content: json.text };
+            }
+        } else if (
             json.type === 'response.function_call_arguments.delta'
             || json.type === 'response.mcp_call_arguments.delta'
             || json.type === 'response.output_item.added'
             || json.type === 'response.output_item.done'
         ) {
+            if (json.type === 'response.output_item.done') {
+                const images = this.extractOpenCodeImages(json);
+                if (images.length > 0) {
+                    yield { images };
+                }
+            }
             this.updateOpenCodeToolCallState(json, openCodeState);
             if (json.type === 'response.output_item.done' && this.isOpenCodeFunctionCallItem(json)) {
                 const toolCall = this.finalizeOpenCodeToolCall(json, openCodeState, false);
@@ -351,6 +384,7 @@ export class StreamParser {
                     yield toolCall;
                 }
             }
+            yield { finish_reason: 'stop', content: '' };
         }
     }
 
@@ -364,7 +398,7 @@ export class StreamParser {
 
     private static *handleOpenCodeReasoning(delta: string | { text?: string }) {
         const reasoning = typeof delta === 'string' ? delta : delta.text;
-        if (reasoning) { yield { reasoning }; }
+        if (reasoning) { yield { reasoning, type: 'reasoning' }; }
     }
 
     private static updateOpenCodeToolCallState(json: StreamPayload, openCodeState: OpenCodeStreamState): void {
@@ -489,6 +523,50 @@ export class StreamParser {
 
     private static isOpenCodeFunctionCallItem(json: StreamPayload): boolean {
         return json.item?.type === 'function_call';
+    }
+
+    private static extractOpenCodeImages(json: StreamPayload): Array<string | { image_url: { url: string } }> {
+        const item = json.item;
+        if (!item) {
+            return [];
+        }
+
+        const itemType = typeof item.type === 'string' ? item.type : '';
+        if (
+            itemType !== 'image_generation_call'
+            && itemType !== 'output_image'
+            && !itemType.endsWith('image_generation_call')
+        ) {
+            return [];
+        }
+
+        const result = typeof item.result === 'string' ? item.result.trim() : '';
+        if (result) {
+            return [{ image_url: { url: `data:image/png;base64,${result}` } }];
+        }
+
+        const directUrl = this.extractOpenCodeImageUrl(item.image_url) ?? this.extractOpenCodeImageUrl(item.url);
+        if (directUrl) {
+            return [{ image_url: { url: directUrl } }];
+        }
+
+        return [];
+    }
+
+    private static extractOpenCodeImageUrl(value: unknown): string | null {
+        if (typeof value === 'string' && value.trim().length > 0) {
+            return value.trim();
+        }
+        if (
+            value
+            && typeof value === 'object'
+            && !Array.isArray(value)
+            && typeof (value as { url?: unknown }).url === 'string'
+            && (value as { url: string }).url.trim().length > 0
+        ) {
+            return (value as { url: string }).url.trim();
+        }
+        return null;
     }
 
     private static *handleOpenAIPayload(json: StreamPayload): Generator<StreamChunk> {
@@ -718,6 +796,9 @@ type StreamPayload = OpenAIStreamPayload & {
         type?: string;
         call_id?: string;
         name?: string;
+        result?: string;
+        url?: string | { url?: string };
+        image_url?: string | { url?: string };
         arguments?: string;
         function?: {
             name?: string;

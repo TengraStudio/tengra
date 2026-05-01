@@ -26,7 +26,6 @@ pub async fn start_callback_server(
         .with_state(tx);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    eprintln!("[LOG] Claude callback server listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

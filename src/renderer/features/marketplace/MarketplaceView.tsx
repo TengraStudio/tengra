@@ -80,14 +80,14 @@ export function MarketplaceView(): JSX.Element {
         { id: 'iconPacks', icon: IconPhoto },
     ];
     const tabLabels: Record<MarketplaceTab, string> = {
-        mcp: t('marketplace.tabs.mcp'),
-        extensions: t('marketplace.tabs.extensions'),
-        skills: t('marketplace.tabs.skills'),
-        themes: t('marketplace.tabs.themes'),
-        models: t('marketplace.tabs.models'),
-        prompts: t('marketplace.tabs.prompts'),
-        languages: t('marketplace.tabs.languages'),
-        iconPacks: t('marketplace.tabs.iconPacks'),
+        mcp: t('frontend.marketplace.tabs.mcp'),
+        extensions: t('frontend.marketplace.tabs.extensions'),
+        skills: t('frontend.marketplace.tabs.skills'),
+        themes: t('frontend.marketplace.tabs.themes'),
+        models: t('frontend.marketplace.tabs.models'),
+        prompts: t('frontend.marketplace.tabs.prompts'),
+        languages: t('frontend.marketplace.tabs.languages'),
+        iconPacks: t('frontend.marketplace.tabs.iconPacks'),
     };
     const registryItems = registry ?? {
         version: '',
@@ -136,7 +136,7 @@ export function MarketplaceView(): JSX.Element {
                 setRegistry(data);
                 setMarketplaceSkills(data.skills ?? []);
             } catch {
-                pushNotification({ type: 'error', message: tRef.current('marketplace.loadError') });
+                pushNotification({ type: 'error', message: tRef.current('frontend.marketplace.loadError') });
             } finally {
                 registryInFlightRef.current = null;
             }
@@ -154,7 +154,7 @@ export function MarketplaceView(): JSX.Element {
                 const list = await window.electron.mcp.list() as Array<McpPlugin | LegacyMcpListItem>;
                 setLocalPlugins(normalizeMcpPlugins(list));
             } catch {
-                pushNotification({ type: 'error', message: tRef.current('marketplace.mcp.localLoadError') });
+                pushNotification({ type: 'error', message: tRef.current('frontend.marketplace.mcp.localLoadError') });
             } finally {
                 mcpInFlightRef.current = null;
             }
@@ -171,7 +171,7 @@ export function MarketplaceView(): JSX.Element {
             try {
                 setInstalledSkills(await window.electron.listSkills());
             } catch {
-                pushNotification({ type: 'error', message: tRef.current('marketplace.loadError') });
+                pushNotification({ type: 'error', message: tRef.current('frontend.marketplace.loadError') });
             } finally {
                 skillsInFlightRef.current = null;
             }
@@ -240,10 +240,10 @@ export function MarketplaceView(): JSX.Element {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-bold text-foreground">
-                            {t('marketplace.title')}
+                            {t('frontend.marketplace.title')}
                         </h1>
                         <p className="text-sm font-medium text-muted-foreground/50 uppercase ">
-                            {t('marketplace.subtitle')}
+                            {t('frontend.marketplace.subtitle')}
                         </p>
                     </div>
 
@@ -274,12 +274,12 @@ export function MarketplaceView(): JSX.Element {
                 <div className="mt-8 flex items-center gap-6 px-1 border-b border-muted/10 pb-4">
                     <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground/40 uppercase ">
                         <IconPackage className="w-3.5 h-3.5 opacity-30" />
-                        <span>{totalAvailable} {t('marketplace.results')}</span>
+                        <span>{totalAvailable} {t('frontend.marketplace.results')}</span>
                     </div>
                     <div className="h-1 w-1 rounded-full bg-muted/20" />
                     <div className="flex items-center gap-2 text-sm font-bold text-primary/60 uppercase ">
                         <IconCircleCheck className="w-3.5 h-3.5 opacity-60" />
-                        <span>{totalInstalled} {t('modelExplorer.installed')}</span>
+                        <span>{totalInstalled} {t('frontend.modelExplorer.installed')}</span>
                     </div>
                 </div>
             </header>

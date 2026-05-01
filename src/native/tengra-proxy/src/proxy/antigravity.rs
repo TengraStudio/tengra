@@ -47,6 +47,9 @@ pub fn upstream_model_name(model: &str) -> String {
         "gemini-3-pro-image-preview" => "gemini-3-pro-image".to_string(),
         "gemini-3-pro-preview" => "gemini-3-pro-high".to_string(),
         "gemini-3-flash-preview" => "gemini-3-flash".to_string(),
+        "gemini-3.1-pro-low" | "gemini-3.1-pro-high" | "gemini-3.1-pro-preview" => {
+            "gemini-3.1-pro".to_string()
+        }
         "gemini-claude-sonnet-4-5" => "claude-sonnet-4-5".to_string(),
         "gemini-claude-sonnet-4-5-thinking" => "claude-sonnet-4-5-thinking".to_string(),
         "gemini-claude-opus-4-5-thinking" => "claude-opus-4-5-thinking".to_string(),

@@ -66,12 +66,12 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
             <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <IconEdit className="w-5 h-5 text-primary" />
-                    {t('memory.editTitle')}
+                    {t('frontend.memory.editTitle')}
                 </h2>
 
                 <div className="space-y-4">
                     <div>
-                        <label className="typo-caption font-bold text-muted-foreground/60">{t('memory.contentLabel')}</label>
+                        <label className="typo-caption font-bold text-muted-foreground/60">{t('frontend.memory.contentLabel')}</label>
                         <textarea
                             value={content}
                             onChange={(e) => onContentChange(e.target.value)}
@@ -81,7 +81,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="typo-caption font-bold text-muted-foreground/60">{t('memory.categoryLabel')}</label>
+                            <label className="typo-caption font-bold text-muted-foreground/60">{t('frontend.memory.categoryLabel')}</label>
                             <Select value={category} onValueChange={(v) => onCategoryChange(v as MemoryCategory)}>
                                 <SelectTrigger className="mt-1 bg-muted/50 border-border/40">
                                     <SelectValue />
@@ -101,7 +101,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
 
                         <div>
                             <label className="typo-caption font-bold text-muted-foreground/60">
-                                {t('memory.importanceLabel', { percent: Math.round(importance * 100) })}
+                                {t('frontend.memory.importanceLabel', { percent: Math.round(importance * 100) })}
                             </label>
                             <input
                                 type="range"
@@ -117,17 +117,17 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="typo-caption font-bold text-muted-foreground/60">{t('memory.tagsLabel')}</label>
+                            <label className="typo-caption font-bold text-muted-foreground/60">{t('frontend.memory.tagsLabel')}</label>
                             <Input
                                 value={tags}
                                 onChange={(e) => onTagsChange(e.target.value)}
-                                placeholder={t('memory.tagsPlaceholderFull')}
+                                placeholder={t('frontend.memory.tagsPlaceholderFull')}
                                 className="mt-1 bg-muted/50 border-border/40"
                             />
                         </div>
 
                         <div>
-                            <label className="typo-caption font-bold text-muted-foreground/60">{t('memory.expirationLabel')}</label>
+                            <label className="typo-caption font-bold text-muted-foreground/60">{t('frontend.memory.expirationLabel')}</label>
                             <Input
                                 type="date"
                                 value={expiresAt}
@@ -140,7 +140,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
 
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
-                    <Button onClick={onSave} disabled={!content.trim()}>{t('memory.saveChanges')}</Button>
+                    <Button onClick={onSave} disabled={!content.trim()}>{t('frontend.memory.saveChanges')}</Button>
                 </div>
             </Card>
         </div>

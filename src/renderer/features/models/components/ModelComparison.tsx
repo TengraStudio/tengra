@@ -150,8 +150,8 @@ const ResponseCardHeader = ({
                 <button
                     onClick={() => copyResponse(slot.id, slot.response?.content ?? '')}
                     className="p-1.5 hover:bg-muted rounded-md transition-colors"
-                    title={t('modelComparison.copyResponse')}
-                    aria-label={t('modelComparison.copyResponse')}
+                    title={t('frontend.modelComparison.copyResponse')}
+                    aria-label={t('frontend.modelComparison.copyResponse')}
                 >
                     {copiedId === slot.id ? (
                         <IconCheck className="w-4 h-4 text-success" aria-hidden="true" />
@@ -164,7 +164,7 @@ const ResponseCardHeader = ({
                 <button
                     onClick={() => removeSlot(slot.id)}
                     className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors"
-                    aria-label={t('modelComparison.removeSlot')}
+                    aria-label={t('frontend.modelComparison.removeSlot')}
                 >
                     <IconX className="w-4 h-4" aria-hidden="true" />
                 </button>
@@ -179,7 +179,7 @@ const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: strin
             <div
                 className="flex items-center justify-center h-full"
                 role="status"
-                aria-label={t('modelComparison.loadingResponse')}
+                aria-label={t('frontend.modelComparison.loadingResponse')}
             >
                 <IconLoader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
             </div>
@@ -191,7 +191,7 @@ const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: strin
             <p className="text-sm whitespace-pre-wrap">{slot.response.content}</p>
         ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground/50 text-sm">
-                {t('modelComparison.responsePlaceholder')}
+                {t('frontend.modelComparison.responsePlaceholder')}
             </div>
         )}
     </div>
@@ -206,19 +206,19 @@ const ResponseCardStats = ({
 }) => (
     <div
         className="flex items-center gap-4 px-4 py-2 border-t border-border/30 bg-muted/10 typo-caption text-muted-foreground"
-        aria-label={t('modelComparison.metrics')}
+        aria-label={t('frontend.modelComparison.metrics')}
     >
-        <span className="flex items-center gap-1" title={t('modelComparison.responseTime')}>
+        <span className="flex items-center gap-1" title={t('frontend.modelComparison.responseTime')}>
             <IconClock className="w-3 h-3" aria-hidden="true" />
             {(response.responseTime / 1000).toFixed(2)}s
         </span>
-        <span className="flex items-center gap-1" title={t('modelComparison.tokenCount')}>
+        <span className="flex items-center gap-1" title={t('frontend.modelComparison.tokenCount')}>
             <IconBolt className="w-3 h-3" aria-hidden="true" />
-            {response.tokens} {t('modelComparison.tokensUnit')}
+            {response.tokens} {t('frontend.modelComparison.tokensUnit')}
         </span>
-        <span className="flex items-center gap-1" title={t('modelComparison.tokensPerSecond')}>
+        <span className="flex items-center gap-1" title={t('frontend.modelComparison.tokensPerSecond')}>
             <IconChartBar className="w-3 h-3" aria-hidden="true" />
-            {(response.tokens / (response.responseTime / 1000 || 1)).toFixed(1)} {t('modelComparison.tokensPerSecondUnit')}
+            {(response.tokens / (response.responseTime / 1000 || 1)).toFixed(1)} {t('frontend.modelComparison.tokensPerSecondUnit')}
         </span>
     </div>
 );
@@ -245,7 +245,7 @@ const ResponseCard = (props: ResponseCardProps) => {
                 slot.isLoading && 'animate-pulse'
             )}
             role="region"
-            aria-label={`${props.t('modelComparison.responseFrom')} ${slot.model}`}
+            aria-label={`${props.t('frontend.modelComparison.responseFrom')} ${slot.model}`}
         >
             <ResponseCardHeader {...props} />
             <ResponseCardContent slot={slot} t={props.t} />
@@ -258,8 +258,8 @@ const ResponseCard = (props: ResponseCardProps) => {
 
 const ComparisonHeader = ({ t }: { t: (key: string) => string }) => (
     <div className="mb-4">
-        <h1 className="text-xl font-bold mb-1">{t('modelComparison.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('modelComparison.subtitle')}</p>
+        <h1 className="text-xl font-bold mb-1">{t('frontend.modelComparison.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('frontend.modelComparison.subtitle')}</p>
     </div>
 );
 
@@ -281,15 +281,15 @@ const PromptInput = ({
             <textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder={t('modelComparison.promptPlaceholder')}
-                aria-label={t('modelComparison.promptPlaceholder')}
+                placeholder={t('frontend.modelComparison.promptPlaceholder')}
+                aria-label={t('frontend.modelComparison.promptPlaceholder')}
                 className={C_MODELCOMPARISON_2}
             />
             <div className="absolute right-2 bottom-2 flex gap-2">
                 <button
                     onClick={() => void runComparison()}
                     disabled={!prompt.trim() || isComparing}
-                    aria-label={t('modelComparison.compare')}
+                    aria-label={t('frontend.modelComparison.compare')}
                     className={cn(
                         'flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors',
                         prompt.trim() && !isComparing
@@ -302,7 +302,7 @@ const PromptInput = ({
                     ) : (
                         <IconPlayerPlay className="w-4 h-4" aria-hidden="true" />
                     )}
-                    {t('modelComparison.compare')}
+                    {t('frontend.modelComparison.compare')}
                 </button>
             </div>
         </div>
@@ -421,7 +421,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                 className="flex-1 grid gap-4"
                 style={{ gridTemplateColumns: `repeat(${slots.length}, 1fr)` }}
                 role="list"
-                aria-label={t('aria.comparisonSlots')}
+                aria-label={t('frontend.aria.comparisonSlots')}
             >
                 {slots.map(slot => (
                     <ResponseCard
@@ -442,11 +442,11 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
             {slots.length < 4 && (
                 <button
                     onClick={addSlot}
-                    aria-label={t('modelComparison.addModel')}
+                    aria-label={t('frontend.modelComparison.addModel')}
                     className={C_MODELCOMPARISON_3}
                 >
                     <IconPlus className="w-4 h-4" aria-hidden="true" />
-                    {t('modelComparison.addModel')}
+                    {t('frontend.modelComparison.addModel')}
                 </button>
             )}
         </div>

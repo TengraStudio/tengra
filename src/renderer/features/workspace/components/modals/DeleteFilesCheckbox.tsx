@@ -45,11 +45,11 @@ export const DeleteFilesCheckbox: React.FC<DeleteFilesCheckboxProps> = ({ checke
         </div>
         <div className="flex flex-col">
             <span className="text-sm font-medium text-foreground group-hover:text-destructive transition-colors">
-                {t('workspaces.deleteWorkspaceFiles')}
+                {t('frontend.workspaces.deleteWorkspaceFiles')}
             </span>
             {checked && (
                 <span className="text-sm text-destructive font-bold animate-pulse">
-                    {t('workspaceModals.permanentDeletionWarning')}
+                    {t('frontend.workspaceModals.permanentDeletionWarning')}
                 </span>
             )}
         </div>

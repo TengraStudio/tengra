@@ -74,9 +74,11 @@ export interface EditorTab {
     isDirty: boolean;
     isPinned?: boolean;
     isLoaded?: boolean;
-    type: 'code' | 'image';
+    type: 'code' | 'image' | 'diff';
     initialLine?: number;
     readOnly?: boolean;
+    originalContent?: string;
+    diffId?: string;
 }
 
 export interface WorkspaceDefinitionLocation {

@@ -56,7 +56,7 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
                             {(att.type === 'image' || att.type === 'video') && typeof att.preview === 'string' ? (
                                 <img
                                     src={att.preview}
-                                    alt={t('input.attachmentPreview')}
+                                    alt={t('frontend.input.attachmentPreview')}
                                     className="h-5 w-5 rounded-md border border-border/20 object-cover"
                                 />
                             ) : (
@@ -71,7 +71,7 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
                             <button
                                 onClick={() => onRemove(i)}
                                 className={C_ATTACHMENTLIST_2}
-                                aria-label={t('input.removeAttachment', { name: att.name })}
+                                aria-label={t('frontend.input.removeAttachment', { name: att.name })}
                             >
                                 <IconX size={12} aria-hidden="true" />
                             </button>

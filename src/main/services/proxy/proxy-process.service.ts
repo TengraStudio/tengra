@@ -39,6 +39,8 @@ export const PROXY_PROCESS_PERFORMANCE_BUDGETS = {
     START_MS: 10000,
     STOP_MS: 5000
 } as const;
+const PROXY_HEALTH_POLL_INTERVAL_MS = 100;
+const PROXY_HEALTH_REQUEST_TIMEOUT_MS = 750;
 
 export interface ProxyEmbedStatus {
     running: boolean;
@@ -284,7 +286,7 @@ export class ProxyProcessManager {
             if (isHealthy) {
                 return;
             }
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, PROXY_HEALTH_POLL_INTERVAL_MS));
         }
         throw new Error(`Timeout waiting for proxy health at port ${port}`);
     }
@@ -296,7 +298,7 @@ export class ProxyProcessManager {
                     host: '127.0.0.1',
                     path: '/health',
                     port,
-                    timeout: 750,
+                    timeout: PROXY_HEALTH_REQUEST_TIMEOUT_MS,
                 },
                 response => {
                     response.resume();
@@ -429,7 +431,7 @@ export class ProxyProcessManager {
 
         // Move/Copy binary from target/release to the managed runtime directory
         const builtBinaryName = process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy';
-        const builtBinary = path.join(sourceDir, 'target', 'release', builtBinaryName);
+        const builtBinary = path.join(sourceDir, '..', 'target', 'release', builtBinaryName);
         const builtExists = await fs.promises.access(builtBinary, fs.constants.F_OK).then(() => true).catch(() => false);
         if (builtExists) {
             await fs.promises.copyFile(builtBinary, binaryPath);
@@ -512,6 +514,11 @@ export class ProxyProcessManager {
     }
 
     private processProxyLogLine(line: string, defaultLevel: 'info' | 'error') {
+        if (line.includes('__TENGRA_DEBUG__:')) {
+          // const parts = line.split('__TENGRA_DEBUG__:');
+          // appLogger.info('Proxy:Debug', parts[1]?.trim() || '');
+          return;
+        }
         if (line.includes('__TENGRA_AUTH_UPDATE__:')) {
             const parts = line.split('__TENGRA_AUTH_UPDATE__:');
             const jsonContent = parts[1]?.trim();
@@ -583,11 +590,20 @@ export class ProxyProcessManager {
                     context = context.split('::').pop() || context;
                 }
 
+                let data = payload.data || payload.fields;
+                // Filter out massive data structures like model lists or large snapshots
+                if (data && typeof data === 'object') {
+                    const dataStr = JSON.stringify(data);
+                    if (dataStr.length > 2048 || dataStr.includes('"models"') || dataStr.includes('"quotaInfo"')) {
+                        data = { _summary: `[Filtered: ${dataStr.length} bytes]` };
+                    }
+                }
+
                 appLogger.ingest({
                     level: payload.level ? payload.level.toLowerCase() : undefined,
                     message: message,
                     context: context,
-                    data: payload.data || payload.fields,
+                    data: data,
                     timestamp: payload.timestamp,
                 });
                 return true;

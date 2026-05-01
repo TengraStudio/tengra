@@ -50,12 +50,12 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
 
     const handleApply = async () => {
         if (!domain) {
-            setStatus({ type: 'error', message: t('ssh.nginx.status.domainRequired') });
+            setStatus({ type: 'error', message: t('frontend.ssh.nginx.status.domainRequired') });
             return;
         }
 
         setIsGenerating(true);
-        setStatus({ type: 'info', message: t('ssh.nginx.status.connecting') });
+        setStatus({ type: 'info', message: t('frontend.ssh.nginx.status.connecting') });
 
         try {
             const fileName = domain.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -66,15 +66,15 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
             await window.electron.ssh.writeFile(connectionId, tempPath, config);
 
             // Step 2: Try to move with sudo (User will see errors if they don't have sudo or if it fails)
-            setStatus({ type: 'info', message: t('ssh.nginx.status.moving') });
+            setStatus({ type: 'info', message: t('frontend.ssh.nginx.status.moving') });
             const moveCmd = `sudo mv ${tempPath} ${remotePath} && sudo ln -sf ${remotePath} /etc/nginx/sites-enabled/ && sudo nginx -t && sudo systemctl reload nginx`;
 
             const result = await window.electron.ssh.execute(connectionId, moveCmd);
 
             if (result.code === 0) {
-                setStatus({ type: 'success', message: t('ssh.nginx.status.success') });
+                setStatus({ type: 'success', message: t('frontend.ssh.nginx.status.success') });
             } else {
-                setStatus({ type: 'error', message: t('ssh.nginx.status.error', { error: result.stderr !== '' ? result.stderr : 'Unknown error' }) });
+                setStatus({ type: 'error', message: t('frontend.ssh.nginx.status.error', { error: result.stderr !== '' ? result.stderr : 'Unknown error' }) });
             }
         } catch (error) {
             setStatus({ type: 'error', message: `${t('common.error')}: ${error instanceof Error ? error.message : String(error)}` });
@@ -91,32 +91,32 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         <IconServer className="w-6 h-6" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-semibold">{t('ssh.nginx.title')}</h2>
-                        <p className="text-sm text-muted-foreground">{t('ssh.nginx.subtitle')}</p>
+                        <h2 className="text-xl font-semibold">{t('frontend.ssh.nginx.title')}</h2>
+                        <p className="text-sm text-muted-foreground">{t('frontend.ssh.nginx.subtitle')}</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="typo-caption font-bold text-muted-foreground">{t('ssh.nginx.domain')}</label>
+                        <label className="typo-caption font-bold text-muted-foreground">{t('frontend.ssh.nginx.domain')}</label>
                         <div className="relative">
                             <IconGlobe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input
                                 value={domain}
                                 onChange={(e) => setDomain(e.target.value)}
                                 className="w-full bg-muted/30 border border-border rounded-lg h-10 pl-10 pr-4 focus:ring-1 focus:ring-primary/50 text-sm"
-                                placeholder={t('ssh.nginx.placeholders.domain')}
+                                placeholder={t('frontend.ssh.nginx.placeholders.domain')}
                             />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="typo-caption font-bold text-muted-foreground">{t('ssh.nginx.port')}</label>
+                        <label className="typo-caption font-bold text-muted-foreground">{t('frontend.ssh.nginx.port')}</label>
                         <input
                             type="number"
                             value={backendPort}
                             onChange={(e) => setBackendPort(e.target.value)}
                             className="w-full bg-muted/30 border border-border rounded-lg h-10 px-4 focus:ring-1 focus:ring-primary/50 text-sm"
-                            placeholder={t('ssh.nginx.placeholders.port')}
+                            placeholder={t('frontend.ssh.nginx.placeholders.port')}
                         />
                     </div>
                 </div>
@@ -127,7 +127,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         className="typo-caption font-medium text-primary hover:underline flex items-center gap-1"
                     >
                         <IconPlayerPlay className="w-3 h-3" />
-                        {t('ssh.nginx.preview')}
+                        {t('frontend.ssh.nginx.preview')}
                     </button>
                     <button
                         onClick={() => void handleApply()}
@@ -135,7 +135,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         className={C_NGINXWIZARD_1}
                     >
                         {isGenerating ? <IconLoader2 className="w-4 h-4 animate-spin" /> : <IconDeviceFloppy className="w-4 h-4" />}
-                        {t('ssh.nginx.apply')}
+                        {t('frontend.ssh.nginx.apply')}
                     </button>
                 </div>
 
@@ -153,7 +153,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
 
                 {config && (
                     <div className="space-y-2 pt-4">
-                        <label className="typo-caption font-bold text-muted-foreground">{t('ssh.nginx.configPreview')}</label>
+                        <label className="typo-caption font-bold text-muted-foreground">{t('frontend.ssh.nginx.configPreview')}</label>
                         <pre className="p-4 bg-muted/30 border border-border/50 rounded-xl font-mono typo-caption overflow-x-auto text-primary/80">
                             {config}
                         </pre>

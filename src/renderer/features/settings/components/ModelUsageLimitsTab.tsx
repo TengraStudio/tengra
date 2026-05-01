@@ -153,18 +153,18 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-foreground leading-none">
-                            {t('settings.usageLimits.title')}
+                            {t('frontend.settings.usageLimits.title')}
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
                             <p className="typo-body font-bold text-muted-foreground opacity-50">
-                                {t('settings.usageLimits.consumptionGuard')}
+                                {t('frontend.settings.usageLimits.consumptionGuard')}
                             </p>
                         </div>
                     </div>
                 </div>
                 <p className="typo-caption text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
-                    {t('settings.usageLimits.description')}
+                    {t('frontend.settings.usageLimits.description')}
                 </p>
             </div>
 
@@ -175,9 +175,9 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <IconBolt className="w-4 h-4 text-primary" />
-                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.copilotProtocol')}</h4>
+                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('frontend.settings.usageLimits.copilotProtocol')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.activePolicy')}</Badge>
+                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('frontend.settings.usageLimits.activePolicy')}</Badge>
                     </div>
                     <div className="relative z-10">
                         <CopilotLimitsSection
@@ -195,9 +195,9 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <IconActivity className="w-4 h-4 text-primary" />
-                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.coreAllocation')}</h4>
+                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('frontend.settings.usageLimits.coreAllocation')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.customQuotas')}</Badge>
+                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('frontend.settings.usageLimits.customQuotas')}</Badge>
                     </div>
                     <div className="relative z-10">
                         <AntigravityLimitsSection
@@ -214,9 +214,9 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <IconLock className="w-4 h-4 text-primary" />
-                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.legacyThresholds')}</h4>
+                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('frontend.settings.usageLimits.legacyThresholds')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.restrictive')}</Badge>
+                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('frontend.settings.usageLimits.restrictive')}</Badge>
                     </div>
                     <div className="relative z-10">
                         <CodexLimitsSection

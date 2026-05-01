@@ -25,8 +25,13 @@ const LEGACY_CHAT_WORKSPACE_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.CHATS_BY_SINGU
 const LEGACY_TOKEN_USAGE_WORKSPACE_TIME_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.TOKEN_USAGE_BY_SINGULAR_TIME;
 const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
 const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
+const STATS_CACHE_TTL_MS = 30_000;
+const LINKED_ACCOUNTS_CACHE_TTL_MS = 10_000;
 
 export class SystemRepository extends BaseRepository {
+    private statsCache: { value: DbStats; expiresAt: number } | null = null;
+    private linkedAccountsCache = new Map<string, { value: LinkedAccount[]; expiresAt: number }>();
+
     private parseTimestampValue(value: number | string | null | undefined, fallback: number = Date.now()): number {
         if (typeof value === 'number' && Number.isFinite(value)) {
             return value;
@@ -101,6 +106,19 @@ export class SystemRepository extends BaseRepository {
         super(adapter);
     }
 
+    private invalidateStatsCache(): void {
+        this.statsCache = null;
+    }
+
+    private invalidateLinkedAccountsCache(provider?: string): void {
+        if (!provider) {
+            this.linkedAccountsCache.clear();
+            return;
+        }
+        this.linkedAccountsCache.delete(this.normalizeProvider(provider));
+        this.linkedAccountsCache.delete('__all__');
+    }
+
     async ensureProductionIndexes(): Promise<void> {
         const indexStatements = [
             // Chat and message hot paths
@@ -137,6 +155,96 @@ export class SystemRepository extends BaseRepository {
                 appLogger.warn('SystemRepository', `Skipping index statement due to runtime DB constraints: ${statement} (${String(error)})`);
             }
         }
+    }
+
+    async addAuditLog(entry: {
+        category: string;
+        action: string;
+        success: boolean;
+        details?: JsonObject;
+        timestamp?: number;
+    }): Promise<void> {
+        const timestamp = entry.timestamp ?? Date.now();
+        await this.adapter.exec(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id TEXT PRIMARY KEY,
+                category TEXT NOT NULL,
+                action TEXT NOT NULL,
+                success INTEGER NOT NULL,
+                details TEXT,
+                timestamp INTEGER NOT NULL
+            )
+        `);
+        await this.adapter.prepare(`
+            INSERT INTO audit_logs (id, category, action, success, details, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+            uuidv4(),
+            entry.category,
+            entry.action,
+            entry.success ? 1 : 0,
+            entry.details ? JSON.stringify(entry.details) : null,
+            timestamp
+        );
+    }
+
+    async getAuditLogs(filters: {
+        startDate?: string;
+        endDate?: string;
+        category?: string;
+    } = {}): Promise<Array<{
+        id: string;
+        category: string;
+        action: string;
+        success: boolean;
+        details?: JsonObject;
+        timestamp: number;
+    }>> {
+        await this.adapter.exec(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id TEXT PRIMARY KEY,
+                category TEXT NOT NULL,
+                action TEXT NOT NULL,
+                success INTEGER NOT NULL,
+                details TEXT,
+                timestamp INTEGER NOT NULL
+            )
+        `);
+
+        const clauses: string[] = [];
+        const params: SqlValue[] = [];
+        if (filters.category) {
+            clauses.push('category = ?');
+            params.push(filters.category);
+        }
+        if (filters.startDate) {
+            clauses.push('timestamp >= ?');
+            params.push(Date.parse(filters.startDate));
+        }
+        if (filters.endDate) {
+            clauses.push('timestamp <= ?');
+            params.push(Date.parse(filters.endDate));
+        }
+
+        const whereClause = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+        const rows = await this.adapter.prepare(`
+            SELECT * FROM audit_logs
+            ${whereClause}
+            ORDER BY timestamp DESC
+        `).all<JsonObject>(...params);
+
+        return rows.map(row => ({
+            id: String(row.id),
+            category: String(row.category),
+            action: String(row.action),
+            success: Boolean(row.success),
+            details: this.parseJsonField(row.details as string | null, undefined),
+            timestamp: Number(row.timestamp)
+        }));
+    }
+
+    async clearAuditLogs(): Promise<void> {
+        await this.adapter.exec('DELETE FROM audit_logs');
     }
 
     // --- Folders ---
@@ -238,13 +346,23 @@ export class SystemRepository extends BaseRepository {
 
     // --- Stats ---
     async getStats(): Promise<DbStats> {
+        const now = Date.now();
+        if (this.statsCache && this.statsCache.expiresAt > now) {
+            return this.statsCache.value;
+        }
+
         const chatRow = await this.adapter.prepare('SELECT count(*) as count FROM chats').get<{ count: number }>();
         const messageRow = await this.adapter.prepare('SELECT count(*) as count FROM messages').get<{ count: number }>();
-        return {
+        const value = {
             chatCount: chatRow?.count ?? 0,
             messageCount: messageRow?.count ?? 0,
             dbSize: 0
         };
+        this.statsCache = {
+            value,
+            expiresAt: now + STATS_CACHE_TTL_MS,
+        };
+        return value;
     }
 
     async getDetailedStats(period: string): Promise<DbDetailedStats> {
@@ -286,16 +404,24 @@ export class SystemRepository extends BaseRepository {
         modelBreakdown?: Record<string, { prompt: number; completion: number }>;
     }>> {
         const { bucketMs, bucketCount } = this.getBucketConfig(period);
-
         const rows = await this.adapter.prepare(`
-            SELECT timestamp, tokens_sent, tokens_received, model
+            SELECT
+                CAST((timestamp / ?) AS INTEGER) * ? AS bucket_timestamp,
+                model,
+                SUM(tokens_sent) as tokens_sent,
+                SUM(tokens_received) as tokens_received
             FROM token_usage
             WHERE timestamp >= ?
-            ORDER BY timestamp ASC
-        `).all<{ timestamp: number; tokens_sent: number; tokens_received: number; model: string }>(since);
+            GROUP BY bucket_timestamp, model
+            ORDER BY bucket_timestamp ASC
+        `).all<{ bucket_timestamp: number; tokens_sent: number; tokens_received: number; model: string }>(
+            bucketMs,
+            bucketMs,
+            since
+        );
 
         const buckets = this.initializeBuckets(bucketMs, bucketCount);
-        this.aggregateTokenData(rows, buckets, bucketMs);
+        this.aggregateTokenData(rows, buckets);
 
         return Array.from(buckets.entries())
             .sort(([a], [b]) => a - b)
@@ -336,12 +462,11 @@ export class SystemRepository extends BaseRepository {
     }
 
     private aggregateTokenData(
-        rows: Array<{ timestamp: number; tokens_sent: number; tokens_received: number; model: string }>,
-        buckets: Map<number, { promptTokens: number; completionTokens: number; modelBreakdown: Record<string, { prompt: number; completion: number }> }>,
-        bucketMs: number
+        rows: Array<{ bucket_timestamp: number; tokens_sent: number; tokens_received: number; model: string }>,
+        buckets: Map<number, { promptTokens: number; completionTokens: number; modelBreakdown: Record<string, { prompt: number; completion: number }> }>
     ): void {
         for (const row of rows) {
-            const bucketKey = Math.floor(row.timestamp / bucketMs) * bucketMs;
+            const bucketKey = row.bucket_timestamp;
             const bucket = buckets.get(bucketKey) ?? { promptTokens: 0, completionTokens: 0, modelBreakdown: {} };
             if (!buckets.has(bucketKey)) {
                 buckets.set(bucketKey, bucket);
@@ -362,26 +487,47 @@ export class SystemRepository extends BaseRepository {
         const isDaily = period === 'daily';
         const bucketCount = isDaily ? 24 : (period === 'weekly' ? 7 : 30);
 
-        const rows = await this.adapter.prepare(`
-            SELECT timestamp FROM messages WHERE timestamp >= ?
-        `).all<{ timestamp: number }>(since);
-
         const activity = new Array(bucketCount).fill(0);
-        const now = Date.now();
+        if (isDaily) {
+            const rows = await this.adapter.prepare(`
+                SELECT
+                    CAST(strftime('%H', datetime(timestamp / 1000, 'unixepoch', 'localtime')) AS INTEGER) as bucket,
+                    COUNT(*) as count
+                FROM messages
+                WHERE timestamp >= ?
+                GROUP BY bucket
+            `).all<{ bucket: number; count: number }>(since);
+
+            for (const row of rows) {
+                if (row.bucket >= 0 && row.bucket < bucketCount) {
+                    activity[row.bucket] = row.count;
+                }
+            }
+
+            return activity;
+        }
+
+        const dayMs = 24 * 60 * 60 * 1000;
+        const currentDayStart = Math.floor(Date.now() / dayMs) * dayMs;
+        const rows = await this.adapter.prepare(`
+            SELECT
+                CAST((? - ((timestamp / ?) * ?)) / ? AS INTEGER) as day_offset,
+                COUNT(*) as count
+            FROM messages
+            WHERE timestamp >= ?
+            GROUP BY day_offset
+        `).all<{ day_offset: number; count: number }>(
+            currentDayStart,
+            dayMs,
+            dayMs,
+            dayMs,
+            since
+        );
 
         for (const row of rows) {
-            const ts = row.timestamp;
-            if (isDaily) {
-                // Bucket by hour
-                const hour = new Date(ts).getHours();
-                activity[hour]++;
-            } else {
-                // Bucket by day offset from today
-                const dayOffset = Math.floor((now - ts) / (24 * 60 * 60 * 1000));
-                const idx = bucketCount - 1 - dayOffset;
-                if (idx >= 0 && idx < bucketCount) {
-                    activity[idx]++;
-                }
+            const idx = bucketCount - 1 - row.day_offset;
+            if (idx >= 0 && idx < bucketCount) {
+                activity[idx] = row.count;
             }
         }
 
@@ -504,6 +650,13 @@ export class SystemRepository extends BaseRepository {
 
     // --- Linked Accounts ---
     async getLinkedAccounts(provider?: string): Promise<LinkedAccount[]> {
+        const cacheKey = provider ? this.normalizeProvider(provider) : '__all__';
+        const now = Date.now();
+        const cached = this.linkedAccountsCache.get(cacheKey);
+        if (cached && cached.expiresAt > now) {
+            return cached.value;
+        }
+
         let sql = 'SELECT * FROM linked_accounts';
         const params: SqlValue[] = [];
         if (provider) {
@@ -513,7 +666,12 @@ export class SystemRepository extends BaseRepository {
             params.push(...aliases);
         }
         const rows = await this.adapter.prepare(sql).all<JsonObject>(...params);
-        return rows.map(row => this.mapLinkedAccountRow(row));
+        const value = rows.map(row => this.mapLinkedAccountRow(row));
+        this.linkedAccountsCache.set(cacheKey, {
+            value,
+            expiresAt: now + LINKED_ACCOUNTS_CACHE_TTL_MS,
+        });
+        return value;
     }
 
     async getLinkedAccount(id: string): Promise<LinkedAccount | null> {
@@ -563,10 +721,12 @@ export class SystemRepository extends BaseRepository {
             createdAt,
             updatedAt
         );
+        this.invalidateLinkedAccountsCache(provider);
     }
 
     async deleteLinkedAccount(id: string): Promise<void> {
         await this.adapter.prepare('DELETE FROM linked_accounts WHERE id = ?').run(id);
+        this.invalidateLinkedAccountsCache();
     }
 
 

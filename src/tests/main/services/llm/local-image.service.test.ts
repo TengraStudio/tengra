@@ -193,19 +193,19 @@ describe('LocalImageService Integration', () => {
                 scheduledTaskCount: 0,
             });
             expect(metrics.performanceBudget.statusCheckMs).toBe(300);
-            expect(en.serviceHealth.localImage.empty).toBe(metrics.messageKey);
+            expect(en.frontend.serviceHealth.localImage.empty).toBe(metrics.messageKey);
         });
 
         it('should report ready and failure ui states from status checks', async () => {
             vi.spyOn(service, 'getSDCppStatus').mockResolvedValueOnce('ready');
             const readyMetrics = await service.getHealthMetrics();
             expect(readyMetrics.uiState).toBe('ready');
-            expect(en.serviceHealth.localImage.ready).toBe(readyMetrics.messageKey);
+            expect(en.frontend.serviceHealth.localImage.ready).toBe(readyMetrics.messageKey);
 
             vi.spyOn(service, 'getSDCppStatus').mockResolvedValueOnce('failed');
             const failureMetrics = await service.getHealthMetrics();
             expect(failureMetrics.uiState).toBe('failure');
-            expect(en.serviceHealth.localImage.failure).toBe(failureMetrics.messageKey);
+            expect(en.frontend.serviceHealth.localImage.failure).toBe(failureMetrics.messageKey);
         });
     });
 

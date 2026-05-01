@@ -20,7 +20,7 @@ export const TypingIndicator = () => {
                 <div className={"w-2 h-2 bg-gradient-to-r from-accent-foreground to-info rounded-full animate-bounce animate-delay-150 shadow-lg shadow-accent-foreground/30"} />
                 <div className="w-2 h-2 bg-gradient-to-r from-info to-primary rounded-full animate-bounce shadow-lg shadow-info/30" />
             </div>
-            <span className="typo-caption text-muted-foreground/50 font-medium animate-pulse ml-1">{t('messageBubble.thinking')}</span>
+            <span className="typo-caption text-muted-foreground/50 font-medium animate-pulse ml-1">{t('frontend.messageBubble.thinking')}</span>
         </div>
     );
 };

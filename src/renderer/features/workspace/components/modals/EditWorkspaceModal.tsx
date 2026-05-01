@@ -71,11 +71,11 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
     return (
         <AnimatePresence>
             {workspace && (
-                <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.editWorkspace')}>
+                <Modal isOpen={!!workspace} onClose={onClose} title={t('frontend.workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
                             <label className="typo-caption font-medium text-muted-foreground">
-                                {t('workspaces.nameLabel')}
+                                {t('frontend.workspaces.nameLabel')}
                             </label>
                             <input
                                 value={form.title}
@@ -87,7 +87,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'
                                 )}
-                                placeholder={t('workspaces.namePlaceholder')}
+                                placeholder={t('frontend.workspaces.namePlaceholder')}
                             />
                             {!hasValidTitle && (
                                 <p className="text-sm text-destructive">{t('common.invalidInput')}</p>
@@ -95,7 +95,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                         </div>
                         <div className="space-y-2">
                             <label className="typo-caption font-medium text-muted-foreground">
-                                {t('workspaces.description')}
+                                {t('frontend.workspaces.description')}
                             </label>
                             <textarea
                                 value={form.description}
@@ -107,7 +107,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'
                                 )}
-                                placeholder={t('workspaces.workspaceDescPlaceholder')}
+                                placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
                             />
                             {!hasValidDescription && (
                                 <p className="text-sm text-destructive">{t('common.invalidInput')}</p>

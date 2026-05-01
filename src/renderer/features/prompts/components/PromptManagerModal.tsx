@@ -66,27 +66,27 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={t('ssh.promptManager.title')}>
+        <Modal isOpen={isOpen} onClose={onClose} title={t('frontend.ssh.promptManager.title')}>
             <div className="h-96 flex flex-col">
                 {isEditing ? (
                     <div className="flex-1 flex flex-col gap-4 animate-in fade-in slide-in-from-right-2 duration-200">
                         <div className="space-y-2">
-                            <label className="typo-caption font-medium text-muted-foreground">{t('ssh.promptManager.labels.title')}</label>
+                            <label className="typo-caption font-medium text-muted-foreground">{t('frontend.ssh.promptManager.labels.title')}</label>
                             <input
                                 value={editForm.title}
                                 onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
                                 className={C_PROMPTMANAGERMODAL_1}
-                                placeholder={t('ssh.promptManager.placeholders.title')}
+                                placeholder={t('frontend.ssh.promptManager.placeholders.title')}
                                 autoFocus
                             />
                         </div>
                         <div className="space-y-2 flex-1 flex flex-col">
-                            <label className="typo-caption font-medium text-muted-foreground">{t('ssh.promptManager.labels.content')}</label>
+                            <label className="typo-caption font-medium text-muted-foreground">{t('frontend.ssh.promptManager.labels.content')}</label>
                             <textarea
                                 value={editForm.content}
                                 onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
                                 className={C_PROMPTMANAGERMODAL_2}
-                                placeholder={t('ssh.promptManager.placeholders.content')}
+                                placeholder={t('frontend.ssh.promptManager.placeholders.content')}
                             />
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
@@ -102,15 +102,15 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                     <>
                         <div className="flex justify-end mb-4">
                             <Button size="sm" onClick={() => handleStartEdit()}>
-                                <IconPlus className="w-4 h-4 mr-2" /> {t('ssh.promptManager.newPrompt')}
+                                <IconPlus className="w-4 h-4 mr-2" /> {t('frontend.ssh.promptManager.newPrompt')}
                             </Button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
                             {prompts.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm opacity-60">
-                                    <p>{t('ssh.promptManager.empty.title')}</p>
-                                    <p className="typo-caption">{t('ssh.promptManager.empty.subtitle')}</p>
+                                    <p>{t('frontend.ssh.promptManager.empty.title')}</p>
+                                    <p className="typo-caption">{t('frontend.ssh.promptManager.empty.subtitle')}</p>
                                 </div>
                             ) : (
                                 prompts.map(prompt => (

@@ -52,7 +52,7 @@ export const SSHConnectionForm: React.FC<SSHConnectionFormProps> = ({
                         value={sshForm.host}
                         onChange={e => setSshForm(p => ({ ...p, host: e.target.value }))}
                         className="w-full h-9 px-3 text-sm bg-muted/20 border border-border/50 rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-mono"
-                        placeholder={t('workspaceWizard.placeholder.example')}
+                        placeholder={t('frontend.workspaceWizard.placeholder.example')}
                     />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -63,7 +63,7 @@ export const SSHConnectionForm: React.FC<SSHConnectionFormProps> = ({
                         value={sshForm.port}
                         onChange={e => setSshForm(p => ({ ...p, port: e.target.value }))}
                         className="w-full h-9 px-3 text-sm bg-muted/20 border border-border/50 rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-mono"
-                        placeholder={t('ssh.placeholders.port')}
+                        placeholder={t('frontend.ssh.placeholders.port')}
                     />
                 </div>
             </div>
@@ -76,7 +76,7 @@ export const SSHConnectionForm: React.FC<SSHConnectionFormProps> = ({
                     value={sshForm.username}
                     onChange={e => setSshForm(p => ({ ...p, username: e.target.value }))}
                     className="w-full h-9 px-3 text-sm bg-muted/20 border border-border/50 rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-mono"
-                    placeholder={t('ssh.placeholders.username')}
+                    placeholder={t('frontend.ssh.placeholders.username')}
                 />
             </div>
 
@@ -133,7 +133,7 @@ export const SSHConnectionForm: React.FC<SSHConnectionFormProps> = ({
                             value={sshForm.privateKey}
                             onChange={e => setSshForm(p => ({ ...p, privateKey: e.target.value }))}
                             className="w-full min-h-120 p-3 text-sm font-mono bg-muted/20 border border-border/50 rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all resize-y custom-scrollbar"
-                            placeholder={t('ssh.placeholders.privateKey')}
+                            placeholder={t('frontend.ssh.placeholders.privateKey')}
                         />
                     </div>
                     <div className="flex flex-col gap-1.5 mt-2">

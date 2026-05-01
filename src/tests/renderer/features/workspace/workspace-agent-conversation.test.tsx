@@ -69,6 +69,8 @@ describe('WorkspaceAgentConversation', () => {
                 timeline={[]}
                 onRetry={vi.fn()}
                 onApprovePlan={vi.fn()}
+                selectedProvider="claude"
+                selectedModel="sonnet"
                 t={(key: string) => key}
             />
         );

@@ -22,7 +22,7 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { app } from 'electron';
 
-import type { GitHubRelease, GitHubReleaseAsset, ImageGenerationOptions } from './local-image.types';
+import type { GitHubRelease, GitHubReleaseAsset, ImageEditOptions, ImageGenerationOptions } from './local-image.types';
 
 const SD_CPP_RELEASE_API = 'https://api.github.com/repos/leejet/stable-diffusion.cpp/releases/latest';
 const DEFAULT_SDCPP_MODEL_URL =
@@ -144,6 +144,52 @@ export class SdCppManager {
             return outputPath;
         } catch (error) {
             this.trackMetric('sd-cpp-generation-failure', { error: getErrorMessage(error as Error) });
+            throw error;
+        }
+    }
+
+    /** Edit an image using the SD-CPP binary when img2img/inpaint CLI support is available. */
+    async edit(options: ImageEditOptions): Promise<string> {
+        const runtime = await this.ensureReady();
+        const extraArgs = this.parseCliArgs(
+            this.deps.settingsService.getSettings().images?.sdCppExtraArgs?.trim() ||
+            process.env.SD_CPP_EXTRA_ARGS?.trim()
+        );
+        const outputPath = this.createTempOutputPath('png');
+        const sourcePath = await this.materializeImageInput(options.sourceImage, 'png');
+        const maskPath = options.maskImage ? await this.materializeImageInput(options.maskImage, 'png') : '';
+
+        await this.ensurePathExists(runtime.modelPath, 'stable-diffusion.cpp model');
+        await this.ensurePathExists(runtime.binaryPath, 'stable-diffusion.cpp binary');
+
+        const args = this.buildArgs(
+            runtime,
+            {
+                prompt: options.prompt,
+                negativePrompt: options.negativePrompt,
+                width: options.width,
+                height: options.height,
+                steps: 24,
+                cfgScale: 7,
+            },
+            outputPath,
+            extraArgs
+        );
+        args.push('--init-img', sourcePath, '--strength', String(options.strength ?? 0.55));
+        if (maskPath && (options.mode === 'inpaint' || options.mode === 'outpaint')) {
+            args.push('--mask', maskPath);
+        }
+
+        appLogger.info('SdCppManager', `Running stable-diffusion.cpp edit with binary "${runtime.binaryPath}"`);
+        try {
+            await this.runProcess(runtime.binaryPath, args);
+            if (!fs.existsSync(outputPath)) {
+                throw new Error('stable-diffusion.cpp finished but did not produce an edited output file.');
+            }
+            this.trackMetric('sd-cpp-edit-success', { prompt: options.prompt, mode: options.mode });
+            return outputPath;
+        } catch (error) {
+            this.trackMetric('sd-cpp-edit-failure', { error: getErrorMessage(error as Error), mode: options.mode });
             throw error;
         }
     }
@@ -550,6 +596,31 @@ export class SdCppManager {
         } catch {
             throw new Error(`${label} not found: ${targetPath}`);
         }
+    }
+
+    private async materializeImageInput(input: string, extension: string): Promise<string> {
+        if (input.startsWith('data:')) {
+            const dataIndex = input.indexOf('base64,');
+            if (dataIndex > -1) {
+                const outputPath = this.createTempOutputPath(extension);
+                await fs.promises.writeFile(outputPath, Buffer.from(input.slice(dataIndex + 7), 'base64'));
+                return outputPath;
+            }
+        }
+
+        if (input.startsWith('http://') || input.startsWith('https://')) {
+            const response = await axios.get<ArrayBuffer>(input, { responseType: 'arraybuffer' });
+            const outputPath = this.createTempOutputPath(extension);
+            await fs.promises.writeFile(outputPath, Buffer.from(response.data));
+            return outputPath;
+        }
+
+        const normalized = input
+            .replace(/^safe-file:\/+/i, '')
+            .replace(/^file:\/+/i, '');
+        return process.platform === 'win32' && /^\/[A-Za-z]:/.test(normalized)
+            ? decodeURIComponent(normalized.slice(1))
+            : decodeURIComponent(normalized);
     }
 
     private async runProcess(command: string, args: string[]): Promise<void> {

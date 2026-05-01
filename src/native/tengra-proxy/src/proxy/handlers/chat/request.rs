@@ -21,6 +21,9 @@ pub fn translate_request(provider: &str, payload: &ChatCompletionRequest) -> Val
         "antigravity" => translate_antigravity(payload),
         "copilot" => translate_copilot(payload),
         "codex" => translate_codex(payload),
+        "openai" if is_openai_image_model(&payload.model) => {
+            translate_openai_image_generation(payload)
+        }
         "nvidia" | "openai" => translate_openai_compatible(payload),
         _ => translate_openai_compatible(payload),
     }
@@ -32,7 +35,41 @@ fn translate_openai_compatible(payload: &ChatCompletionRequest) -> Value {
     body
 }
 
+fn translate_openai_image_generation(payload: &ChatCompletionRequest) -> Value {
+    let model = normalize_openai_image_model(&payload.model);
+    let mut body = Map::new();
+    body.insert("model".to_string(), Value::String(model.clone()));
+    body.insert(
+        "prompt".to_string(),
+        Value::String(image_prompt_from_messages(payload)),
+    );
+    body.insert(
+        "n".to_string(),
+        Value::from(payload.n.unwrap_or(1).clamp(1, 8)),
+    );
+    body.insert(
+        "size".to_string(),
+        Value::String(image_size_from_metadata(payload).unwrap_or_else(|| "1024x1024".to_string())),
+    );
+
+    if model.starts_with("gpt-image") || model == "chatgpt-image-latest" {
+        body.insert("quality".to_string(), Value::String("auto".to_string()));
+        body.insert(
+            "output_format".to_string(),
+            Value::String("png".to_string()),
+        );
+    } else if model.starts_with("dall-e") {
+        body.insert(
+            "response_format".to_string(),
+            Value::String("b64_json".to_string()),
+        );
+    }
+
+    Value::Object(body)
+}
+
 fn translate_codex(payload: &ChatCompletionRequest) -> Value {
+    let imagegen_request = is_codex_imagegen_model(&payload.model);
     let mut input = Vec::new();
     let mut instructions = Vec::new();
     for message in &payload.messages {
@@ -71,7 +108,11 @@ fn translate_codex(payload: &ChatCompletionRequest) -> Value {
     let mut body = Map::new();
     body.insert(
         "model".to_string(),
-        Value::String(normalize_codex_model(&payload.model)),
+        Value::String(if imagegen_request {
+            codex_imagegen_main_model(payload)
+        } else {
+            normalize_codex_model(&payload.model)
+        }),
     );
     body.insert("stream".to_string(), Value::Bool(payload.stream));
     body.insert(
@@ -95,7 +136,9 @@ fn translate_codex(payload: &ChatCompletionRequest) -> Value {
     );
     body.insert("input".to_string(), Value::Array(input));
     body.insert("store".to_string(), Value::Bool(false));
-    insert_optional_value(&mut body, "metadata", payload.metadata.clone());
+    if !imagegen_request {
+        insert_optional_value(&mut body, "metadata", payload.metadata.clone());
+    }
     insert_optional_value(
         &mut body,
         "text",
@@ -104,7 +147,18 @@ fn translate_codex(payload: &ChatCompletionRequest) -> Value {
             .clone()
             .map(|format| json!({ "format": format })),
     );
-    if let Some(tools) = payload.tools.as_ref() {
+    if imagegen_request {
+        let mut tool = json!({ "type": "image_generation" });
+        if let Some(size) = image_size_from_metadata(payload) {
+            if let Some(tool_map) = tool.as_object_mut() {
+                tool_map.insert("size".to_string(), Value::String(size));
+            }
+        }
+        body.insert(
+            "tools".to_string(),
+            Value::Array(vec![tool]),
+        );
+    } else if let Some(tools) = payload.tools.as_ref() {
         body.insert(
             "tools".to_string(),
             Value::Array(normalize_codex_tools(tools)),
@@ -226,7 +280,7 @@ fn translate_gemini(payload: &ChatCompletionRequest) -> Value {
 fn translate_antigravity(payload: &ChatCompletionRequest) -> Value {
     let mut request = translate_gemini(payload);
     let upstream_model = upstream_model_name(&payload.model);
-    let is_gemini_three = upstream_model.contains("gemini-3-");
+    let is_gemini_three = upstream_model.contains("gemini-3-") || upstream_model.contains("gemini-3.");
     let is_claude_model = upstream_model.contains("claude");
     if let Some(request_map) = request.as_object_mut() {
         request_map.remove("safetySettings");
@@ -281,7 +335,6 @@ fn translate_copilot(payload: &ChatCompletionRequest) -> Value {
     body
 }
 
-
 fn remove_provider_hint(body: &mut Value) {
     if let Some(map) = body.as_object_mut() {
         map.remove("provider");
@@ -294,6 +347,91 @@ fn normalize_codex_model(model: &str) -> String {
         "codex-stable" => "gpt-5-codex-mini".to_string(),
         other => other.to_string(),
     }
+}
+
+fn is_openai_image_model(model: &str) -> bool {
+    let normalized = normalize_openai_image_model(model).to_ascii_lowercase();
+    normalized.starts_with("gpt-image")
+        || normalized == "chatgpt-image-latest"
+        || normalized.starts_with("dall-e")
+}
+
+fn normalize_openai_image_model(model: &str) -> String {
+    model
+        .trim()
+        .strip_prefix("openai/")
+        .unwrap_or_else(|| model.trim())
+        .to_string()
+}
+
+fn is_codex_imagegen_model(model: &str) -> bool {
+    let normalized = model.trim().to_ascii_lowercase();
+    matches!(
+        normalized.as_str(),
+        "$imagegen" | "imagegen" | "codex/$imagegen" | "codex/imagegen"
+    )
+}
+
+fn codex_imagegen_main_model(payload: &ChatCompletionRequest) -> String {
+    payload
+        .metadata
+        .as_ref()
+        .and_then(|metadata| {
+            metadata
+                .get("main_model")
+                .or_else(|| metadata.get("mainModel"))
+                .or_else(|| metadata.get("codex_image_model"))
+                .and_then(Value::as_str)
+        })
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or("gpt-5.4")
+        .to_string()
+}
+
+fn image_prompt_from_messages(payload: &ChatCompletionRequest) -> String {
+    let user_text = payload
+        .messages
+        .iter()
+        .rev()
+        .find(|message| message.role == "user")
+        .map(|message| content_to_text(&message.content))
+        .unwrap_or_else(|| {
+            payload
+                .messages
+                .iter()
+                .map(|message| content_to_text(&message.content))
+                .collect::<Vec<_>>()
+                .join("\n")
+        });
+
+    user_text.trim().to_string()
+}
+
+fn image_size_from_metadata(payload: &ChatCompletionRequest) -> Option<String> {
+    let metadata = payload.metadata.as_ref()?;
+    if let Some(size) = metadata.get("size").and_then(Value::as_str) {
+        let trimmed = size.trim();
+        if matches!(trimmed, "1024x1024" | "1024x1536" | "1536x1024" | "auto") {
+            return Some(trimmed.to_string());
+        }
+    }
+
+    let width = metadata
+        .get("width")
+        .and_then(Value::as_u64)
+        .unwrap_or(1024);
+    let height = metadata
+        .get("height")
+        .and_then(Value::as_u64)
+        .unwrap_or(1024);
+    if width > height {
+        return Some("1536x1024".to_string());
+    }
+    if height > width {
+        return Some("1024x1536".to_string());
+    }
+    Some("1024x1024".to_string())
 }
 
 fn normalize_claude_role(role: &str) -> &str {
@@ -529,7 +667,12 @@ fn normalize_codex_tools(tools: &[Value]) -> Vec<Value> {
                 .and_then(Value::as_object)
                 .cloned()
                 .or_else(|| Some(tool_object.clone()))?;
-            let name = function_object.get("name").and_then(Value::as_str)?;
+            let Some(name) = function_object.get("name").and_then(Value::as_str) else {
+                if tool_type != "function" {
+                    return Some(Value::Object(tool_object.clone()));
+                }
+                return None;
+            };
             let mut normalized = Map::new();
             normalized.insert("type".to_string(), Value::String(tool_type.to_string()));
             normalized.insert("name".to_string(), Value::String(name.to_string()));
@@ -628,8 +771,14 @@ fn content_to_gemini_message_parts(message: &ChatMessage) -> Vec<Value> {
             "args": parsed_arguments
         });
 
-        if let Some(ts) = function.and_then(|f| f.get("thought_signature")).and_then(Value::as_str) {
-            fc.as_object_mut().unwrap().insert("thought_signature".to_string(), Value::String(ts.to_string()));
+        if let Some(ts) = function
+            .and_then(|f| f.get("thought_signature"))
+            .and_then(Value::as_str)
+        {
+            fc.as_object_mut().unwrap().insert(
+                "thought_signature".to_string(),
+                Value::String(ts.to_string()),
+            );
         }
 
         parts.push(json!({
@@ -686,9 +835,7 @@ fn normalize_gemini_tools(tools: &[Value]) -> Vec<Value> {
 
 fn parse_json_string_value(value: Value) -> Value {
     match value {
-        Value::String(text) => {
-            serde_json::from_str::<Value>(&text).unwrap_or(Value::String(text))
-        }
+        Value::String(text) => serde_json::from_str::<Value>(&text).unwrap_or(Value::String(text)),
         other => other,
     }
 }
@@ -769,7 +916,7 @@ fn resolve_gemini_thinking_budget(payload: &ChatCompletionRequest) -> Option<i64
 
 fn is_gemini_3_model(model: &str) -> bool {
     let normalized = model.trim().to_lowercase().replace('_', "-");
-    normalized.starts_with("gemini-3-")
+    normalized.starts_with("gemini-3-") || normalized.starts_with("gemini-3.")
 }
 
 fn gemini_level_for_model(model: &str, effort: &str) -> String {
@@ -826,6 +973,7 @@ mod tests {
             temperature: None,
             max_tokens: Some(128),
             max_completion_tokens: None,
+            n: None,
             top_p: None,
             stop: None,
             reasoning_effort: reasoning_effort.map(str::to_string),
@@ -888,6 +1036,53 @@ mod tests {
     }
 
     #[test]
+    fn translates_codex_imagegen_to_builtin_image_tool() {
+        let body = translate_request("codex", &sample_request("$imagegen", None));
+        assert_eq!(body.get("model").and_then(Value::as_str), Some("gpt-5.4"));
+        assert_eq!(
+            body.get("tools")
+                .and_then(Value::as_array)
+                .and_then(|tools| tools.first())
+                .and_then(|tool| tool.get("type"))
+                .and_then(Value::as_str),
+            Some("image_generation")
+        );
+        assert!(body.get("metadata").is_none());
+    }
+
+    #[test]
+    fn translates_codex_imagegen_resolution_into_tool_size() {
+        let mut payload = sample_request("$imagegen", None);
+        payload.metadata = Some(json!({ "width": 1536, "height": 1024 }));
+
+        let body = translate_request("codex", &payload);
+        assert_eq!(
+            body.get("tools")
+                .and_then(Value::as_array)
+                .and_then(|tools| tools.first())
+                .and_then(|tool| tool.get("size"))
+                .and_then(Value::as_str),
+            Some("1536x1024")
+        );
+    }
+
+    #[test]
+    fn translates_openai_image_model_to_images_api_body() {
+        let mut payload = sample_request("openai/gpt-image-1", None);
+        payload.metadata = Some(json!({ "width": 1536, "height": 1024 }));
+        payload.n = Some(3);
+
+        let body = translate_request("openai", &payload);
+        assert_eq!(
+            body.get("model").and_then(Value::as_str),
+            Some("gpt-image-1")
+        );
+        assert_eq!(body.get("prompt").and_then(Value::as_str), Some("hello"));
+        assert_eq!(body.get("n").and_then(Value::as_u64), Some(3));
+        assert_eq!(body.get("size").and_then(Value::as_str), Some("1536x1024"));
+    }
+
+    #[test]
     fn prefers_explicit_thinking_level_for_gemini_three() {
         let mut payload = sample_request("gemini-3-flash-preview", None);
         payload.thinking_level = Some("high".to_string());
@@ -940,6 +1135,7 @@ mod tests {
             temperature: None,
             max_tokens: Some(128),
             max_completion_tokens: None,
+            n: None,
             top_p: None,
             stop: None,
             reasoning_effort: None,

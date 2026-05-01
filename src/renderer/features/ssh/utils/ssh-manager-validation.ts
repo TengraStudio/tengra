@@ -81,7 +81,7 @@ function toValidationFailure(errorCode: string): SSHManagerValidationFailure {
     return {
         success: false,
         errorCode,
-        messageKey: 'errors.unexpected',
+        messageKey: 'frontend.errors.unexpected',
         uiState: 'failure',
     };
 }

@@ -104,7 +104,7 @@ export function useTerminalPreferenceActions({
                         'TerminalPanel',
                         `Theme validation failed: ${validationMessage}`
                     );
-                    alertDialog(t('terminal.invalidThemeFile'));
+                    alertDialog(t('frontend.terminal.invalidThemeFile'));
                     return;
                 }
                 applyAppearancePatch(parsed as Partial<TerminalAppearancePreferences>);
@@ -114,7 +114,7 @@ export function useTerminalPreferenceActions({
                     'Failed to import terminal appearance preset',
                     error as Error
                 );
-                alertDialog(t('terminal.failedImportThemeInvalidJson'));
+                alertDialog(t('frontend.terminal.failedImportThemeInvalidJson'));
             }
         },
         [applyAppearancePatch, t]
@@ -199,7 +199,7 @@ export function useTerminalPreferenceActions({
     }, [shortcutBindings, shortcutPreset]);
 
     const importShortcutShareCode = useCallback(() => {
-        const raw = promptDialog(t('terminal.shortcutShareCodePrompt'));
+        const raw = promptDialog(t('frontend.terminal.shortcutShareCodePrompt'));
         if (!raw?.trim()) {
             return;
         }

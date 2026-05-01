@@ -202,14 +202,28 @@ export class LocalImageService extends BaseService {
         this.assertNonEmptyText(options.prompt, 'Prompt');
         this.assertNonEmptyText(options.sourceImage, 'Source image');
         const provider = (this.settingsSvc.getSettings().images?.provider ?? 'antigravity') as ImageProvider;
-        const imagePath = await this.providers.editImage(options);
+        const imagePath = await this.editImageWithProvider(provider, options);
+        await this.recordEditGeneration(provider, options, imagePath);
+        return imagePath;
+    }
+
+    /** Edit an image using a specific image provider. */
+    async editImageWithProvider(provider: ImageProvider, options: ImageEditOptions): Promise<string> {
+        this.assertNonEmptyText(options.prompt, 'Prompt');
+        this.assertNonEmptyText(options.sourceImage, 'Source image');
+        const imagePath = provider === 'sd-cpp'
+            ? await this.sdcpp.edit(options)
+            : await this.providers.editImageWithProvider(provider, options);
+        return imagePath;
+    }
+
+    private async recordEditGeneration(provider: ImageProvider, options: ImageEditOptions, imagePath: string): Promise<void> {
         await this.state.recordGeneration({
             provider,
             options: { prompt: options.prompt, negativePrompt: options.negativePrompt, width: options.width, height: options.height, steps: 24, cfgScale: 7 },
             imagePath,
             source: 'edit',
         });
-        return imagePath;
     }
 
     /** Get generation history entries. */

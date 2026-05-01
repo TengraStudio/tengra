@@ -63,8 +63,8 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
     return (
         <div className="flex items-center justify-between gap-4">
             <div>
-                <h1 className="text-3xl font-bold">{t('memory.title')}</h1>
-                <p className="text-muted-foreground mt-1">{t('memory.subtitle')}</p>
+                <h1 className="text-3xl font-bold">{t('frontend.memory.title')}</h1>
+                <p className="text-muted-foreground mt-1">{t('frontend.memory.subtitle')}</p>
                 <div className="mt-2 flex items-center gap-4 text-sm font-semibold">
                     <span className={overallTone}>
                         Health: {healthStatus}
@@ -90,23 +90,23 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
                 </Button>
                 <Button variant="outline" size="sm" onClick={onRunDecay} className="gap-2">
                     <IconTrendingDown className="w-4 h-4" />
-                    {t('memory.runDecay')}
+                    {t('frontend.memory.runDecay')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onRecategorize} className="gap-2">
                     <IconSparkles className="w-4 h-4 text-primary" />
-                    {t('memory.recategorizeAll')}
+                    {t('frontend.memory.recategorizeAll')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onExport} className="gap-2">
                     <IconDownload className="w-4 h-4" />
-                    {t('memory.export')}
+                    {t('frontend.memory.export')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onImport} className="gap-2">
                     <IconUpload className="w-4 h-4" />
-                    {t('memory.import')}
+                    {t('frontend.memory.import')}
                 </Button>
                 <Button size="sm" onClick={onAddMemory} className="gap-2">
                     <IconPlus className="w-4 h-4" />
-                    {t('memory.addAction')}
+                    {t('frontend.memory.addAction')}
                 </Button>
             </div>
         </div>

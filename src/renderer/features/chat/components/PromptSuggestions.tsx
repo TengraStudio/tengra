@@ -66,13 +66,13 @@ const SuggestionItem: React.FC<{
                     onClick={() => onApply(suggestion.suggestedText as string)}
                     className="text-sm px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
                 >
-                    {t('promptOptimizer.apply')}
+                    {t('frontend.promptOptimizer.apply')}
                 </button>
             )}
             <button
                 onClick={() => onDismiss(index)}
                 className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent"
-                aria-label={t('promptOptimizer.dismiss')}
+                aria-label={t('frontend.promptOptimizer.dismiss')}
             >
                 <IconX className="w-3 h-3" />
             </button>
@@ -98,7 +98,7 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
     if (isAnalyzing) {
         return (
             <div className="px-3 py-2 typo-caption text-muted-foreground/60 animate-pulse">
-                {t('promptOptimizer.analyzing')}
+                {t('frontend.promptOptimizer.analyzing')}
             </div>
         );
     }
@@ -117,12 +117,12 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
                     {analysis.score}
                 </span>
                 <span className="text-muted-foreground font-medium">
-                    {t('promptOptimizer.title')}
+                    {t('frontend.promptOptimizer.title')}
                 </span>
                 <span className="text-muted-foreground/50 ml-auto">
                     {hasSuggestions
-                        ? `${analysis.suggestions.length} ${t('promptOptimizer.suggestions').toLowerCase()}`
-                        : t('promptOptimizer.noSuggestions')}
+                        ? `${analysis.suggestions.length} ${t('frontend.promptOptimizer.suggestions').toLowerCase()}`
+                        : t('frontend.promptOptimizer.noSuggestions')}
                 </span>
                 {isExpanded
                     ? <IconChevronUp className="w-3.5 h-3.5 text-muted-foreground/50" />

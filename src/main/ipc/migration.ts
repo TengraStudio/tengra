@@ -10,20 +10,35 @@
 
 import { appLogger } from '@main/logging/logger';
 import type { DatabaseService } from '@main/services/data/database.service';
+import { ipcMain } from 'electron';
 
 /**
  * Registers IPC handlers for database migration management
  */
-export function registerMigrationIpc(_databaseService: DatabaseService) {
+export function registerMigrationIpc(databaseService: DatabaseService) {
     appLogger.info('MigrationIPC', 'Registering migration IPC handlers');
 
     /**
      * Get migration status
      */
+    ipcMain.handle('migration:status', async () => {
+        try {
+            return await databaseService.getMigrationStatus();
+        } catch (error) {
+            appLogger.error('MigrationIPC', `Failed to get status: ${error}`);
+            return null;
+        }
+    });
 
     /**
-     * Note: Actual migration/rollback operations are handled automatically
-     * during database initialization. These endpoints are for status checking only.
-     * Direct migration control can be added if needed for admin/debugging purposes.
+     * Get migration history
      */
+    ipcMain.handle('migration:history', async () => {
+        try {
+            return await databaseService.getMigrationHistory();
+        } catch (error) {
+            appLogger.error('MigrationIPC', `Failed to get history: ${error}`);
+            return [];
+        }
+    });
 }

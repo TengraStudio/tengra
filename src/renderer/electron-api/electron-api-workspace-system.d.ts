@@ -19,6 +19,7 @@ import type {
     ProcessInfo,
 } from '@/electron.d';
 import type {
+    FileDiff,
     FileSearchResult,
     IpcValue,
     ServiceResponse,
@@ -188,6 +189,7 @@ export interface ElectronApiWorkspaceSystemDomain {
         onFileChange: (
             callback: (event: string, path: string, rootPath: string) => void
         ) => () => void;
+        getFileDiff: (diffId: string) => Promise<{ oldValue: string; newValue: string }>;
     };
 
     process: {
@@ -227,6 +229,7 @@ export interface ElectronApiWorkspaceSystemDomain {
             pattern: string
         ) => Promise<{ success: boolean; results: string[]; error?: string }>;
         revertFileChange: (diffId: string) => Promise<{ success: boolean; error?: string }>;
+        getFileDiff: (diffId: string) => Promise<{ success: boolean; data?: FileDiff; error?: string }>;
     };
 
     // Proxy

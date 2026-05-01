@@ -84,8 +84,8 @@ const ThemeCard: React.FC<{
         >
             <div className="h-32 w-full" style={{ background: theme.preview }}>
                 <div className="absolute top-2 right-2 flex gap-1">
-                    {theme.isPremium && <span className="px-2 py-0.5 bg-warning/90 text-primary-foreground text-sm font-bold rounded-full">{t('themeStore.pro')}</span>}
-                    {isActive && <span className="px-2 py-0.5 bg-primary text-primary-foreground text-sm font-bold rounded-full flex items-center gap-1"><IconCheck className="w-3 h-3" /> {t('themeStore.active')}</span>}
+                    {theme.isPremium && <span className="px-2 py-0.5 bg-warning/90 text-primary-foreground text-sm font-bold rounded-full">{t('frontend.themeStore.pro')}</span>}
+                    {isActive && <span className="px-2 py-0.5 bg-primary text-primary-foreground text-sm font-bold rounded-full flex items-center gap-1"><IconCheck className="w-3 h-3" /> {t('frontend.themeStore.active')}</span>}
                 </div>
                 <div className="absolute bottom-2 left-2 flex gap-1">
                     {Object.values(theme.colors).map((color, i) => (
@@ -105,7 +105,7 @@ const ThemeCard: React.FC<{
                         <button
                             onClick={(e) => { e.stopPropagation(); void onApplyTheme?.(theme.id); }}
                             className="px-2 py-1 text-sm font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
-                        >{t('themeStore.apply')}</button>
+                        >{t('frontend.themeStore.apply')}</button>
                     )}
                 </div>
             </div>
@@ -127,7 +127,7 @@ const ThemePreviewModal: React.FC<{
                     <h2 className="text-xl font-semibold">{theme.name}</h2>
                     <div className="flex items-center gap-1 text-warning"><IconStar className="w-4 h-4 fill-current" /><span>{theme.rating}</span></div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">{t('themeStore.by')} {theme.author}</p>
+                <p className="text-sm text-muted-foreground mb-3">{t('frontend.themeStore.by')} {theme.author}</p>
                 <p className="text-sm mb-4">{theme.description}</p>
                 <div className="mb-4 flex flex-wrap gap-2">
                     {Object.entries(theme.colors).map(([name, color]) => (
@@ -138,7 +138,7 @@ const ThemePreviewModal: React.FC<{
                     ))}
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                    <button onClick={() => onApply(theme.id)} className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">{t('themeStore.apply')}</button>
+                    <button onClick={() => onApply(theme.id)} className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">{t('frontend.themeStore.apply')}</button>
                     <button onClick={onClose} className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80">{t('common.cancel')}</button>
                 </div>
             </div>
@@ -209,8 +209,8 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 <div className="flex items-center gap-3 mb-4">
                     <IconPalette className="w-6 h-6 text-primary" />
                     <div>
-                        <h1 className="text-lg font-bold">{t('themeStore.title')}</h1>
-                        <p className="typo-caption text-muted-foreground">{t('themeStore.subtitle')}</p>
+                        <h1 className="text-lg font-bold">{t('frontend.themeStore.title')}</h1>
+                        <p className="typo-caption text-muted-foreground">{t('frontend.themeStore.subtitle')}</p>
                     </div>
                 </div>
 
@@ -219,7 +219,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                     <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
-                        placeholder={t('themeStore.searchPlaceholder')}
+                        placeholder={t('frontend.themeStore.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-muted/30 border border-border/30 rounded-lg pl-9 pr-3 py-2 text-sm outline-none focus:border-primary/50"
@@ -229,10 +229,10 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 {/* Filters */}
                 <div className="flex gap-2">
                     {[
-                        { id: 'all', label: t('themeStore.filterAll'), icon: IconPalette },
-                        { id: 'installed', label: t('themeStore.filterInstalled'), icon: IconCheck },
-                        { id: 'dark', label: t('themeStore.filterDark'), icon: IconMoon },
-                        { id: 'light', label: t('themeStore.filterLight'), icon: IconSun }
+                        { id: 'all', label: t('frontend.themeStore.filterAll'), icon: IconPalette },
+                        { id: 'installed', label: t('frontend.themeStore.filterInstalled'), icon: IconCheck },
+                        { id: 'dark', label: t('frontend.themeStore.filterDark'), icon: IconMoon },
+                        { id: 'light', label: t('frontend.themeStore.filterLight'), icon: IconSun }
                     ].map(({ id, label, icon: Icon }) => (
                         <button
                             key={id}
@@ -268,7 +268,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 {filteredThemes.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
                         <IconPalette className="w-12 h-12 mb-3 opacity-30" />
-                        <p className="text-sm">{t('themeStore.noThemes')}</p>
+                        <p className="text-sm">{t('frontend.themeStore.noThemes')}</p>
                     </div>
                 )}
             </div>

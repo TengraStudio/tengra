@@ -352,7 +352,7 @@ export const useAttachments = () => {
                 )
             );
         } catch {
-            const fallbackContent = t('attachments.summary.genericFile', { name: file.name, mimeType });
+            const fallbackContent = t('frontend.attachments.summary.genericFile', { name: file.name, mimeType });
             setAttachments(prev =>
                 prev.map(a =>
                     a.id === id

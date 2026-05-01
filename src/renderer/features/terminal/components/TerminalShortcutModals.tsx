@@ -48,7 +48,7 @@ export function TerminalShortcutModals({
             />
             <div className="pt-1 border-t border-border/50 space-y-1">
                 <div className="typo-overline text-muted-foreground">
-                    {t('terminal.shortcutPresetLabel')}
+                    {t('frontend.terminal.shortcutPresetLabel')}
                 </div>
                 <div className="grid grid-cols-3 gap-1">
                     {(['default', 'vim', 'emacs'] as TerminalShortcutPresetId[]).map(presetId => (
@@ -73,13 +73,13 @@ export function TerminalShortcutModals({
                         onClick={exportShortcutPreferences}
                         className="px-2 py-1 rounded border border-border typo-overline hover:bg-accent/50 transition-colors"
                     >
-                        {t('terminal.exportShortcut')}
+                        {t('frontend.terminal.exportShortcut')}
                     </button>
                     <button
                         onClick={openImportDialog}
                         className="px-2 py-1 rounded border border-border typo-overline hover:bg-accent/50 transition-colors"
                     >
-                        {t('terminal.importShortcut')}
+                        {t('frontend.terminal.importShortcut')}
                     </button>
                     <button
                         onClick={() => {
@@ -87,13 +87,13 @@ export function TerminalShortcutModals({
                         }}
                         className="px-2 py-1 rounded border border-border typo-overline hover:bg-accent/50 transition-colors"
                     >
-                        {t('terminal.shareShortcut')}
+                        {t('frontend.terminal.shareShortcut')}
                     </button>
                     <button
                         onClick={importShortcutShareCode}
                         className="px-2 py-1 rounded border border-border typo-overline hover:bg-accent/50 transition-colors"
                     >
-                        {t('terminal.applyShortcutCode')}
+                        {t('frontend.terminal.applyShortcutCode')}
                     </button>
                 </div>
             </div>

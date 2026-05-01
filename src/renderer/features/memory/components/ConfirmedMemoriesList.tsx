@@ -71,7 +71,7 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
           {selectedIds.size > 0 ? (
             <>
               <span className="text-sm text-muted-foreground flex items-center">
-                {t('memory.selectedCount', { count: selectedIds.size })}
+                {t('frontend.memory.selectedCount', { count: selectedIds.size })}
               </span>
               <Button variant="ghost" size="sm" onClick={onClearSelection} className="gap-2">
                 <IconX className="w-4 h-4" />
@@ -85,7 +85,7 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
                   className="gap-2"
                 >
                   <IconArchive className="w-4 h-4" />
-                  {t('memory.archive')}
+                  {t('frontend.memory.archive')}
                 </Button>
               )}
               <Button
@@ -112,11 +112,11 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
         {memories.length === 0 ? (
           <EmptyState
             icon={isArchiveTab ? IconArchive : IconCircleCheck}
-            title={isArchiveTab ? t('memory.noArchivedTitle') : t('memory.noConfirmedTitle')}
+            title={isArchiveTab ? t('frontend.memory.noArchivedTitle') : t('frontend.memory.noConfirmedTitle')}
             description={
               isArchiveTab
-                ? t('memory.noArchivedDesc')
-                : t('memory.noConfirmedDesc')
+                ? t('frontend.memory.noArchivedDesc')
+                : t('frontend.memory.noConfirmedDesc')
             }
           />
         ) : (
@@ -207,13 +207,13 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
             {memory.status === 'archived' && (
               <Badge variant="secondary" className="text-sm">
                 <IconArchive className="w-3 h-3 mr-1" />
-                {t('memory.archived')}
+                {t('frontend.memory.archived')}
               </Badge>
             )}
             {memory.validatedBy === 'user' && (
               <Badge variant="outline" className="border-success/30 text-success text-sm">
                 <IconCheck className="w-3 h-3 mr-1" />
-                {t('memory.userVerified')}
+                {t('frontend.memory.userVerified')}
               </Badge>
             )}
           </div>
@@ -235,7 +235,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
                 size="sm"
                 onClick={onRestore}
                 className="h-7 w-7 p-0"
-                title={t('memory.restore')}
+                title={t('frontend.memory.restore')}
               >
                 <IconRotate className="w-3.5 h-3.5" />
               </Button>
@@ -245,7 +245,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
                 size="sm"
                 onClick={onArchive}
                 className="h-7 w-7 p-0"
-                title={t('memory.archive')}
+                title={t('frontend.memory.archive')}
               >
                 <IconArchive className="w-3.5 h-3.5" />
               </Button>
@@ -264,7 +264,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               size="sm"
               onClick={onShowHistory}
               className="h-7 w-7 p-0"
-              title={t('memory.showHistory')}
+              title={t('frontend.memory.showHistory')}
             >
               <IconHistory className="w-3.5 h-3.5" />
             </Button>
@@ -273,7 +273,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               size="sm"
               onClick={onShare}
               className="h-7 w-7 p-0"
-              title={t('memory.shareToWorkspace')}
+              title={t('frontend.memory.shareToWorkspace')}
             >
               <IconShare2 className="w-3.5 h-3.5" />
             </Button>
@@ -285,15 +285,15 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
             <IconGauge className="w-3 h-3" />
-            {t('memory.importance', { percent: (memory.importance * 100).toFixed(0) })}
+            {t('frontend.memory.importance', { percent: (memory.importance * 100).toFixed(0) })}
           </span>
           <span className="flex items-center gap-1">
             <IconCircleCheck className="w-3 h-3" />
-            {t('memory.confidence', { percent: (memory.confidence * 100).toFixed(0) })}
+            {t('frontend.memory.confidence', { percent: (memory.confidence * 100).toFixed(0) })}
           </span>
           <span className="flex items-center gap-1">
             <IconClock className="w-3 h-3" />
-            {t('memory.accessed', { count: memory.accessCount })}
+            {t('frontend.memory.accessed', { count: memory.accessCount })}
           </span>
         </div>
 
@@ -310,7 +310,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
             ))}
           </div>
           <span className="text-sm text-muted-foreground/50">
-            {t('memory.timeAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })} • {memory.source}
+            {t('frontend.memory.timeAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })} • {memory.source}
           </span>
         </div>
       </div>

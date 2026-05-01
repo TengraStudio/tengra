@@ -13,10 +13,10 @@ interface TranslatorFunction {
 }
 
 const IPC_VALIDATION_KEYS = [
-    'errors.ipcValidation.hostRequired',
-    'errors.ipcValidation.usernameRequired',
-    'errors.ipcValidation.tokenRequired',
-    'errors.ipcValidation.invalidUrlOrProtocol'
+    'frontend.errors.ipcValidation.hostRequired',
+    'frontend.errors.ipcValidation.usernameRequired',
+    'frontend.errors.ipcValidation.tokenRequired',
+    'frontend.errors.ipcValidation.invalidUrlOrProtocol'
 ] as const;
 
 /**

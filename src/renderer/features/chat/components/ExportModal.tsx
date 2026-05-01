@@ -77,7 +77,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
             <div className="bg-background border border-border rounded-lg shadow-lg w-96 p-4">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">{t('export.title')}</h2>
+                    <h2 className="text-lg font-semibold">{t('frontend.export.title')}</h2>
                     <button onClick={onClose}><IconX className="w-4 h-4" /></button>
                 </div>
 
@@ -91,7 +91,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                             )}
                         >
                             <IconFileText className="w-6 h-6" />
-                            <span className="text-sm">{t('export.formatMarkdown')}</span>
+                            <span className="text-sm">{t('frontend.export.formatMarkdown')}</span>
                         </button>
                         <button
                             onClick={() => setFormat('pdf')}
@@ -101,7 +101,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                             )}
                         >
                             <IconDownload className="w-6 h-6" />
-                            <span className="text-sm">{t('export.formatPdf')}</span>
+                            <span className="text-sm">{t('frontend.export.formatPdf')}</span>
                         </button>
                     </div>
 
@@ -110,7 +110,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                         disabled={isExporting}
                         className="w-full py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
-                        {isExporting ? t('export.exporting') : t('export.confirm')}
+                        {isExporting ? t('frontend.export.exporting') : t('frontend.export.confirm')}
                     </button>
                 </div>
             </div>

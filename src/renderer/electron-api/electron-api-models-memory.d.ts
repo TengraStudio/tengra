@@ -202,6 +202,31 @@ export interface ElectronApiModelsMemoryDomain {
         onSdCppStatus: (callback: (data: IpcValue) => void) => () => void;
         onSdCppProgress: (callback: (data: IpcValue) => void) => () => void;
     };
+    imageStudio: {
+        generate: (payload: {
+            prompt: string;
+            modelId: string;
+            count?: number;
+            width?: number;
+            height?: number;
+        }) => Promise<string[]>;
+        edit: (payload: {
+            contextImage?: string;
+            sourceImage: string;
+            maskImage: string;
+            prompt: string;
+            mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
+            strength?: number;
+            modelId: string;
+        }) => Promise<string[]>;
+        save: (payload: {
+            image: string;
+            prompt?: string;
+            modelId?: string;
+            width?: number;
+            height?: number;
+        }) => Promise<string>;
+    };
 
     huggingface: {
         searchModels: (
@@ -353,7 +378,24 @@ export interface ElectronApiModelsMemoryDomain {
     };
 
     gallery: {
-        list: () => Promise<{ name: string; path: string; url: string; mtime: number }[]>;
+        list: () => Promise<{
+            name: string;
+            path: string;
+            url: string;
+            mtime: number;
+            type: 'image' | 'video';
+            metadata?: {
+                prompt?: string;
+                negative_prompt?: string;
+                seed?: number;
+                steps?: number;
+                cfg_scale?: number;
+                width?: number;
+                height?: number;
+                model?: string;
+                created_at?: number;
+            };
+        }[]>;
         delete: (path: string) => Promise<boolean>;
         open: (path: string) => Promise<boolean>;
         reveal: (path: string) => Promise<boolean>;

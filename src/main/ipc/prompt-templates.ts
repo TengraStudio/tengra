@@ -19,6 +19,7 @@ import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
  */
 export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | null, promptTemplatesService: PromptTemplatesService) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'prompt-templates operation');
+
     /**
      * Get all templates (builtin + custom)
      */
@@ -30,10 +31,24 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     /**
      * Get templates by category
      */
+    ipcMain.handle('prompt-templates:getByCategory', createSafeIpcHandler('prompt-templates:getByCategory', async (event, category: string) => {
+        validateSender(event);
+        if (typeof category !== 'string') {
+            return [];
+        }
+        return promptTemplatesService.getByCategory(category);
+    }, []));
 
     /**
      * Get templates by tag
      */
+    ipcMain.handle('prompt-templates:getByTag', createSafeIpcHandler('prompt-templates:getByTag', async (event, tag: string) => {
+        validateSender(event);
+        if (typeof tag !== 'string') {
+            return [];
+        }
+        return promptTemplatesService.getByTag(tag);
+    }, []));
 
     /**
      * Search templates
@@ -41,7 +56,7 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     ipcMain.handle('prompt-templates:search', createSafeIpcHandler('prompt-templates:search', async (event: IpcMainInvokeEvent, query: string) => {
         validateSender(event);
         if (typeof query !== 'string') {
-            throw new Error('Query must be a string');
+            return [];
         }
         return promptTemplatesService.search(query);
     }, []));
@@ -52,9 +67,9 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     ipcMain.handle('prompt-templates:get', createSafeIpcHandler('prompt-templates:get', async (event: IpcMainInvokeEvent, id: string) => {
         validateSender(event);
         if (typeof id !== 'string') {
-            throw new Error('ID must be a string');
+            return null;
         }
-        const template = promptTemplatesService.getTemplate(id);
+        const template = await promptTemplatesService.getTemplate(id);
         return template ?? null;
     }, null));
 
@@ -93,6 +108,14 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     /**
      * Render a template with variables
      */
+    ipcMain.handle('prompt-templates:render', createSafeIpcHandler('prompt-templates:render', async (event, id: string, variables: Record<string, string>) => {
+        validateSender(event);
+        if (typeof id !== 'string' || !variables || typeof variables !== 'object') {
+            return '';
+        }
+        const result = await promptTemplatesService.renderTemplate(id, variables);
+        return result ?? '';
+    }, ''));
 
     /**
      * Get all categories
@@ -105,4 +128,8 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     /**
      * Get all tags
      */
+    ipcMain.handle('prompt-templates:getTags', createSafeIpcHandler('prompt-templates:getTags', async (event) => {
+        validateSender(event);
+        return promptTemplatesService.getTags();
+    }, []));
 }

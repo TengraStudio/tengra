@@ -34,7 +34,10 @@ export function registerModelRegistryIpc(
         return await modelRegistryService.getAllModels();
     }, []));
 
-    // Alias for backward compatibility if needed, but we aligned preload
+    // Alias for backward compatibility if needed
+    ipcMain.handle('model-registry:getAllModels', createSafeIpcHandler('model-registry:getAllModels', async (): Promise<ModelProviderInfo[]> => {
+        return await modelRegistryService.getAllModels();
+    }, []));
 
     ipcMain.handle('model-registry:get-remote', createSafeIpcHandler('model-registry:get-remote', async (): Promise<ModelProviderInfo[]> => {
         return await modelRegistryService.getRemoteModels();

@@ -29,38 +29,38 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                     <IconInfoCircle className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                        {t('workspaces.basicInfo')}
+                    <h2 className="text-lg font-semibold text-foreground ">
+                        {t('frontend.workspaces.basicInfo')}
                     </h2>
                     <p className="text-sm text-muted-foreground/60">
-                        {t('workspaces.basicInfoDesc')}
+                        {t('frontend.workspaces.basicInfoDesc')}
                     </p>
                 </div>
             </div>
 
             <div className="space-y-6 pl-11">
                 <div className="space-y-2">
-                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                        {t('workspaces.workspaceTitle')}
+                    <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                        {t('frontend.workspaces.workspaceTitle')}
                     </Label>
                     <Input
                         type="text"
                         value={formData.title}
                         className="bg-muted/5 border-border/10 focus:border-primary/20 transition-all"
-                        placeholder={t('workspaces.namePlaceholder')}
+                        placeholder={t('frontend.workspaces.namePlaceholder')}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             setFormData(prev => ({ ...prev, title: e.target.value }))
                         }
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                        {t('workspaces.description')}
+                    <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                        {t('frontend.workspaces.description')}
                     </Label>
                     <Textarea
                         value={formData.description}
                         className="min-h-24 bg-muted/5 border-border/10 focus:border-primary/20 transition-all resize-none"
-                        placeholder={t('workspaces.descPlaceholder')}
+                        placeholder={t('frontend.workspaces.descPlaceholder')}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                             setFormData(prev => ({ ...prev, description: e.target.value }))
                         }
@@ -68,8 +68,8 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                        {t('workspaces.status')}
+                    <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                        {t('frontend.workspaces.status')}
                     </Label>
                     <Select
                         value={formData.status}
@@ -81,9 +81,9 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="active">{t('workspaces.statusActive')}</SelectItem>
-                            <SelectItem value="archived">{t('workspaces.statusArchived')}</SelectItem>
-                            <SelectItem value="draft">{t('workspaces.statusDraft')}</SelectItem>
+                            <SelectItem value="active">{t('frontend.workspaces.statusActive')}</SelectItem>
+                            <SelectItem value="archived">{t('frontend.workspaces.statusArchived')}</SelectItem>
+                            <SelectItem value="draft">{t('frontend.workspaces.statusDraft')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -99,11 +99,11 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                     <IconDatabase className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                        {t('workspaces.advancedEngine')}
+                    <h2 className="text-lg font-semibold text-foreground ">
+                        {t('frontend.workspaces.advancedEngine')}
                     </h2>
                     <p className="text-sm text-muted-foreground/60">
-                        {t('workspaces.advancedEngineDesc')}
+                        {t('frontend.workspaces.advancedEngineDesc')}
                     </p>
                 </div>
             </div>
@@ -112,10 +112,10 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                 <div className="flex items-center justify-between p-4 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
                     <div className="space-y-0.5">
                         <Label className="text-sm font-medium text-foreground">
-                            {t('workspaces.semanticIndexing')}
+                            {t('frontend.workspaces.semanticIndexing')}
                         </Label>
-                        <p className="text-xs text-muted-foreground/60">
-                            {t('workspaces.semanticIndexingDesc')}
+                        <p className="text-sm text-muted-foreground/60">
+                            {t('frontend.workspaces.semanticIndexingDesc')}
                         </p>
                     </div>
                     <Switch
@@ -128,8 +128,8 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
 
                 <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                            {t('workspaces.maxFileSize')} (bytes)
+                        <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                            {t('frontend.workspaces.maxFileSize')} (bytes)
                         </Label>
                         <Input
                             type="number"
@@ -141,8 +141,8 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                            {t('workspaces.maxConcurrency')}
+                        <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                            {t('frontend.workspaces.maxConcurrency')}
                         </Label>
                         <Input
                             type="number"
@@ -158,14 +158,14 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider flex items-center gap-2">
+                    <Label className="text-sm font-medium text-muted-foreground/50 uppercase  flex items-center gap-2">
                         <IconEyeOff className="w-3.5 h-3.5" />
-                        {t('workspaces.exclusionPatterns')}
+                        {t('frontend.workspaces.exclusionPatterns')}
                     </Label>
                     <Textarea
-                        placeholder={t('workspaces.exclusionPatternsPlaceholder')}
+                        placeholder={t('frontend.workspaces.exclusionPatternsPlaceholder')}
                         value={formData.indexingExclude}
-                        className="min-h-20 bg-muted/5 border-border/10 font-mono text-[13px] resize-none"
+                        className="min-h-20 bg-muted/5 border-border/10 font-mono text-sm resize-none"
                         onChange={e =>
                             setFormData(prev => ({ ...prev, indexingExclude: e.target.value }))
                         }
@@ -178,10 +178,10 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                             <div className="flex items-center gap-2">
                                 <IconFileSearch className="w-3.5 h-3.5 text-primary/60" />
                                 <Label className="text-sm font-medium text-foreground">
-                                    {t('workspaces.fileWatcher')}
+                                    {t('frontend.workspaces.fileWatcher')}
                                 </Label>
                             </div>
-                            <p className="text-xs text-muted-foreground/60">{t('workspaces.fileWatcherDesc')}</p>
+                            <p className="text-sm text-muted-foreground/60">{t('frontend.workspaces.fileWatcherDesc')}</p>
                         </div>
                         <Switch
                             checked={formData.fileWatchEnabled}
@@ -196,10 +196,10 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                             <div className="flex items-center gap-2">
                                 <IconBolt className="w-3.5 h-3.5 text-warning/60" />
                                 <Label className="text-sm font-medium text-foreground">
-                                    {t('workspaces.autoSaveLabel')}
+                                    {t('frontend.workspaces.autoSaveLabel')}
                                 </Label>
                             </div>
-                            <p className="text-xs text-muted-foreground/60">{t('workspaces.autoSaveDesc')}</p>
+                            <p className="text-sm text-muted-foreground/60">{t('frontend.workspaces.autoSaveDesc')}</p>
                         </div>
                         <Switch
                             checked={formData.autoSave}

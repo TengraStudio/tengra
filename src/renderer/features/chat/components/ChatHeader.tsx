@@ -79,17 +79,17 @@ export const ChatHeader = memo(({
                     <button
                         onClick={onClearMessages}
                         className={C_CHATHEADER_1}
-                        title={t('chat.clear')}
-                        aria-label={t('chat.clear')}
+                        title={t('frontend.chat.clear')}
+                        aria-label={t('frontend.chat.clear')}
                     >
                         <IconEraser className="h-3.5 w-3.5" />
-                        <span>{t('chat.clear')}</span>
+                        <span>{t('frontend.chat.clear')}</span>
                     </button>
                     {onExport && (
                         <button
                             onClick={onExport}
                             className="text-muted-foreground/50 hover:text-foreground transition-colors p-2"
-                            title={t('chat.exportChat')}
+                            title={t('frontend.chat.exportChat')}
                         >
                             <IconDownload className="w-5 h-5" />
                         </button>
@@ -99,11 +99,11 @@ export const ChatHeader = memo(({
                     <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
-                        placeholder={t('chat.searchMessages')}
+                        placeholder={t('frontend.chat.searchMessages')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className={C_CHATHEADER_2}
-                        aria-label={t('chat.searchMessages')}
+                        aria-label={t('frontend.chat.searchMessages')}
                     />
                     {searchTerm && (
                         <button

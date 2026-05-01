@@ -43,7 +43,7 @@ export const useStatusBar = () => {
     const { t } = useTranslation();
     const context = useContext(StatusBarContext);
     if (!context) {
-        throw new Error(t('errors.context.useStatusBarProvider'));
+        throw new Error(t('frontend.errors.context.useStatusBarProvider'));
     }
     return context;
 };
@@ -235,7 +235,7 @@ export const ErrorStatus: React.FC<{
     if (count === 0) {
         return null;
     }
-    const label = count === 1 ? t('statusBar.error') : t('statusBar.errors');
+    const label = count === 1 ? t('frontend.statusBar.error') : t('frontend.statusBar.errors');
 
     return (
         <div
@@ -261,7 +261,7 @@ export const WarningStatus: React.FC<{
     if (count === 0) {
         return null;
     }
-    const label = count === 1 ? t('statusBar.warning') : t('statusBar.warnings');
+    const label = count === 1 ? t('frontend.statusBar.warning') : t('frontend.statusBar.warnings');
 
     return (
         <div

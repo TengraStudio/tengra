@@ -28,7 +28,7 @@ export const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
         </div>
         <div className="space-y-2 text-center">
             <div className="text-sm font-bold text-muted-foreground/40 animate-pulse">
-                {t('messageBubble.TengraDrawing')}
+                {t('frontend.messageBubble.TengraDrawing')}
             </div>
             <div className="flex gap-1 justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce animate-delay-300" />
@@ -62,10 +62,10 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                 <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
                     <div className="flex flex-col">
                         <span className="text-sm font-semibold text-muted-foreground/70">
-                            {t('input.generate')}
+                            {t('frontend.input.generate')}
                         </span>
                         <span className="text-sm font-medium text-foreground/90">
-                            {t('gallery.imageCount', { count: images.length })}
+                            {t('frontend.gallery.imageCount', { count: images.length })}
                         </span>
                     </div>
                     <span className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-sm font-semibold text-muted-foreground/80">
@@ -88,13 +88,13 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                             >
                                 <img
                                     src={img}
-                                    alt={t('messageBubble.attachedImage', { index: i + 1 })}
+                                    alt={t('frontend.messageBubble.attachedImage', { index: i + 1 })}
                                     className="max-h-screen min-h-96 w-full object-cover transition-transform duration-300 group-hover:scale-102"
                                 />
                                 <div className={C_MESSAGEIMAGES_2} />
                                 <div className={C_MESSAGEIMAGES_3}>
                                     <span className="typo-caption font-medium text-foreground">
-                                        {t('messageBubble.attachedImage', { index: i + 1 })}
+                                        {t('frontend.messageBubble.attachedImage', { index: i + 1 })}
                                     </span>
                                     <span className="flex items-center gap-1 typo-caption font-medium text-muted-foreground">
                                         <IconArrowsMaximize className="h-3.5 w-3.5" />
@@ -124,7 +124,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                             event.stopPropagation();
                             setPreviewImage(null);
                         }}
-                        aria-label={t('aria.closeModal')}
+                        aria-label={t('frontend.aria.closeModal')}
                     >
                         <IconX className="h-4 w-4" />
                     </button>
@@ -136,7 +136,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                     >
                         <img
                             src={previewImage}
-                            alt={t('messageBubble.attachedImage', { index: 1 })}
+                            alt={t('frontend.messageBubble.attachedImage', { index: 1 })}
                             className="max-h-screen max-w-full rounded-2xl object-contain shadow-2xl"
                         />
                     </div>

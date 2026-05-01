@@ -184,10 +184,21 @@ async fn exec(arguments: Value) -> ToolDispatchResponse {
     let args: Vec<String> = arguments
         .get("args")
         .and_then(|v| v.as_array())
-        .map(|items| items.iter().filter_map(|v| v.as_str().map(ToString::to_string)).collect())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|v| v.as_str().map(ToString::to_string))
+                .collect()
+        })
         .unwrap_or_default();
-    let cwd = arguments.get("cwd").and_then(|v| v.as_str()).map(ToString::to_string);
-    let timeout_ms = arguments.get("timeoutMs").and_then(|v| v.as_u64()).unwrap_or(12_000);
+    let cwd = arguments
+        .get("cwd")
+        .and_then(|v| v.as_str())
+        .map(ToString::to_string);
+    let timeout_ms = arguments
+        .get("timeoutMs")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(12_000);
 
     let mut cmd = Command::new(&command);
     cmd.args(args);
@@ -202,7 +213,8 @@ async fn exec(arguments: Value) -> ToolDispatchResponse {
         Ok(Ok(output)) => {
             let stdout = String::from_utf8_lossy(&output.stdout).to_string();
             let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-            let command_not_found = output.status.code().is_none() && stderr.to_lowercase().contains("not found");
+            let command_not_found =
+                output.status.code().is_none() && stderr.to_lowercase().contains("not found");
             ToolDispatchResponse {
                 success: true,
                 result: Some(json!({

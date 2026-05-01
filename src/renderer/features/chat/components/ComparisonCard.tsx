@@ -58,7 +58,7 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
                         {result.provider}
                     </span>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleCopyClick} title={t('modelComparison.copyResponse')}>
+                <Button variant="ghost" size="sm" onClick={handleCopyClick} title={t('frontend.modelComparison.copyResponse')}>
                     {copied ? <IconCheck className="h-3.5 w-3.5 text-success" /> : <IconCopy className="h-3.5 w-3.5" />}
                 </Button>
             </div>
@@ -75,9 +75,9 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
             {/* Metrics footer */}
             <div className="flex items-center justify-between px-4 py-2 border-t border-border/50 bg-muted/30">
                 <div className="flex items-center gap-4 typo-caption text-muted-foreground">
-                    <span>{t('modelComparison.responseTime')}: {result.responseTime}ms</span>
-                    <span>{t('modelComparison.tokenCount')}: {result.tokenCount}</span>
-                    <span>{t('modelComparison.tokensPerSecond')}: {result.tokensPerSecond}</span>
+                    <span>{t('frontend.modelComparison.responseTime')}: {result.responseTime}ms</span>
+                    <span>{t('frontend.modelComparison.tokenCount')}: {result.tokenCount}</span>
+                    <span>{t('frontend.modelComparison.tokensPerSecond')}: {result.tokensPerSecond}</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <Button

@@ -260,7 +260,7 @@ export function GalleryView({ language }: GalleryViewProps) {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-b border-border/50 bg-card/30 backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-xl font-bold ">{t('gallery.title')}</h2>
+                    <h2 className="text-xl font-bold ">{t('frontend.gallery.title')}</h2>
                     <Badge variant="secondary" className="font-mono typo-overline h-5">
                         {filteredImages.length}
                     </Badge>
@@ -272,12 +272,12 @@ export function GalleryView({ language }: GalleryViewProps) {
                         <Input
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder={t('gallery.searchPlaceholder')}
+                            placeholder={t('frontend.gallery.searchPlaceholder')}
                             className="pl-9 h-9 bg-muted/20 border-border/30 rounded-xl focus-visible:ring-primary/20"
                         />
                     </div>
 
-                    <Tooltip content={t('gallery.refresh')}>
+                    <Tooltip content={t('frontend.gallery.refresh')}>
                         <Button
                             variant="outline"
                             size="icon"
@@ -297,7 +297,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                 onClick={() => setSelectedPaths([])}
                                 className="h-9 text-muted-foreground hover:text-foreground"
                             >
-                                {t('gallery.clearSelection')}
+                                {t('frontend.gallery.clearSelection')}
                             </Button>
                         </div>
                     )}
@@ -312,7 +312,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                 {filteredImages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-20 grayscale">
                         <ImageIcon className="w-16 h-16 mb-4" />
-                        <p className="text-sm font-medium">{loading ? t('common.loading') : t('gallery.noImages')}</p>
+                        <p className="text-sm font-medium">{loading ? t('common.loading') : t('frontend.gallery.noImages')}</p>
                     </div>
                 ) : (
                     <div style={{ height: virtualData.totalHeight, position: 'relative' }}>
@@ -382,7 +382,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                     onClick={() => previewImage && void window.electron.gallery.open(previewImage.path)}
                                 >
                                     <IconMaximize className="w-3.5 h-3.5 mr-2" />
-                                    {t('gallery.fullScreen')}
+                                    {t('frontend.gallery.fullScreen')}
                                 </Button>
                             </div>
                         </div>
@@ -410,7 +410,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <IconSparkles className="w-4 h-4 text-primary" />
-                                                <h4 className="text-sm font-bold uppercase text-primary">{t('gallery.prompt')}</h4>
+                                                <h4 className="text-sm font-bold uppercase text-primary">{t('frontend.gallery.prompt')}</h4>
                                             </div>
                                             <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 text-sm leading-relaxed text-foreground/90 font-medium select-text selection:bg-primary/20">
                                                 {previewImage.metadata.prompt}
@@ -418,7 +418,7 @@ export function GalleryView({ language }: GalleryViewProps) {
 
                                             {previewImage.metadata.negative_prompt && (
                                                 <div className="space-y-2 mt-4">
-                                                    <h4 className="typo-overline font-bold uppercase text-muted-foreground/60">{t('gallery.negativePrompt')}</h4>
+                                                    <h4 className="typo-overline font-bold uppercase text-muted-foreground/60">{t('frontend.gallery.negativePrompt')}</h4>
                                                     <div className="p-3 rounded-xl bg-muted/30 border border-border/10 text-sm text-muted-foreground select-text">
                                                         {previewImage.metadata.negative_prompt}
                                                     </div>
@@ -429,22 +429,22 @@ export function GalleryView({ language }: GalleryViewProps) {
 
                                     {/* Parameters Grid */}
                                     <div className="space-y-3 pt-2">
-                                        <h4 className="typo-overline font-bold uppercase text-muted-foreground/50">{t('gallery.technicalParams')}</h4>
+                                        <h4 className="typo-overline font-bold uppercase text-muted-foreground/50">{t('frontend.gallery.technicalParams')}</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {previewImage?.metadata?.model && (
-                                                <MetadataBadge icon={IconSparkles} label={t('gallery.metadata.model')} value={previewImage.metadata.model} />
+                                                <MetadataBadge icon={IconSparkles} label={t('frontend.gallery.metadata.model')} value={previewImage.metadata.model} />
                                             )}
                                             {previewImage?.metadata?.width && previewImage.metadata.height && (
-                                                <MetadataBadge icon={ImageIcon} label={t('gallery.metadata.resolution')} value={`${previewImage.metadata.width}×${previewImage.metadata.height}`} />
+                                                <MetadataBadge icon={ImageIcon} label={t('frontend.gallery.metadata.resolution')} value={`${previewImage.metadata.width}×${previewImage.metadata.height}`} />
                                             )}
                                             {previewImage?.metadata?.steps && (
-                                                <MetadataBadge icon={IconRefresh} label={t('gallery.metadata.steps')} value={previewImage.metadata.steps} />
+                                                <MetadataBadge icon={IconRefresh} label={t('frontend.gallery.metadata.steps')} value={previewImage.metadata.steps} />
                                             )}
                                             {previewImage?.metadata?.cfg_scale && (
-                                                <MetadataBadge icon={IconInfoCircle} label={t('gallery.metadata.cfgScale')} value={previewImage.metadata.cfg_scale} />
+                                                <MetadataBadge icon={IconInfoCircle} label={t('frontend.gallery.metadata.cfgScale')} value={previewImage.metadata.cfg_scale} />
                                             )}
                                             {previewImage?.metadata?.seed && (
-                                                <MetadataBadge icon={IconInfoCircle} label={t('gallery.metadata.seed')} value={previewImage.metadata.seed} />
+                                                <MetadataBadge icon={IconInfoCircle} label={t('frontend.gallery.metadata.seed')} value={previewImage.metadata.seed} />
                                             )}
                                         </div>
                                     </div>
@@ -457,7 +457,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                             onClick={() => previewImage && void window.electron.gallery.reveal(previewImage.path)}
                                         >
                                             <IconFolderOpen className="w-4 h-4" />
-                                            {t('gallery.revealInFileExplorer')}
+                                            {t('frontend.gallery.revealInFileExplorer')}
                                         </Button>
                                         <Button
                                             variant="destructive"

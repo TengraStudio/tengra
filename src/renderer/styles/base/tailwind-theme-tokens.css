@@ -72,12 +72,12 @@
         --tengra-radius-card-2xl: 1.75rem;
 
         /* Default letter spacing tokens */
-        --tengra-tracking-tighter: -0.05em;
-        --tengra-tracking-tight: -0.025em;
+        --tengra-er: -0.05em;
+        --tengra-: -0.025em;
         --tengra-tracking-normal: 0em;
         --tengra-tracking-wide: 0.025em;
-        --tengra-tracking-wider: 0.05em;
-        --tengra-tracking-widest: 0.1em;
+        --tengra-: 0.05em;
+        --tengra-: 0.1em;
 
         /* Letter spacing tokens (Tailwind `theme.extend.letterSpacing`) */
         --tengra-tracking-16: 0.016em;
@@ -257,12 +257,12 @@
         --tengra-inset-full-plus-2: calc(100% + 0.5rem);
 
         /* Grid template tokens */
-        --tengra-grid-cols-todo: 2rem minmax(0,1.2fr) minmax(0,1.3fr) minmax(0,0.9fr) auto;
-        --tengra-grid-cols-380-main: 380px minmax(0,1fr);
+        --tengra-grid-cols-todo: 2rem minmax(0, 1.2fr) minmax(0, 1.3fr) minmax(0, 0.9fr) auto;
+        --tengra-grid-cols-380-main: 380px minmax(0, 1fr);
         --tengra-grid-cols-2fr-1fr: 2fr 1fr;
-        --tengra-grid-cols-80-main: 20rem minmax(0,1fr);
-        --tengra-grid-cols-balance-95-105: minmax(0,0.95fr) minmax(0,1.05fr);
-        --tengra-grid-cols-360-main: 360px minmax(0,1fr);
+        --tengra-grid-cols-80-main: 20rem minmax(0, 1fr);
+        --tengra-grid-cols-balance-95-105: minmax(0, 0.95fr) minmax(0, 1.05fr);
+        --tengra-grid-cols-360-main: 360px minmax(0, 1fr);
         --tengra-grid-cols-editor-split: 1fr 400px;
         --tengra-grid-rows-260: 260px;
 

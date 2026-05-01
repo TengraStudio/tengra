@@ -119,9 +119,9 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
             setTestMessage(result.message);
             setTestState(result.uiState);
         } catch (error) {
-            const fallbackMessage = error instanceof Error ? error.message : t('ssh.unknownError');
+            const fallbackMessage = error instanceof Error ? error.message : t('frontend.ssh.unknownError');
             const message = localizeIpcValidationMessage(fallbackMessage, t);
-            setTestMessage(t('ssh.profileTestFailed', { error: message }));
+            setTestMessage(t('frontend.ssh.profileTestFailed', { error: message }));
             setTestState('failure');
         } finally {
             setIsTesting(false);
@@ -136,21 +136,21 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
         <div className="modal-overlay z-1000">
             <div className={C_ADDCONNECTIONMODAL_1}>
                 <div className="border-b border-border/20 px-4 py-4 sm:px-5">
-                    <h3 className="text-lg font-semibold">{t('ssh.newConnectionTitle')}</h3>
+                    <h3 className="text-lg font-semibold">{t('frontend.ssh.newConnectionTitle')}</h3>
                 </div>
                 <div className="space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
                     <div className="space-y-1">
-                        <Label>{t('ssh.host')}</Label>
+                        <Label>{t('frontend.ssh.host')}</Label>
                         <Input
                             value={newConnection.host}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 setNewConnection({ ...newConnection, host: e.target.value })
                             }
-                            placeholder={t('ssh.placeholders.host')}
+                            placeholder={t('frontend.ssh.placeholders.host')}
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label>{t('ssh.port')}</Label>
+                        <Label>{t('frontend.ssh.port')}</Label>
                         <Input
                             type="number"
                             value={newConnection.port}
@@ -160,57 +160,57 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                                     port: parseInt(e.target.value) || 22,
                                 })
                             }
-                            placeholder={t('ssh.placeholders.port')}
+                            placeholder={t('frontend.ssh.placeholders.port')}
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label>{t('ssh.username')}</Label>
+                        <Label>{t('frontend.ssh.username')}</Label>
                         <Input
                             value={newConnection.username}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 setNewConnection({ ...newConnection, username: e.target.value })
                             }
-                            placeholder={t('ssh.placeholders.username')}
+                            placeholder={t('frontend.ssh.placeholders.username')}
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label>{t('ssh.password')}</Label>
+                        <Label>{t('frontend.ssh.password')}</Label>
                         <Input
                             type="password"
                             value={newConnection.password ?? ''}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 setNewConnection({ ...newConnection, password: e.target.value })
                             }
-                            placeholder={t('ssh.placeholders.passwordOptional')}
+                            placeholder={t('frontend.ssh.placeholders.passwordOptional')}
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label>{t('ssh.privateKey')}</Label>
+                        <Label>{t('frontend.ssh.privateKey')}</Label>
                         <Textarea
                             value={newConnection.privateKey ?? ''}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                 setNewConnection({ ...newConnection, privateKey: e.target.value })
                             }
-                            placeholder={t('ssh.placeholders.privateKey')}
+                            placeholder={t('frontend.ssh.placeholders.privateKey')}
                             className="min-h-24 typo-body font-mono"
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label>{t('ssh.jumpHostChain')}</Label>
+                        <Label>{t('frontend.ssh.jumpHostChain')}</Label>
                         <Input
                             value={newConnection.jumpHost ?? ''}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 setNewConnection({ ...newConnection, jumpHost: e.target.value })
                             }
-                            placeholder={t('ssh.placeholders.jumpHostChain')}
+                            placeholder={t('frontend.ssh.placeholders.jumpHostChain')}
                         />
                         <div className="typo-caption text-muted-foreground mt-1">
-                            {t('ssh.jumpHostChainHint')}
+                            {t('frontend.ssh.jumpHostChainHint')}
                         </div>
                     </div>
                     {savedChains.length > 0 && (
                         <div className="space-y-1">
-                            <Label>{t('ssh.savedJumpHostChains')}</Label>
+                            <Label>{t('frontend.ssh.savedJumpHostChains')}</Label>
                             <Select
                                 value=""
                                 onValueChange={(val: string) => {
@@ -220,12 +220,12 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                             >
                                 <SelectTrigger>
                                     <SelectValue
-                                        placeholder={t('ssh.selectSavedJumpHostChain')}
+                                        placeholder={t('frontend.ssh.selectSavedJumpHostChain')}
                                     />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="">
-                                        {t('ssh.selectSavedJumpHostChain')}
+                                        {t('frontend.ssh.selectSavedJumpHostChain')}
                                     </SelectItem>
                                     {savedChains.map(chain => (
                                         <SelectItem key={chain} value={chain}>
@@ -246,7 +246,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                             htmlFor="saveJumpHostChain"
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
-                            {t('ssh.saveJumpHostChain')}
+                            {t('frontend.ssh.saveJumpHostChain')}
                         </Label>
                     </div>
                     <div className="flex items-center space-x-2 py-1">
@@ -259,18 +259,18 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                             htmlFor="saveProfile"
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
-                            {t('ssh.saveProfile')}
+                            {t('frontend.ssh.saveProfile')}
                         </Label>
                     </div>
                     {shouldSaveProfile && (
                         <div className="space-y-1 transition-all animate-in fade-in slide-in-from-top-1">
-                            <Label>{t('ssh.profileName')}</Label>
+                            <Label>{t('frontend.ssh.profileName')}</Label>
                             <Input
                                 value={newConnection.name ?? ''}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     setNewConnection({ ...newConnection, name: e.target.value })
                                 }
-                                placeholder={t('ssh.placeholders.profileName')}
+                                placeholder={t('frontend.ssh.placeholders.profileName')}
                             />
                         </div>
                     )}
@@ -286,14 +286,14 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                         }}
                         disabled={isConnecting || isTesting || !newConnection.host}
                     >
-                        {isTesting ? t('ssh.testingProfile') : t('ssh.testProfile')}
+                        {isTesting ? t('frontend.ssh.testingProfile') : t('frontend.ssh.testProfile')}
                     </button>
                     <button
                         className="primary-btn"
                         onClick={handleConnectClick}
                         disabled={isConnecting || !newConnection.host}
                     >
-                        {isConnecting ? t('ssh.connecting') : t('ssh.connect')}
+                        {isConnecting ? t('frontend.ssh.connecting') : t('frontend.ssh.connect')}
                     </button>
                 </div>
                 {testMessage !== '' && (

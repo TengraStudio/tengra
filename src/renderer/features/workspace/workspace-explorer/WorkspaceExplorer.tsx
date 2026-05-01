@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconFilePlus, IconFolder, IconFolderPlus, IconMinimize, IconRefresh, IconSearch } from '@tabler/icons-react';
+import { IconFilePlus, IconFolder, IconFolderPlus, IconMinimize, IconPlus, IconRefresh, IconSearch } from '@tabler/icons-react';
 import React from 'react';
 import { List, RowComponentProps } from 'react-window';
 
@@ -315,7 +315,7 @@ function StaticExplorerRows(args: {
                             depth={row.depth}
                             draftName={row.draftName}
                             actionType={row.actionType}
-                            placeholder={args.t('workspace.placeholders.name')}
+                            placeholder={args.t('frontend.workspace.placeholders.name')}
                             isFocused={args.focusedRowKey === row.key}
                             setRowRef={args.setRowRef}
                             onDraftNameChange={value =>
@@ -550,6 +550,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     mounts,
     refreshSignal,
     onOpenFile,
+    onAddMount,
     onRemoveMount,
     selectedEntries,
     lastSelectedEntry,
@@ -986,7 +987,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             onMountContextMenu: handleMountContextMenu,
             onEntryContextMenu: handleContextMenu,
             setRowRef,
-            inlinePlaceholder: t('workspace.placeholders.name'),
+            inlinePlaceholder: t('frontend.workspace.placeholders.name'),
             onInlineDraftNameChange: value => setWorkspaceInlineDraftName(workspaceId, value),
             onInlineSubmit: handleInlineSubmit,
             onInlineCancel: handleInlineCancel,
@@ -1031,16 +1032,24 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             >
                 <div className="flex items-center gap-2 overflow-hidden">
                     <span className="typo-overline font-bold uppercase text-muted-foreground/50 truncate pl-1">
-                        {t('workspace.files')}
+                        {t('frontend.workspace.files')}
                     </span>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                        onClick={onAddMount}
+                        className="p-1 hover:bg-muted/40 rounded transition-colors"
+                        title={t('frontend.workspace.addConnection')}
+                        data-testid="plus-icon"
+                    >
+                        <IconPlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                    </button>
                     <button
                         onClick={() => {
                             triggerHeaderCreateAction('createFile');
                         }}
                         className="p-1 hover:bg-muted/40 rounded transition-colors"
-                        title={t('workspace.explorer.newFile')}
+                        title={t('frontend.workspace.explorer.newFile')}
                     >
                         <IconFilePlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
                     </button>
@@ -1049,7 +1058,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                             triggerHeaderCreateAction('createFolder');
                         }}
                         className="p-1 hover:bg-muted/40 rounded transition-colors"
-                        title={t('workspace.explorer.newFolder')}
+                        title={t('frontend.workspace.explorer.newFolder')}
                     >
                         <IconFolderPlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
                     </button>
@@ -1065,7 +1074,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                     <button
                         onClick={collapseAll}
                         className="p-1 hover:bg-muted/40 rounded transition-colors"
-                        title={t('workspace.explorer.collapseAll')}
+                        title={t('frontend.workspace.explorer.collapseAll')}
                     >
                         <IconMinimize className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
                     </button>
@@ -1099,7 +1108,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 t={t}
             />
 
-            {!hasMounts && <WorkspaceExplorerEmptyState label={t('workspace.noMounts')} />}
+            {!hasMounts && <WorkspaceExplorerEmptyState label={t('frontend.workspace.noMounts')} />}
 
             <div
                 className={cn(

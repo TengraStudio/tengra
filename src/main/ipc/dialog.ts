@@ -12,6 +12,7 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
+
 const DIALOG_MESSAGE_KEY = {
     WINDOW_NOT_FOUND: 'mainProcess.dialog.windowNotFound',
     CANCELED: 'mainProcess.dialog.canceled',
@@ -19,6 +20,7 @@ const DIALOG_MESSAGE_KEY = {
     INVALID_OPTIONS: 'mainProcess.dialog.invalidOptionsProvided',
     SAVE_FAILED: 'mainProcess.dialog.saveOperationFailed'
 } as const;
+
 const DIALOG_ERROR_MESSAGE = {
     WINDOW_NOT_FOUND: 'Window not found',
     CANCELED: 'Canceled',
@@ -34,7 +36,6 @@ function createDialogFailure(error: string, messageKey: string): {
 } {
     return { success: false, error, messageKey };
 }
-
 
 /**
  * Registers IPC handlers for native dialog operations
@@ -77,4 +78,45 @@ export function registerDialogIpc(getMainWindow: () => BrowserWindow | null): vo
         )
     );
 
+    ipcMain.handle(
+        'dialog:saveFile',
+        createSafeIpcHandler(
+            'dialog:saveFile',
+            async (event, options: { filename: string; content: string }) => {
+                validateSender(event);
+
+                if (!options || !options.filename) {
+                    return createDialogFailure(
+                        DIALOG_ERROR_MESSAGE.INVALID_OPTIONS,
+                        DIALOG_MESSAGE_KEY.INVALID_OPTIONS
+                    );
+                }
+
+                const win = getMainWindow();
+                if (!win) {
+                    return createDialogFailure(
+                        DIALOG_ERROR_MESSAGE.WINDOW_NOT_FOUND,
+                        DIALOG_MESSAGE_KEY.WINDOW_NOT_FOUND
+                    );
+                }
+
+                const result = await dialog.showSaveDialog(win, {
+                    defaultPath: options.filename
+                });
+
+                if (result.canceled) {
+                    return createDialogFailure(
+                        DIALOG_ERROR_MESSAGE.CANCELED,
+                        DIALOG_MESSAGE_KEY.CANCELED
+                    );
+                }
+
+                return { success: true, filePath: result.filePath };
+            },
+            createDialogFailure(
+                DIALOG_ERROR_MESSAGE.SAVE_FAILED,
+                DIALOG_MESSAGE_KEY.SAVE_FAILED
+            )
+        )
+    );
 }

@@ -62,7 +62,7 @@ export const MessageFooter = memo(
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span>
-                            {t('messageBubble.tokenEstimate', {
+                            {t('frontend.messageBubble.tokenEstimate', {
                                 count: Math.ceil(displayContent.length / 4),
                             })}
                         </span>
@@ -79,7 +79,7 @@ export const MessageFooter = memo(
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span className="text-success/60">
                             {(message.responseTime / 1000).toFixed(1)}
-                            {t('messageBubble.secondsShort')}
+                            {t('frontend.messageBubble.secondsShort')}
                         </span>
                     </>
                 )}
@@ -95,7 +95,7 @@ export const MessageFooter = memo(
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span className="text-primary animate-pulse font-bold">
-                            {streamingSpeed.toFixed(1)} {t('messageBubble.tokensPerSecond')}
+                            {streamingSpeed.toFixed(1)} {t('frontend.messageBubble.tokensPerSecond')}
                         </span>
                     </>
                 )}
@@ -112,8 +112,8 @@ export const MessageFooter = memo(
                                         ? 'text-success/80'
                                         : 'text-muted-foreground/30 hover:text-success/60'
                                 )}
-                                title={t('messageReactions.thumbsUp')}
-                                aria-label={t('messageReactions.thumbsUp')}
+                                title={t('frontend.messageReactions.thumbsUp')}
+                                aria-label={t('frontend.messageReactions.thumbsUp')}
                                 aria-pressed={message.rating === 1}
                             >
                                 <IconThumbUp className={cn('w-2.5 h-2.5', message.rating === 1 && 'fill-current')} />
@@ -127,8 +127,8 @@ export const MessageFooter = memo(
                                         ? 'text-destructive/80'
                                         : 'text-muted-foreground/30 hover:text-destructive/60'
                                 )}
-                                title={t('messageReactions.thumbsDown')}
-                                aria-label={t('messageReactions.thumbsDown')}
+                                title={t('frontend.messageReactions.thumbsDown')}
+                                aria-label={t('frontend.messageReactions.thumbsDown')}
                                 aria-pressed={message.rating === -1}
                             >
                                 <IconThumbDown className={cn('w-2.5 h-2.5', message.rating === -1 && 'fill-current')} />

@@ -140,7 +140,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         }
         return {
             id: TERMINAL_WORKSPACE_ISSUES_TAB_ID,
-            name: t('terminal.workspaceIssuesTabTitle'),
+            name: t('frontend.terminal.workspaceIssuesTabTitle'),
             type: 'panel',
             status: 'idle',
             history: [],

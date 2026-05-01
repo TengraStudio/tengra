@@ -95,7 +95,7 @@ const ConnectionCard = memo(({
                     }}
                     className={C_SSHCONNECTIONLIST_1}
                 >
-                    {t('ssh.disconnect')}
+                    {t('frontend.ssh.disconnect')}
                 </button>
             ) : (
                 <div className="flex gap-2">
@@ -106,7 +106,7 @@ const ConnectionCard = memo(({
                         }}
                         className="typo-caption px-2 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded border border-primary/20"
                     >
-                        {t('ssh.connect')}
+                        {t('frontend.ssh.connect')}
                     </button>
                     <button
                         onClick={(e) => {
@@ -114,7 +114,7 @@ const ConnectionCard = memo(({
                             onDeleteRequest(conn.id);
                         }}
                         className="typo-caption px-2 py-0.5 hover:bg-destructive/10 hover:text-destructive text-muted-foreground rounded transition-colors"
-                        title={t('ssh.deleteProfile')}
+                        title={t('frontend.ssh.deleteProfile')}
                     >
                         ×
                     </button>
@@ -193,7 +193,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                 className="primary-btn mb-4"
                 onClick={onAdd}
             >
-                {t('ssh.newConnection')}
+                {t('frontend.ssh.newConnection')}
             </button>
 
             <div className="connection-list" style={{ overflowY: shouldVirtualize ? 'hidden' : 'auto', flex: 1 }}>

@@ -105,9 +105,21 @@ fn translate_frame(
     match provider {
         "claude" => translate_claude_frame(frame, claude_state, state, session_key),
         "antigravity" => translate_gemini_frame(frame, gemini_state),
-        "copilot" => translate_copilot_frame(frame, copilot_state),
+        "copilot" => translate_copilot_frame(frame, copilot_state, state, session_key),
         _ => extract_data_payloads(frame),
     }
+}
+
+fn translate_copilot_frame(
+    frame: &str,
+    state: &mut CopilotStreamState,
+    app_state: &State<Arc<AppState>>,
+    session_key: &str,
+) -> Vec<String> {
+    extract_data_payloads(frame)
+        .into_iter()
+        .flat_map(|payload| translate_copilot_payload(payload, state, app_state, session_key))
+        .collect()
 }
 
 fn extract_data_payloads(frame: &str) -> Vec<String> {
@@ -133,14 +145,12 @@ fn translate_gemini_frame(frame: &str, state: &mut GeminiStreamState) -> Vec<Str
         .collect()
 }
 
-fn translate_copilot_frame(frame: &str, state: &mut CopilotStreamState) -> Vec<String> {
-    extract_data_payloads(frame)
-        .into_iter()
-        .flat_map(|payload| translate_copilot_payload(payload, state))
-        .collect()
-}
-
-fn translate_copilot_payload(payload: String, state: &mut CopilotStreamState) -> Vec<String> {
+fn translate_copilot_payload(
+    payload: String,
+    state: &mut CopilotStreamState,
+    app_state: &State<Arc<AppState>>,
+    session_key: &str,
+) -> Vec<String> {
     if payload == "[DONE]" {
         return vec![payload];
     }
@@ -148,6 +158,9 @@ fn translate_copilot_payload(payload: String, state: &mut CopilotStreamState) ->
     let Ok(value) = serde_json::from_str::<Value>(&payload) else {
         return vec![payload];
     };
+
+    // Intercept usage and session info
+    intercept_copilot_usage(&value, app_state, session_key);
 
     if let Some(chunk) = copilot_session_event_to_openai_chunk(&value, state) {
         return vec![chunk];
@@ -166,6 +179,38 @@ fn translate_copilot_payload(payload: String, state: &mut CopilotStreamState) ->
     }
 
     vec![payload]
+}
+
+fn intercept_copilot_usage(value: &Value, app_state: &State<Arc<AppState>>, session_key: &str) {
+    let Some(event_type) = value.get("type").and_then(Value::as_str) else {
+        return;
+    };
+
+    let is_session_info = event_type == "session.usage_info";
+    let is_assistant_usage = event_type == "assistant.usage";
+
+    if !is_session_info && !is_assistant_usage {
+        return;
+    }
+
+    let account_id = session_key.split(':').next().unwrap_or("anon").to_string();
+    let app_state = app_state.0.clone();
+    let value = value.clone();
+
+    tokio::spawn(async move {
+        let mut cache = app_state.copilot_usage_cache.lock().await;
+        let entry = cache.entry(account_id).or_insert_with(|| json!({}));
+
+        if is_session_info {
+            if let Some(data) = value.get("data") {
+                entry["session_limits"] = data.clone();
+            }
+        } else if is_assistant_usage {
+            if let Some(data) = value.get("data") {
+                entry["session_usage"] = data.clone();
+            }
+        }
+    });
 }
 
 fn copilot_session_event_to_openai_chunk(
@@ -402,9 +447,17 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
         if let Some(function_call) = part.get("functionCall") {
             let call_id = format!("gemini-call-{}", index);
             if !state.sent_tool_call_ids.contains(&call_id) {
-                let name = function_call.get("name").and_then(Value::as_str).unwrap_or_default();
-                let args = function_call.get("args").cloned().unwrap_or_else(|| json!({}));
-                let thought_signature = function_call.get("thought_signature").and_then(Value::as_str);
+                let name = function_call
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                let args = function_call
+                    .get("args")
+                    .cloned()
+                    .unwrap_or_else(|| json!({}));
+                let thought_signature = function_call
+                    .get("thought_signature")
+                    .and_then(Value::as_str);
 
                 let mut fc_obj = json!({
                     "name": name,
@@ -412,7 +465,10 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
                 });
 
                 if let Some(ts) = thought_signature {
-                    fc_obj.as_object_mut().unwrap().insert("thought_signature".to_string(), Value::String(ts.to_string()));
+                    fc_obj.as_object_mut().unwrap().insert(
+                        "thought_signature".to_string(),
+                        Value::String(ts.to_string()),
+                    );
                 }
 
                 tool_calls.push(json!({

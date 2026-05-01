@@ -549,6 +549,10 @@ fn normalize_responses_request(payload: &Value) -> Result<ChatCompletionRequest,
             .get("max_completion_tokens")
             .and_then(Value::as_u64)
             .map(|value| value as u32),
+        n: payload
+            .get("n")
+            .and_then(Value::as_u64)
+            .map(|value| value as u32),
         top_p: payload
             .get("top_p")
             .and_then(Value::as_f64)

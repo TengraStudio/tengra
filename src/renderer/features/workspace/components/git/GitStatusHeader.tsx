@@ -30,7 +30,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
     return (
         <div className="space-y-6">
             <div className="space-y-3">
-                <span className="typo-overline font-bold text-muted-foreground/60 uppercase px-1">{t('workspaceDashboard.gitSectionStatus')}</span>
+                <span className="typo-overline font-bold text-muted-foreground/60 uppercase px-1">{t('frontend.workspaceDashboard.gitSectionStatus')}</span>
 
                 <div className="p-4 rounded-xl bg-card border border-border/40 space-y-5">
                     {/* Primary Status */}
@@ -41,7 +41,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                                 gitData.isClean ? "bg-emerald-500 shadow-emerald-500/20" : "bg-amber-500 shadow-amber-500/20"
                             )} />
                             <span className="text-sm font-bold ">
-                                {gitData.isClean ? t('workspaceDashboard.clean') : t('workspaceDashboard.dirty')}
+                                {gitData.isClean ? t('frontend.workspaceDashboard.clean') : t('frontend.workspaceDashboard.dirty')}
                             </span>
                         </div>
                         <span className="typo-overline font-bold text-muted-foreground/40 bg-muted/50 px-2 py-0.5 rounded uppercase ">
@@ -54,13 +54,13 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                     {/* Detailed Reason (Why it's dirty) */}
                     {!gitData.isClean ? (
                         <div className="grid grid-cols-1 gap-3">
-                            <div className="typo-overline font-bold text-muted-foreground/30 uppercase mb-1 px-1">{t('workspaceDashboard.status')}</div>
+                            <div className="typo-overline font-bold text-muted-foreground/30 uppercase mb-1 px-1">{t('frontend.workspaceDashboard.status')}</div>
                             <div className="space-y-2.5">
                                 {addedCount > 0 && (
                                     <div className="flex items-center justify-between text-sm px-1">
                                         <div className="flex items-center gap-2 text-emerald-500/80">
                                             <IconFilePlus className="w-3.5 h-3.5" />
-                                            <span>{t('workspaceDashboard.gitStatus.added')}</span>
+                                            <span>{t('frontend.workspaceDashboard.gitStatus.added')}</span>
                                         </div>
                                         <span className="font-bold">{addedCount}</span>
                                     </div>
@@ -69,7 +69,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                                     <div className="flex items-center justify-between text-sm px-1">
                                         <div className="flex items-center gap-2 text-amber-500/80">
                                             <IconActivity className="w-3.5 h-3.5" />
-                                            <span>{t('workspaceDashboard.gitStatus.modified')}</span>
+                                            <span>{t('frontend.workspaceDashboard.gitStatus.modified')}</span>
                                         </div>
                                         <span className="font-bold">{modifiedCount}</span>
                                     </div>
@@ -78,15 +78,15 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                                     <div className="flex items-center justify-between text-sm px-1">
                                         <div className="flex items-center gap-2 text-rose-500/80">
                                             <IconFileMinus className="w-3.5 h-3.5" />
-                                            <span>{t('workspaceDashboard.gitStatus.deleted')}</span>
+                                            <span>{t('frontend.workspaceDashboard.gitStatus.deleted')}</span>
                                         </div>
                                         <span className="font-bold">{deletedCount}</span>
                                     </div>
                                 )}
                                 {diffStats && (
                                     <div className="pt-2 border-t border-border/5 mt-2 flex items-center gap-4 typo-overline font-medium px-1">
-                                        <span className="text-emerald-500/60">+{diffStats.total.added} {t('workspaceDashboard.linesAdded')}</span>
-                                        <span className="text-rose-500/60">-{diffStats.total.deleted} {t('workspaceDashboard.linesDeleted')}</span>
+                                        <span className="text-emerald-500/60">+{diffStats.total.added} {t('frontend.workspaceDashboard.linesAdded')}</span>
+                                        <span className="text-rose-500/60">-{diffStats.total.deleted} {t('frontend.workspaceDashboard.linesDeleted')}</span>
                                     </div>
                                 )}
                             </div>
@@ -94,7 +94,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                     ) : (
                         <div className="flex flex-col items-center gap-3 py-4 text-center opacity-40 grayscale">
                             <IconCircleCheck className="w-8 h-8 text-emerald-500" />
-                            <p className="typo-overline font-bold uppercase ">{t('workspaceDashboard.clean')}</p>
+                            <p className="typo-overline font-bold uppercase ">{t('frontend.workspaceDashboard.clean')}</p>
                         </div>
                     )}
 

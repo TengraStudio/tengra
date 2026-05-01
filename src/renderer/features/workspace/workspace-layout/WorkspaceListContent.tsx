@@ -49,8 +49,8 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                         <div className="w-16 h-16 rounded-full bg-muted/10 flex items-center justify-center mb-6">
                             <IconDeviceDesktop className="w-8 h-8 text-muted-foreground/30" />
                         </div>
-                        <h3 className="text-xl font-semibold text-foreground/80">{t('workspaces.noWorkspaces')}</h3>
-                        <p className="text-muted-foreground/50 max-w-sm mt-2">{t('workspaces.startNewWorkspace')}</p>
+                        <h3 className="text-xl font-semibold text-foreground/80">{t('frontend.workspaces.noWorkspaces')}</h3>
+                        <p className="text-muted-foreground/50 max-w-sm mt-2">{t('frontend.workspaces.startNewWorkspace')}</p>
                     </div>
                 )}
             </div>
@@ -65,18 +65,18 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                     onClick={() => toggleSort('title')}
                     className="flex items-center gap-2 text-left hover:text-primary transition-colors group"
                 >
-                    {t('workspaces.tableName')}
+                    {t('frontend.workspaces.tableName')}
                     <IconArrowsSort className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </button>
-                <div>{t('workspaces.tablePath')}</div>
+                <div>{t('frontend.workspaces.tablePath')}</div>
                 <button
                     onClick={() => toggleSort('updatedAt')}
                     className="flex items-center gap-2 text-left hover:text-primary transition-colors group"
                 >
-                    {t('workspaces.tableUpdated')}
+                    {t('frontend.workspaces.tableUpdated')}
                     <IconArrowsSort className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </button>
-                <div className="text-right">{t('workspaces.tableActions')}</div>
+                <div className="text-right">{t('frontend.workspaces.tableActions')}</div>
             </div>
             <Virtuoso
                 style={{ height: 'calc(100vh - 350px)', minHeight: 400 }}
@@ -94,11 +94,11 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                         <button
                             onClick={() => onSelectWorkspace(workspace)}
                             className="text-left min-w-0"
-                            title={workspace.description || t('workspaces.noDescription')}
+                            title={workspace.description || t('frontend.workspaces.noDescription')}
                         >
                             <div className="font-semibold truncate group-hover:text-primary transition-colors ">{workspace.title}</div>
                             <div className="typo-overline text-muted-foreground/60 truncate mt-0.5 line-clamp-1">
-                                {workspace.description || t('workspaces.noDescription')}
+                                {workspace.description || t('frontend.workspaces.noDescription')}
                             </div>
                         </button>
                         <div className="typo-overline text-muted-foreground/40 truncate font-mono bg-muted/20 px-2 py-0.5 rounded max-w-200">
@@ -112,7 +112,7 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => onSelectWorkspace(workspace)}
-                                title={t('workspace.openTitle')}
+                                title={t('frontend.workspace.openTitle')}
                                 className="h-8 w-8 text-primary/70 hover:text-primary hover:bg-primary/10"
                             >
                                 <IconFolderOpen className="w-4 h-4" />
@@ -130,7 +130,7 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => workspaceStateMachine.startArchive(workspace)}
-                                title={workspace.status === 'archived' ? t('common.unarchive') : t('workspaces.archiveWorkspace')}
+                                title={workspace.status === 'archived' ? t('common.unarchive') : t('frontend.workspaces.archiveWorkspace')}
                                 className="h-8 w-8 hover:bg-success/10 hover:text-success"
                             >
                                 <IconArchive className="w-4 h-4" />
@@ -153,8 +153,8 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                     <div className="w-16 h-16 rounded-full bg-muted/10 flex items-center justify-center mb-6">
                         <IconDeviceDesktop className="w-8 h-8 text-muted-foreground/30" />
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground/80">{t('workspaces.noWorkspaces')}</h3>
-                    <p className="text-muted-foreground/50 max-w-sm mt-2">{t('workspaces.startNewWorkspace')}</p>
+                    <h3 className="text-xl font-semibold text-foreground/80">{t('frontend.workspaces.noWorkspaces')}</h3>
+                    <p className="text-muted-foreground/50 max-w-sm mt-2">{t('frontend.workspaces.startNewWorkspace')}</p>
                 </div>
             )}
         </div>

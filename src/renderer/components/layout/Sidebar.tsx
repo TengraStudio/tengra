@@ -45,7 +45,7 @@ const SidebarHeaderConnector: React.FC<Pick<SidebarProps, 'isCollapsed' | 'onCha
     return (
         <SidebarHeader
             isCollapsed={isCollapsed}
-            newChatLabel={t('sidebar.newChat')}
+            newChatLabel={t('frontend.sidebar.newChat')}
             onClickNewChat={() => {
                 onChangeView('chat');
                 createNewChat();
@@ -213,7 +213,7 @@ const SidebarChatSection: React.FC<Pick<SidebarProps, 'currentView' | 'onChangeV
             <Modal
                 isOpen={showClearConfirm}
                 onClose={() => setShowClearConfirm(false)}
-                title={t('sidebar.clearHistory')}
+                title={t('frontend.sidebar.clearHistory')}
                 footer={(
                     <div className="flex gap-2">
                         <button
@@ -232,7 +232,7 @@ const SidebarChatSection: React.FC<Pick<SidebarProps, 'currentView' | 'onChangeV
                 )}
             >
                 <p className="text-sm text-muted-foreground">
-                    {t('sidebar.confirmClearAll')}
+                    {t('frontend.sidebar.confirmClearAll')}
                 </p>
             </Modal>
         </>
@@ -255,7 +255,7 @@ export const Sidebar = React.memo(({
         <>
             <aside
                 data-testid="sidebar"
-                aria-label={t('aria.applicationSidebar')}
+                aria-label={t('frontend.aria.applicationSidebar')}
                 className={cn(
                     'flex h-full flex-col overflow-hidden border-r border-border/40 bg-card/80 backdrop-blur-sm transition-width duration-300 ease-out',
                     isCollapsed ? 'w-20' : 'w-full'

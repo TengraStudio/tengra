@@ -171,16 +171,16 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
                         <div className="bg-git-gh-header px-5 py-2.5 border-t border-border/10 flex items-center justify-between opacity-60">
                             <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/20 uppercase ">
                                 <IconHash className="w-3 h-3" />
-                                <span>{t('git.commitDiff.endOfChangeset')}</span>
+                                <span>{t('frontend.git.commitDiff.endOfChangeset')}</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-emerald-500/40" />
-                                    <span className="typo-overline font-bold text-muted-foreground/40 uppercase">{t('git.commitDiff.additions')}</span>
+                                    <span className="typo-overline font-bold text-muted-foreground/40 uppercase">{t('frontend.git.commitDiff.additions')}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-rose-500/40" />
-                                    <span className="typo-overline font-bold text-muted-foreground/40 uppercase">{t('git.commitDiff.deletions')}</span>
+                                    <span className="typo-overline font-bold text-muted-foreground/40 uppercase">{t('frontend.git.commitDiff.deletions')}</span>
                                 </div>
                             </div>
                         </div>

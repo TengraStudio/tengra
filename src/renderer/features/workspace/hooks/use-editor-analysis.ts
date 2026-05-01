@@ -95,7 +95,7 @@ export function useEditorAnalysis({
         }
         const next = activeTabContent.replace(/\bvar\b/g, 'const');
         setSemanticPreview(next.slice(0, 1200));
-        setSnippetStatus(t('workspaceDashboard.editor.semanticPreviewReady'));
+        setSnippetStatus(t('frontend.workspaceDashboard.editor.semanticPreviewReady'));
     }, [activeTabContent, t, setSnippetStatus]);
 
     const applySemanticRefactor = React.useCallback(() => {
@@ -103,7 +103,7 @@ export function useEditorAnalysis({
             return;
         }
         updateTabContent(activeTabContent.replace(/\bvar\b/g, 'const'));
-        setSnippetStatus(t('workspaceDashboard.editor.semanticApplied'));
+        setSnippetStatus(t('frontend.workspaceDashboard.editor.semanticApplied'));
     }, [activeTabContent, t, updateTabContent, setSnippetStatus]);
 
     return {

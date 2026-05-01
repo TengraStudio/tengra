@@ -76,11 +76,11 @@ export const WorkspaceSetupModal: React.FC<WorkspaceSetupModalProps> = ({ isOpen
 
     const progressSteps = useMemo(() => {
         const allSteps = [
-            { id: 'selection', label: t('workspaceWizard.title') },
-            { id: 'ssh-connection', label: t('workspaceWizard.connect') },
-            { id: 'ssh-browser', label: t('workspaceWizard.selectFolder') },
-            { id: 'details', label: t('workspaceWizard.workspaceName') },
-            { id: 'creating', label: t('workspaceWizard.creating') },
+            { id: 'selection', label: t('frontend.workspaceWizard.title') },
+            { id: 'ssh-connection', label: t('frontend.workspaceWizard.connect') },
+            { id: 'ssh-browser', label: t('frontend.workspaceWizard.selectFolder') },
+            { id: 'details', label: t('frontend.workspaceWizard.workspaceName') },
+            { id: 'creating', label: t('frontend.workspaceWizard.creating') },
         ];
         if (!isSSHFlow) {
             return allSteps.filter(s => s.id !== 'ssh-connection' && s.id !== 'ssh-browser');
@@ -96,10 +96,10 @@ export const WorkspaceSetupModal: React.FC<WorkspaceSetupModalProps> = ({ isOpen
                 setSshFiles(result.files);
                 setSshPath(path);
             } else {
-                setError(result.error ?? t('workspaceWizard.listFailed'));
+                setError(result.error ?? t('frontend.workspaceWizard.listFailed'));
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('workspaceWizard.listFailed'));
+            setError(err instanceof Error ? err.message : t('frontend.workspaceWizard.listFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -122,16 +122,16 @@ export const WorkspaceSetupModal: React.FC<WorkspaceSetupModalProps> = ({ isOpen
             const result = normalizeDirectorySelectionResult(await window.electron.selectDirectory());
             if (result.success && result.path) {
                 const normalizedPath = result.path.replace(/[/\\]+$/, '');
-                const dirName = normalizedPath.split(/[/\\]/).pop() || t('workspaceWizard.defaultWorkspaceName');
+                const dirName = normalizedPath.split(/[/\\]/).pop() || t('frontend.workspaceWizard.defaultWorkspaceName');
                 setFormData(p => ({ ...p, name: p.name || dirName }));
                 setSshConnectionId(null);
                 setSshPath(result.path); // Use as local path
                 setStep('details');
             } else {
-                setError(t('workspaceWizard.selectFailed'));
+                setError(t('frontend.workspaceWizard.selectFailed'));
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('workspaceWizard.selectFailed'));
+            setError(err instanceof Error ? err.message : t('frontend.workspaceWizard.selectFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -162,9 +162,9 @@ export const WorkspaceSetupModal: React.FC<WorkspaceSetupModalProps> = ({ isOpen
                 onClose();
                 return;
             }
-            setError(t('workspaceWizard.createFailed'));
+            setError(t('frontend.workspaceWizard.createFailed'));
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('workspaceWizard.createFailed'));
+            setError(err instanceof Error ? err.message : t('frontend.workspaceWizard.createFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -260,7 +260,7 @@ export const WorkspaceSetupModal: React.FC<WorkspaceSetupModalProps> = ({ isOpen
                 <SetupLoadingOverlay
                     isLoading={isLoading}
                     step={step}
-                    creatingLabel={t('workspaceWizard.creating')}
+                    creatingLabel={t('frontend.workspaceWizard.creating')}
                     loadingLabel={t('common.loading')}
                 />
 
@@ -276,9 +276,9 @@ export const WorkspaceSetupModal: React.FC<WorkspaceSetupModalProps> = ({ isOpen
                     sshUsername={sshForm.username}
                     onBack={handleBack}
                     onNext={() => { void handleNext(); }}
-                    backLabel={t('workspaceWizard.back')}
-                    nextLabel={t('workspaceWizard.next')}
-                    selectFolderLabel={t('workspaceWizard.selectFolder')}
+                    backLabel={t('frontend.workspaceWizard.back')}
+                    nextLabel={t('frontend.workspaceWizard.next')}
+                    selectFolderLabel={t('frontend.workspaceWizard.selectFolder')}
                     connectLabel={t('common.connect')}
                 />
             </div>

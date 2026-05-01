@@ -24,6 +24,8 @@ const loadSettingsView = () =>
     import('./SettingsView').then(module => ({ default: module.SettingsView }));
 const loadMarketplaceView = () =>
     import('@/features/marketplace/MarketplaceView').then(module => ({ default: module.MarketplaceView }));
+const loadImageStudioView = () =>
+    import('@/features/images/ImageStudioView').then(module => ({ default: module.ImageStudioView }));
 
 const preloadedViews = new Map<AppView, Promise<void>>();
 
@@ -60,6 +62,9 @@ const viewPreloaders: Partial<Record<AppView, () => Promise<void>>> = {
     marketplace: async () => {
         await loadMarketplaceView();
     },
+    images: async () => {
+        await loadImageStudioView();
+    },
 };
 
 const DEFAULT_PRELOAD_VIEWS: readonly AppView[] = ['chat'];
@@ -70,6 +75,7 @@ export const ChatViewWrapperView = lazy(loadChatViewWrapperView);
 export const WorkspaceRouteView = lazy(loadWorkspaceView);
 export const SettingsRouteView = lazy(loadSettingsView);
 export const MarketplaceView = lazy(loadMarketplaceView);
+export const ImageStudioView = lazy(loadImageStudioView);
 
 export function getDefaultPreloadViews(currentView: AppView): AppView[] {
     return DEFAULT_PRELOAD_VIEWS.filter(view => view !== currentView);

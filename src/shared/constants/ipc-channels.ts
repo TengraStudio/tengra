@@ -305,6 +305,8 @@ export const WORKSPACE_AGENT_SESSION_CHANNELS = {
   GET_CONTEXT_TELEMETRY: 'workspace-agent-session:get-context-telemetry',
   /** Archive or unarchive a session */
   ARCHIVE: 'workspace-agent-session:archive',
+  /** Delete a session */
+  DELETE: 'workspace-agent-session:delete',
   /** Update background-state persistence for a workspace */
   RESUME_BACKGROUND_STATE: 'workspace-agent-session:resume-background-state',
 } as const;

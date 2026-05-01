@@ -31,19 +31,19 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                         <IconTerminal className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                            {t('workspaces.navigation.build')}
+                        <h2 className="text-lg font-semibold text-foreground ">
+                            {t('frontend.workspaces.navigation.build')}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            {t('workspace.buildDescription')}
+                            {t('frontend.workspace.buildDescription')}
                         </p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-11">
                     <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                            {t('workspace.buildCommand')}
+                        <Label className="text-sm font-medium text-muted-foreground/70 uppercase ">
+                            {t('frontend.workspace.buildCommand')}
                         </Label>
                         <Input
                             value={formData.buildCommand}
@@ -54,8 +54,8 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                            {t('workspace.testCommand')}
+                        <Label className="text-sm font-medium text-muted-foreground/70 uppercase ">
+                            {t('frontend.workspace.testCommand')}
                         </Label>
                         <Input
                             value={formData.testCommand}
@@ -66,8 +66,8 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                            {t('workspace.lintCommand')}
+                        <Label className="text-sm font-medium text-muted-foreground/70 uppercase ">
+                            {t('frontend.workspace.lintCommand')}
                         </Label>
                         <Input
                             value={formData.lintCommand}
@@ -78,8 +78,8 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                            {t('workspace.outputDir')}
+                        <Label className="text-sm font-medium text-muted-foreground/70 uppercase ">
+                            {t('frontend.workspace.outputDir')}
                         </Label>
                         <Input
                             value={formData.outputDir}
@@ -100,11 +100,11 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                         <IconPlayerPlay className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                            {t('workspaces.navigation.devServer')}
+                        <h2 className="text-lg font-semibold text-foreground ">
+                            {t('frontend.workspaces.navigation.devServer')}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            {t('workspace.devDescription')}
+                            {t('frontend.workspace.devDescription')}
                         </p>
                     </div>
                 </div>
@@ -112,8 +112,8 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                 <div className="space-y-6 pl-11">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                                {t('workspace.devCommand')}
+                            <Label className="text-sm font-medium text-muted-foreground/70 uppercase ">
+                                {t('frontend.workspace.devCommand')}
                             </Label>
                             <Input
                                 value={formData.devCommand}
@@ -124,8 +124,8 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                                {t('workspace.devPort')}
+                            <Label className="text-sm font-medium text-muted-foreground/70 uppercase ">
+                                {t('frontend.workspace.devPort')}
                             </Label>
                             <Input
                                 type="number"
@@ -140,10 +140,10 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
                     <div className="flex items-center justify-between p-4 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
                         <div className="space-y-0.5">
                             <Label className="text-sm font-medium text-foreground">
-                                {t('workspace.devAutoStart')}
+                                {t('frontend.workspace.devAutoStart')}
                             </Label>
-                            <p className="text-xs text-muted-foreground/60">
-                                {t('workspace.devAutoStartDescription')}
+                            <p className="text-sm text-muted-foreground/60">
+                                {t('frontend.workspace.devAutoStartDescription')}
                             </p>
                         </div>
                         <Switch

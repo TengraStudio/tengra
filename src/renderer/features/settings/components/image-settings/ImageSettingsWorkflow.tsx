@@ -67,10 +67,10 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/workflow:text-primary transition-colors">
-                            {t('settings.images.workflowTitle')}
+                            {t('frontend.settings.images.workflowTitle')}
                         </h3>
                         <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
-                            {workflowTemplates.length} {t('settings.images.activeTemplates')}
+                            {workflowTemplates.length} {t('frontend.settings.images.activeTemplates')}
                         </p>
                     </div>
                 </div>
@@ -82,7 +82,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     <Input
                         value={workflowTemplateName}
                         onChange={event => setWorkflowTemplateName(event.target.value)}
-                        placeholder={t('settings.images.workflowTemplateName')}
+                        placeholder={t('frontend.settings.images.workflowTemplateName')}
                         className={C_IMAGESETTINGSWORKFLOW_3}
                     />
                 </div>
@@ -91,7 +91,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     <textarea
                         value={workflowTemplateJson}
                         onChange={event => setWorkflowTemplateJson(event.target.value)}
-                        placeholder={t('settings.images.workflowTemplateJson')}
+                        placeholder={t('frontend.settings.images.workflowTemplateJson')}
                         className={C_IMAGESETTINGSWORKFLOW_4}
                     />
                 </div>
@@ -100,7 +100,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     className={C_IMAGESETTINGSWORKFLOW_5}
                 >
                     <IconPlus className="w-4 h-4" />
-                    {t('settings.images.saveWorkflowTemplate')}
+                    {t('frontend.settings.images.saveWorkflowTemplate')}
                 </Button>
             </div>
 
@@ -108,7 +108,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                 {workflowTemplates.length === 0 ? (
                     <div className={C_IMAGESETTINGSWORKFLOW_6}>
                         <p className="typo-body font-bold text-muted-foreground px-6">
-                            {t('settings.images.noWorkflowTemplates')}
+                            {t('frontend.settings.images.noWorkflowTemplates')}
                         </p>
                     </div>
                 ) : (
@@ -152,12 +152,12 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
             <div className="bg-muted/20 border border-border/20 rounded-3xl p-6 space-y-4 relative z-10 group/share">
                 <div className="flex items-center gap-3 px-1">
                     <IconBolt className="w-3.5 h-3.5 text-primary" />
-                    <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.workflowShareCode')}</div>
+                    <div className="typo-body font-bold text-muted-foreground/40">{t('frontend.settings.images.workflowShareCode')}</div>
                 </div>
                 <textarea
                     value={workflowShareCode}
                     onChange={event => setWorkflowShareCode(event.target.value)}
-                    placeholder={t('settings.images.workflowShareCodePlaceholder')}
+                    placeholder={t('frontend.settings.images.workflowShareCodePlaceholder')}
                     className={C_IMAGESETTINGSWORKFLOW_9}
                 />
                 <Button
@@ -165,7 +165,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     className={C_IMAGESETTINGSWORKFLOW_10}
                 >
                     <IconDownload className="w-3.5 h-3.5" />
-                    {t('settings.images.importWorkflowTemplateShare')}
+                    {t('frontend.settings.images.importWorkflowTemplateShare')}
                 </Button>
             </div>
 

@@ -23,10 +23,10 @@ const C_MEMORYVISUALIZATION_1 = "px-6 py-3 border-t border-border/30 bg-muted/20
 
 function getLegacyTabAriaLabel(tabId: VizTab, fallbackLabel: string, t: (key: string) => string): string {
     if (tabId === 'entities') {
-        return t('memory.entities');
+        return t('frontend.memory.entities');
     }
     if (tabId === 'timeline') {
-        return t('memory.timeline');
+        return t('frontend.memory.timeline');
     }
     return fallbackLabel;
 }
@@ -38,9 +38,9 @@ export const MemoryVisualization: React.FC = () => {
     const [activeTab, setActiveTab] = useState<VizTab>('graph');
 
     const tabs = [
-        { id: 'graph' as VizTab, label: t('memory.graphView'), icon: IconNetwork, color: 'text-primary' },
-        { id: 'entities' as VizTab, label: t('memory.erDiagram'), icon: IconDatabase, color: 'text-success' },
-        { id: 'timeline' as VizTab, label: t('memory.timelineView'), icon: IconHistory, color: 'text-info' },
+        { id: 'graph' as VizTab, label: t('frontend.memory.graphView'), icon: IconNetwork, color: 'text-primary' },
+        { id: 'entities' as VizTab, label: t('frontend.memory.erDiagram'), icon: IconDatabase, color: 'text-success' },
+        { id: 'timeline' as VizTab, label: t('frontend.memory.timelineView'), icon: IconHistory, color: 'text-info' },
     ];
 
     return (
@@ -52,8 +52,8 @@ export const MemoryVisualization: React.FC = () => {
                         <IconMaximize className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold">{t('memory.visualization.title')}</h1>
-                        <p className="typo-caption text-muted-foreground">{t('memory.visualization.subtitle')}</p>
+                        <h1 className="text-lg font-bold">{t('frontend.memory.visualization.title')}</h1>
+                        <p className="typo-caption text-muted-foreground">{t('frontend.memory.visualization.subtitle')}</p>
                     </div>
                 </div>
 
@@ -91,19 +91,19 @@ export const MemoryVisualization: React.FC = () => {
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary" />
-                        <span>{t('memory.visualization.legend.semanticContext')}</span>
+                        <span>{t('frontend.memory.visualization.legend.semanticContext')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-success" />
-                        <span>{t('memory.visualization.legend.entityKnowledge')}</span>
+                        <span>{t('frontend.memory.visualization.legend.entityKnowledge')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-info" />
-                        <span>{t('memory.visualization.legend.episodicExperience')}</span>
+                        <span>{t('frontend.memory.visualization.legend.episodicExperience')}</span>
                     </div>
                 </div>
                 <div>
-                    {t('memory.visualization.poweredBy')}
+                    {t('frontend.memory.visualization.poweredBy')}
                 </div>
             </div>
         </div>

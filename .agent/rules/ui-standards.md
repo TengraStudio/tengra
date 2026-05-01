@@ -14,7 +14,7 @@ STRICT ADHERENCE MANDATORY.
     - `font-black` (Use `font-bold` instead)
 - **Mandatory Usage**:
     - Use Semantic Classes: `.typo-overline`, `.typo-caption`, `.typo-body-sm`.
-    - Use Tokens: `text-10`, `tracking-tight`.
+    - Use Tokens: `text-sm`, `tracking-tight`.
 
 ## 3. COLOR SYSTEM
 - **Tokens**: MUST use `hsl(var(--...))` variables.

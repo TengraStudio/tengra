@@ -75,7 +75,7 @@ export const useSSHConnectHandler = (options: SSHConnectOptions): () => Promise<
     const { sshForm, setIsLoading, setError, setStep, setSshConnectionId, loadRemoteDirectory, t } = options;
     const handleSSHConnect = async () => {
         if (!sshForm.host.trim() || !sshForm.username.trim()) {
-            setError(t('workspace.errors.wizard.invalidInput'));
+            setError(t('frontend.workspace.errors.wizard.invalidInput'));
             return;
         }
         setIsLoading(true);
@@ -91,7 +91,7 @@ export const useSSHConnectHandler = (options: SSHConnectOptions): () => Promise<
                 passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
             });
             if (!testResult.success) {
-                setError(testResult.error ?? t('workspace.errors.wizard.connectionFailed'));
+                setError(testResult.error ?? t('frontend.workspace.errors.wizard.connectionFailed'));
                 return;
             }
 
@@ -109,10 +109,10 @@ export const useSSHConnectHandler = (options: SSHConnectOptions): () => Promise<
                 setStep('ssh-browser');
                 void loadRemoteDirectory(result.id, '/');
             } else {
-                setError(result.error ?? t('workspace.errors.wizard.connectFailed'));
+                setError(result.error ?? t('frontend.workspace.errors.wizard.connectFailed'));
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('workspace.errors.wizard.connectionFailed'));
+            setError(err instanceof Error ? err.message : t('frontend.workspace.errors.wizard.connectionFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -147,10 +147,10 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions): () =
                 onClose();
                 return;
             }
-            setError(t('workspace.errors.wizard.createWorkspaceFailed'));
+            setError(t('frontend.workspace.errors.wizard.createWorkspaceFailed'));
             setStep('details');
         } catch (err) {
-            const errorToReport = err instanceof Error ? err : new Error(t('workspace.errors.wizard.createWorkspaceFailed'));
+            const errorToReport = err instanceof Error ? err : new Error(t('frontend.workspace.errors.wizard.createWorkspaceFailed'));
             appLogger.error('useWizardHandlers', 'Workspace Creation Failed', errorToReport);
             setError(errorToReport.message);
             setStep('details');
@@ -171,7 +171,7 @@ export const useImportLocalHandler = (options: ImportLocalOptions): () => Promis
             const result = normalizeDirectorySelectionResult(await window.electron.selectDirectory());
             if (result.success && result.path) {
                 const normalizedPath = result.path.replace(/[/\\]+$/, '');
-                const dirName = normalizedPath.split(/[/\\]/).pop() || t('workspaceWizard.defaultWorkspaceName');
+                const dirName = normalizedPath.split(/[/\\]/).pop() || t('frontend.workspaceWizard.defaultWorkspaceName');
                 const mounts: WorkspaceMount[] = [{
                     id: `local-${Date.now()}`,
                     name: formData.name || dirName,
@@ -184,7 +184,7 @@ export const useImportLocalHandler = (options: ImportLocalOptions): () => Promis
                 }
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('workspace.errors.wizard.selectDirectoryFailed'));
+            setError(err instanceof Error ? err.message : t('frontend.workspace.errors.wizard.selectDirectoryFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -220,9 +220,9 @@ export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions): () => 
                 onClose();
                 return;
             }
-            setError(t('workspace.errors.wizard.createWorkspaceFailed'));
+            setError(t('frontend.workspace.errors.wizard.createWorkspaceFailed'));
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('workspace.errors.wizard.createWorkspaceFailed'));
+            setError(err instanceof Error ? err.message : t('frontend.workspace.errors.wizard.createWorkspaceFailed'));
         } finally {
             setIsLoading(false);
         }

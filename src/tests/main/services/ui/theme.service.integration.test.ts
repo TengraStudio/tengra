@@ -25,6 +25,8 @@ const mockWriteFile = vi.fn();
 const mockRename = vi.fn();
 
 vi.mock('fs', () => ({
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
     promises: {
         access: mockAccess,
         readFile: mockReadFile,

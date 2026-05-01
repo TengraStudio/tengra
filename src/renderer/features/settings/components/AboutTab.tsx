@@ -47,7 +47,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <div className={C_ABOUTTAB_1}>
                         <img
                             src={logo}
-                            alt={t('app.name')}
+                            alt={t('frontend.app.name')}
                             className="h-16 w-16 opacity-90 brightness-110"
                         />
                     </div>
@@ -55,12 +55,12 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
 
                 <div className="space-y-4">
                     <h2 className="text-4xl font-semibold leading-none text-foreground sm:text-5xl">
-                        {t('app.name')}
+                        {t('frontend.app.name')}
                     </h2> 
                 </div>
 
                 <p className="max-w-lg text-sm leading-relaxed text-muted-foreground/70">
-                    {t('about.description')}
+                    {t('frontend.about.description')}
                 </p>
 
                 <div className="grid w-full max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
@@ -72,7 +72,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         className={C_ABOUTTAB_3}
                     >
                         <IconExternalLink className="mr-3 h-4 w-4" />
-                        {t('about.privacyPolicy')}
+                        {t('frontend.about.privacyPolicy')}
                     </Button>
                     <Button
                         variant="outline"
@@ -82,7 +82,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         className={C_ABOUTTAB_4}
                     >
                         <IconGlobe className="mr-3 h-4 w-4" />
-                        {t('about.github')}
+                        {t('frontend.about.github')}
                     </Button>
                 </div> 
             </div>
@@ -93,7 +93,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         <div className="flex items-center gap-2 mb-4">
                             <IconDeviceMobile className="w-3.5 h-3.5 text-primary/60" />
                             <div className="typo-body font-medium text-muted-foreground/60">
-                                {t('advanced.platform')}
+                                {t('frontend.advanced.platform')}
                             </div>
                         </div>
                         <div className="text-sm font-bold text-foreground truncate">
@@ -107,7 +107,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                             <div className="flex items-center gap-2">
                                 <IconBolt className="w-3.5 h-3.5 text-primary/60" />
                                 <div className="typo-body font-medium text-muted-foreground/60">
-                                    {t('about.buildVersion')}
+                                    {t('frontend.about.buildVersion')}
                                 </div>
                             </div>
                             <div className="text-sm font-medium text-primary">
@@ -117,7 +117,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         <Badge variant="outline" className="rounded-xl border-border/20 bg-background/50 px-4 py-2 font-mono typo-body font-medium text-muted-foreground">
                             {typeof __BUILD_TIME__ !== 'undefined'
                                 ? new Date(__BUILD_TIME__).toLocaleString()
-                                : t('about.notAvailable')}
+                                : t('frontend.about.notAvailable')}
                         </Badge>
                     </div>
                 </div>
@@ -131,11 +131,11 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                                 <IconAlertTriangle className="w-5 h-5" />
                             </div>
                             <h3 className="text-xl font-semibold text-destructive">
-                                {t('about.factoryReset')}
+                                {t('frontend.about.factoryReset')}
                             </h3>
                         </div>
                         <p className="text-sm leading-relaxed text-muted-foreground/70">
-                            {t('about.factoryResetDesc')}
+                            {t('frontend.about.factoryResetDesc')}
                         </p>
                     </div>
                     <Button
@@ -144,7 +144,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         className="h-12 rounded-2xl px-8 typo-body font-medium"
                     >
                         <IconRefresh className="w-4 h-4 mr-3" />
-                        {t('about.executeWipe')}
+                        {t('frontend.about.executeWipe')}
                     </Button>
                 </div>
             </div>

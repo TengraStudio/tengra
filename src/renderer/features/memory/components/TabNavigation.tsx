@@ -45,11 +45,11 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     icon: Icon;
     count?: number;
   }> = [
-      { id: 'pending', label: t('memory.tabs.pending'), icon: IconClock, count: pendingCount },
-      { id: 'confirmed', label: t('memory.tabs.confirmed'), icon: IconCircleCheck, count: confirmedCount },
-      { id: 'archived', label: t('memory.tabs.archived'), icon: IconArchive, count: archivedCount },
-      { id: 'visualization', label: t('memory.tabs.visualization'), icon: IconLayoutGrid },
-      { id: 'stats', label: t('memory.tabs.stats'), icon: IconGauge },
+      { id: 'pending', label: t('frontend.memory.tabs.pending'), icon: IconClock, count: pendingCount },
+      { id: 'confirmed', label: t('frontend.memory.tabs.confirmed'), icon: IconCircleCheck, count: confirmedCount },
+      { id: 'archived', label: t('frontend.memory.tabs.archived'), icon: IconArchive, count: archivedCount },
+      { id: 'visualization', label: t('frontend.memory.tabs.visualization'), icon: IconLayoutGrid },
+      { id: 'stats', label: t('frontend.memory.tabs.stats'), icon: IconGauge },
     ];
 
   return (

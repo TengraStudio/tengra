@@ -80,7 +80,12 @@ impl TerminalSession {
             }
         });
 
-        Ok(Self { id, tx, master, writer })
+        Ok(Self {
+            id,
+            tx,
+            master,
+            writer,
+        })
     }
 
     pub fn write(&self, data: &[u8]) -> anyhow::Result<()> {

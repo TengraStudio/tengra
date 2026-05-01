@@ -40,7 +40,7 @@ interface WorkspaceTerminalLayerProps {
     workspacePath: string;
     activeFilePath?: string;
     activeFileContent?: string;
-    activeFileType?: 'code' | 'image';
+    activeFileType?: 'code' | 'image' | 'diff';
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;

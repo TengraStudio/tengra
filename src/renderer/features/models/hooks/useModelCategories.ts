@@ -60,16 +60,16 @@ export function useModelCategories({
 function createBaseCategories(t: (k: string) => string): ModelCategory[] {
     return [
         { id: 'favorites', name: t('common.favorites'), icon: IconBolt, color: 'text-warning', bg: 'bg-warning/10', providerId: 'favorites', models: [] },
-        { id: 'copilot', name: t('providerLabels.githubCopilot'), icon: IconBolt, color: 'text-info', bg: 'bg-info/10', providerId: 'copilot', models: [] },
-        { id: 'openai', name: t('providerLabels.openai'), icon: IconSparkles, color: 'text-success', bg: 'bg-success/10', providerId: 'openai', models: [] },
-        { id: 'claude', name: t('providerLabels.anthropic'), icon: IconBrain, color: 'text-accent', bg: 'bg-accent/10', providerId: 'anthropic', models: [] },
-        { id: 'antigravity', name: t('providerLabels.antigravity'), icon: IconLayoutGrid, color: 'text-accent', bg: 'bg-accent/10', providerId: 'antigravity', models: [] },
+        { id: 'copilot', name: t('frontend.providerLabels.githubCopilot'), icon: IconBolt, color: 'text-info', bg: 'bg-info/10', providerId: 'copilot', models: [] },
+        { id: 'openai', name: t('frontend.providerLabels.openai'), icon: IconSparkles, color: 'text-success', bg: 'bg-success/10', providerId: 'openai', models: [] },
+        { id: 'claude', name: t('frontend.providerLabels.anthropic'), icon: IconBrain, color: 'text-accent', bg: 'bg-accent/10', providerId: 'anthropic', models: [] },
+        { id: 'antigravity', name: t('frontend.providerLabels.antigravity'), icon: IconLayoutGrid, color: 'text-accent', bg: 'bg-accent/10', providerId: 'antigravity', models: [] },
         { id: 'codex', name: 'Codex', icon: IconCode, color: 'text-info', bg: 'bg-info/10', providerId: 'codex', models: [] },
-        { id: 'opencode', name: t('modelSelector.openCode'), icon: IconCode, color: 'text-info', bg: 'bg-info/10', providerId: 'opencode', models: [] },
-        { id: 'ollama', name: t('providerLabels.ollama'), icon: IconServer, color: 'text-warning', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
-        { id: 'huggingface', name: t('marketplace.tabs.huggingface'), icon: IconBox, color: 'text-info', bg: 'bg-info/10', providerId: 'huggingface', models: [] },
+        { id: 'opencode', name: t('frontend.modelSelector.openCode'), icon: IconCode, color: 'text-info', bg: 'bg-info/10', providerId: 'opencode', models: [] },
+        { id: 'ollama', name: t('frontend.providerLabels.ollama'), icon: IconServer, color: 'text-warning', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
+        { id: 'huggingface', name: t('frontend.marketplace.tabs.huggingface'), icon: IconBox, color: 'text-info', bg: 'bg-info/10', providerId: 'huggingface', models: [] },
         { id: 'nvidia', name: 'NVIDIA', icon: IconBolt, color: 'text-success', bg: 'bg-success/10', providerId: 'nvidia', models: [] },
-        { id: 'custom', name: t('modelSelector.proxyCustom'), icon: IconBox, color: 'text-muted-foreground', bg: 'bg-muted/10', providerId: 'openai', models: [] }
+        { id: 'custom', name: t('frontend.modelSelector.proxyCustom'), icon: IconBox, color: 'text-muted-foreground', bg: 'bg-muted/10', providerId: 'openai', models: [] }
     ];
 }
 
@@ -236,8 +236,12 @@ function finalizeCategories(cats: ModelCategory[]): ModelCategory[] {
         cat.models.sort((a, b) => a.label.localeCompare(b.label));
     }
     return cats.filter(cat => {
-        // Only show categories if they actually have models from the API
-        if (cat.id === 'favorites') {return cat.models.length > 0;}
+        // Always keep these categories even if empty, so the user can see them in the selector
+        // and potentially add accounts or see empty state.
+        if (['ollama', 'local', 'lm_studio', 'custom', 'opencode'].includes(cat.id)) {
+            return true;
+        }
+        // Only show other categories if they actually have models from the API
         return cat.models.length > 0;
     });
 }

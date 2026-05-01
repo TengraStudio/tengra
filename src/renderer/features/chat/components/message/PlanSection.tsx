@@ -56,7 +56,7 @@ export const PlanSection = memo(
                         <IconListCheck className="w-4 h-4 text-primary" />
                     </div>
                     <span className="typo-caption font-bold text-primary">
-                        {t('chat.plan')}
+                        {t('frontend.chat.plan')}
                     </span>
                 </div>
                 <div className="typo-caption text-foreground/90 leading-relaxed font-medium">
@@ -84,7 +84,7 @@ export const PlanSection = memo(
                             className={C_PLANSECTION_2}
                         >
                             <IconCheck className="w-3.5 h-3.5" />
-                            {t('messageBubble.approvePlan')}
+                            {t('frontend.messageBubble.approvePlan')}
                         </button>
                     </div>
                 )}

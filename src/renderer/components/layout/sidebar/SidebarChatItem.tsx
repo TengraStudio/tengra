@@ -54,7 +54,7 @@ export const SidebarChatItem = React.memo(
             <div className="group relative">
                 <SidebarItem
                     icon={IconMessage}
-                    label={chat.title || t('sidebar.newChat')}
+                    label={chat.title || t('frontend.sidebar.newChat')}
                     active={isActive}
                     onClick={() => onSelect(chat.id)}
                     className="py-1.5"
@@ -115,7 +115,7 @@ export const SidebarChatItem = React.memo(
                             }}
                             onClick={e => e.stopPropagation()}
                             className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
-                            placeholder={t('sidebar.renameChat')}
+                            placeholder={t('frontend.sidebar.renameChat')}
                         />
                     </div>
                 )}

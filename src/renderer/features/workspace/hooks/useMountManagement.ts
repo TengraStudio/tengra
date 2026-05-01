@@ -94,7 +94,7 @@ async function saveSSHProfileIfNeeded(
     }
     try {
         await window.electron.ssh.saveProfile({
-            name: mountForm.name || mountForm.host || t('workspaces.sshMountName'),
+            name: mountForm.name || mountForm.host || t('frontend.workspaces.sshMountName'),
             host: mountForm.host || '',
             port: parsedPort,
             username: mountForm.username || '',
@@ -141,7 +141,7 @@ export function useMountManagement({
 
         const newMount: WorkspaceMount = {
             id: `mount-${Date.now()}`,
-            name: mountForm.name || (mountForm.type === 'local' ? t('workspaces.localMountName') : mountForm.host || t('workspaces.sshMountName')),
+            name: mountForm.name || (mountForm.type === 'local' ? t('frontend.workspaces.localMountName') : mountForm.host || t('frontend.workspaces.sshMountName')),
             type: mountForm.type,
             rootPath: mountForm.rootPath,
             ssh:
@@ -246,7 +246,7 @@ export function useMountManagement({
                         success: false,
                         latencyMs: 0,
                         authMethod: form.authType,
-                        message: t('errors.unexpected'),
+                        message: t('frontend.errors.unexpected'),
                         error: message,
                         errorCode: workspaceMountErrorCodes.testFailed,
                         uiState: 'failure',
@@ -259,7 +259,7 @@ export function useMountManagement({
             success: false,
             latencyMs: 0,
             authMethod: form.authType,
-            message: t('errors.unexpected'),
+            message: t('frontend.errors.unexpected'),
             errorCode: workspaceMountErrorCodes.testFailed,
             uiState: 'failure',
         };

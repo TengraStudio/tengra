@@ -35,7 +35,7 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
     return (
         <SidebarSection
             id="ai-providers"
-            title={t('sidebar.aiProviders')}
+            title={t('frontend.sidebar.aiProviders')}
             icon={<IconSparkles className="w-3.5 h-3.5" />}
             defaultExpanded={false}
             badge={4}
@@ -43,36 +43,36 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
             <SidebarMenuItem
                 id="ollama"
                 icon={<IconBrain className="w-4 h-4" />}
-                label={t('sidebar.ollama')}
-                description={t('sidebar.ollamaDescription')}
+                label={t('frontend.sidebar.ollama')}
+                description={t('frontend.sidebar.ollamaDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                 status="online"
-                statusLabel={t('sidebar.ollamaRunning')}
+                statusLabel={t('frontend.sidebar.ollamaRunning')}
             />
             <SidebarMenuItem
                 id="openai"
                 icon={<IconSparkles className="w-4 h-4" />}
-                label={t('sidebar.openai')}
-                description={t('sidebar.openaiDescription')}
+                label={t('frontend.sidebar.openai')}
+                description={t('frontend.sidebar.openaiDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                 status="online"
             />
             <SidebarMenuItem
                 id="anthropic"
                 icon={<IconBrain className="w-4 h-4" />}
-                label={t('sidebar.anthropic')}
-                description={t('sidebar.anthropicDescription')}
+                label={t('frontend.sidebar.anthropic')}
+                description={t('frontend.sidebar.anthropicDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                 status="online"
             />
             <SidebarMenuItem
                 id="copilot"
                 icon={<IconCpu className="w-4 h-4" />}
-                label={t('sidebar.copilot')}
-                description={t('sidebar.copilotDescription')}
+                label={t('frontend.sidebar.copilot')}
+                description={t('frontend.sidebar.copilotDescription')}
                 onClick={() => onOpenSettings('accounts' as SettingsCategory)}
                 status="online"
-                statusLabel={t('sidebar.copilotActive')}
+                statusLabel={t('frontend.sidebar.copilotActive')}
             />
         </SidebarSection>
     );

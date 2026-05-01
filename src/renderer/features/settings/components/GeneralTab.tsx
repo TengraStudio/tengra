@@ -77,12 +77,12 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
     return (
         <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-10">
             <SettingsPanel
-                title={t('settings.generalTitle')}
-                description={t('settings.generalDescription')}
+                title={t('frontend.settings.generalTitle')}
+                description={t('frontend.settings.generalDescription')}
                 icon={IconSettings}
             >
                 <div className="grid gap-5 md:grid-cols-2">
-                    <SettingsField label={t('settings.language')}>
+                    <SettingsField label={t('frontend.settings.language')}>
                         <Select
                             value={settings.general.language ?? 'en'}
                             onValueChange={value => {
@@ -107,7 +107,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 
 
 
-                    <SettingsField label={t('general.contextMessageLimit')}>
+                    <SettingsField label={t('frontend.general.contextMessageLimit')}>
                         <Input
                             type="number"
                             min={10}
@@ -123,7 +123,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         />
                     </SettingsField>
 
-                    <SettingsField label={t('settings.agentSoftDeadline')}>
+                    <SettingsField label={t('frontend.settings.agentSoftDeadline')}>
                         <Input
                             type="number"
                             min={500}
@@ -139,7 +139,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         />
                     </SettingsField>
 
-                    <SettingsField label={t('settings.agentHardDeadline')}>
+                    <SettingsField label={t('frontend.settings.agentHardDeadline')}>
                         <Input
                             type="number"
                             min={1000}
@@ -156,8 +156,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                     </SettingsField>
                     <div className="md:col-span-2">
                         <SettingsToggleRow
-                            title={t('settings.agentPathPolicyTitle')}
-                            description={t('settings.agentPathPolicyDescription')}
+                            title={t('frontend.settings.agentPathPolicyTitle')}
+                            description={t('frontend.settings.agentPathPolicyDescription')}
                             control={(
                                 <Switch
                                     checked={
@@ -177,7 +177,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         />
                     </div>
 
-                    <SettingsField label={t('settings.agentAllowedCommands')}>
+                    <SettingsField label={t('frontend.settings.agentAllowedCommands')}>
                         <Input
                             type="text"
                             value={(settings.general.agentAllowedCommands ?? []).join(', ')}
@@ -187,11 +187,11 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                                 });
                             }}
                             className={SettingsInputClassName}
-                            placeholder={t('settings.agentAllowedCommandsPlaceholder')}
+                            placeholder={t('frontend.settings.agentAllowedCommandsPlaceholder')}
                         />
                     </SettingsField>
 
-                    <SettingsField label={t('settings.agentDisallowedCommands')}>
+                    <SettingsField label={t('frontend.settings.agentDisallowedCommands')}>
                         <Input
                             type="text"
                             value={(settings.general.agentDisallowedCommands ?? []).join(', ')}
@@ -201,21 +201,21 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                                 });
                             }}
                             className={SettingsInputClassName}
-                            placeholder={t('settings.agentDisallowedCommandsPlaceholder')}
+                            placeholder={t('frontend.settings.agentDisallowedCommandsPlaceholder')}
                         />
                     </SettingsField>
                 </div>
             </SettingsPanel>
 
             <SettingsPanel
-                title={t('voice.interfaceTitle')}
-                description={t('voice.interfaceSubtitle')}
+                title={t('frontend.voice.interfaceTitle')}
+                description={t('frontend.voice.interfaceSubtitle')}
                 icon={IconVolume}
             >
                 <div className="space-y-4">
                     <SettingsToggleRow
-                        title={t('settings.voiceInterfaceEnabled')}
-                        description={t('settings.voiceInterfaceEnabledDescription')}
+                        title={t('frontend.settings.voiceInterfaceEnabled')}
+                        description={t('frontend.settings.voiceInterfaceEnabledDescription')}
                         control={(
                             <Switch
                                 checked={voiceSettings.enabled}
@@ -227,8 +227,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         icon={IconVolume}
                     />
                     <SettingsToggleRow
-                        title={t('voice.continuousListening')}
-                        description={t('settings.voiceContinuousListeningDescription')}
+                        title={t('frontend.voice.continuousListening')}
+                        description={t('frontend.settings.voiceContinuousListeningDescription')}
                         control={(
                             <Switch
                                 checked={voiceSettings.continuousListening}
@@ -240,7 +240,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         icon={IconClock}
                     />
                     <div className="grid gap-5 md:grid-cols-2">
-                        <SettingsField label={t('voice.wakeWord')}>
+                        <SettingsField label={t('frontend.voice.wakeWord')}>
                             <Input
                                 type="text"
                                 value={voiceSettings.wakeWord}
@@ -248,10 +248,10 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                                     void updateVoiceSettings({ wakeWord: event.target.value });
                                 }}
                                 className={SettingsInputClassName}
-                                placeholder={t('placeholder.wakeWord')}
+                                placeholder={t('frontend.placeholder.wakeWord')}
                             />
                         </SettingsField>
-                        <SettingsField label={t('settings.voiceSilenceTimeout')}>
+                        <SettingsField label={t('frontend.settings.voiceSilenceTimeout')}>
                             <Input
                                 type="number"
                                 min={500}

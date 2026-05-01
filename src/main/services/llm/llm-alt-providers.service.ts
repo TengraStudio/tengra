@@ -35,10 +35,10 @@ export interface AltProvidersDeps {
 
 /** API key getter callbacks for alternate LLM providers. */
 export interface AltProviderKeyGetters {
-    getAnthropicApiKey: () => string;
-    getGroqApiKey: () => string;
-    getNvidiaApiKey: () => string;
-    getOpenCodeApiKey: () => string;
+    getAnthropicApiKey: () => string | Promise<string>;
+    getGroqApiKey: () => string | Promise<string>;
+    getNvidiaApiKey: () => string | Promise<string>;
+    getOpenCodeApiKey: () => string | Promise<string>;
 }
 
 /** Stream yield type matching the facade signature. */
@@ -69,7 +69,7 @@ export class LLMAltProvidersService {
      * @param model - The Anthropic model to use.
      */
     async chatAnthropic(messages: Array<Message | ChatMessage>, model: string = DEFAULT_MODELS.ANTHROPIC): Promise<OpenAIResponse> {
-        const key = this.deps.keyRotationService.getCurrentKey('anthropic') ?? this.keyGetters.getAnthropicApiKey();
+        const key = this.deps.keyRotationService.getCurrentKey('anthropic') ?? await this.keyGetters.getAnthropicApiKey();
         if (!key) { throw new AuthenticationError('Anthropic API Key not set'); }
 
         try {
@@ -102,7 +102,7 @@ export class LLMAltProvidersService {
         buildOpenAIBody: (messages: Array<Message | ChatMessage>, options: { model: string; provider: string }) => Record<string, RuntimeValue>,
         processOpenAIResponse: (json: JsonObject) => Promise<OpenAIResponse>
     ): Promise<OpenAIResponse> {
-        const key = this.getGroqKey();
+        const key = await this.getGroqKey();
         if (!key) { throw new AuthenticationError('Groq API Key not set'); }
 
         try {
@@ -132,8 +132,8 @@ export class LLMAltProvidersService {
     /**
      * Returns the Nvidia API key.
      */
-    getNvidiaKey(): string {
-        const key = this.deps.keyRotationService.getCurrentKey('nvidia') ?? this.keyGetters.getNvidiaApiKey();
+    async getNvidiaKey(): Promise<string> {
+        const key = this.deps.keyRotationService.getCurrentKey('nvidia') ?? await this.keyGetters.getNvidiaApiKey();
         if (!key) { throw new AuthenticationError('Nvidia API Key not set'); }
         return key;
     }
@@ -141,8 +141,8 @@ export class LLMAltProvidersService {
     /**
      * Returns the Groq API key.
      */
-    getGroqKey(): string {
-        const key = this.deps.keyRotationService.getCurrentKey('groq') ?? this.keyGetters.getGroqApiKey();
+    async getGroqKey(): Promise<string> {
+        const key = this.deps.keyRotationService.getCurrentKey('groq') ?? await this.keyGetters.getGroqApiKey();
         if (!key) { throw new AuthenticationError('Groq API Key not set'); }
         return key;
     }
@@ -154,7 +154,7 @@ export class LLMAltProvidersService {
      * @param messages - The chat messages.
      * @param model - The model to use.
      * @param tools - Optional tool definitions.
-     * @param chatOpenAI - Callback for OpenAI-compatible fallback.
+     * @param chatOpenAI: (messages: Array<Message | ChatMessage>, options: { model: string; tools?: ToolDefinition[]; baseUrl: string; apiKey: string; provider: string }) => Promise<OpenAIResponse>
      */
     async chatOpenCode(
         messages: Array<Message | ChatMessage>,
@@ -162,13 +162,10 @@ export class LLMAltProvidersService {
         tools: ToolDefinition[] | undefined,
         chatOpenAI: (messages: Array<Message | ChatMessage>, options: { model: string; tools?: ToolDefinition[]; baseUrl: string; apiKey: string; provider: string }) => Promise<OpenAIResponse>
     ): Promise<OpenAIResponse> {
-        const apiKey = this.keyGetters.getOpenCodeApiKey();
+        const apiKey = await this.keyGetters.getOpenCodeApiKey();
         const baseUrl = 'https://opencode.ai/zen/v1';
-
-        if (model === 'gpt-5-nano') {
-            return this.executeOpenCodeGpt5Nano(messages, model, baseUrl, apiKey);
-        }
-        return chatOpenAI(messages, { model, tools: tools ?? undefined, baseUrl, apiKey, provider: 'opencode' });
+        void chatOpenAI;
+        return this.executeOpenCodeResponses(messages, model, tools, baseUrl, apiKey);
     }
 
     /**
@@ -186,14 +183,10 @@ export class LLMAltProvidersService {
         signal: AbortSignal | undefined,
         chatOpenAIStream: (messages: Array<Message | ChatMessage>, options: Record<string, RuntimeValue>) => AsyncGenerator<AltStreamYield>
     ): AsyncGenerator<AltStreamYield> {
-        const apiKey = this.keyGetters.getOpenCodeApiKey();
+        const apiKey = await this.keyGetters.getOpenCodeApiKey();
         const baseUrl = 'https://opencode.ai/zen/v1';
-
-        if (model === 'gpt-5-nano') {
-            yield* this.handleOpenCodeZenStream(messages, model, apiKey, baseUrl, signal);
-        } else {
-            yield* chatOpenAIStream(messages, { model, tools, baseUrl, apiKey, provider: 'opencode', signal });
-        }
+        void chatOpenAIStream;
+        yield* this.handleOpenCodeResponsesStream(messages, model, tools, apiKey, baseUrl, signal);
     }
 
     /**
@@ -201,19 +194,27 @@ export class LLMAltProvidersService {
      * @param json - The raw JSON object.
      */
     parseOpenCodeResponse(json: JsonObject): OpenAIResponse {
-        const rawOutput = json['output'];
-        const outputArray = Array.isArray(rawOutput) ? rawOutput : [rawOutput];
-        const output = outputArray.find((o: RuntimeValue) => o && typeof o === 'object' && (o as JsonObject).type === 'message') as JsonObject | undefined;
-
+        const output = json['output'];
         if (!output) {
-            throw new ApiError('Unexpected response format from OpenCode', 'opencode', 200);
+            throw new ApiError('Invalid response format from OpenCode API: missing output', 'opencode', 200);
         }
 
-        const { content, reasoning, tool_calls } = this.extractOpenCodeContent(output);
-        const validatedContent = content || (output['text'] as string) || '';
+        let messageObject: JsonObject;
 
+        // The API returns an array of messages in 'output'
+        if (Array.isArray(output) && output.length > 0) {
+            // Find the first assistant message or just use the first item
+            messageObject = (output as JsonObject[]).find(m => m['role'] === 'assistant') || (output[0] as JsonObject);
+        } else if (typeof output === 'object' && !Array.isArray(output)) {
+            messageObject = output as JsonObject;
+        } else {
+            throw new ApiError('Invalid response format from OpenCode API: output is not an object or array', 'opencode', 200);
+        }
+
+        const { content, reasoning, tool_calls } = this.extractOpenCodeContent(messageObject);
+        
         return {
-            content: validatedContent,
+            content,
             role: 'assistant',
             reasoning_content: reasoning || undefined,
             tool_calls: tool_calls.length > 0 ? tool_calls : undefined
@@ -222,15 +223,17 @@ export class LLMAltProvidersService {
 
     // --- Private helpers ---
 
-    private async executeOpenCodeGpt5Nano(
+    private async executeOpenCodeResponses(
         messages: Array<Message | ChatMessage>,
         model: string,
+        tools: ToolDefinition[] | undefined,
         baseUrl: string,
         apiKey: string
     ): Promise<OpenAIResponse> {
         const endpoint = `${baseUrl}/responses`;
         const normalized = MessageNormalizer.normalizeOpenCodeResponsesMessages(messages);
-        const body = { model, input: normalized, stream: false };
+        const body: Record<string, unknown> = { model, input: normalized, stream: false };
+        this.applyOpenCodeTools(body, tools);
 
         const response = await this.breakers.openai.execute(() =>
             this.deps.httpService.fetch(endpoint, {
@@ -250,16 +253,18 @@ export class LLMAltProvidersService {
         return this.parseOpenCodeResponse(json);
     }
 
-    private async *handleOpenCodeZenStream(
+    private async *handleOpenCodeResponsesStream(
         messages: Array<Message | ChatMessage>,
         model: string,
+        tools: ToolDefinition[] | undefined,
         apiKey: string,
         baseUrl: string,
         signal?: AbortSignal
     ): AsyncGenerator<AltStreamYield> {
         const endpoint = `${baseUrl}/responses`;
         const normalized = MessageNormalizer.normalizeOpenCodeResponsesMessages(messages);
-        const body = { model, input: normalized, stream: true };
+        const body: Record<string, unknown> = { model, input: normalized, stream: true };
+        this.applyOpenCodeTools(body, tools);
 
         const response = await this.deps.httpService.fetch(endpoint, {
             method: 'POST',
@@ -290,6 +295,46 @@ export class LLMAltProvidersService {
             appLogger.error('LLMAltProvidersService', `[OpenCode] Stream Loop Error: ${getErrorMessage(e as Error)}`);
             throw e;
         }
+    }
+
+    private applyOpenCodeTools(body: Record<string, unknown>, tools?: ToolDefinition[]): void {
+        const normalizedTools = this.normalizeOpenCodeTools(tools);
+        if (normalizedTools.length === 0) {
+            return;
+        }
+        body.tools = normalizedTools;
+        body.tool_choice = 'auto';
+    }
+
+    private normalizeOpenCodeTools(tools?: ToolDefinition[]): Array<Record<string, unknown>> {
+        if (!Array.isArray(tools) || tools.length === 0) {
+            return [];
+        }
+
+        return tools.flatMap(tool => {
+            const toolType = tool.type ?? 'function';
+            const functionObject = tool.function;
+            if (!functionObject?.name || functionObject.name.trim().length === 0) {
+                if (toolType !== 'function') {
+                    return [{ ...tool } as Record<string, unknown>];
+                }
+                return [];
+            }
+
+            const parameters = functionObject.parameters
+                ? { ...(functionObject.parameters as JsonObject) }
+                : undefined;
+            if (parameters && 'required' in parameters) {
+                delete parameters.required;
+            }
+
+            return [{
+                type: toolType,
+                name: functionObject.name,
+                ...(functionObject.description ? { description: functionObject.description } : {}),
+                ...(parameters ? { parameters } : {}),
+            }];
+        });
     }
 
     private buildAnthropicBody(messages: Array<Message | ChatMessage>, model: string): Record<string, RuntimeValue> {
@@ -339,11 +384,15 @@ export class LLMAltProvidersService {
         const tool_calls: ToolCall[] = [];
         const rawContent = output['content'];
 
+        if (!rawContent && output['type'] === 'output_text' && typeof output['text'] === 'string') {
+            return { content: output['text'], reasoning: '', tool_calls: [] };
+        }
+
         if (Array.isArray(rawContent)) {
             for (const part of rawContent as JsonObject[]) {
-                if (part['type'] === 'output_text') {
+                if (part['type'] === 'output_text' || part['type'] === 'summary_text') {
                     content += (part['text'] as string);
-                } else if (part['type'] === 'reasoning' || part['type'] === 'summary_text') {
+                } else if (part['type'] === 'reasoning') {
                     reasoning += (part['text'] as string);
                 } else if (part['type'] === 'function_call' && part['function_call']) {
                     tool_calls.push(this.parseOpenCodeToolCall(part['function_call'] as JsonObject));

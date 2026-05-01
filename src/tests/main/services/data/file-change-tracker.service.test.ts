@@ -371,7 +371,7 @@ describe('FileChangeTracker', () => {
                 timestamp: 1_717_171_717_000,
             };
             const ctx = createTracker({
-                getFileDiff: vi.fn().mockResolvedValue(mockDiff),
+                getFileDiff: vi.fn().mockResolvedValue({ diff: JSON.stringify(mockDiff) }),
             });
 
             const result = await ctx.tracker.revertFileChange('diff-001');
@@ -400,7 +400,7 @@ describe('FileChangeTracker', () => {
                 timestamp: 1_717_171_717_000,
             };
             const ctx = createTracker({
-                getFileDiff: vi.fn().mockResolvedValue(mockDiff),
+                getFileDiff: vi.fn().mockResolvedValue({ diff: JSON.stringify(mockDiff) }),
             });
             vi.mocked(fs.writeFile).mockRejectedValueOnce(new Error('Permission denied'));
 

@@ -42,8 +42,8 @@ export const MemoryHeader = ({
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold">{t('memory.title')}</h1>
-                <p className="text-muted-foreground mt-1">{t('memory.subtitle')}</p>
+                <h1 className="text-3xl font-bold">{t('frontend.memory.title')}</h1>
+                <p className="text-muted-foreground mt-1">{t('frontend.memory.subtitle')}</p>
             </div>
             <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={onRefresh} className="gap-2">
@@ -52,11 +52,11 @@ export const MemoryHeader = ({
                 </Button>
                 <Button variant="outline" size="sm" onClick={onRunDecay} className="gap-2">
                     <IconTrendingDown className="w-4 h-4" />
-                    {t('memory.runDecay')}
+                    {t('frontend.memory.runDecay')}
                 </Button>
                 <Button size="sm" onClick={onAddMemory} className="gap-2">
                     <IconPlus className="w-4 h-4" />
-                    {t('memory.addAction')}
+                    {t('frontend.memory.addAction')}
                 </Button>
             </div>
         </div>
@@ -91,7 +91,7 @@ export const MemoryFilters = ({
                 <div className="relative flex-1 max-w-md">
                     <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                     <Input
-                        placeholder={t('memory.searchPlaceholder')}
+                        placeholder={t('frontend.memory.searchPlaceholder')}
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         className="pl-10 bg-muted/30 border-border/40"
@@ -106,10 +106,10 @@ export const MemoryFilters = ({
                 onValueChange={v => setCategoryFilter(v as MemoryCategory | 'all')}
             >
                 <SelectTrigger className="w-44 bg-muted/30 border-border/40">
-                    <SelectValue placeholder={t('memory.allCategories')} />
+                    <SelectValue placeholder={t('frontend.memory.allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">{t('memory.allCategories')}</SelectItem>
+                    <SelectItem value="all">{t('frontend.memory.allCategories')}</SelectItem>
                     {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
                         <SelectItem key={key} value={key}>
                             <span className="flex items-center gap-2">

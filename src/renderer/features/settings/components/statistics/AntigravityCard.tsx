@@ -17,6 +17,7 @@ import { ModelQuotaItem, QuotaResponse } from '@/types/quota';
 import { AccountWrapper } from '../../types';
 
 import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
+import AntigravityIcon from '@assets/antigravity.svg?url';
 
 interface AntigravityCardProps {
     t: (key: string, options?: Record<string, string | number>) => string
@@ -96,60 +97,75 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
     if (!quotaData?.accounts || quotaData.accounts.length === 0) { return null; }
 
     return (
-        <div className="col-span-1 space-y-3 rounded-2xl border border-border/20 bg-background p-4">
-            <div className="text-sm font-medium text-foreground">{t('statistics.antigravityQuotas')}</div>
-            <div className="space-y-3">
-                {quotaData.accounts.map((acc, idx: number) => {
-                    const isActiveAccount = acc.isActive === true
-                        || (activeAccountId !== null && acc.accountId === activeAccountId)
-                        || (activeAccountEmail !== null && normalizeEmail(acc.email) === normalizeEmail(activeAccountEmail));
-                    const status = acc.success === false
-                        ? (acc.authExpired ? 'expired' : 'error')
-                        : 'active';
-                    const models = dedupeAccountModels(acc.models);
-                    const statusText = acc.success === false
-                        ? (acc.authExpired ? t('errors.quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`))
-                        : t('statistics.active');
-                    const creditAmount = acc.antigravityAiCredits?.creditAmount;
-                    const creditLabel = typeof creditAmount === 'number'
-                        ? `${t('models.creditsLeft')}: ${Math.max(0, Math.round(creditAmount))}`
-                        : null;
+        <div className="col-span-full space-y-4">
+            {quotaData.accounts.map((acc, idx: number) => { 
+                const isActiveAccount = acc.isActive === true;  
+                
+                const models = dedupeAccountModels(acc.models); 
+                
+                const creditAmount = acc.antigravityAiCredits?.creditAmount;
 
-                    return (
-                        <div key={acc.accountId ?? idx} className={cn('space-y-3 rounded-xl border border-border/15 bg-muted/4 px-4 py-3', idx > 0 && 'mt-2')}>
-                            <div className="flex flex-wrap items-center gap-4">
-                                <div className="truncate text-sm font-medium text-foreground/90">
-                                    {acc.email ?? t('statistics.defaultAccount')}
+                return (
+                    <div key={acc.accountId ?? idx} className="overflow-hidden rounded-2xl border border-border/15 bg-background shadow-sm">
+                        {/* Account Header */}
+                        <div className="flex items-center justify-between border-b border-border/10 bg-muted/5 px-4 py-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                                    <img src={AntigravityIcon} alt="Antigravity Icon" className="w-6 h-6" />
                                 </div>
-                                {acc.success === false && <StatusBadge status={status} text={statusText} />}
-                                {acc.success !== false && isActiveAccount && <StatusBadge status={status} text={statusText} />}
-                                {creditLabel && (
-                                    <div className="typo-overline rounded-full border border-border/20 bg-background/70 px-2.5 py-0.5 font-bold text-muted-foreground">
-                                        {creditLabel}
+                                <div className="flex flex-col min-w-0">
+                                    <span className="truncate text-sm font-semibold text-foreground">
+                                        {acc.email ?? t('frontend.statistics.defaultAccount')}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">#{idx+1}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {typeof creditAmount === 'number' && (
+                                    <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-background/50 border border-border/10 px-2 py-0.5 text-sm font-bold text-muted-foreground">
+                                        <span className="text-primary">{Math.max(0, Math.round(creditAmount))}</span>
+                                        <span>{t('frontend.models.creditsShort')}</span>
+                                    </div>
+                                )}
+                                 <span>{isActiveAccount ? t('frontend.statistics.active') : ""}</span>
+                            </div>
+                        </div>
+
+                        {/* Models List */}
+                        {acc.success !== false && (
+                            <div className="divide-y divide-border/5">
+                                {models.length > 0 ? (
+                                    models.map((m: ModelQuotaItem) => (
+                                        <div key={m.id} className="flex flex-col gap-2.5 px-4 py-3.5 hover:bg-muted/5 transition-colors">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col gap-0.5 min-w-0">
+                                                    <span className="truncate text-sm font-medium text-foreground/90">{m.name || m.id}</span>
+                                                    <span className="text-sm font-medium text-muted-foreground/60 tabular-nums">
+                                                        {t('frontend.statistics.resetsAt', { time: formatReset(m.reset, locale) })}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 tabular-nums">
+                                                    <span className={cn(
+                                                        "text-sm font-bold",
+                                                        m.percentage <= 10 ? "text-destructive" : "text-foreground/80"
+                                                    )}>
+                                                        {Math.round(m.percentage || 0)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <HorizontalProgressBar percentage={m.percentage || 0} color={getQuotaColor(m.percentage || 0)} />
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-8 text-center">
+                                        <p className="text-sm text-muted-foreground/60">{t('statistics.noModelsAvailable')}</p>
                                     </div>
                                 )}
                             </div>
-
-                            {acc.success !== false && (
-                                <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
-                                    {models.map((m: ModelQuotaItem) => (
-                                        <div key={m.id} className="space-y-2">
-                                            <div className="typo-overline flex items-center justify-between font-medium">
-                                                <span className="text-muted-foreground truncate pr-2">{m.name || m.id}</span>
-                                                <span className="text-foreground/80 tabular-nums shrink-0">{Math.round(m.percentage || 0)}%</span>
-                                            </div>
-                                            <HorizontalProgressBar percentage={m.percentage || 0} color={getQuotaColor(m.percentage || 0)} />
-                                            <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                                {t('statistics.resetsAt', { time: formatReset(m.reset, locale) })}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 };

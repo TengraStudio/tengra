@@ -343,7 +343,7 @@ function useFileOperations(
             if (!mount) {
                 return {
                     success: false,
-                    error: t('workspace.errors.explorer.mountNotFound'),
+                    error: t('frontend.workspace.errors.explorer.mountNotFound'),
                 };
             }
             const parentPath = getDirectoryPath(entry.path);
@@ -364,7 +364,7 @@ function useFileOperations(
             if (!mount) {
                 return {
                     success: false,
-                    error: t('workspace.errors.explorer.mountNotFound'),
+                    error: t('frontend.workspace.errors.explorer.mountNotFound'),
                 };
             }
             const result = await executeDeletePath(mount, entry);
@@ -386,7 +386,7 @@ function useFileOperations(
             if (!mount) {
                 return {
                     success: false,
-                    error: t('workspace.errors.explorer.mountNotFound'),
+                    error: t('frontend.workspace.errors.explorer.mountNotFound'),
                 };
             }
 
@@ -694,33 +694,30 @@ const loadPersistedTabsState = (workspaceId: string): PersistedTabsState => {
 };
 
 function useTabManagement(workspaceId: string) {
-    const persistedTabsState = useMemo(() => loadPersistedTabsState(workspaceId), [workspaceId]);
-    const [openTabs, setOpenTabsState] = useState<EditorTab[]>(persistedTabsState.openTabs);
-    const [activeTabId, setActiveEditorTabIdState] = useState<string | null>(persistedTabsState.activeTabId);
+    const [openTabs, setOpenTabs] = useState<EditorTab[]>(() => {
+        const persisted = loadPersistedTabsState(workspaceId);
+        return persisted.openTabs;
+    });
+    const [activeTabId, setActiveEditorTabId] = useState<string | null>(() => {
+        const persisted = loadPersistedTabsState(workspaceId);
+        return persisted.activeTabId;
+    });
+
+    // Reset tabs when workspaceId changes to prevent leakage between workspaces
+    useEffect(() => {
+        const persisted = loadPersistedTabsState(workspaceId);
+        setOpenTabs(persisted.openTabs);
+        setActiveEditorTabId(persisted.activeTabId);
+    }, [workspaceId]);
+
     const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>(
-        persistedTabsState.activeTabId ? 'editor' : 'overview'
-    );
-    const setOpenTabs = useCallback(
-        (value: EditorTab[] | ((prev: EditorTab[]) => EditorTab[])) => {
-            setOpenTabsState(previousTabs => {
-                const nextTabs =
-                    typeof value === 'function'
-                        ? value(previousTabs)
-                        : value;
-                return deduplicateEditorTabs(nextTabs);
-            });
-        },
-        []
+        activeTabId ? 'editor' : 'overview'
     );
 
     const activeTab = useMemo(
         () => openTabs.find(t => t.id === activeTabId) ?? null,
         [openTabs, activeTabId]
     );
-
-    const setActiveEditorTabId = useCallback((tabId: string | null) => {
-        setActiveEditorTabIdState(tabId);
-    }, []);
 
     const applyTabUpdate = useCallback(
         (nextTabs: EditorTab[], preferredActiveTabId?: string | null) => {
@@ -740,7 +737,7 @@ function useTabManagement(workspaceId: string) {
                     ? activeTabId
                     : findFallbackTabId(normalizedTabs);
 
-            setActiveEditorTabIdState(nextActiveTabId);
+            setActiveEditorTabId(nextActiveTabId);
             if (!nextActiveTabId) {
                 setDashboardTab('overview');
             }
@@ -750,11 +747,6 @@ function useTabManagement(workspaceId: string) {
 
     const closeTab = useCallback(
         (tabId: string) => {
-            const tab = openTabs.find(t => t.id === tabId);
-            if (tab && tab.content !== tab.savedContent) {
-                appLogger.warn('useWorkspaceManager', 'Unsaved tab close blocked. Save before closing.');
-                return;
-            }
             const nextTabs = openTabs.filter(t => t.id !== tabId);
             applyTabUpdate(nextTabs);
         },
@@ -808,14 +800,20 @@ function useTabManagement(workspaceId: string) {
         [applyTabUpdate, openTabs]
     );
 
-    const updateTabContent = useCallback(
-        (content: string) => {
-            if (!activeTabId) {
-                return;
-            }
-            setOpenTabs(prev => prev.map(t => (t.id === activeTabId ? { ...t, content } : t)));
+    const revertTab = useCallback(
+        (tabId: string) => {
+            setOpenTabs(prev =>
+                prev.map(t => (t.id === tabId ? { ...t, content: t.savedContent } : t))
+            );
         },
-        [activeTabId, setOpenTabs]
+        [setOpenTabs]
+    );
+
+    const updateTabContent = useCallback(
+        (tabId: string, content: string) => {
+            setOpenTabs(prev => prev.map(t => (t.id === tabId ? { ...t, content } : t)));
+        },
+        [setOpenTabs]
     );
 
     useEffect(() => {
@@ -839,6 +837,7 @@ function useTabManagement(workspaceId: string) {
         closeTabsToRight,
         closeOtherTabs,
         updateTabContent,
+        revertTab,
         dashboardTab,
         setDashboardTab,
         setOpenTabs,
@@ -882,6 +881,7 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         closeTabsToRight,
         closeOtherTabs,
         updateTabContent,
+        revertTab,
         dashboardTab,
         setDashboardTab,
         setOpenTabs,
@@ -985,6 +985,49 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         ]
     );
 
+    const openDiff = useCallback(
+        async (diffId: string) => {
+            const result = await window.electron.files.getFileDiff(diffId);
+            if (!result.success || !result.data) {
+                appLogger.error('useWorkspaceManager', 'Failed to load diff', diffId);
+                return;
+            }
+
+            const diff = result.data;
+            const tabId = `diff:${diffId}`;
+            const existing = openTabs.find(tab => tab.id === tabId);
+
+            if (existing) {
+                setActiveEditorTabId(tabId);
+                setDashboardTab('editor');
+                return;
+            }
+
+            const fileName = diff.filePath.split(/[\\/]/).pop() ?? 'file';
+            const mountId = mounts[0]?.id || `local-${workspace.id}`;
+
+            const tab: EditorTab = {
+                id: tabId,
+                mountId,
+                path: diff.filePath,
+                name: `${fileName} (Diff)`,
+                content: diff.afterContent,
+                originalContent: diff.beforeContent,
+                savedContent: diff.afterContent,
+                type: 'diff',
+                isDirty: false,
+                isPinned: false,
+                readOnly: true,
+                diffId: diffId,
+            };
+
+            setOpenTabs(prev => [...prev, tab]);
+            setActiveEditorTabId(tabId);
+            setDashboardTab('editor');
+        },
+        [mounts, workspace.id, openTabs, setActiveEditorTabId, setDashboardTab, setOpenTabs]
+    );
+
     const saveActiveTab = useCallback(async (options?: SaveActiveTabOptions) => {
         const activeTabData = openTabs.find(t => t.id === activeTabId);
         if (!activeTabData) {
@@ -1083,6 +1126,7 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         councilEnabled,
         setCouncilEnabled,
         openFile,
+        openDiff,
         saveActiveTab,
         closeTab,
         togglePinTab,
@@ -1107,6 +1151,7 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         bulkMoveEntries,
         bulkCopyEntries,
         updateTabContent,
+        revertTab,
         dashboardTab,
         setDashboardTab,
         mountForm,

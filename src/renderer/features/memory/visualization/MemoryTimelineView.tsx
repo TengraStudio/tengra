@@ -131,9 +131,9 @@ export const MemoryTimelineView: React.FC = () => {
                         <IconHistory className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-bold">{t('memory.timelineView')}</h2>
+                        <h2 className="text-sm font-bold">{t('frontend.memory.timelineView')}</h2>
                         <p className="typo-caption text-muted-foreground">
-                            {t('memory.timelineTotalEvents', { count: items.length })}
+                            {t('frontend.memory.timelineTotalEvents', { count: items.length })}
                         </p>
                     </div>
                 </div>
@@ -142,7 +142,7 @@ export const MemoryTimelineView: React.FC = () => {
                     <Input
                         value={searchQuery}
                         onChange={event => setSearchQuery(event.target.value)}
-                        placeholder={t('memory.searchPlaceholder')}
+                        placeholder={t('frontend.memory.searchPlaceholder')}
                         className="h-8 w-48 bg-background/50 border-border/50"
                     />
                     <div className="flex bg-background/50 p-1 rounded-lg border border-border/50">
@@ -158,10 +158,10 @@ export const MemoryTimelineView: React.FC = () => {
                                 )}
                             >
                                 {f === 'all'
-                                    ? t('memory.timelineFilterAll')
+                                    ? t('frontend.memory.timelineFilterAll')
                                     : f === 'episode'
-                                        ? t('memory.timelineFilterEpisode')
-                                        : t('memory.timelineFilterFragment')}
+                                        ? t('frontend.memory.timelineFilterEpisode')
+                                        : t('frontend.memory.timelineFilterFragment')}
                             </button>
                         ))}
                     </div>
@@ -184,13 +184,13 @@ export const MemoryTimelineView: React.FC = () => {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4">
                         <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="typo-caption text-muted-foreground">{t('memory.timelineReconstructing')}</span>
+                        <span className="typo-caption text-muted-foreground">{t('frontend.memory.timelineReconstructing')}</span>
                     </div>
                 ) : (
                     Object.keys(groupedItems).length === 0 ? (
                         <div className="flex h-full items-center justify-center">
                             <p className="rounded-lg border border-border/40 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
-                                {t('memory.emptyState')}
+                                {t('frontend.memory.emptyState')}
                             </p>
                         </div>
                     ) : (

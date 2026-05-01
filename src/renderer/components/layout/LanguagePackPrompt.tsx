@@ -120,7 +120,7 @@ export const LanguagePackPrompt: React.FC = () => {
                             <span>
                                 {isTurkish
                                     ? `${matchingPack.name} başarıyla kuruldu.`
-                                    : t('marketplace.installSuccess', { name: matchingPack.name })}
+                                    : t('frontend.marketplace.installSuccess', { name: matchingPack.name })}
                             </span>
                         </div>
                     ) : (

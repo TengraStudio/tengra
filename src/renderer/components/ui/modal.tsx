@@ -206,14 +206,14 @@ const ModalBase: React.FC<ModalProps> = ({
                             type="button"
                             onClick={onClose}
                             className="p-2 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all active:scale-95"
-                            aria-label={t('aria.closeModal')}
+                            aria-label={t('frontend.aria.closeModal')}
                         >
                             <IconX className="w-5 h-5" aria-hidden="true" />
                         </button>
                     )}
                 </div>
                 <p id={descriptionId} className="sr-only">
-                    {t('modal.contentForTitle', { title: title ?? '' })}
+                    {t('frontend.modal.contentForTitle', { title: title ?? '' })}
                 </p>
                 <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
                     {children}

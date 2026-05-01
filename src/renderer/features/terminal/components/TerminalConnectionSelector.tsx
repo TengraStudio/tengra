@@ -105,7 +105,7 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                 onClick={e => e.stopPropagation()}
             >
                 <div className={UI_PRIMITIVES.PANEL_SUB_HEADER}>
-                    <h3 className="typo-body font-bold text-foreground pl-2">{t('terminal.select_connection')}</h3>
+                    <h3 className="typo-body font-bold text-foreground pl-2">{t('frontend.terminal.select_connection')}</h3>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-1 space-y-4">
@@ -113,23 +113,23 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                     <div className="space-y-1">
                         <div
                             className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")}
-                            onClick={() => handleSelect({ id: 'local', name: t('terminal.local'), type: 'local' })}
+                            onClick={() => handleSelect({ id: 'local', name: t('frontend.terminal.local'), type: 'local' })}
                         >
                             <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
                                 <IconDatabase size={16} />
                             </div>
                             <div className="flex-1 flex flex-col">
-                                <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{t('terminal.local_terminal')}</span>
-                                <span className="text-sm text-muted-foreground">{t('terminal.local_terminal_desc')}</span>
+                                <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{t('frontend.terminal.local_terminal')}</span>
+                                <span className="text-sm text-muted-foreground">{t('frontend.terminal.local_terminal_desc')}</span>
                             </div>
                             <IconChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        <h4 className="px-3 text-sm font-bold text-muted-foreground/60 uppercase ">{t('terminal.ssh_connections')}</h4>
+                        <h4 className="px-3 text-sm font-bold text-muted-foreground/60 uppercase ">{t('frontend.terminal.ssh_connections')}</h4>
                         {sshProfiles.length === 0 && !loading && (
-                            <div className="px-3 py-2 text-sm text-muted-foreground ">{t('terminal.no_ssh_profiles')}</div>
+                            <div className="px-3 py-2 text-sm text-muted-foreground ">{t('frontend.terminal.no_ssh_profiles')}</div>
                         )}
                         {sshProfiles.map(profile => (
                             <div
@@ -155,9 +155,9 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                     </div>
 
                     <div className="space-y-1">
-                        <h4 className="px-3 text-sm font-bold text-muted-foreground/60 uppercase ">{t('terminal.docker_containers')}</h4>
+                        <h4 className="px-3 text-sm font-bold text-muted-foreground/60 uppercase ">{t('frontend.terminal.docker_containers')}</h4>
                         {containers.length === 0 && !loading && (
-                            <div className="px-3 py-2 text-sm text-muted-foreground ">{t('terminal.no_containers')}</div>
+                            <div className="px-3 py-2 text-sm text-muted-foreground ">{t('frontend.terminal.no_containers')}</div>
                         )}
                         {containers.map(container => (
                             <div

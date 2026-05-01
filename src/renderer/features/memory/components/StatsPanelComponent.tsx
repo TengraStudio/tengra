@@ -51,7 +51,7 @@ const StatsPanelContent = ({
       <Card className="p-6 bg-muted/20 border-border/40">
         <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
           <IconTag className="w-4 h-4 text-primary" />
-          {t('memory.stats.memoriesByCategory')}
+          {t('frontend.memory.stats.memoriesByCategory')}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Object.entries(stats.byCategory).map(([category, count]) => {
@@ -73,7 +73,7 @@ const StatsPanelContent = ({
       <Card className="p-6 bg-muted/20 border-border/40">
         <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
           <IconSparkles className="w-4 h-4 text-primary" />
-          {t('memory.stats.memoriesBySource')}
+          {t('frontend.memory.stats.memoriesBySource')}
         </h3>
         <div className="space-y-2">
           {Object.entries(stats.bySource).map(([source, count]) => (
@@ -89,26 +89,26 @@ const StatsPanelContent = ({
       <Card className="p-6 bg-muted/20 border-border/40">
         <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
           <IconGauge className="w-4 h-4 text-primary" />
-          {t('memory.stats.healthMetrics')}
+          {t('frontend.memory.stats.healthMetrics')}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard
-            label={t('memory.stats.avgConfidence')}
+            label={t('frontend.memory.stats.avgConfidence')}
             value={`${(stats.averageConfidence * 100).toFixed(1)}%`}
           />
           <MetricCard
-            label={t('memory.stats.avgImportance')}
+            label={t('frontend.memory.stats.avgImportance')}
             value={`${(stats.averageImportance * 100).toFixed(1)}%`}
           />
           <MetricCard
-            label={t('memory.stats.recentlyAccessed')}
+            label={t('frontend.memory.stats.recentlyAccessed')}
             value={stats.recentlyAccessed}
-            subtitle={t('memory.stats.last24h')}
+            subtitle={t('frontend.memory.stats.last24h')}
           />
           <MetricCard
-            label={t('memory.stats.recentlyCreated')}
+            label={t('frontend.memory.stats.recentlyCreated')}
             value={stats.recentlyCreated}
-            subtitle={t('memory.stats.last24h')}
+            subtitle={t('frontend.memory.stats.last24h')}
           />
         </div>
       </Card>
@@ -117,13 +117,13 @@ const StatsPanelContent = ({
         <Card className="p-6 bg-muted/20 border-border/40">
           <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
             <IconGauge className="w-4 h-4 text-primary" />
-            {t('memory.stats.runtime.title')}
+            {t('frontend.memory.stats.runtime.title')}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MetricCard label={t('memory.stats.runtime.cacheHitRate')} value={`${hitRate.toFixed(1)}%`} />
-            <MetricCard label={t('memory.stats.runtime.avgLookupMs')} value={memoryContext.averageLookupDurationMs} />
-            <MetricCard label={t('memory.stats.runtime.timeoutsFailures')} value={`${memoryContext.lookupTimeoutCount} / ${memoryContext.lookupFailureCount}`} />
-            <MetricCard label={t('memory.stats.runtime.cacheInflight')} value={`${memoryContext.cacheSize} / ${memoryContext.inflightSize}`} />
+            <MetricCard label={t('frontend.memory.stats.runtime.cacheHitRate')} value={`${hitRate.toFixed(1)}%`} />
+            <MetricCard label={t('frontend.memory.stats.runtime.avgLookupMs')} value={memoryContext.averageLookupDurationMs} />
+            <MetricCard label={t('frontend.memory.stats.runtime.timeoutsFailures')} value={`${memoryContext.lookupTimeoutCount} / ${memoryContext.lookupFailureCount}`} />
+            <MetricCard label={t('frontend.memory.stats.runtime.cacheInflight')} value={`${memoryContext.cacheSize} / ${memoryContext.inflightSize}`} />
           </div>
         </Card>
       )}

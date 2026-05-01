@@ -271,7 +271,7 @@ export function WorkspaceErrorFallback({
     const message =
         error instanceof WorkspaceExplorerError
             ? getUserErrorMessage(error.code, t)
-            : t('workspace.errors.explorer.unexpected');
+            : t('frontend.workspace.errors.explorer.unexpected');
 
     return (
         <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">

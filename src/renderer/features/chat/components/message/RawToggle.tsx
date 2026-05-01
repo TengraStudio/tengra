@@ -38,7 +38,7 @@ export const RawToggle = memo(({ active, onClick, t }: RawToggleProps) => (
             )}
         >
             {active ? <IconEye className="w-3 h-3" /> : <IconCode className="w-3 h-3" />}
-            {active ? t('chat.render') : t('chat.raw')}
+            {active ? t('frontend.chat.render') : t('frontend.chat.raw')}
         </button>
     </div>
 ));

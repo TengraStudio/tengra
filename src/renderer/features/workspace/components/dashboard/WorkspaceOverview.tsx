@@ -69,7 +69,7 @@ export function WorkspaceOverviewHeader({
             <div className="relative group shrink-0">
                 <div className={C_WORKSPACEOVERVIEW_1}>
                     {workspaceLogoUrl ? (
-                        <img src={workspaceLogoUrl} alt={t('workspaces.logoAlt')} className="w-full h-full object-cover" />
+                        <img src={workspaceLogoUrl} alt={t('frontend.workspaces.logoAlt')} className="w-full h-full object-cover" />
                     ) : (
                         <IconSparkles className="w-10 h-10 text-muted-foreground/20" />
                     )}
@@ -79,7 +79,7 @@ export function WorkspaceOverviewHeader({
                         className={C_WORKSPACEOVERVIEW_2}
                     >
                         <IconCamera className="w-6 h-6" />
-                        <span className="text-sm font-bold">{t('workspaces.changeLogo')}</span>
+                        <span className="text-sm font-bold">{t('frontend.workspaces.changeLogo')}</span>
                     </button>
                 </div>
             </div>
@@ -124,7 +124,7 @@ export function WorkspaceOverviewHeader({
                                 onChange={e => onSetDesc(e.target.value)}
                                 onBlur={() => onSaveDesc()}
                                 className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-80 resize-none"
-                                placeholder={t('workspaces.workspaceDescPlaceholder')}
+                                placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
                             />
                         </div>
                     ) : (
@@ -172,23 +172,23 @@ export function WorkspaceStatsCards({ stats, analysis, t, formatBytes }: Workspa
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.fileCount')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.fileCount')}</div>
                 <div className="text-2xl font-bold text-foreground">{stats?.fileCount ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.loc')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.loc')}</div>
                 <div className="text-2xl font-bold text-foreground">~{stats?.loc ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.totalSize')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.totalSize')}</div>
                 <div className="text-2xl font-bold text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="typo-body font-bold text-muted-foreground mb-1">{t('workspaceDashboard.modules')}</div>
+                <div className="typo-body font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.modules')}</div>
                 <div className="text-2xl font-bold text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.type')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.type')}</div>
                 <div className="text-2xl font-bold text-primary capitalize">{analysis.type}</div>
             </div>
         </div>

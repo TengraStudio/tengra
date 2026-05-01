@@ -90,19 +90,19 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = (pr
             <CanonicalWorkspaceAgentComposer {...props} />
 
             <div className="sr-only">
-                <button type="button">{props.t('settings.title')}</button>
-                <button type="button">{props.t('workspaceAgent.selectAgentProfile')}</button>
+                <button type="button">{props.t('frontend.settings.title')}</button>
+                <button type="button">{props.t('frontend.workspaceAgent.selectAgentProfile')}</button>
                 <button
                     type="button"
-                    onClick={() => void props.onSelectPreset('agent' as WorkspaceAgentComposerPreset)}
+                    onClick={() => void props.onSelectPreset('frontend.agent' as WorkspaceAgentComposerPreset)}
                 >
-                    {props.t('input.agent')}
+                    {props.t('frontend.input.agent')}
                 </button>
 
                 {props.showCouncilSetup && (
                     <>
                         <button type="button" onClick={() => void props.onApplyCouncilSetup()}>
-                            {props.t('agents.runCouncil')}
+                            {props.t('frontend.agents.runCouncil')}
                         </button>
                         <span>{props.councilSetup.strategy}</span>
                         <span>{String(props.councilSetup.requestedSubagentCount)}</span>

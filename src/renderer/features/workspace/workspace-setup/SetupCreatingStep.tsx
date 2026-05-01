@@ -23,9 +23,9 @@ export const SetupCreatingStep: React.FC = () => {
                 <IconCheck className="w-6 h-6 text-primary absolute inset-0 m-auto opacity-0 animate-pulse" />
             </div>
             <div>
-                <h3 className="text-2xl font-light text-foreground">{t('workspaceWizard.creating')}</h3>
+                <h3 className="text-2xl font-light text-foreground">{t('frontend.workspaceWizard.creating')}</h3>
                 <p className="text-muted-foreground mt-2 max-w-280 mx-auto text-sm">
-                    {t('workspaceWizard.configuring')}
+                    {t('frontend.workspaceWizard.configuring')}
                 </p>
             </div>
         </div>

@@ -256,6 +256,67 @@ describe('ModelRegistryService', () => {
             expect(gptNano?.pricing).toEqual({ input: 0, output: 0 });
         });
 
+        it('should include gpt-image-1 when an OpenAI account is linked', async () => {
+            vi.mocked(mockAuthService.getAccountsByProviderFull!).mockImplementation(async provider => {
+                if (provider !== 'openai') { return []; }
+                return [{
+                    id: 'openai_key',
+                    provider: 'codex',
+                    accessToken: 'sk-openai',
+                    isActive: true,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    metadata: { type: 'api_key', provider_hint: 'openai' },
+                }] as never;
+            });
+
+            const models = await service.getRemoteModels();
+
+            expect(models).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'openai/gpt-image-1',
+                    provider: 'openai',
+                    capabilities: expect.objectContaining({
+                        image_generation: true,
+                        text_generation: false,
+                    }),
+                }),
+            ]));
+        });
+
+        it('should only expose the supported codex models when a Codex OAuth account is linked', async () => {
+            vi.mocked(mockAuthService.getAccountsByProviderFull!).mockImplementation(async provider => {
+                if (provider !== 'codex') { return []; }
+                return [{
+                    id: 'codex_oauth',
+                    provider: 'codex',
+                    accessToken: 'codex-access',
+                    isActive: true,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    metadata: { type: 'oauth' },
+                }] as never;
+            });
+            vi.mocked(mockProxyService.getRawModelCatalog!).mockResolvedValueOnce({
+                data: [
+                    { id: 'gpt-5.5', name: 'GPT 5.5', provider: 'codex' },
+                    { id: 'gpt-5.4', name: 'GPT 5.4', provider: 'codex' },
+                    { id: 'gpt-5.4-mini', name: 'GPT 5.4 Mini', provider: 'copilot' },
+                    { id: 'gpt-5.3-codex', name: 'GPT 5.3 Codex', provider: 'codex' },
+                    { id: 'gpt-5.2-codex', name: 'GPT 5.2 Codex', provider: 'codex' },
+                    { id: '$imagegen', name: 'GPT ImageGen', provider: 'codex' },
+                ],
+            });
+
+            const models = await service.getRemoteModels();
+            const codexIds = models
+                .filter(model => model.provider === 'codex')
+                .map(model => model.id)
+                .sort();
+
+            expect(codexIds).toEqual(['gpt-5.3-codex', 'gpt-5.4', 'gpt-5.5']);
+        });
+
         it('should include paid opencode models when user provides opencode api key', async () => {
             process.env.OPENCODE_API_KEY = 'sk-opencode-user-key';
             fetchMock.mockResolvedValueOnce({
@@ -567,14 +628,14 @@ describe('ModelRegistryService', () => {
             const emptyMetrics = service.getHealthMetrics();
             expect(emptyMetrics.uiState).toBe('empty');
             expect(emptyMetrics.performanceBudget.cacheRefreshMs).toBe(2000);
-            expect(en.serviceHealth.modelRegistry.empty).toBe(emptyMetrics.messageKey);
+            expect(en.frontend.serviceHealth.modelRegistry.empty).toBe(emptyMetrics.messageKey);
 
             vi.mocked(mockOllamaService.getModels!).mockRejectedValue(new Error('provider unavailable'));
             await service.getInstalledModels();
 
             const failureMetrics = service.getHealthMetrics();
             expect(failureMetrics.uiState).toBe('failure');
-            expect(en.serviceHealth.modelRegistry.failure).toBe(failureMetrics.messageKey);
+            expect(en.frontend.serviceHealth.modelRegistry.failure).toBe(failureMetrics.messageKey);
         });
     });
 });

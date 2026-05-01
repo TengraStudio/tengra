@@ -13,7 +13,7 @@ import type {
     MarketplaceLanguage
 } from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
-import { IconBolt,IconCircleCheck, IconColorSwatch, IconDownload, IconGlobe, IconMessage, IconPackage, IconPalette, IconPuzzle, IconRefresh, IconSparkles, IconTrash } from '@tabler/icons-react';
+import { IconBolt, IconCircleCheck, IconColorSwatch, IconDownload, IconGlobe, IconMessage, IconPackage, IconPalette, IconPuzzle, IconRefresh, IconSparkles, IconTrash } from '@tabler/icons-react';
 import type { ElementType } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -21,12 +21,12 @@ import { cn } from '@/lib/utils';
 import { useDownloadStore } from '@/store/download.store';
 
 /* Batch-02: Extracted Long Classes */
-const C_MARKETCARD_1 = "flex h-5 items-center gap-1 rounded-md bg-warning/5 px-2 py-0.5 text-[10px] font-bold tracking-tight text-warning border border-warning/10";
-const C_MARKETCARD_2 = "flex h-5 items-center gap-1 rounded-md bg-success/5 px-2 py-0.5 text-[10px] font-bold tracking-tight text-success border border-success/10";
-const C_MARKETCARD_3 = "flex h-5 items-center gap-1 rounded-md bg-muted/40 px-2 py-0.5 text-[10px] font-bold tracking-tight text-muted-foreground/40 border border-border/10";
-const C_MARKETCARD_4 = "h-8 px-3 flex items-center gap-2 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/5 transition-colors text-xs font-semibold";
-const C_MARKETCARD_5 = "h-8 px-3 flex items-center gap-2 rounded-lg bg-warning/10 text-warning hover:bg-warning hover:text-warning-foreground transition-colors text-xs font-semibold";
-const C_MARKETCARD_6 = "bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors";
+const C_MARKETCARD_1 = "flex h-5 items-center gap-1 rounded-md bg-warning/5 px-2 py-0.5 text-sm font-bold  text-warning border border-warning/10";
+const C_MARKETCARD_2 = "flex h-5 items-center gap-1 rounded-md bg-success/5 px-2 py-0.5 text-sm font-bold  text-success border border-success/10";
+const C_MARKETCARD_3 = "flex h-5 items-center gap-1 rounded-md bg-muted/40 px-2 py-0.5 text-sm font-bold  text-muted-foreground/40 border border-border/10";
+const C_MARKETCARD_4 = "h-8 px-3 flex items-center gap-2 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/5 transition-colors text-sm font-semibold";
+const C_MARKETCARD_5 = "h-8 px-3 flex items-center gap-2 rounded-lg bg-warning/10 text-warning hover:bg-warning hover:text-warning-foreground transition-colors text-sm font-semibold";
+const C_MARKETCARD_6 = "bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors";
 
 const formatBytes = (bytes: number): string => {
     if (bytes <= 0) {
@@ -83,11 +83,11 @@ export function MarketCard({
                 <>
                     {compareVersions(item.version, installedVersion) > 0 ? (
                         <div className="flex items-center gap-1.5">
-                             <span className="text-xs text-muted-foreground/20 line-through font-medium">V{installedVersion}</span>
-                             <div className={C_MARKETCARD_1}>
-                                  <IconRefresh className="h-2.5 w-2.5 animate-spin-slow" />
-                                  V{item.version}
-                             </div>
+                            <span className="text-sm text-muted-foreground/20 line-through font-medium">V{installedVersion}</span>
+                            <div className={C_MARKETCARD_1}>
+                                <IconRefresh className="h-2.5 w-2.5 animate-spin-slow" />
+                                V{item.version}
+                            </div>
                         </div>
                     ) : (
                         <div className={C_MARKETCARD_2}>
@@ -121,14 +121,14 @@ export function MarketCard({
             <div className="flex flex-1 flex-col min-w-0 py-0.5">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 min-w-0">
-                        <h3 className="truncate text-base font-semibold text-foreground tracking-tight">
+                        <h3 className="truncate text-base font-semibold text-foreground ">
                             {item.name}
                         </h3>
                         {item.installed && (
                             <IconCircleCheck className="h-3.5 w-3.5 shrink-0 text-primary/60" />
                         )}
                     </div>
-                    
+
                     <div className="flex items-center gap-1.5 shrink-0">
                         {item.installed && !hasUpdate && onUninstall && item.removable !== false && (
                             <button
@@ -139,7 +139,7 @@ export function MarketCard({
                                 className={C_MARKETCARD_4}
                             >
                                 <IconTrash className="h-3.5 w-3.5" />
-                                {t('marketplace.uninstall')}
+                                {t('frontend.marketplace.uninstall')}
                             </button>
                         )}
 
@@ -152,7 +152,7 @@ export function MarketCard({
                                 className={C_MARKETCARD_5}
                             >
                                 <IconRefresh className="h-3.5 w-3.5" />
-                                {t('marketplace.update')}
+                                {t('frontend.marketplace.update')}
                             </button>
                         )}
 
@@ -164,7 +164,7 @@ export function MarketCard({
                                 }}
                                 disabled={isInstalling}
                                 className={cn(
-                                    'h-8 px-4 flex items-center gap-2 rounded-lg transition-all text-xs font-semibold',
+                                    'h-8 px-4 flex items-center gap-2 rounded-lg transition-all text-sm font-semibold',
                                     isInstalling
                                         ? 'bg-muted/60 text-muted-foreground/40'
                                         : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
@@ -175,14 +175,14 @@ export function MarketCard({
                                 ) : (
                                     <IconDownload className="h-3.5 w-3.5" />
                                 )}
-                                {isInstalling ? t('marketplace.installing') : t('marketplace.install')}
+                                {isInstalling ? t('frontend.marketplace.installing') : t('frontend.marketplace.install')}
                             </button>
                         )}
                     </div>
                 </div>
 
-                <div className="mt-1.5 flex items-center gap-2 text-xs font-medium text-muted-foreground/40">
-                    <span className="truncate">{item.author || t('marketplace.authorPrefix')}</span>
+                <div className="mt-1.5 flex items-center gap-2 text-sm font-medium text-muted-foreground/40">
+                    <span className="truncate">{item.author || t('frontend.marketplace.authorPrefix')}</span>
                     {!hideVersion && (
                         <>
                             <span className="opacity-20">•</span>
@@ -190,7 +190,7 @@ export function MarketCard({
                         </>
                     )}
                     <span className="opacity-20">•</span>
-                    <span className="tracking-wider uppercase opacity-80 text-[10px]">{item.itemType}</span>
+                    <span className=" uppercase opacity-80 text-sm">{item.itemType}</span>
                 </div>
 
                 <p className="mt-3 line-clamp-1 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
@@ -205,7 +205,7 @@ export function MarketCard({
 
                 {languageItem && item.installed && !isActive && (
                     <div className="mt-4 flex items-center justify-between border-t border-border/10 pt-4">
-                        <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">{languageItem.nativeName}</span>
+                        <span className="text-sm font-bold text-muted-foreground/30 uppercase ">{languageItem.nativeName}</span>
                         <button
                             onClick={(event) => {
                                 event.stopPropagation();
@@ -251,8 +251,8 @@ function ModelDownloadProgress({ modelId }: { modelId: string }) {
 
     return (
         <div className="mt-2 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
-            <div className="flex items-center justify-between text-xs font-semibold text-primary">
-                <span>{task.status === 'paused' ? t('common.paused') : t('marketplace.installing')}</span>
+            <div className="flex items-center justify-between text-sm font-semibold text-primary">
+                <span>{task.status === 'paused' ? t('common.paused') : t('frontend.marketplace.installing')}</span>
                 <span>{progressPercent}%</span>
             </div>
             <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
@@ -261,7 +261,7 @@ function ModelDownloadProgress({ modelId }: { modelId: string }) {
                     style={{ width: `${progressPercent}%` }}
                 />
             </div>
-            <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground/40">
+            <div className="flex items-center justify-between text-sm font-medium text-muted-foreground/40">
                 <span>{formatBytes(task.received || 0)} / {formatBytes(task.total || 0)}</span>
                 {task.speed !== undefined && <span className="text-primary/60">{formatBytes(task.speed)}/s</span>}
             </div>

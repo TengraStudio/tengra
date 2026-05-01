@@ -188,7 +188,7 @@ export class PromptOptimizerService {
                     'Specify the desired output format (e.g., JSON, bullet points, table).'
                 ),
                 suggestedText: this.tr(
-                    'chat.promptOptimizer.formatSuggestedText',
+                    'frontend.chat.promptOptimizer.formatSuggestedText',
                     'Output format: Respond as a numbered list.'
                 ),
             });

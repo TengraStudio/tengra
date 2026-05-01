@@ -44,17 +44,17 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4 border-b border-border/40 pb-4 md:grid-cols-4">
                 <div className="space-y-1">
-                    <span className="text-sm font-bold text-muted-foreground">{t('statistics.totalPrompt')}</span>
+                    <span className="text-sm font-bold text-muted-foreground">{t('frontend.statistics.totalPrompt')}</span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">{formatNumber(totalPrompt)}</div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-sm font-bold text-muted-foreground">{t('statistics.totalCompletion')}</span>
+                    <span className="text-sm font-bold text-muted-foreground">{t('frontend.statistics.totalCompletion')}</span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">{formatNumber(totalCompletion)}</div>
                 </div>
                 <div className="space-y-1">
                     <span className="flex items-center gap-1 text-sm font-bold text-muted-foreground">
                         <IconCoins className="w-3 h-3 text-warning" />
-                        {t('statistics.cost')}
+                        {t('frontend.statistics.cost')}
                     </span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">
                         ${estimatedCost < 0.01 ? '<0.01' : estimatedCost.toFixed(2)}
@@ -63,10 +63,10 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 <div className="space-y-1">
                     <span className="flex items-center gap-1 text-sm font-bold text-muted-foreground">
                         <IconActivity className="w-3 h-3 text-info" />
-                        {t('statistics.activity')}
+                        {t('frontend.statistics.activity')}
                     </span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">
-                        {sortedData.filter(d => (d.promptTokens + d.completionTokens) > 0).length} <span className="typo-caption text-muted-foreground font-medium">{t('statistics.sessions')}</span>
+                        {sortedData.filter(d => (d.promptTokens + d.completionTokens) > 0).length} <span className="typo-caption text-muted-foreground font-medium">{t('frontend.statistics.sessions')}</span>
                     </div>
                 </div>
             </div>
@@ -75,11 +75,11 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 <div className="absolute right-0 top-0 z-10 flex items-center gap-4">
                     <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background px-2 py-1">
                         <div className="h-2.5 w-2.5 rounded-full bg-primary" />
-                        <span className="text-sm font-bold text-muted-foreground">{t('statistics.input')}</span>
+                        <span className="text-sm font-bold text-muted-foreground">{t('frontend.statistics.input')}</span>
                     </div>
                     <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background px-2 py-1">
                         <div className="h-2.5 w-2.5 rounded-full bg-success" />
-                        <span className="text-sm font-bold text-muted-foreground">{t('statistics.output')}</span>
+                        <span className="text-sm font-bold text-muted-foreground">{t('frontend.statistics.output')}</span>
                     </div>
                 </div>
 
@@ -94,7 +94,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 <div className="absolute inset-0 flex items-end justify-between gap-1 pt-6 pb-6 pl-1 pr-1 overflow-visible">
                     {sortedData.length === 0 ? (
                         <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-muted-foreground/30 font-medium">{t('statistics.noDataForPeriod')}</span>
+                            <span className="text-muted-foreground/30 font-medium">{t('frontend.statistics.noDataForPeriod')}</span>
                         </div>
                     ) : (
                         sortedData.map((data) => {
@@ -116,11 +116,11 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                             </div>
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-sm font-bold text-primary">{t('statistics.input')}</span>
+                                                    <span className="text-sm font-bold text-primary">{t('frontend.statistics.input')}</span>
                                                     <span className="typo-caption font-mono font-bold">{formatNumber(data.promptTokens)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-sm font-bold text-success">{t('statistics.output')}</span>
+                                                    <span className="text-sm font-bold text-success">{t('frontend.statistics.output')}</span>
                                                     <span className="typo-caption font-mono font-bold">{formatNumber(data.completionTokens)}</span>
                                                 </div>
                                                 {data.modelBreakdown && Object.keys(data.modelBreakdown).length > 0 && (

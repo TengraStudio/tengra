@@ -37,7 +37,6 @@ struct LinkedAccountsCache {
     rows: Vec<Value>,
 }
 
-
 fn db_client() -> &'static Client {
     DB_CLIENT.get_or_init(|| {
         Client::builder()
@@ -69,7 +68,7 @@ async fn get_db_query_url() -> Result<String> {
     if let Some(cached) = db_query_url_cache().read().await.clone() {
         return Ok(cached);
     }
-    
+
     let port = std::env::var("TENGRA_DB_PORT")
         .ok()
         .and_then(|p| p.parse::<u16>().ok())
@@ -157,6 +156,51 @@ fn normalize_provider(provider: &str) -> &str {
 
 fn provider_matches(row_provider: &str, requested_provider: &str) -> bool {
     normalize_provider(row_provider) == normalize_provider(requested_provider)
+}
+
+fn metadata_string(row: &Value, keys: &[&str]) -> Option<String> {
+    let metadata = parse_metadata_object(row);
+    for key in keys {
+        if let Some(value) = metadata.get(*key).and_then(Value::as_str) {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_ascii_lowercase());
+            }
+        }
+    }
+    None
+}
+
+fn is_api_key_account(row: &Value) -> bool {
+    metadata_string(row, &["auth_type", "authType", "type"])
+        .map(|value| value == "api_key")
+        .unwrap_or(false)
+}
+
+fn provider_hint(row: &Value) -> Option<String> {
+    metadata_string(row, &["provider_hint", "providerHint", "provider"])
+}
+
+fn account_matches_provider(row: &Value, requested_provider: &str) -> bool {
+    let row_provider = row
+        .get("provider")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+
+    if provider_matches(row_provider, requested_provider) {
+        if normalize_provider(requested_provider) == "codex"
+            && is_api_key_account(row)
+            && provider_hint(row).as_deref() == Some("openai")
+        {
+            return false;
+        }
+        return true;
+    }
+
+    normalize_provider(requested_provider) == "openai"
+        && normalize_provider(row_provider) == "codex"
+        && is_api_key_account(row)
+        && provider_hint(row).as_deref() == Some("openai")
 }
 
 fn canonical_account_id(provider: &str, account_id: &str) -> String {
@@ -369,12 +413,11 @@ fn sanitize_token_metadata(token_data: &Value) -> Value {
 }
 
 fn emit_auth_update(provider: &str, account_id: &str, token_data: &Value) {
-    let payload = serde_json::json!({
+    let _payload = serde_json::json!({
         "provider": provider,
         "accountId": account_id,
         "tokenData": token_data,
     });
-    eprintln!("__TENGRA_AUTH_UPDATE__:{}", payload);
 }
 
 async fn update_metadata(account_id: &str, provider: &str, metadata: Value) -> Result<()> {
@@ -424,32 +467,72 @@ pub async fn save_token(
     provider: &str,
 ) -> Result<()> {
     let canonical_id = canonical_account_id(provider, account_id);
-    eprintln!(
-        "[INFO] Linked account upsert: provider={}, account={}",
-        provider, canonical_id
-    );
 
     let mut access_token = token_data
         .get("access_token")
         .and_then(|v| v.as_str())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("access_token"))
+                .and_then(|v| v.as_str())
+        })
         .unwrap_or("")
         .to_string();
     let mut refresh_token = token_data
         .get("refresh_token")
         .and_then(|v| v.as_str())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("refresh_token"))
+                .and_then(|v| v.as_str())
+        })
         .unwrap_or("")
         .to_string();
     let mut session_token = token_data
         .get("session_token")
         .and_then(|v| v.as_str())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("session_token"))
+                .and_then(|v| v.as_str())
+        })
         .unwrap_or("")
         .to_string();
     let scope = token_data
         .get("scope")
         .and_then(|v| v.as_str())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("scope"))
+                .and_then(|v| v.as_str())
+        })
         .unwrap_or("")
         .to_string();
-    let expires_at = token_data.get("expires_at").and_then(|v| v.as_i64());
+    let expires_at = token_data
+        .get("expires_at")
+        .and_then(|v| v.as_i64())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("expires_at"))
+                .and_then(|v| v.as_i64())
+        })
+        .or_else(|| {
+            let expires_in = token_data
+                .get("expires_in")
+                .and_then(|v| v.as_i64())
+                .or_else(|| {
+                    token_data
+                        .get("token")
+                        .and_then(|t| t.get("expires_in"))
+                        .and_then(|v| v.as_i64())
+                });
+            expires_in.map(|seconds| now_ms() + (seconds * 1000))
+        });
     let sanitized_metadata = sanitize_token_metadata(&token_data);
     let metadata_json = serde_json::to_string(&sanitized_metadata).unwrap_or_default();
 
@@ -542,13 +625,12 @@ pub async fn save_token_with_retry(
         }
     }
 
-    let failure_payload = serde_json::json!({
+    let _failure_payload = serde_json::json!({
         "provider": provider,
         "accountId": canonical_id,
         "attempts": attempts,
         "error": last_error
     });
-    eprintln!("__TENGRA_AUTH_UPDATE_FAILURE__:{}", failure_payload);
     Err(anyhow!(
         "OAuth callback DB write failed after {} attempts for {} ({}): {}",
         attempts,
@@ -612,12 +694,7 @@ pub async fn get_provider_accounts(provider: &str) -> Result<Vec<Value>> {
     let accounts = get_all_linked_accounts().await?;
     Ok(accounts
         .into_iter()
-        .filter(|row| {
-            row.get("provider")
-                .and_then(|value| value.as_str())
-                .map(|row_provider| provider_matches(row_provider, provider))
-                .unwrap_or(false)
-        })
+        .filter(|row| account_matches_provider(row, provider))
         .collect())
 }
 
@@ -743,19 +820,57 @@ pub async fn update_token_data(
     let mut access_token = token_data
         .get("access_token")
         .and_then(|v| v.as_str())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("access_token"))
+                .and_then(|v| v.as_str())
+        })
         .unwrap_or("")
         .to_string();
     let mut refresh_token = token_data
         .get("refresh_token")
         .and_then(|v| v.as_str())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("refresh_token"))
+                .and_then(|v| v.as_str())
+        })
         .unwrap_or("")
         .to_string();
     let mut session_token = token_data
         .get("session_token")
         .and_then(|v| v.as_str())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("session_token"))
+                .and_then(|v| v.as_str())
+        })
         .unwrap_or("")
         .to_string();
-    let expires_at = token_data.get("expires_at").and_then(|v| v.as_i64());
+    let expires_at = token_data
+        .get("expires_at")
+        .and_then(|v| v.as_i64())
+        .or_else(|| {
+            token_data
+                .get("token")
+                .and_then(|t| t.get("expires_at"))
+                .and_then(|v| v.as_i64())
+        })
+        .or_else(|| {
+            let expires_in = token_data
+                .get("expires_in")
+                .and_then(|v| v.as_i64())
+                .or_else(|| {
+                    token_data
+                        .get("token")
+                        .and_then(|t| t.get("expires_in"))
+                        .and_then(|v| v.as_i64())
+                });
+            expires_in.map(|seconds| now_ms() + (seconds * 1000))
+        });
     let mut merged_metadata = get_linked_account(provider, account_id)
         .await?
         .map(|row| parse_metadata_object(&row))
@@ -1010,9 +1125,9 @@ async fn merge_legacy_browser_account(
 #[cfg(test)]
 mod tests {
     use super::{
-        callback_retry_backoff_ms, canonical_account_id, generate_browser_account_id,
-        normalize_openai_metadata_map, normalize_provider, parse_metadata_object, provider_matches,
-        resolved_email,
+        account_matches_provider, callback_retry_backoff_ms, canonical_account_id,
+        generate_browser_account_id, normalize_openai_metadata_map, normalize_provider,
+        parse_metadata_object, provider_matches, resolved_email,
     };
     use serde_json::{json, Value};
 
@@ -1038,6 +1153,23 @@ mod tests {
         assert!(!provider_matches("claude", "codex"));
         // openai and codex are now separate
         assert!(!provider_matches("openai", "codex"));
+    }
+
+    #[test]
+    fn routes_openai_api_key_accounts_without_mixing_codex_oauth() {
+        let openai_key_row = json!({
+            "provider": "codex",
+            "metadata": { "type": "api_key", "provider_hint": "openai" }
+        });
+        let codex_oauth_row = json!({
+            "provider": "codex",
+            "metadata": { "type": "oauth" }
+        });
+
+        assert!(account_matches_provider(&openai_key_row, "openai"));
+        assert!(!account_matches_provider(&openai_key_row, "codex"));
+        assert!(account_matches_provider(&codex_oauth_row, "codex"));
+        assert!(!account_matches_provider(&codex_oauth_row, "openai"));
     }
 
     #[test]

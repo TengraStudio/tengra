@@ -86,7 +86,7 @@ const ContainerItem: React.FC<{
                             onAction('stop', container.id);
                         }}
                         className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
-                        title={t('docker.stop')}
+                        title={t('frontend.docker.stop')}
                     >
                         <IconSquare size={14} />
                     </button>
@@ -97,7 +97,7 @@ const ContainerItem: React.FC<{
                             onAction('start', container.id);
                         }}
                         className="p-1.5 rounded hover:bg-success/20 text-muted-foreground hover:text-success"
-                        title={t('docker.start')}
+                        title={t('frontend.docker.start')}
                     >
                         <IconPlayerPlay size={14} />
                     </button>
@@ -108,7 +108,7 @@ const ContainerItem: React.FC<{
                         onAction('rm', container.id);
                     }}
                     className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
-                    title={t('docker.remove')}
+                    title={t('frontend.docker.remove')}
                 >
                     <IconTrash size={14} />
                 </button>
@@ -122,7 +122,7 @@ const ContainerItem: React.FC<{
                             );
                         }}
                         className="p-1.5 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary"
-                        title={t('docker.shell')}
+                        title={t('frontend.docker.shell')}
                     >
                         <IconTerminal size={14} />
                     </button>
@@ -168,7 +168,7 @@ export function DockerDashboard({
                 process.cwd()
             );
             if (res.stderr && !res.stdout) {
-                setError(t('docker.notRunning'));
+                setError(t('frontend.docker.notRunning'));
                 return;
             }
             const parsed = res.stdout
@@ -195,7 +195,7 @@ export function DockerDashboard({
                 });
             setContainers(parsed);
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('docker.failedLoad'));
+            setError(err instanceof Error ? err.message : t('frontend.docker.failedLoad'));
         } finally {
             setIsLoading(false);
         }
@@ -209,10 +209,10 @@ export function DockerDashboard({
                     ['logs', '--tail', '100', id],
                     process.cwd()
                 );
-                setLogs(res.stdout || res.stderr || t('docker.noLogs'));
+                setLogs(res.stdout || res.stderr || t('frontend.docker.noLogs'));
             } catch (e) {
                 const message = e instanceof Error ? e.message : String(e);
-                setLogs(t('docker.logsError', { message }));
+                setLogs(t('frontend.docker.logsError', { message }));
             }
         },
         [t]
@@ -256,9 +256,9 @@ export function DockerDashboard({
                         <IconBox size={20} className="text-primary" />
                     </div>
                     <div>
-                        <h2 className="font-semibold text-foreground">{t('docker.title')}</h2>
+                        <h2 className="font-semibold text-foreground">{t('frontend.docker.title')}</h2>
                         <p className="typo-caption text-muted-foreground">
-                            {containers.length} {t('docker.containers')}
+                            {containers.length} {t('frontend.docker.containers')}
                         </p>
                     </div>
                 </div>
@@ -281,7 +281,7 @@ export function DockerDashboard({
                 <div className="w-1/2 border-r border-border/50 overflow-y-auto p-4 space-y-2">
                     {containers.length === 0 && !isLoading && (
                         <div className="text-center text-muted-foreground text-sm py-8">
-                            {t('docker.noContainers')}
+                            {t('frontend.docker.noContainers')}
                         </div>
                     )}
                     {containers.map(c => (
@@ -299,12 +299,12 @@ export function DockerDashboard({
                 <div className="w-1/2 flex flex-col overflow-hidden">
                     <div className="p-3 border-b border-border/50 flex items-center gap-2">
                         <IconTerminal size={14} className="text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{t('docker.logs')}</span>
+                        <span className="text-sm text-muted-foreground">{t('frontend.docker.logs')}</span>
                     </div>
                     <pre className="flex-1 p-4 typo-caption font-mono text-muted-foreground overflow-y-auto whitespace-pre-wrap">
                         {selectedContainer
-                            ? logs || t('docker.loading')
-                            : t('docker.selectContainer')}
+                            ? logs || t('frontend.docker.loading')
+                            : t('frontend.docker.selectContainer')}
                     </pre>
                 </div>
             </div>

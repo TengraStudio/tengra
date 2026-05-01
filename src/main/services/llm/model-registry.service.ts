@@ -29,7 +29,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { JsonValue } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import { SystemEventKey } from '@shared/types/events';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -108,8 +108,13 @@ export interface ModelRegistryDependencies {
 export class ModelRegistryService extends BaseService {
     private static readonly OPENCODE_MODELS_URL = 'https://opencode.ai/zen/v1/models';
     private static readonly OPENCODE_DEFAULT_API_KEY = 'public';
-    private static readonly OPENCODE_REQUEST_TIMEOUT_MS = 8000;
+    private static readonly OPENCODE_REQUEST_TIMEOUT_MS = 2500;
     private static readonly OPENCODE_FREE_PRICE = 0;
+    private static readonly SUPPORTED_CODEX_MODEL_IDS: ReadonlySet<string> = new Set([
+        'gpt-5.5',
+        'gpt-5.4',
+        'gpt-5.3-codex',
+    ]);
     private static readonly OPENCODE_PRICING_RULES: ReadonlyArray<{
         match: RegExp;
         input: number;
@@ -183,11 +188,12 @@ export class ModelRegistryService extends BaseService {
     private static readonly NVIDIA_RECOVERY_DELAY_MS = 1500;
     private static readonly COPILOT_RECOVERY_ATTEMPTS = 4;
     private static readonly COPILOT_RECOVERY_DELAY_MS = 3000;
-    private static readonly INITIAL_CACHE_WARMUP_DELAY_MS = 500;
+    private static readonly INITIAL_CACHE_WARMUP_DELAY_MS = 3000;
     private cachedModels: ModelProviderInfo[] = [];
     private lastUpdate: number = 0;
     private cacheRefreshPromise: Promise<void> | null = null;
     private initialWarmupTimeout: ReturnType<typeof setTimeout> | null = null;
+    private listenersRegistered = false;
     private telemetry = {
         cacheUpdates: 0,
         providerFetchFailures: 0,
@@ -214,6 +220,14 @@ export class ModelRegistryService extends BaseService {
     }
 
     override async initialize(): Promise<void> {
+        if (this.listenersRegistered) {
+            if (this.cachedModels.length === 0) {
+                this.scheduleInitialCacheWarmup();
+            }
+            return;
+        }
+        this.listenersRegistered = true;
+
         // Listen for account changes to refresh models
         this.deps.eventBus.on('account:linked', () => {
             appLogger.debug('ModelRegistry', 'Account linked, refreshing model cache...');
@@ -258,6 +272,7 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async updateCache(): Promise<void> {
+        this.cancelInitialCacheWarmup();
         if (this.cacheRefreshPromise) {
             return this.cacheRefreshPromise;
         }
@@ -265,6 +280,14 @@ export class ModelRegistryService extends BaseService {
             this.cacheRefreshPromise = null;
         });
         return this.cacheRefreshPromise;
+    }
+
+    private cancelInitialCacheWarmup(): void {
+        if (!this.initialWarmupTimeout) {
+            return;
+        }
+        clearTimeout(this.initialWarmupTimeout);
+        this.initialWarmupTimeout = null;
     }
 
     private async performCacheUpdate(): Promise<void> {
@@ -505,6 +528,48 @@ export class ModelRegistryService extends BaseService {
         return undefined;
     }
 
+    private async hasApiKeyCredentialForProvider(providerHint: string): Promise<boolean> {
+        const accounts = await this.deps.authService.getAccountsByProviderFull(providerHint);
+        return accounts.some(account => {
+            const metadata = account.metadata as JsonObject | undefined;
+            const kind = this.metadataString(metadata, 'auth_type', 'authType', 'type');
+            if (kind !== 'api_key') {
+                return false;
+            }
+            const hint = this.metadataString(metadata, 'provider_hint', 'providerHint', 'provider');
+            if (hint === providerHint) {
+                return true;
+            }
+            const token = account.accessToken ?? account.sessionToken ?? account.refreshToken ?? '';
+            return !hint && providerHint === 'openai' && token.trim().startsWith('sk-');
+        });
+    }
+
+    private async hasCodexOAuthCredential(): Promise<boolean> {
+        const accounts = await this.deps.authService.getAccountsByProviderFull('codex');
+        return accounts.some(account => {
+            const metadata = account.metadata as JsonObject | undefined;
+            const kind = this.metadataString(metadata, 'auth_type', 'authType', 'type');
+            if (kind === 'api_key') {
+                return false;
+            }
+            return Boolean(account.accessToken ?? account.sessionToken ?? account.refreshToken);
+        });
+    }
+
+    private metadataString(metadata: JsonObject | undefined, ...keys: string[]): string | undefined {
+        if (!metadata) {
+            return undefined;
+        }
+        for (const key of keys) {
+            const value = metadata[key];
+            if (typeof value === 'string' && value.trim().length > 0) {
+                return value.trim().toLowerCase();
+            }
+        }
+        return undefined;
+    }
+
     private async resolveProviderToken(provider: ModelProviderId): Promise<string | undefined> {
         const tokenFromAccounts = await this.resolveTokenFromAliases(this.getTokenProviderAliases(provider));
         if (tokenFromAccounts) {
@@ -737,9 +802,13 @@ export class ModelRegistryService extends BaseService {
         const positiveSignals = [
             /dall[-\s]?e/i,
             /nano\s*banana/i,
+            /\$?imagegen\b/i,
+            /\bimage_gen\b/i,
             /\bflux\b/i,
+            /\bgpt-image\b/i,
             /stable[\s-]?diffusion|sdxl/i,
             /gemini[\s-]*3[\s-]*pro[\s-]*image/i,
+            /\bflash[-\s]*image\b/i,
             /\bimage\s*generation\b/i,
         ];
         const negativeSignals = [
@@ -805,10 +874,19 @@ export class ModelRegistryService extends BaseService {
 
     private getFastFallbackModels(): ModelProviderInfo[] {
         const fallback: ModelProviderInfo[] = [
+            { id: 'gpt-5.5', name: 'GPT 5.5', provider: 'codex', sourceProvider: 'codex' },
             { id: 'gpt-5.4', name: 'GPT 5.4', provider: 'codex', sourceProvider: 'codex' },
-            { id: 'gpt-5.4-mini', name: 'GPT 5.4 Mini', provider: 'codex', sourceProvider: 'codex' },
+            { id: 'gpt-5.4-mini', name: 'GPT 5.4 Mini', provider: 'copilot', sourceProvider: 'copilot' },
+            { id: 'gpt-5.3-codex', name: 'GPT 5.3 Codex', provider: 'codex', sourceProvider: 'codex' },
             { id: 'claude-sonnet-4.6', name: 'Claude Sonnet 4.6', provider: 'claude', sourceProvider: 'claude' },
             { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', sourceProvider: 'openai' },
+            {
+                id: 'openai/gpt-image-1',
+                name: 'GPT Image 1',
+                provider: 'openai',
+                sourceProvider: 'openai',
+                capabilities: { image_generation: true, text_generation: false },
+            },
             { id: 'gemini-3.1-flash', name: 'Gemini 3.1 Flash', provider: 'antigravity', sourceProvider: 'antigravity' },
             { id: 'copilot-chat', name: 'Copilot Chat', provider: 'copilot', sourceProvider: 'copilot' },
         ];
@@ -823,14 +901,20 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async fetchRemoteModels(): Promise<ModelProviderInfo[]> {
-        const proxyCatalog = await this.fetchProxyCatalog();
+        const [proxyCatalog, openCodeModels] = await Promise.all([
+            this.fetchProxyCatalog(),
+            this.fetchOpenCodeModels(),
+        ]);
         const all = [...proxyCatalog.mappedModels];
-        const openCodeModels = await this.fetchOpenCodeModels();
         all.push(...openCodeModels);
 
-        const openaiToken = await this.resolveProviderToken('openai');
-        if (openaiToken) {
+        const hasOpenAIKey = await this.hasApiKeyCredentialForProvider('openai');
+        if (hasOpenAIKey) {
             all.push(...this.getOpenAIImageModels());
+        }
+        const hasCodexOAuth = await this.hasCodexOAuthCredential();
+        if (hasCodexOAuth) {
+            all.push(...this.getCodexImageModels());
         }
         const mergedWithProxy = this.mergeProxyRegisteredModels(all, proxyCatalog.rawModels);
 
@@ -840,7 +924,8 @@ export class ModelRegistryService extends BaseService {
             unique.set(key, m);
         });
 
-        const allModels = Array.from(unique.values()).map(model => this.enrichModelMetadata(model));
+        const allModels = this.filterSupportedCodexModels(Array.from(unique.values()))
+            .map(model => this.enrichModelMetadata(model));
         const missingContext = allModels.filter(
             model => (model.capabilities?.text_generation ?? true) && !model.contextWindow
         );
@@ -1032,6 +1117,13 @@ export class ModelRegistryService extends BaseService {
     private getOpenAIImageModels(): ModelProviderInfo[] {
         return [
             {
+                id: 'openai/gpt-image-1',
+                name: 'GPT Image 1',
+                provider: 'openai',
+                description: 'OpenAI image generation model.',
+                capabilities: { image_generation: true, text_generation: false },
+            },
+            {
                 id: 'openai/dall-e-3',
                 name: 'DALL-E 3',
                 provider: 'openai',
@@ -1052,6 +1144,17 @@ export class ModelRegistryService extends BaseService {
                 capabilities: { image_generation: true },
             },
         ];
+    }
+
+    private getCodexImageModels(): ModelProviderInfo[] {
+        return [];
+    }
+
+    private filterSupportedCodexModels(models: ModelProviderInfo[]): ModelProviderInfo[] {
+        return models.filter(model =>
+            model.provider !== 'codex'
+            || ModelRegistryService.SUPPORTED_CODEX_MODEL_IDS.has(model.id)
+        );
     }
 
     private mergeProxyRegisteredModels(

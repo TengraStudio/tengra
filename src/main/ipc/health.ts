@@ -1,36 +1,66 @@
-/**
- * Tengra - Your Personal AI Assistant
- * Copyright (c) 2026 TengraStudio
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
-
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import type { HealthCheckService } from '@main/services/system/health-check.service';
+import { ipcMain } from 'electron';
 
 /**
  * Registers IPC handlers for health check endpoints
  */
-export function registerHealthIpc(_healthCheckService: HealthCheckService) {
+export function registerHealthIpc(healthCheckService: HealthCheckService) {
     /**
      * Get overall health status of all registered services
      */
+    ipcMain.handle('health:status', async () => {
+        try {
+            return healthCheckService.getStatus();
+        } catch (error) {
+            return {
+                overall: 'unhealthy',
+                services: [],
+                timestamp: new Date(),
+                error: error instanceof Error ? error.message : String(error)
+            };
+        }
+    });
 
     /**
      * Check a specific service immediately
      */
+    ipcMain.handle('health:check', async (_event, serviceName: string) => {
+        const name = typeof serviceName === 'string' ? serviceName.trim() : null;
+        if (!name) {
+            return null;
+        }
+        return healthCheckService.checkNow(name);
+    });
 
     /**
      * Get health status for a specific service
      */
+    ipcMain.handle('health:getService', async (_event, serviceName: string) => {
+        if (!serviceName || typeof serviceName !== 'string') {
+            return null;
+        }
+        const status = healthCheckService.getStatus();
+        const trimmed = serviceName.trim();
+        return status.services.find(s => s.name === trimmed) ?? null;
+    });
 
     /**
      * List all registered service names
      */
+    ipcMain.handle('health:listServices', async () => {
+        try {
+            const status = healthCheckService.getStatus();
+            return status.services.map(s => s.name);
+        } catch {
+            return [];
+        }
+    });
 
     /**
      * Get runtime memory-context lookup metrics
      */
+    ipcMain.handle('health:memoryContext', async () => {
+        return MemoryContextService.getStats();
+    });
 }

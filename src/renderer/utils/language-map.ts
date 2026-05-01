@@ -25,7 +25,7 @@ export const MONACO_BUILTIN_LANGUAGES = new Set([
     'pug', 'python', 'qsharp', 'r', 'razor', 'redis', 'redshift', 'restructuredtext',
     'ruby', 'rust', 'sb', 'scala', 'scheme', 'scss', 'shell', 'sol', 'sparql',
     'sql', 'st', 'swift', 'systemverilog', 'tcl', 'twig', 'typescript', 'vb',
-    'wgsl', 'xml', 'yaml'
+    'wgsl', 'xml', 'yaml', 'haskell'
 ]);
 
 // Extension to Monaco language ID mapping
@@ -134,8 +134,8 @@ export const EXTENSION_TO_LANGUAGE: Record<string, string> = {
     // Functional
     'ex': 'elixir',
     'exs': 'elixir',
-    'hs': 'plaintext', // Haskell - Monaco doesn't support natively
-    'lhs': 'plaintext',
+    'hs': 'haskell',
+    'lhs': 'haskell',
     'ml': 'fsharp', // OCaml - use F# as fallback
     'mli': 'fsharp',
     'elm': 'plaintext', // Elm - no native support
@@ -207,9 +207,12 @@ export const EXTENSION_TO_LANGUAGE: Record<string, string> = {
     'dockerignore': 'plaintext',
     'prettierrc': 'json',
     'eslintrc': 'json',
-    'babelrc': 'json',
     'npmrc': 'ini',
     'yarnrc': 'yaml',
+    'jsonld': 'json',
+    'webmanifest': 'json',
+    'map': 'json',
+    'babelrc': 'json',
 };
 
 // Map from short language aliases to Monaco language IDs

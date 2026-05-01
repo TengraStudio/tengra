@@ -268,7 +268,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                             onClick={() => setShowCollaborationPanel(previous => !previous)}
                             className="w-full justify-between"
                         >
-                            <span>{t('chat.collaboration.title')}</span>
+                            <span>{t('frontend.chat.collaboration.title')}</span>
                             <span className="typo-caption text-muted-foreground">
                                 {showCollaborationPanel ? t('common.hide') : t('common.show')}
                             </span>

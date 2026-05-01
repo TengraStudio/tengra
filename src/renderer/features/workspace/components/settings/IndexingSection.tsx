@@ -25,10 +25,10 @@ export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setF
             <div className="flex flex-col gap-1.5">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                     <IconDatabase className="w-6 h-6 text-primary" />
-                    {t('workspaces.indexingTitle')}
+                    {t('frontend.workspaces.indexingTitle')}
                 </h2>
                 <p className="text-muted-foreground">
-                    {t('workspaces.indexingDesc')}
+                    {t('frontend.workspaces.indexingDesc')}
                 </p>
             </div>
 
@@ -36,16 +36,16 @@ export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setF
                 <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                     <div className="flex items-center gap-2">
                         <IconFileSearch className="w-4 h-4 text-primary" />
-                        <CardTitle className="text-base font-semibold">{t('workspaces.indexingControl')}</CardTitle>
+                        <CardTitle className="text-base font-semibold">{t('frontend.workspaces.indexingControl')}</CardTitle>
                     </div>
-                    <CardDescription>{t('workspaces.indexingControlDesc')}</CardDescription>
+                    <CardDescription>{t('frontend.workspaces.indexingControlDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
                     <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
                         <div className="space-y-1">
-                            <Label className="text-sm font-semibold">{t('workspaces.semanticIndexing')}</Label>
+                            <Label className="text-sm font-semibold">{t('frontend.workspaces.semanticIndexing')}</Label>
                             <p className="text-sm text-muted-foreground">
-                                {t('workspaces.semanticIndexingDesc')}
+                                {t('frontend.workspaces.semanticIndexingDesc')}
                             </p>
                         </div>
                         <Switch 
@@ -55,7 +55,7 @@ export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setF
                     </div>
 
                     <div className="space-y-2">
-                        <Label>{t('workspaces.maxFileSize')}</Label>
+                        <Label>{t('frontend.workspaces.maxFileSize')}</Label>
                         <Input 
                             type="number"
                             className="bg-background/50 font-mono"
@@ -63,7 +63,7 @@ export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setF
                             onChange={(e) => setFormData(prev => ({ ...prev, indexingMaxFileSize: parseInt(e.target.value) || 0 }))}
                         />
                         <p className="text-sm text-muted-foreground">
-                            {t('workspaces.maxFileSizeDesc')}
+                            {t('frontend.workspaces.maxFileSizeDesc')}
                         </p>
                     </div>
                 </CardContent>
@@ -73,9 +73,9 @@ export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setF
                 <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                     <div className="flex items-center gap-2">
                         <IconEyeOff className="w-4 h-4 text-primary" />
-                        <CardTitle className="text-base font-semibold">{t('workspaces.exclusionPatterns')}</CardTitle>
+                        <CardTitle className="text-base font-semibold">{t('frontend.workspaces.exclusionPatterns')}</CardTitle>
                     </div>
-                    <CardDescription>{t('workspaces.exclusionPatternsDesc')}</CardDescription>
+                    <CardDescription>{t('frontend.workspaces.exclusionPatternsDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6">
                     <Textarea 
@@ -85,7 +85,7 @@ export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setF
                         onChange={(e) => setFormData(prev => ({ ...prev, indexingExclude: e.target.value }))}
                     />
                     <p className="text-sm text-muted-foreground mt-2">
-                        {t('workspaces.globPatternsHint')}
+                        {t('frontend.workspaces.globPatternsHint')}
                     </p>
                 </CardContent>
             </Card>

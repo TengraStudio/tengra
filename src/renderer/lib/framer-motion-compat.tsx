@@ -42,13 +42,15 @@ export interface AnimatePresenceProps {
 const createMotionComponent = (tag: string) => {
     const MotionComponent = React.forwardRef<HTMLElement, MotionProps>(({ initial: _initial, animate: _animate, exit: _exit, transition: _transition, whileHover: _whileHover, whileTap: _whileTap, layout: _layout, variants: _variants, custom: _custom, children, style, className, ...restProps }, ref) => {
 
+        const transition = style?.transition ?? 'opacity 120ms ease-out, transform 120ms ease-out';
+
         return React.createElement(
             tag,
             {
                 ref,
                 style: {
                     ...style,
-                    transition: 'all 0.2s ease-in-out'
+                    transition
                 },
                 className,
                 ...restProps

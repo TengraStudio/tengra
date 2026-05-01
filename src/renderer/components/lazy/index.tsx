@@ -43,7 +43,7 @@ export const CodeEditorSkeleton: React.FC = React.memo(() => {
         <div
             className="h-full w-full bg-card rounded-lg overflow-hidden"
             role="status"
-            aria-label={t('loading.codeEditor')}
+            aria-label={t('frontend.loading.codeEditor')}
         >
             <div className="h-8 bg-muted border-b border-border flex items-center px-4">
                 <div className="w-24 h-3 bg-muted rounded animate-pulse" aria-hidden="true" />
@@ -70,7 +70,7 @@ export const ChartSkeleton: React.FC = React.memo(() => {
         <div
             className="h-full w-full bg-card rounded-lg p-4"
             role="status"
-            aria-label={t('loading.chart')}
+            aria-label={t('frontend.loading.chart')}
         >
             <div className="flex items-end justify-between h-full gap-2">
                 {Array.from({ length: 7 }).map((_, i) => (

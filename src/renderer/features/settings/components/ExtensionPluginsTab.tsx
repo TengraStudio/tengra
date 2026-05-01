@@ -146,7 +146,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
             })
             .catch(error => {
                 appLogger.error('ExtensionPluginsTab', `Failed to load extension config for ${selectedExtensionId}`, error as Error);
-                pushNotification({ type: 'error', message: t('settings.extensions.plugins.configLoadError') });
+                pushNotification({ type: 'error', message: t('frontend.settings.extensions.plugins.configLoadError') });
             })
             .finally(() => {
                 if (active) {
@@ -173,11 +173,11 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
         setIsUninstalling(extensionId);
         try {
             await uninstallExtension(extensionId);
-            pushNotification({ type: 'success', message: t('settings.extensions.plugins.uninstallSuccess') || 'Extension uninstalled successfully' });
+            pushNotification({ type: 'success', message: t('frontend.settings.extensions.plugins.uninstallSuccess') });
             setSelectedExtensionId(null);
         } catch (err) {
             appLogger.error('ExtensionPluginsTab', `Failed to uninstall extension ${extensionId}`, err as Error);
-            pushNotification({ type: 'error', message: t('settings.extensions.plugins.uninstallError') || 'Failed to uninstall extension' });
+            pushNotification({ type: 'error', message: t('frontend.settings.extensions.plugins.uninstallError') });
         } finally {
             setIsUninstalling(null);
         }
@@ -214,10 +214,10 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                 ...prev,
                 [selectedExtensionId]: result.config ?? patch,
             }));
-            pushNotification({ type: 'success', message: t('settings.extensions.plugins.configSaved') });
+            pushNotification({ type: 'success', message: t('frontend.settings.extensions.plugins.configSaved') });
         } catch (error) {
             appLogger.error('ExtensionPluginsTab', `Failed to save extension config for ${selectedExtensionId}`, error as Error);
-            pushNotification({ type: 'error', message: t('settings.extensions.plugins.configSaveError') });
+            pushNotification({ type: 'error', message: t('frontend.settings.extensions.plugins.configSaveError') });
         } finally {
             setSavingConfig(false);
         }
@@ -241,7 +241,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                 version: mItem.version,
             });
             if (result.success) {
-                pushNotification({ type: 'success', message: t('settings.extensions.plugins.updateSuccess') });
+                pushNotification({ type: 'success', message: t('frontend.settings.extensions.plugins.updateSuccess') });
                 await Promise.all([
                     fetchExtensions(),
                     marketplaceStore.checkLiveUpdates()
@@ -251,7 +251,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
             }
         } catch (error) {
             appLogger.error('ExtensionPluginsTab', `Failed to update extension ${extensionId}`, error as Error);
-            pushNotification({ type: 'error', message: t('settings.extensions.plugins.updateError') });
+            pushNotification({ type: 'error', message: t('frontend.settings.extensions.plugins.updateError') });
         } finally {
             setIsUpdating(null);
         }
@@ -265,7 +265,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
             <section className="flex flex-col rounded-2xl border border-border/40 bg-card/30 overflow-hidden shadow-sm">
                 <div className="p-4 border-b border-border/20 bg-muted/20 flex items-center justify-between">
                     <h3 className="text-sm font-bold uppercase text-muted-foreground/70">
-                        {t('settings.extensions.plugins.title')}
+                        {t('frontend.settings.extensions.plugins.title')}
                     </h3>
                     <Badge variant="secondary" className="font-mono">{extensions.length}</Badge>
                 </div>
@@ -287,7 +287,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                         <div className="flex flex-col items-center justify-center py-16 space-y-4 opacity-40 grayscale">
                             <IconPackage className="w-12 h-12" />
                             <p className="text-sm font-bold text-muted-foreground text-center px-8">
-                                {t('settings.extensions.plugins.empty')}
+                                {t('frontend.settings.extensions.plugins.empty')}
                             </p>
                         </div>
                     ) : (
@@ -369,7 +369,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                              <IconSettings2 className="w-10 h-10 text-muted-foreground/30" />
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-base font-bold text-muted-foreground/50">{t('settings.extensions.plugins.select')}</h3>
+                            <h3 className="text-base font-bold text-muted-foreground/50">{t('frontend.settings.extensions.plugins.select')}</h3>
                             <p className="text-sm text-muted-foreground/30 max-w-280">Select an extension from the list to manage its configuration and lifecycle.</p>
                         </div>
                     </div>
@@ -445,7 +445,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                             variant="outline"
                                             size="icon"
                                             className={C_EXTENSIONPLUGINSTAB_4}
-                                            title={t('marketplace.uninstall')}
+                                            title={t('frontend.marketplace.uninstall')}
                                             onClick={() => {
                                                 setIsUninstallConfirmOpen(true);
                                             }}
@@ -471,7 +471,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                             <IconSettings2 className="w-4 h-4" />
                                         </div>
                                         <h4 className="text-sm font-bold uppercase text-foreground/80">
-                                            {t('settings.extensions.plugins.configTitle')}
+                                            {t('frontend.settings.extensions.plugins.configTitle')}
                                         </h4>
                                     </div>
                                     <Button
@@ -497,7 +497,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                         <div className="p-3 rounded-full bg-muted/20">
                                             <IconInfoCircle className="w-6 h-6 text-muted-foreground/30" />
                                         </div>
-                                        <p className="text-sm font-bold text-muted-foreground/60">{t('settings.extensions.plugins.noConfig')}</p>
+                                        <p className="text-sm font-bold text-muted-foreground/60">{t('frontend.settings.extensions.plugins.noConfig')}</p>
                                     </div>
                                 ) : (
                                     <div className="grid gap-4">
@@ -567,7 +567,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                                                 <div className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-warning">
                                                                     <IconAlertTriangle className="h-4 w-4 shrink-0" />
                                                                     <p className="text-sm font-bold uppercase ">
-                                                                        {t('settings.extensions.plugins.complexConfigHint')}
+                                                                        {t('frontend.settings.extensions.plugins.complexConfigHint')}
                                                                     </p>
                                                                 </div>
                                                             )}

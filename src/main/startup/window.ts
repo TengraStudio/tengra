@@ -51,6 +51,7 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
         icon: nativeImage.createFromPath(iconPath),
         webPreferences: {
             preload: path.join(__dirname, '../preload/preload.js'),
+            backgroundThrottling: true,
             sandbox: true,
             contextIsolation: true,
             nodeIntegration: false,
@@ -132,11 +133,15 @@ function getWindowInitialSettings(settingsService?: SettingsService): {
  * Handles the 'ready-to-show' event and initial visibility logic.
  */
 function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsService) {
-    win.on('ready-to-show', () => {
+    let revealed = false;
+    const revealWindow = () => {
+        if (revealed || win.isDestroyed()) {
+            return;
+        }
+
         const settings = settingsService?.getSettings();
         const shouldStartFullscreen = settings?.window?.fullscreen === true;
         const shouldStartMaximized = settings?.window?.maximized === true;
-        
         const isHidden =
             process.argv.includes('--hidden') ||
             process.argv.includes('/hidden') ||
@@ -144,6 +149,7 @@ function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsSer
                 app.getLoginItemSettings().wasOpenedAtLogin);
 
         if (!isHidden) {
+            revealed = true;
             win.show();
             if (shouldStartFullscreen && !win.isFullScreen()) {
                 win.setFullScreen(true);
@@ -165,6 +171,16 @@ function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsSer
             }
         }
         win.setTitle('TENGRA');
+    };
+
+    win.on('ready-to-show', () => {
+        revealWindow();
+    });
+
+    win.webContents.once('did-finish-load', () => {
+        setTimeout(() => {
+            revealWindow();
+        }, 75);
     });
 }
 
@@ -314,6 +330,18 @@ function setupWindowStatePersistence(
 export function setupTray(settingsService?: SettingsService) {
     if (tray) {return;}
 
+    const createWindowIfIpcReady = async () => {
+        if (!settingsService) {
+            return;
+        }
+        const { isIpcRegistered } = await import('../app');
+        if (isIpcRegistered()) {
+            mainWindow = createWindow(settingsService);
+        } else {
+            appLogger.info('Tray', 'Window creation deferred: IPC not registered');
+        }
+    };
+
     try {
         const iconPath = app.isPackaged
             ? path.join(process.resourcesPath, 'icon.ico')
@@ -330,7 +358,7 @@ export function setupTray(settingsService?: SettingsService) {
                         mainWindow.show();
                         mainWindow.focus();
                     } else if (settingsService) {
-                        mainWindow = createWindow(settingsService);
+                        void createWindowIfIpcReady();
                     }
                 },
             },
@@ -354,7 +382,7 @@ export function setupTray(settingsService?: SettingsService) {
                     mainWindow.focus();
                 }
             } else if (settingsService) {
-                mainWindow = createWindow(settingsService);
+                void createWindowIfIpcReady();
             }
         });
     } catch (error) {

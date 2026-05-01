@@ -150,17 +150,18 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
             appLogger.warn('ModelFetcher', 'model-registry:get-all failed', { error: e });
         }
 
-        // 2. Secondary/Legacy fallback: Fetching through proxy service directly
-        // This ensures we don't miss anything if the registry is still warming up.
-        try {
-            const proxyResponse = (await window.electron.getProxyModels()) as unknown as Record<string, unknown> | unknown[];
-            if (proxyResponse && !Array.isArray(proxyResponse) && Array.isArray(proxyResponse.data)) {
-                addModels(proxyResponse.data as unknown[], 'proxy-data');
-            } else if (Array.isArray(proxyResponse)) {
-                addModels(proxyResponse, 'proxy-root');
+        // 2. Secondary/Legacy fallback: only hit proxy directly when the registry returned nothing.
+        if (aggregatedModelsMap.size === 0) {
+            try {
+                const proxyResponse = (await window.electron.getProxyModels()) as unknown as Record<string, unknown> | unknown[];
+                if (proxyResponse && !Array.isArray(proxyResponse) && Array.isArray(proxyResponse.data)) {
+                    addModels(proxyResponse.data as unknown[], 'proxy-data');
+                } else if (Array.isArray(proxyResponse)) {
+                    addModels(proxyResponse, 'proxy-root');
+                }
+            } catch (_e) {
+                // Error ignored as this is a fallback source
             }
-        } catch (_e) {
-            // Error ignored as this is a fallback source
         }
     } catch (error) {
         appLogger.error('ModelFetcher', 'Aggregation failed', error as Error);

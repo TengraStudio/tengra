@@ -20,6 +20,16 @@ let isQuitting = false;
 export function registerLifecycleHandlers(settingsService: SettingsService) {
     app.on('activate', () => {
         if (isQuitting) { return; }
+        
+        // --- RACE CONDITION GUARD ---
+        // Ensure we don't create the window if IPC handlers aren't ready yet.
+        // The main boot flow in app.ts will handle window creation once ready.
+        const { isIpcRegistered } = require('../app');
+        if (!isIpcRegistered()) {
+            appLogger.info('Lifecycle', 'App activate event deferred: IPC handlers not registered yet');
+            return;
+        }
+
         appLogger.debug('Lifecycle', 'App activate event');
         const mainWindow = getMainWindow();
         if (BrowserWindow.getAllWindows().length === 0) {

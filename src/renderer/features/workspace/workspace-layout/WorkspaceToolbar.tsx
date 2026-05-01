@@ -127,7 +127,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                             ? 'text-muted-foreground hover:text-foreground'
                             : 'text-foreground bg-muted/60'
                     )}
-                    title={t('workspace.toggleSidebar')}
+                    title={t('frontend.workspace.toggleSidebar')}
                 >
                     {sidebarCollapsed ? (
                         <IconLayoutSidebarLeftExpand className="w-3.5 h-3.5" />
@@ -154,7 +154,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                             ? 'text-foreground bg-muted/60'
                             : 'text-muted-foreground hover:text-foreground'
                     )}
-                    title={t('workspace.toggleAgentPanel')}
+                    title={t('frontend.workspace.toggleAgentPanel')}
                 >
                     {showAgentPanel ? (
                         <IconLayoutSidebarRightCollapse className="w-3.5 h-3.5" />

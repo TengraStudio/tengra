@@ -35,7 +35,7 @@ export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
             </div>
             <div>
                 <div className="font-bold text-sm">
-                    {t('messageBubble.quotaExceeded')}
+                    {t('frontend.messageBubble.quotaExceeded')}
                 </div>
                 {details.model && (
                     <div className="typo-caption opacity-70 mt-0.5">{details.model}</div>
@@ -47,7 +47,7 @@ export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/10 typo-caption font-medium">
                 <IconClock className="w-3.5 h-3.5" />
                 <span>
-                    {t('messageBubble.resetsAt')}{' '}
+                    {t('frontend.messageBubble.resetsAt')}{' '}
                     {new Date(details.resets_at * 1000).toLocaleString()}
                 </span>
             </div>

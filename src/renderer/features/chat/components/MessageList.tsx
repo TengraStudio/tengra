@@ -30,6 +30,7 @@ interface MessageListProps {
     onStopSpeak: () => void;
     speakingMessageId: string | null;
     onRegenerate?: (messageId: string) => void | Promise<void>;
+    onSourceClick?: (path: string) => void;
     // Callbacks for parent to manage scroll button state
     onAtBottomStateChange?: (atBottom: boolean) => void;
     // Expose ref for external scrolling control
@@ -238,6 +239,7 @@ export const MessageList = memo(({
     onStopSpeak,
     speakingMessageId,
     onRegenerate,
+    onSourceClick,
     onAtBottomStateChange,
     virtuosoRef
 }: MessageListProps) => {
@@ -389,6 +391,7 @@ export const MessageList = memo(({
                     onRate={handlers.onRate}
                     onRegenerate={handlers.onRegenerate}
                     onApprovePlan={() => { }}
+                    onSourceClick={onSourceClick}
                     streamingSpeed={isStreamingCurrent ? streamingSpeed : null}
                     streamingReasoning={isStreamingCurrent ? streamingReasoning : undefined}
                 />
@@ -407,6 +410,7 @@ export const MessageList = memo(({
         speakingMessageId,
         streamingSpeed,
         streamingReasoning,
+        onSourceClick,
     ]);
 
     // Determine if we should follow the output (stick to bottom)
@@ -426,7 +430,7 @@ export const MessageList = memo(({
             tabIndex={0}
             onKeyDown={handleKeyboardNavigation}
             role="listbox"
-            aria-label={t('aria.messageList')}
+            aria-label={t('frontend.aria.messageList')}
             aria-describedby="message-list-keyboard-help"
             aria-activedescendant={
                 effectiveFocusedIndex >= 0 && displayMessages[effectiveFocusedIndex]
@@ -435,12 +439,12 @@ export const MessageList = memo(({
             }
         >
             <p id="message-list-keyboard-help" className="sr-only">
-                {t('aria.messageListKeyboardHelp')}
+                {t('frontend.aria.messageListKeyboardHelp')}
             </p>
             <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-                {isLoading ? t('aria.messageListStreaming') : ''}
+                {isLoading ? t('frontend.aria.messageListStreaming') : ''}
                 {displayMessages.length > 0 && !isLoading
-                    ? t('aria.messageListCount', { count: displayMessages.length })
+                    ? t('frontend.aria.messageListCount', { count: displayMessages.length })
                     : ''}
             </div>
             <div aria-live="polite" aria-atomic="false" className="sr-only">

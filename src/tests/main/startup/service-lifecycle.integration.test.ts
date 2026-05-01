@@ -60,7 +60,7 @@ describe('startup service lifecycle integration', () => {
     });
 
     it('boots core data and resolves DataService from container', async () => {
-        const dataService = { migrate: vi.fn(async () => undefined), getPath: vi.fn(() => TEST_LOGS_PATH) };
+        const dataService = { initialize: vi.fn(async () => undefined), migrate: vi.fn(async () => undefined), getPath: vi.fn(() => TEST_LOGS_PATH) };
         const container = {
             register: vi.fn(),
             resolve: vi.fn(() => dataService),

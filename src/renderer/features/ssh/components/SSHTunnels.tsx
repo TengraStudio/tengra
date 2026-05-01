@@ -61,11 +61,11 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                 remoteHost,
                 remotePort: Number.parseInt(remotePort, 10)
             });
-            setStatus(result.success ? t('ssh.tunnelCreated') : (result.error ?? t('ssh.tunnelActionFailed')));
+            setStatus(result.success ? t('frontend.ssh.tunnelCreated') : (result.error ?? t('frontend.ssh.tunnelActionFailed')));
             await loadData();
         } catch (error) {
             appLogger.error('SSHTunnels', 'Tunnel create failed', error as Error);
-            setStatus(t('ssh.tunnelActionFailed'));
+            setStatus(t('frontend.ssh.tunnelActionFailed'));
         }
     }, [connectionId, loadData, localHost, localPort, remoteHost, remotePort, t, type]);
 
@@ -79,12 +79,12 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                 remoteHost,
                 remotePort: Number.parseInt(remotePort, 10)
             });
-            setStatus(t('ssh.presetSaved'));
+            setStatus(t('frontend.ssh.presetSaved'));
             setPresetName('');
             await loadData();
         } catch (error) {
             appLogger.error('SSHTunnels', 'Preset save failed', error as Error);
-            setStatus(t('ssh.tunnelActionFailed'));
+            setStatus(t('frontend.ssh.tunnelActionFailed'));
         }
     }, [loadData, localHost, localPort, presetName, remoteHost, remotePort, t, type]);
 
@@ -92,27 +92,27 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
         <div className="p-4 space-y-4 overflow-auto h-full">
             <div className="text-sm text-muted-foreground">{status}</div>
             <section className="border border-border rounded-lg p-3 space-y-2">
-                <h4 className="font-medium">{t('ssh.tunnelSetup')}</h4>
+                <h4 className="font-medium">{t('frontend.ssh.tunnelSetup')}</h4>
                 <div className="grid grid-cols-5 gap-2">
                     <select value={type} onChange={e => setType(e.target.value as 'local' | 'remote' | 'dynamic')} className="px-2 py-1 rounded bg-background border border-border">
-                        <option value="local">{t('ssh.tunnelLocal')}</option>
-                        <option value="remote">{t('ssh.tunnelRemote')}</option>
-                        <option value="dynamic">{t('ssh.tunnelDynamic')}</option>
+                        <option value="local">{t('frontend.ssh.tunnelLocal')}</option>
+                        <option value="remote">{t('frontend.ssh.tunnelRemote')}</option>
+                        <option value="dynamic">{t('frontend.ssh.tunnelDynamic')}</option>
                     </select>
-                    <input value={localHost} onChange={e => setLocalHost(e.target.value)} placeholder={t('ssh.localHost')} className="px-2 py-1 rounded bg-background border border-border" />
-                    <input value={localPort} onChange={e => setLocalPort(e.target.value)} placeholder={t('ssh.localPort')} className="px-2 py-1 rounded bg-background border border-border" />
-                    <input value={remoteHost} onChange={e => setRemoteHost(e.target.value)} placeholder={t('ssh.remoteHost')} className="px-2 py-1 rounded bg-background border border-border" disabled={type === 'dynamic'} />
-                    <input value={remotePort} onChange={e => setRemotePort(e.target.value)} placeholder={t('ssh.remotePort')} className="px-2 py-1 rounded bg-background border border-border" disabled={type === 'dynamic'} />
+                    <input value={localHost} onChange={e => setLocalHost(e.target.value)} placeholder={t('frontend.ssh.localHost')} className="px-2 py-1 rounded bg-background border border-border" />
+                    <input value={localPort} onChange={e => setLocalPort(e.target.value)} placeholder={t('frontend.ssh.localPort')} className="px-2 py-1 rounded bg-background border border-border" />
+                    <input value={remoteHost} onChange={e => setRemoteHost(e.target.value)} placeholder={t('frontend.ssh.remoteHost')} className="px-2 py-1 rounded bg-background border border-border" disabled={type === 'dynamic'} />
+                    <input value={remotePort} onChange={e => setRemotePort(e.target.value)} placeholder={t('frontend.ssh.remotePort')} className="px-2 py-1 rounded bg-background border border-border" disabled={type === 'dynamic'} />
                 </div>
                 <div className="flex gap-2">
-                    <button className="primary-btn" onClick={() => { void createTunnel(); }}>{t('ssh.createTunnel')}</button>
-                    <input value={presetName} onChange={e => setPresetName(e.target.value)} placeholder={t('ssh.presetName')} className="px-2 py-1 rounded bg-background border border-border flex-1" />
-                    <button className="secondary-btn" onClick={() => { void savePreset(); }} disabled={!presetName.trim()}>{t('ssh.savePreset')}</button>
+                    <button className="primary-btn" onClick={() => { void createTunnel(); }}>{t('frontend.ssh.createTunnel')}</button>
+                    <input value={presetName} onChange={e => setPresetName(e.target.value)} placeholder={t('frontend.ssh.presetName')} className="px-2 py-1 rounded bg-background border border-border flex-1" />
+                    <button className="secondary-btn" onClick={() => { void savePreset(); }} disabled={!presetName.trim()}>{t('frontend.ssh.savePreset')}</button>
                 </div>
             </section>
 
             <section className="border border-border rounded-lg p-3 space-y-2">
-                <h4 className="font-medium">{t('ssh.activeTunnels')}</h4>
+                <h4 className="font-medium">{t('frontend.ssh.activeTunnels')}</h4>
                 <div className="space-y-2 max-h-40 overflow-auto pr-1">
                     {tunnels.map(tunnel => (
                         <div key={tunnel.id} className="flex items-center justify-between border border-border rounded px-2 py-1">
@@ -123,15 +123,15 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                                     .catch((error: Error) => {
                                         appLogger.error('SSHTunnels', 'Failed to close tunnel', error);
                                     });
-                            }}>{t('ssh.closeTunnel')}</button>
+                            }}>{t('frontend.ssh.closeTunnel')}</button>
                         </div>
                     ))}
-                    {tunnels.length === 0 ? <div className="typo-caption text-muted-foreground">{t('ssh.noTunnels')}</div> : null}
+                    {tunnels.length === 0 ? <div className="typo-caption text-muted-foreground">{t('frontend.ssh.noTunnels')}</div> : null}
                 </div>
             </section>
 
             <section className="border border-border rounded-lg p-3 space-y-2">
-                <h4 className="font-medium">{t('ssh.tunnelPresets')}</h4>
+                <h4 className="font-medium">{t('frontend.ssh.tunnelPresets')}</h4>
                 <div className="space-y-2 max-h-40 overflow-auto pr-1">
                     {presets.map(preset => (
                         <div key={preset.id} className="flex items-center justify-between border border-border rounded px-2 py-1">
@@ -156,7 +156,7 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                             }}>{t('common.delete')}</button>
                         </div>
                     ))}
-                    {presets.length === 0 ? <div className="typo-caption text-muted-foreground">{t('ssh.noTunnelPresets')}</div> : null}
+                    {presets.length === 0 ? <div className="typo-caption text-muted-foreground">{t('frontend.ssh.noTunnelPresets')}</div> : null}
                 </div>
             </section>
         </div>

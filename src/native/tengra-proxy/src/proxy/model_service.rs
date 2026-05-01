@@ -14,11 +14,15 @@ use crate::proxy::model_catalog::find_model;
 use crate::security::{decrypt_token, load_master_key};
 use crate::token::refresh::{execute_refresh, AuthToken};
 use crate::{auth::copilot::CopilotClient, db};
+use futures::future::join_all;
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use serde_json::{Map, Value};
+use std::time::Duration;
 
 const NVIDIA_LIVE_MODELS_URL: &str = "https://integrate.api.nvidia.com/v1/models";
+const MODEL_DISCOVERY_TIMEOUT_MS: u64 = 2_500;
+const MODEL_DISCOVERY_CONNECT_TIMEOUT_MS: u64 = 800;
 
 #[derive(Debug, Clone)]
 pub struct ServedModel {
@@ -46,14 +50,24 @@ struct ProviderModel {
 }
 
 pub async fn fetch_models_from_rows(rows: &[Value]) -> Vec<ServedModel> {
-    let client = Client::new();
-    let mut models = Vec::new();
-
-    for (provider, provider_rows) in group_provider_rows(rows) {
-        let fetched =
-            fetch_provider_models(&client, provider.as_str(), provider_rows.as_slice()).await;
-        models.extend(fetched);
-    }
+    let client = Client::builder()
+        .timeout(Duration::from_millis(MODEL_DISCOVERY_TIMEOUT_MS))
+        .connect_timeout(Duration::from_millis(MODEL_DISCOVERY_CONNECT_TIMEOUT_MS))
+        .build()
+        .unwrap_or_else(|_| Client::new());
+    let fetches = group_provider_rows(rows)
+        .into_iter()
+        .map(|(provider, provider_rows)| {
+            let client = client.clone();
+            async move {
+                fetch_provider_models(&client, provider.as_str(), provider_rows.as_slice()).await
+            }
+        });
+    let models = join_all(fetches)
+        .await
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
 
     let mut deduped = dedupe_models(models);
     deduped.sort_by(|left, right| {
@@ -73,7 +87,7 @@ fn group_provider_rows(rows: &[Value]) -> Vec<(String, Vec<Value>)> {
         let Some(provider) = row.get("provider").and_then(|value| value.as_str()) else {
             continue;
         };
-        let normalized = normalize_provider(provider).to_string();
+        let normalized = normalize_provider_for_row(provider, row);
         if let Some((_, bucket)) = grouped.iter_mut().find(|(key, _)| *key == normalized) {
             bucket.push(row.clone());
         } else {
@@ -81,6 +95,39 @@ fn group_provider_rows(rows: &[Value]) -> Vec<(String, Vec<Value>)> {
         }
     }
     grouped
+}
+
+fn normalize_provider_for_row(provider: &str, row: &Value) -> String {
+    if normalize_provider(provider) == "codex" && is_openai_api_key_row(row) {
+        return "openai".to_string();
+    }
+    normalize_provider(provider).to_string()
+}
+
+fn is_openai_api_key_row(row: &Value) -> bool {
+    let kind = row_metadata_string(row, &["auth_type", "authType", "type"]);
+    let hint = row_metadata_string(row, &["provider_hint", "providerHint", "provider"]);
+    kind.as_deref() == Some("api_key") && hint.as_deref() == Some("openai")
+}
+
+fn row_metadata_string(row: &Value, keys: &[&str]) -> Option<String> {
+    let metadata = match row.get("metadata") {
+        Some(Value::Object(map)) => map.clone(),
+        Some(Value::String(text)) => serde_json::from_str::<Value>(text)
+            .ok()
+            .and_then(|value| value.as_object().cloned())
+            .unwrap_or_default(),
+        _ => Map::new(),
+    };
+    for key in keys {
+        if let Some(value) = metadata.get(*key).and_then(Value::as_str) {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_ascii_lowercase());
+            }
+        }
+    }
+    None
 }
 
 async fn fetch_provider_models(
@@ -117,7 +164,15 @@ async fn fetch_provider_models(
             }
             Vec::new()
         }
-        "codex" => map_provider_models(codex_models()),
+        "codex" => {
+            // Prefer live discovery via Codex backend API; fall back to the static catalog if
+            // the upstream call is unavailable.
+            fetch_codex_models(client, rows)
+                .await
+                .ok()
+                .filter(|models| !models.is_empty())
+                .unwrap_or_else(|| map_provider_models(codex_models()))
+        }
         // OAuth-based Claude (browser session)
         "claude" => map_provider_models(claude_models()),
         // API key providers
@@ -237,6 +292,42 @@ async fn fetch_openai_style_models(
             Err(_) => continue,
         };
         let mut models = parse_provider_models_from_payload(&body, provider, &["id", "name"]);
+        models.sort_by(|left, right| left.id.cmp(&right.id));
+        if !models.is_empty() {
+            return Ok(models);
+        }
+    }
+    Ok(Vec::new())
+}
+
+async fn fetch_codex_models(client: &Client, rows: &[Value]) -> Result<Vec<ServedModel>, String> {
+    for row in prioritized_rows(rows) {
+        let Some(token) = token_value_from_row(row, "access_token") else {
+            continue;
+        };
+        let response = match client
+            .get("https://chatgpt.com/backend-api/models")
+            .header("Authorization", format!("Bearer {}", token))
+            .header("Accept", "application/json")
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+            .send()
+            .await
+        {
+            Ok(response) => response,
+            Err(_) => continue,
+        };
+        if !response.status().is_success() {
+            continue;
+        }
+        let body = match response.json::<Value>().await {
+            Ok(body) => body,
+            Err(_) => continue,
+        };
+        let mut models = parse_provider_models_from_payload(&body, "codex", &["slug", "id"])
+            .into_iter()
+            .filter(|model| is_supported_codex_model_id(&model.id))
+            .collect::<Vec<_>>();
+        models = dedupe_models(models);
         models.sort_by(|left, right| left.id.cmp(&right.id));
         if !models.is_empty() {
             return Ok(models);
@@ -374,7 +465,7 @@ fn parse_served_model_item(
         return None;
     }
 
-    let display_name = value_string(item, &["display_name", "displayName", "name"])
+    let display_name = value_string(item, &["display_name", "displayName", "name", "title"])
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(|| id.clone());
     let owned_by = value_string(item, &["owned_by", "ownedBy", "organization"])
@@ -391,7 +482,8 @@ fn parse_served_model_item(
         display_name,
         description,
         context_length: 0,
-        max_completion_tokens: 0,
+        max_completion_tokens: value_u64(item, &["max_tokens", "max_completion_tokens"])
+            .unwrap_or(0) as u32,
         thinking_levels: vec![],
         quota_info: None,
     })
@@ -966,7 +1058,10 @@ fn antigravity_thinking_levels(id: &str) -> Option<Vec<String>> {
     }
 }
 
-async fn fetch_nvidia_models(client: &Client, rows: &[Value]) -> Result<Vec<ProviderModel>, String> {
+async fn fetch_nvidia_models(
+    client: &Client,
+    rows: &[Value],
+) -> Result<Vec<ProviderModel>, String> {
     for row in prioritized_rows(rows) {
         let Some(api_key) = token_value_from_row(row, "access_token") else {
             continue;
@@ -991,7 +1086,10 @@ struct NvidiaResponse {
     data: Vec<NvidiaModelData>,
 }
 
-async fn fetch_nvidia_live_models(client: &Client, api_key: &str) -> Result<Vec<ProviderModel>, String> {
+async fn fetch_nvidia_live_models(
+    client: &Client,
+    api_key: &str,
+) -> Result<Vec<ProviderModel>, String> {
     let response = client
         .get(NVIDIA_LIVE_MODELS_URL)
         .header("Authorization", format!("Bearer {}", api_key))
@@ -1040,14 +1138,18 @@ fn build_nvidia_model(model_id: String) -> ProviderModel {
 
 fn codex_models() -> Vec<ProviderModel> {
     vec![
+        static_model("gpt-5.5", "GPT 5.5", "codex", Some("Latest GPT 5.5 release for coding and agentic tasks."), Some(vec!["minimal", "low", "medium", "high"])),
         static_model("gpt-5.4", "GPT 5.4", "codex", Some("Stable version of GPT 5.4"), Some(vec!["low", "medium", "high", "xhigh"])),
-        static_model("gpt-5.4-mini", "GPT 5.4 Mini", "codex", Some("Compact GPT 5.4 variant tuned for faster, lower-cost coding tasks."), Some(vec!["low", "medium", "high"])),
+        static_model("gpt-5.4-mini", "GPT 5.4 Mini", "copilot", Some("Compact GPT 5.4 variant tuned for faster, lower-cost coding tasks."), Some(vec!["low", "medium", "high"])),
         static_model("gpt-5.3-codex", "GPT 5.3 Codex", "codex", Some("Stable version of GPT 5.3 Codex"), Some(vec!["low", "medium", "high", "xhigh"])),
-        static_model("gpt-5.2-codex", "GPT 5.2 Codex", "codex", Some("Stable version of GPT 5.2 Codex, the best model for coding and agentic tasks across domains."), Some(vec!["low", "medium", "high", "xhigh"])),
-        static_model("gpt-5.1-codex-max", "GPT 5.1 Codex Max", "codex", Some("Stable version of GPT 5.1 Codex Max"), Some(vec!["low", "medium", "high", "xhigh"])),
-        static_model("gpt-5.2", "GPT 5.2", "codex", Some("Stable version of GPT 5.2"), Some(vec!["low", "medium", "high", "xhigh"])),
-        static_model("gpt-5.1-codex-mini", "GPT 5.1 Codex Mini", "codex", Some("Cheaper, faster, but less capable version of GPT 5.1 Codex."), Some(vec!["medium", "high"])),
     ]
+}
+
+fn is_supported_codex_model_id(model_id: &str) -> bool {
+    matches!(
+        model_id,
+        "gpt-5.5" | "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.3-codex"
+    )
 }
 
 fn claude_models() -> Vec<ProviderModel> {
@@ -1153,8 +1255,9 @@ fn static_model(
 #[cfg(test)]
 mod tests {
     use super::{
-        antigravity_thinking_levels, claude_models, dedupe_models, normalize_nvidia_model_id,
-        normalize_provider, parse_provider_models_from_payload,
+        antigravity_thinking_levels, claude_models, codex_models, dedupe_models,
+        group_provider_rows, normalize_nvidia_model_id, normalize_provider,
+        parse_provider_models_from_payload,
     };
     use crate::proxy::antigravity::normalize_discovered_model_id;
     use crate::proxy::model_service::ServedModel;
@@ -1447,5 +1550,24 @@ mod tests {
             .map(|model| format!("{}:{}", model.provider, model.id))
             .collect::<Vec<_>>();
         assert_eq!(keys, vec!["openai:gpt-4o", "codex:gpt-4o"]);
+    }
+
+    #[test]
+    fn codex_static_models_are_limited_to_supported_ids() {
+        let models = codex_models();
+        let ids = models
+            .iter()
+            .map(|model| model.id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(ids, vec!["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"]);
+    }
+
+    #[test]
+    fn groups_openai_api_key_rows_under_openai() {
+        let grouped = group_provider_rows(&[json!({
+            "provider": "codex",
+            "metadata": { "type": "api_key", "provider_hint": "openai" }
+        })]);
+        assert_eq!(grouped[0].0, "openai");
     }
 }

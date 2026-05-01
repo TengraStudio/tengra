@@ -170,6 +170,9 @@ export interface AppSettings {
     openrouter?: {
         model: string;
     };
+    opencode?: {
+        model: string;
+    };
     antigravity?: {
         connected: boolean;
         token?: string;

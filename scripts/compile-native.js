@@ -12,13 +12,12 @@ const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const { getExecutableName, getManagedRuntimeBinDir, getBuildBinDir } = require('./build-runtime-paths');
+const { getExecutableName, getManagedRuntimeBinDir, getNativeTargetReleaseDir } = require('./build-runtime-paths');
 
 const SERVICES_DIR = path.join(__dirname, '../src/native');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
 const STAMP_FILE = path.join(SERVICES_DIR, 'target', 'native-build-stamp.json');
 const BIN_DIR = getManagedRuntimeBinDir();
-const BUILD_BIN_DIR = getBuildBinDir();
 const SERVICE_BASENAMES = ['db-service', 'memory-service', 'proxy'];
 const ALLOW_LOCKED_NATIVE_SKIP = process.env.CI !== 'true' && process.env.TENGRA_ALLOW_LOCKED_NATIVE_SKIP !== 'false';
 
@@ -57,7 +56,7 @@ function stopProcessByName(processName) {
 }
 
 function resolveCargoCommand() {
-    const localCargo = process.platform === 'win32' 
+    const localCargo = process.platform === 'win32'
         ? path.join(process.env.USERPROFILE || '', '.cargo', 'bin', 'cargo.exe')
         : path.join(process.env.HOME || '', '.cargo', 'bin', 'cargo');
     if (fs.existsSync(localCargo)) {
@@ -102,10 +101,7 @@ async function copyWithRetry(src, dest, outputName) {
 function ensureBinDir() {
     if (!fs.existsSync(BIN_DIR)) {
         fs.mkdirSync(BIN_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(BUILD_BIN_DIR)) {
-        fs.mkdirSync(BUILD_BIN_DIR, { recursive: true });
-    }
+    } 
 }
 
 function getNativeBinaryMappings() {
@@ -184,19 +180,15 @@ async function copyNativeBinariesFromTarget() {
 
     const copyTasks = mappings.map(async (mapping) => {
         const src = path.join(TARGET_DIR, mapping.output);
-        const dest = path.join(BIN_DIR, mapping.output);
-        const buildDest = path.join(BUILD_BIN_DIR, mapping.output);
+        const dest = path.join(BIN_DIR, mapping.output); 
 
         if (!fs.existsSync(src)) {
             missingBinaries.push(src);
             return;
         }
 
-        try {
-            await Promise.all([
-                copyWithRetry(src, dest, mapping.output),
-                copyWithRetry(src, buildDest, mapping.output)
-            ]);
+        try { 
+            await copyWithRetry(src, dest, mapping.output);
             writeStdout(`Copied ${mapping.output} to runtime and build bin`);
         } catch (error) {
             const maybeError = error;

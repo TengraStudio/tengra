@@ -72,7 +72,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
     if (profiles.length === 0) {
         return (
             <div className="typo-overline text-muted-foreground p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
-                {loadFailed ? t('errors.unexpected') : t('terminal.no_ssh_profiles')}
+                {loadFailed ? t('frontend.errors.unexpected') : t('frontend.terminal.no_ssh_profiles')}
             </div>
         );
     }
@@ -81,7 +81,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
         <div className="space-y-2 mb-4">
             <label className="typo-caption text-muted-foreground font-medium flex items-center gap-1.5">
                 <IconServer className="w-3 h-3" />
-                {t('workspaceModals.savedProfiles')}
+                {t('frontend.workspaceModals.savedProfiles')}
             </label>
             <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
                 {profiles.map(profile => (

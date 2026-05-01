@@ -37,7 +37,7 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
     return (
         <SidebarSection
             id="tools"
-            title={t('sidebar.tools')}
+            title={t('frontend.sidebar.tools')}
             icon={<IconPlug className="w-3.5 h-3.5" />}
             defaultExpanded={false}
             badge={3}
@@ -45,8 +45,8 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
             <SidebarMenuItem
                 id="mcp"
                 icon={<IconPlug className="w-4 h-4" />}
-                label={t('sidebar.mcpServices')}
-                description={t('sidebar.mcpDescription')}
+                label={t('frontend.sidebar.mcpServices')}
+                description={t('frontend.sidebar.mcpDescription')}
                 onClick={() => onChangeView('mcp')}
                 isActive={currentView === 'mcp'}
                 status="online"
@@ -55,16 +55,16 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
             <SidebarMenuItem
                 id="docker"
                 icon={<IconContainer className="w-4 h-4" />}
-                label={t('sidebar.docker')}
-                description={t('sidebar.dockerDescription')}
+                label={t('frontend.sidebar.docker')}
+                description={t('frontend.sidebar.dockerDescription')}
                 onClick={() => onChangeView('docker')}
                 status="idle"
             />
             <SidebarMenuItem
                 id="terminal"
                 icon={<IconTerminal className="w-4 h-4" />}
-                label={t('sidebar.terminal')}
-                description={t('sidebar.terminalDescription')}
+                label={t('frontend.sidebar.terminal')}
+                description={t('frontend.sidebar.terminalDescription')}
                 onClick={() => onChangeView('terminal')}
             />
         </SidebarSection>

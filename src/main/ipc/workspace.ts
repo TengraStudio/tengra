@@ -844,4 +844,35 @@ export const registerWorkspaceIpc = (
             }
         )
     );
+
+    /**
+     * Retrieve a specific file diff by ID
+     */
+    ipcMain.handle(
+        'workspace:getFileDiff',
+        createValidatedIpcHandler(
+            'workspace:getFileDiff',
+            async (event, diffId: string) => {
+                validateSender(event);
+                const row = await databaseService.knowledge.getFileDiff(diffId);
+                if (!row) {
+                    throw new Error(`Diff not found: ${diffId}`);
+                }
+                const diffJson = typeof row.diff === 'string' ? row.diff : '';
+                const parsed = JSON.parse(diffJson);
+                return {
+                    oldValue: parsed.beforeContent || '',
+                    newValue: parsed.afterContent || '',
+                };
+            },
+            {
+                argsSchema: z.tuple([z.string()]),
+                responseSchema: z.object({
+                    oldValue: z.string(),
+                    newValue: z.string(),
+                }),
+                wrapResponse: true
+            }
+        )
+    );
 };

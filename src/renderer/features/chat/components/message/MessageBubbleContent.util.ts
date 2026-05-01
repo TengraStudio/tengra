@@ -63,6 +63,7 @@ export interface ContentRenderContext {
         onStop?: () => void;
         isSpeaking?: boolean;
         onCodeConvert?: (imageUrl: string) => void;
+        onSourceClick?: (path: string) => void;
     };
     t: TranslationFn;
 }
@@ -111,6 +112,7 @@ export const buildMessageContentProps = (
     onStop: ctx.callbacks.onStop,
     isSpeaking: ctx.callbacks.isSpeaking,
     onCodeConvert: ctx.callbacks.onCodeConvert,
+    onSourceClick: ctx.callbacks.onSourceClick,
     t: ctx.t,
 });
 

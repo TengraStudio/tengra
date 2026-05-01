@@ -67,7 +67,7 @@ const CONNECT_RETRY_DELAY_MS = 150;
 
 const SSHTabs: React.FC<{ activeTab: SSHTabId, onTabChange: (id: SSHTabId) => void, t: (k: string) => string }> = ({ activeTab, onTabChange, t }) => (
     <div className="ssh-tabs flex border-b border-border/50 bg-muted/20 overflow-x-auto">
-        {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }, { id: 'sync', label: t('ssh.syncProfiles') }, { id: 'recovery', label: t('ssh.recoveryToolkit') }, { id: 'keys', label: t('ssh.keyManagement') }, { id: 'tunnels', label: t('ssh.tunnels') }].map(tab => (
+        {[{ id: 'terminal', label: t('frontend.ssh.terminal') }, { id: 'dashboard', label: t('frontend.ssh.dashboard') }, { id: 'files', label: t('frontend.ssh.files') }, { id: 'packages', label: t('frontend.ssh.packages') }, { id: 'logs', label: t('frontend.ssh.logs') }, { id: 'management', label: t('frontend.ssh.management') }, { id: 'sync', label: t('frontend.ssh.syncProfiles') }, { id: 'recovery', label: t('frontend.ssh.recoveryToolkit') }, { id: 'keys', label: t('frontend.ssh.keyManagement') }, { id: 'tunnels', label: t('frontend.ssh.tunnels') }].map(tab => (
             <button
                 key={tab.id}
                 onClick={() => { onTabChange(tab.id as SSHTabId); }}
@@ -137,7 +137,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     const runConnectWithRetry = useCallback(async (
         payload: SSHConnectionFormInput
     ): Promise<SSHConnectResult> => {
-        let lastErrorMessage = t('ssh.unknownError');
+        let lastErrorMessage = t('frontend.ssh.unknownError');
 
         for (let attempt = 0; attempt < CONNECT_RETRY_ATTEMPTS; attempt += 1) {
             try {
@@ -152,10 +152,10 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 if (result.success) {
                     return result;
                 }
-                const serverErrorMessage = result.error ?? t('ssh.unknownError');
+                const serverErrorMessage = result.error ?? t('frontend.ssh.unknownError');
                 lastErrorMessage = localizeIpcValidationMessage(serverErrorMessage, t);
             } catch (error) {
-                const unexpectedMessage = error instanceof Error ? error.message : t('ssh.unknownError');
+                const unexpectedMessage = error instanceof Error ? error.message : t('frontend.ssh.unknownError');
                 lastErrorMessage = localizeIpcValidationMessage(unexpectedMessage, t);
             }
 
@@ -173,7 +173,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     const handleAddConnection = useCallback(async () => {
         const validated = validateSSHConnectionForm(newConnection);
         if (!validated.success) {
-            appendTerminalLine(t('ssh.connectionError', { error: t('ssh.unknownError') }));
+            appendTerminalLine(t('frontend.ssh.connectionError', { error: t('frontend.ssh.unknownError') }));
             recordSSHManagerHealthEvent({
                 channel: 'ssh.connect',
                 status: 'validation-failure',
@@ -184,12 +184,12 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
 
         const startedAt = Date.now();
         setIsConnecting(true);
-        appendTerminalLine(`${t('ssh.connecting')} ${validated.normalized.host}...`);
+        appendTerminalLine(`${t('frontend.ssh.connecting')} ${validated.normalized.host}...`);
 
         try {
             const result = await runConnectWithRetry(validated.normalized);
             if (result.success) {
-                appendTerminalLine(t('ssh.connected', { host: validated.normalized.host }));
+                appendTerminalLine(t('frontend.ssh.connected', { host: validated.normalized.host }));
                 setShowAddModal(false);
                 recordSSHManagerHealthEvent({
                     channel: 'ssh.connect',
@@ -232,7 +232,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 return;
             }
 
-            appendTerminalLine(t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
+            appendTerminalLine(t('frontend.ssh.connectionError', { error: result.error ?? t('frontend.ssh.unknownError') }));
             recordSSHManagerHealthEvent({
                 channel: 'ssh.connect',
                 status: 'failure',
@@ -242,7 +242,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         } catch (error) {
             const normalizedError = error instanceof Error ? error : new Error(String(error));
             appLogger.error('SSHManager', 'Connection flow failed', normalizedError);
-            appendTerminalLine(t('ssh.connectionError', { error: normalizedError.message }));
+            appendTerminalLine(t('frontend.ssh.connectionError', { error: normalizedError.message }));
             recordSSHManagerHealthEvent({
                 channel: 'ssh.connect',
                 status: 'failure',
@@ -271,7 +271,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             });
             return {
                 success: false,
-                message: t('ssh.profileTestFailed', { error: t('ssh.unknownError') }),
+                message: t('frontend.ssh.profileTestFailed', { error: t('frontend.ssh.unknownError') }),
                 errorCode: validated.errorCode,
                 uiState: 'failure',
             };
@@ -300,7 +300,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                     });
                     return {
                         success: true,
-                        message: t('ssh.profileTestSuccess', { latency: typedResult.latencyMs }),
+                        message: t('frontend.ssh.profileTestSuccess', { latency: typedResult.latencyMs }),
                         uiState: typedResult.uiState === 'failure' ? 'failure' : 'ready',
                         errorCode: typedResult.errorCode,
                     };
@@ -308,7 +308,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
 
                 if (attempt === CONNECT_RETRY_ATTEMPTS - 1) {
                     const failedError = localizeIpcValidationMessage(
-                        typedResult.error ?? t('ssh.unknownError'),
+                        typedResult.error ?? t('frontend.ssh.unknownError'),
                         t
                     );
                     recordSSHManagerHealthEvent({
@@ -319,14 +319,14 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                     });
                     return {
                         success: false,
-                        message: t('ssh.profileTestFailed', { error: failedError }),
+                        message: t('frontend.ssh.profileTestFailed', { error: failedError }),
                         errorCode: typedResult.errorCode ?? sshManagerErrorCodes.testFailed,
                         uiState: typedResult.uiState === 'ready' ? 'ready' : 'failure',
                     };
                 }
             } catch (error) {
                 if (attempt === CONNECT_RETRY_ATTEMPTS - 1) {
-                    const fallbackMessage = error instanceof Error ? error.message : t('ssh.unknownError');
+                    const fallbackMessage = error instanceof Error ? error.message : t('frontend.ssh.unknownError');
                     const message = localizeIpcValidationMessage(fallbackMessage, t);
                     recordSSHManagerHealthEvent({
                         channel: 'ssh.testProfile',
@@ -336,7 +336,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                     });
                     return {
                         success: false,
-                        message: t('ssh.profileTestFailed', { error: message }),
+                        message: t('frontend.ssh.profileTestFailed', { error: message }),
                         errorCode: sshManagerErrorCodes.testFailed,
                         uiState: 'failure',
                     };
@@ -353,7 +353,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         });
         return {
             success: false,
-            message: t('ssh.profileTestFailed', { error: t('ssh.unknownError') }),
+            message: t('frontend.ssh.profileTestFailed', { error: t('frontend.ssh.unknownError') }),
             errorCode: sshManagerErrorCodes.testFailed,
             uiState: 'failure',
         };
@@ -381,7 +381,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 return;
             }
 
-            updateConnectionStatus(c.id, 'error', result.error ?? t('ssh.unknownError'));
+            updateConnectionStatus(c.id, 'error', result.error ?? t('frontend.ssh.unknownError'));
             recordSSHManagerHealthEvent({
                 channel: 'ssh.connect',
                 status: 'failure',
@@ -407,7 +407,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             const normalizedError = error instanceof Error ? error : new Error(String(error));
             appLogger.error('SSHManager', 'Disconnect failed', normalizedError);
         });
-        appendTerminalLine(t('ssh.disconnected'));
+        appendTerminalLine(t('frontend.ssh.disconnected'));
     }, [appendTerminalLine, t]);
 
     const handleDeleteRequest = useCallback((id: string) => {
@@ -433,7 +433,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                     durationMs: Date.now() - startedAt,
                     errorCode: sshManagerErrorCodes.deleteProfileFailed,
                 });
-                appendTerminalLine(t('ssh.connectionError', { error: t('ssh.unknownError') }));
+                appendTerminalLine(t('frontend.ssh.connectionError', { error: t('frontend.ssh.unknownError') }));
                 return;
             }
 
@@ -453,19 +453,19 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 durationMs: Date.now() - startedAt,
                 errorCode: sshManagerErrorCodes.deleteProfileFailed,
             });
-            appendTerminalLine(t('ssh.connectionError', { error: normalizedError.message }));
+            appendTerminalLine(t('frontend.ssh.connectionError', { error: normalizedError.message }));
         });
     }, [appendTerminalLine, loadConnections, pendingDeleteProfileId, t]);
 
     const handleTerminalExecute = useCallback((command: string) => {
         if (!selectedConnectionId) {
-            appendTerminalLine(t('ssh.noServerConnected'));
+            appendTerminalLine(t('frontend.ssh.noServerConnected'));
             return;
         }
         void window.electron.ssh.shellWrite(selectedConnectionId, `${command}\n`).catch(error => {
             const normalizedError = error instanceof Error ? error : new Error(String(error));
             appLogger.error('SSHManager', 'Shell write failed', normalizedError);
-            appendTerminalLine(t('ssh.connectionError', { error: normalizedError.message }));
+            appendTerminalLine(t('frontend.ssh.connectionError', { error: normalizedError.message }));
         });
     }, [appendTerminalLine, selectedConnectionId, t]);
 
@@ -473,7 +473,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         if (isLoadingConnections) {
             return (
                 <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
-                    {t('ssh.loading')}
+                    {t('frontend.ssh.loading')}
                 </div>
             );
         }
@@ -481,7 +481,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         if (uiState === 'failure') {
             return (
                 <div className="flex h-full items-center justify-center bg-background text-destructive">
-                    {t('ssh.connectionError', { error: lastErrorCode ?? t('ssh.unknownError') })}
+                    {t('frontend.ssh.connectionError', { error: lastErrorCode ?? t('frontend.ssh.unknownError') })}
                 </div>
             );
         }
@@ -489,7 +489,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         if (uiState === 'empty' && activeTab !== 'keys' && activeTab !== 'terminal') {
             return (
                 <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
-                    {t('ssh.selectConnection')}
+                    {t('frontend.ssh.selectConnection')}
                 </div>
             );
         }
@@ -512,7 +512,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         if (!selectedConnectionId) {
             return (
                 <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
-                    {t('ssh.selectConnection')}
+                    {t('frontend.ssh.selectConnection')}
                 </div>
             );
         }
@@ -550,7 +550,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         <div className="modal-overlay">
             <div className={C_SSHMANAGER_1}>
                 <div className="modal-header flex items-center justify-between border-b border-border/20 px-4 py-4 sm:px-5">
-                    <h2 className="text-lg font-semibold">{t('ssh.title')}</h2>
+                    <h2 className="text-lg font-semibold">{t('frontend.ssh.title')}</h2>
                     <button className="close-btn rounded-lg px-2 py-1 text-muted-foreground hover:bg-muted/30 hover:text-foreground" onClick={onClose}>×</button>
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
@@ -567,7 +567,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                         />
                         {pendingDeleteProfileId ? (
                             <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-destructive/30 bg-background/95 p-3 typo-caption shadow-lg">
-                                <div className="mb-2 text-muted-foreground">{t('ssh.confirmDelete')}</div>
+                                <div className="mb-2 text-muted-foreground">{t('frontend.ssh.confirmDelete')}</div>
                                 <div className="flex gap-2">
                                     <button className="secondary-btn flex-1" onClick={handleCancelDelete}>
                                         {t('common.cancel')}

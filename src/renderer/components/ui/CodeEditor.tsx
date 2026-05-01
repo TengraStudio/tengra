@@ -175,19 +175,14 @@ function buildInlineSuggestionConfigFromSettings(
     };
 }
 
-const loadMonaco = async (): Promise<{ Editor: React.ElementType; monaco: Monaco }> => {
-    const importReactPromise = import('@monaco-editor/react').then(m => {
-        return m;
-    });
-    const initMonacoPromise = ensureMonacoInitialized().then(m => {
-        return m;
-    });
-
-    const [{ default: Editor }, monaco] = await Promise.all([
+const loadMonaco = async (): Promise<{ Editor: React.ElementType; DiffEditor: React.ElementType; monaco: Monaco }> => {
+    const importReactPromise = import('@monaco-editor/react');
+    const initMonacoPromise = ensureMonacoInitialized();
+    const [{ default: Editor, DiffEditor }, monaco] = await Promise.all([
         importReactPromise,
         initMonacoPromise,
     ]);
-    return { Editor, monaco };
+    return { Editor, DiffEditor, monaco };
 };
 
 function rgbChannelToHex(channel: number): string {
@@ -449,7 +444,7 @@ function buildWorkspaceEditorOverrides(
 export interface CodeEditorProps {
     value?: string;
     language?: string;
-    onChange?: OnChange;
+    onChange?: (value: string | undefined, modelPath?: string) => void;
     readOnly?: boolean;
     className?: string;
     showMinimap?: boolean;
@@ -474,14 +469,21 @@ export interface CodeEditorProps {
     contentBottomPaddingPx?: number;
     onNavigateToLocation?: (target: CodeEditorNavigationTarget) => void;
     onShowWorkspaceResults?: (payload: CodeEditorWorkspaceResultsPayload) => void;
+    originalValue?: string;
+    diffMode?: boolean;
+    diff?: {
+        oldValue: string;
+        newValue: string;
+    };
 }
 
 let textMateInitialized = false;
 let textMateInitializing = false;
 
-const useMonacoLoader = (performanceMarkPrefix?: string): { monacoComponents: { Editor: ComponentType<MonacoEditorComponentProps>; monaco: Monaco } | null; loading: boolean } => {
+const useMonacoLoader = (performanceMarkPrefix?: string): { monacoComponents: { Editor: ComponentType<MonacoEditorComponentProps>; DiffEditor: ComponentType<any>; monaco: Monaco } | null; loading: boolean } => {
     const [monacoComponents, setMonacoComponents] = useState<{
         Editor: ComponentType<MonacoEditorComponentProps>;
+        DiffEditor: ComponentType<any>;
         monaco: Monaco;
     } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -489,9 +491,10 @@ const useMonacoLoader = (performanceMarkPrefix?: string): { monacoComponents: { 
         const startedAt = performance.now();
         setCodeEditorUiState('loading');
         loadMonaco()
-            .then(({ Editor, monaco }) => {
+            .then(({ Editor, DiffEditor, monaco }) => {
                 setMonacoComponents({
                     Editor: Editor as ComponentType<MonacoEditorComponentProps>,
+                    DiffEditor: DiffEditor as ComponentType<any>,
                     monaco,
                 });
                 if (performanceMarkPrefix) {
@@ -960,21 +963,25 @@ const useEditorInitialLine = (
     }, [initialLine, editorRef]);
 };
 
-const EditorContainer: React.FC<{
+const MonacoEditorInternal: React.FC<{
     Editor: ComponentType<MonacoEditorComponentProps>;
-    normalizedLanguage: string;
+    DiffEditor: ComponentType<any>;
+    language: string;
     modelPath?: string;
     value: string;
-    onChange?: OnChange;
+    onChange?: (value: string | undefined, modelPath?: string) => void;
     theme: string;
     onMount: (e: MonacoEditorInstance, m: Monaco) => void;
     loading: React.ReactNode;
     options: editor.IStandaloneEditorConstructionOptions;
     monaco: Monaco;
     className?: string;
+    diffMode?: boolean;
+    originalValue?: string;
 }> = ({
     Editor,
-    normalizedLanguage,
+    DiffEditor,
+    language,
     modelPath,
     value,
     onChange,
@@ -984,21 +991,39 @@ const EditorContainer: React.FC<{
     options,
     monaco,
     className,
+    diffMode,
+    originalValue,
 }) => (
         <div className={cn('relative w-full h-full overflow-hidden', className)}>
-            <Editor
-                height="100%"
-                defaultLanguage={normalizedLanguage}
-                language={normalizedLanguage}
-                path={modelPath}
-                value={value}
-                onChange={onChange}
-                theme={theme}
-                onMount={onMount}
-                loading={loading}
-                options={options}
-                monaco={monaco}
-            />
+            {diffMode ? (
+                <DiffEditor
+                    height="100%"
+                    original={originalValue ?? ''}
+                    modified={value}
+                    language={language}
+                    theme={theme}
+                    onMount={(editor: any, m: any) => onMount(editor.getModifiedEditor(), m)}
+                    loading={loading}
+                    options={{
+                        ...options,
+                        renderSideBySide: true,
+                    }}
+                />
+            ) : (
+                <Editor
+                    height="100%"
+                    defaultLanguage={language}
+                    language={language}
+                    path={modelPath}
+                    value={value}
+                    onChange={onChange ? (val) => onChange(val, modelPath) : undefined}
+                    theme={theme}
+                    onMount={onMount}
+                    loading={loading}
+                    options={options}
+                    monaco={monaco}
+                />
+            )}
         </div>
     );
 
@@ -1030,6 +1055,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     contentBottomPaddingPx = 12,
     onNavigateToLocation,
     onShowWorkspaceResults,
+    originalValue,
+    diffMode = false,
+    diff,
 }) => {
     const { isLight } = useTheme();
     const { t } = useTranslation(appLanguage);
@@ -1063,9 +1091,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     );
     const workspaceIntelligenceLabels = useMemo(
         () => ({
-            open: t('gallery.open'),
-            history: t('agent.history'),
-            related: t('memory.graphEdgeRelated'),
+            open: t('frontend.gallery.open'),
+            history: t('frontend.agent.history'),
+            related: t('frontend.memory.graphEdgeRelated'),
         }),
         [t]
     );
@@ -1177,28 +1205,22 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     if (loading || !monacoComponents) {
         return <LoadingOverlay className={className} t={t} />;
     }
-
     return (
-        <EditorContainer
+        <MonacoEditorInternal
             Editor={monacoComponents.Editor}
-            normalizedLanguage={normalizedLanguage}
-            modelPath={modelPath}
+            DiffEditor={monacoComponents.DiffEditor}
             value={value ?? ''}
+            language={normalizedLanguage}
+            modelPath={modelPath || undefined}
             onChange={onChange}
             theme={monacoTheme}
-            onMount={(e: MonacoEditorInstance, m: Monaco) => {
-                setEditorMounted(true);
-                void handleEditorDidMount(e, m);
-            }}
-            loading={
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <IconLoader2 className="w-5 h-5 animate-spin mr-2" />
-                    {t('ssh.editor.initializing')}
-                </div>
-            }
+            onMount={handleEditorDidMount}
+            loading={<LoadingOverlay className={className} t={t} />}
             options={editorOptions}
-            className={className}
             monaco={monacoComponents.monaco}
+            className={className}
+            diffMode={diffMode || !!diff}
+            originalValue={diff?.oldValue ?? originalValue}
         />
     );
 };

@@ -68,10 +68,10 @@ export const VoiceOverlay: React.FC = () => {
                         {session.error
                             ? session.error
                             : session.isProcessing
-                                ? t('voice.status.processing')
+                                ? t('frontend.voice.status.processing')
                                 : session.isListening
-                                    ? t('voice.status.listening')
-                                    : t('voice.status.standby')}
+                                    ? t('frontend.voice.status.listening')
+                                    : t('frontend.voice.status.standby')}
                     </span>
                 </div>
 
@@ -87,7 +87,7 @@ export const VoiceOverlay: React.FC = () => {
                         {session.lastCommand && (
                             <div className="mt-2 flex items-center gap-2 typo-caption font-semibold text-primary">
                                 <IconCommand className="w-3 h-3" />
-                                <span>{t('voice.feedback.executedPrefix')}: {session.lastCommand.description}</span>
+                                <span>{t('frontend.voice.feedback.executedPrefix')}: {session.lastCommand.description}</span>
                             </div>
                         )}
                     </div>

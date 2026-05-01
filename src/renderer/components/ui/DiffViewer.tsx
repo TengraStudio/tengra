@@ -74,7 +74,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                     loading={
                         <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">
                             <IconLoader2 className="w-5 h-5 animate-spin text-primary" />
-                            {t('diffViewer.loading')}
+                            {t('frontend.diffViewer.loading')}
                         </div>
                     }
                     options={{
@@ -91,7 +91,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
             ) : (
                 <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">
                     <IconLoader2 className="w-5 h-5 animate-spin text-primary" />
-                    {t('diffViewer.loading')}
+                    {t('frontend.diffViewer.loading')}
                 </div>
             )}
         </div>

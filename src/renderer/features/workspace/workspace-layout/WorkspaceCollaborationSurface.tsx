@@ -191,7 +191,7 @@ export function WorkspaceCollaborationSurface({
 
         collaboration.awareness.setLocalStateField('user', {
             actorId: localActorId,
-            name: t('chat.collaboration.ownerDisplayName'),
+            name: t('frontend.chat.collaboration.ownerDisplayName'),
         });
     }, [collaboration.awareness, localActorId, t]);
 
@@ -238,7 +238,7 @@ export function WorkspaceCollaborationSurface({
             const releaseEntry: WorkspaceCollaborationFeedEvent = {
                 kind: 'workspace:file-release',
                 actorId: localActorId,
-                actorName: t('chat.collaboration.ownerDisplayName'),
+                actorName: t('frontend.chat.collaboration.ownerDisplayName'),
                 filePath: previousFilePath,
                 createdAt: Date.now(),
             };
@@ -253,7 +253,7 @@ export function WorkspaceCollaborationSurface({
         const focusEntry: WorkspaceCollaborationFeedEvent = {
             kind: 'workspace:file-focus',
             actorId: localActorId,
-            actorName: t('chat.collaboration.ownerDisplayName'),
+            actorName: t('frontend.chat.collaboration.ownerDisplayName'),
             filePath: activeFilePath,
             createdAt: Date.now(),
         };
@@ -269,7 +269,7 @@ export function WorkspaceCollaborationSurface({
             void emitFeedEvent({
                 kind: 'workspace:file-release',
                 actorId: localActorId,
-                actorName: t('chat.collaboration.ownerDisplayName'),
+                actorName: t('frontend.chat.collaboration.ownerDisplayName'),
                 filePath: previousFilePathRef.current,
                 createdAt: Date.now(),
             });
@@ -297,7 +297,7 @@ export function WorkspaceCollaborationSurface({
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 typo-overline font-semibold text-muted-foreground/60">
                     <IconUsers className="h-3.5 w-3.5" />
-                    <span>{t('chat.collaboration.presence')}</span>
+                    <span>{t('frontend.chat.collaboration.presence')}</span>
                 </div>
                 <div
                     className={cn(
@@ -314,7 +314,7 @@ export function WorkspaceCollaborationSurface({
                         {collaboration.status === 'connected'
                             ? t('common.active')
                             : collaboration.status === 'connecting'
-                                ? t('chat.running')
+                                ? t('frontend.chat.running')
                                 : t('common.error')}
                     </span>
                 </div>
@@ -365,7 +365,7 @@ export function WorkspaceCollaborationSurface({
             {feedEntries.length > 0 && (
                 <div className="mt-3 border-t border-border/40 pt-3">
                     <div className="typo-overline font-semibold text-muted-foreground/60">
-                        {t('agent.history')}
+                        {t('frontend.agent.history')}
                     </div>
                     <div className="mt-2 space-y-1.5">
                         {feedEntries.map(entry => (

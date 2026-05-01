@@ -25,6 +25,11 @@ vi.mock('child_process', () => ({
     execFile: externalDependencyMocks.execFile,
 }));
 
+// Mock i18n to return the key
+vi.mock('@main/utils/i18n.util', () => ({
+    t: (key: string) => key,
+}));
+
 describe('ExternalRuntimeDependencyService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -42,7 +47,7 @@ describe('ExternalRuntimeDependencyService', () => {
             detected: true,
             running: true,
             action: 'none',
-            message: 'Ollama is installed and running',
+            message: 'auto.ollamaIsInstalledAndRunning',
             messageKey: 'runtime.health.ollama.running',
         });
     });
@@ -69,7 +74,7 @@ describe('ExternalRuntimeDependencyService', () => {
             detected: false,
             running: false,
             action: 'install',
-            message: 'Ollama is not installed',
+            message: 'auto.ollamaIsNotInstalled',
             messageKey: 'runtime.health.ollama.notInstalled',
         });
     });
@@ -85,7 +90,7 @@ describe('ExternalRuntimeDependencyService', () => {
             detected: true,
             running: false,
             action: 'start',
-            message: 'Ollama is installed but not running',
+            message: 'auto.ollamaIsInstalledButNotRunning',
             messageKey: 'runtime.health.ollama.notRunning',
         });
     });

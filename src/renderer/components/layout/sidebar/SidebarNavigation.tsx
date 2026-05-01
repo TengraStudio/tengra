@@ -9,6 +9,7 @@
  */
 
 import { IconBriefcase, IconCloudDownload, IconHistory, IconInbox, IconMessage, IconPlayerPause, IconPlayerPlay, IconRefresh, IconRocket, IconShoppingBag, IconX } from '@tabler/icons-react';
+import { IconPhoto } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
@@ -79,20 +80,26 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
             {
                 view: 'chat',
                 icon: IconMessage,
-                label: t('sidebar.chats'),
+                label: t('frontend.sidebar.chats'),
                 badge: chatsCount > 0 ? chatsCount : undefined,
                 testId: 'sidebar-nav-chat'
             },
             {
                 view: 'workspace',
                 icon: IconRocket,
-                label: t('sidebar.workspaces'),
+                label: t('frontend.sidebar.workspaces'),
                 testId: 'sidebar-nav-workspace'
+            },
+            {
+                view: 'images',
+                icon: IconPhoto,
+                label: t('frontend.sidebar.images'),
+                testId: 'sidebar-nav-images'
             },
             {
                 view: 'marketplace',
                 icon: IconShoppingBag,
-                label: t('sidebar.marketplace'),
+                label: t('frontend.sidebar.marketplace'),
                 testId: 'sidebar-nav-marketplace'
             }
         ];
@@ -222,11 +229,11 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
             .then((res) => {
                 const payload = res as { success?: boolean };
                 if (!payload.success) {
-                    pushNotification({ type: 'error', message: t('sidebar.downloadPauseFailed') });
+                    pushNotification({ type: 'error', message: t('frontend.sidebar.downloadPauseFailed') });
                 }
             })
             .catch(() => {
-                pushNotification({ type: 'error', message: t('sidebar.downloadPauseFailed') });
+                pushNotification({ type: 'error', message: t('frontend.sidebar.downloadPauseFailed') });
             });
     };
 
@@ -236,11 +243,11 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
             .then((res) => {
                 const payload = res as { success?: boolean };
                 if (!payload.success) {
-                    pushNotification({ type: 'error', message: t('sidebar.downloadResumeFailed') });
+                    pushNotification({ type: 'error', message: t('frontend.sidebar.downloadResumeFailed') });
                 }
             })
             .catch(() => {
-                pushNotification({ type: 'error', message: t('sidebar.downloadResumeFailed') });
+                pushNotification({ type: 'error', message: t('frontend.sidebar.downloadResumeFailed') });
             });
     };
 
@@ -250,19 +257,19 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
             .then((res) => {
                 const payload = res as { success?: boolean };
                 if (!payload.success) {
-                    pushNotification({ type: 'error', message: t('sidebar.downloadCancelFailed') });
+                    pushNotification({ type: 'error', message: t('frontend.sidebar.downloadCancelFailed') });
                 } else {
-                    pushNotification({ type: 'info', message: t('sidebar.downloadCancelled') });
+                    pushNotification({ type: 'info', message: t('frontend.sidebar.downloadCancelled') });
                 }
             })
             .catch(() => {
-                pushNotification({ type: 'error', message: t('sidebar.downloadCancelFailed') });
+                pushNotification({ type: 'error', message: t('frontend.sidebar.downloadCancelFailed') });
             });
     };
 
     const handleRetry = (historyId: string) => {
         if (!hasModelDownloader) {
-            pushNotification({ type: 'error', message: t('sidebar.downloadRetryFailed') });
+            pushNotification({ type: 'error', message: t('frontend.sidebar.downloadRetryFailed') });
             return;
         }
         void modelDownloader.retry(historyId)
@@ -270,11 +277,11 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 const payload = result as { success?: boolean };
                 pushNotification({
                     type: payload.success ? 'success' : 'error',
-                    message: payload.success ? t('sidebar.downloadRetryQueued') : t('sidebar.downloadRetryFailed'),
+                    message: payload.success ? t('frontend.sidebar.downloadRetryQueued') : t('frontend.sidebar.downloadRetryFailed'),
                 });
             })
             .catch(() => {
-                pushNotification({ type: 'error', message: t('sidebar.downloadRetryFailed') });
+                pushNotification({ type: 'error', message: t('frontend.sidebar.downloadRetryFailed') });
             });
     };
 
@@ -282,9 +289,9 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         const map: Record<DownloadStatus, string> = {
             queued: t('common.pending'),
             starting: t('common.processing'),
-            downloading: t('modelExplorer.downloading'),
+            downloading: t('frontend.modelExplorer.downloading'),
             installing: t('common.processing'),
-            paused: t('workspaceAgent.statePanel.status.paused'),
+            paused: t('frontend.workspaceAgent.statePanel.status.paused'),
             cancelled: t('common.cancelled'),
             completed: t('common.completed'),
             error: t('common.error'),
@@ -323,7 +330,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     };
 
     return (
-        <nav className="flex flex-col gap-1 px-3" aria-label={t('aria.sidebarNavigation')}>
+        <nav className="flex flex-col gap-1 px-3" aria-label={t('frontend.aria.sidebarNavigation')}>
             {navItems.map((item, index) => (
                 <SidebarItem
                     key={item.view}
@@ -347,7 +354,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 <PopoverTrigger asChild>
                     <SidebarItem
                         icon={IconCloudDownload}
-                        label={t('sidebar.downloads')}
+                        label={t('frontend.sidebar.downloads')}
                         active={false}
                         isCollapsed={isCollapsed}
                         badge={activeDownloadCount > 0 ? activeDownloadCount : undefined}
@@ -364,14 +371,14 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                         <div className="p-4 border-b border-border/40 bg-muted/20">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <h3 className="text-sm font-semibold ">{t('sidebar.downloads')}</h3>
+                                    <h3 className="text-sm font-semibold ">{t('frontend.sidebar.downloads')}</h3>
                                     <p className="typo-overline text-muted-foreground/60 uppercase font-bold">
-                                        {activeDownloadCount} {t('sidebar.activeDownloads')}
+                                        {activeDownloadCount} {t('frontend.sidebar.activeDownloads')}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <Badge variant="outline" className="h-5 px-1.5 typo-overline bg-background/50">
-                                        {downloadHistory.length} {t('agent.history')}
+                                        {downloadHistory.length} {t('frontend.agent.history')}
                                     </Badge>
                                 </div>
                             </div>
@@ -385,7 +392,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                         <div className="flex items-center gap-2 px-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                                             <span className="typo-overline font-bold uppercase text-muted-foreground">
-                                                {t('sidebar.activeDownloads')}
+                                                {t('frontend.sidebar.activeDownloads')}
                                             </span>
                                         </div>
                                         <div className="space-y-3">
@@ -466,7 +473,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                     <div className="flex items-center gap-2 px-1">
                                         <IconHistory className="w-3 h-3 text-muted-foreground/60" />
                                         <span className="typo-overline font-bold uppercase text-muted-foreground">
-                                            {t('sidebar.downloadsToday')}
+                                            {t('frontend.sidebar.downloadsToday')}
                                         </span>
                                     </div>
                                     <div className="space-y-1.5">
@@ -474,7 +481,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                             <div className="flex flex-col items-center justify-center h-full text-center p-8">
                                                 <IconInbox className="w-6 h-6 text-muted-foreground/20 mb-2" />
                                                 <p className="text-sm font-medium text-muted-foreground/40 ">
-                                                    {t('sidebar.downloadHistoryEmpty')}
+                                                    {t('frontend.sidebar.downloadHistoryEmpty')}
                                                 </p>
                                             </div>
                                         )}
@@ -517,7 +524,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                         <div className="flex items-center gap-2 px-1">
                                             <IconHistory className="w-3 h-3 text-muted-foreground/30" />
                                             <span className="typo-overline font-bold uppercase text-muted-foreground/40">
-                                                {t('sidebar.downloadsHistory')}
+                                                {t('frontend.sidebar.downloadsHistory')}
                                             </span>
                                         </div>
                                         <div className="space-y-1 px-1">
@@ -544,7 +551,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                 onClick={() => onChangeView('marketplace')} // Redirect to marketplace or something relevant
                             >
                                 <IconShoppingBag className="w-3 h-3 mr-2" />
-                                {t('nav.marketplace')}
+                                {t('frontend.nav.marketplace')}
                             </Button>
                         </div>
                     </div>

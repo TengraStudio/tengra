@@ -13,6 +13,7 @@ use axum::{
     Router,
 };
 use serde::Deserialize;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 
@@ -36,10 +37,9 @@ pub async fn start_callback_server(
         .route("/auth/callback", get(handle_callback))
         .with_state(state);
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(&addr).await?;
 
-    println!("OAuth callback server listening on {}", addr);
     axum::serve(listener, app).await?;
 
     Ok(())

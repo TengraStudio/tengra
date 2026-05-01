@@ -19,10 +19,10 @@ const FEATURES_PATH = path.join('/mock/config', 'features.json');
 
 /** The 5 default council flags that FeatureFlagService always merges */
 const DEFAULT_COUNCIL_FLAGS: FeatureFlag[] = [
-    { id: 'council.planning', enabled: true, description: 'Enable council plan generation' },
-    { id: 'council.routing', enabled: true, description: 'Enable quota-aware routing' },
-    { id: 'council.teamwork', enabled: true, description: 'Enable multi-agent teamwork/reassignment' },
-    { id: 'council.recovery', enabled: true, description: 'Enable crash-safe recovery' },
+    { id: 'council.planning', enabled: true, description: 'auto.enableCouncilPlanGeneration' },
+    { id: 'council.routing', enabled: true, description: 'auto.enableQuotaawareRouting' },
+    { id: 'council.teamwork', enabled: true, description: 'auto.enableMultiagentTeamworkreassignment' },
+    { id: 'council.recovery', enabled: true, description: 'auto.enableCrashsafeRecovery' },
     { id: 'council.governance', enabled: true, description: 'Enable model governance enforcement' }
 ];
 

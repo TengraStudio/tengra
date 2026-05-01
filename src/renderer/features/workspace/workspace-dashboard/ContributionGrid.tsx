@@ -61,18 +61,18 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
     // Get month labels
     const monthLabels = useMemo(() => {
         const monthNames = [
-            t('workspaceDashboard.contributions.months.jan'),
-            t('workspaceDashboard.contributions.months.feb'),
-            t('workspaceDashboard.contributions.months.mar'),
-            t('workspaceDashboard.contributions.months.apr'),
-            t('workspaceDashboard.contributions.months.may'),
-            t('workspaceDashboard.contributions.months.jun'),
-            t('workspaceDashboard.contributions.months.jul'),
-            t('workspaceDashboard.contributions.months.aug'),
-            t('workspaceDashboard.contributions.months.sep'),
-            t('workspaceDashboard.contributions.months.oct'),
-            t('workspaceDashboard.contributions.months.nov'),
-            t('workspaceDashboard.contributions.months.dec'),
+            t('frontend.workspaceDashboard.contributions.months.jan'),
+            t('frontend.workspaceDashboard.contributions.months.feb'),
+            t('frontend.workspaceDashboard.contributions.months.mar'),
+            t('frontend.workspaceDashboard.contributions.months.apr'),
+            t('frontend.workspaceDashboard.contributions.months.may'),
+            t('frontend.workspaceDashboard.contributions.months.jun'),
+            t('frontend.workspaceDashboard.contributions.months.jul'),
+            t('frontend.workspaceDashboard.contributions.months.aug'),
+            t('frontend.workspaceDashboard.contributions.months.sep'),
+            t('frontend.workspaceDashboard.contributions.months.oct'),
+            t('frontend.workspaceDashboard.contributions.months.nov'),
+            t('frontend.workspaceDashboard.contributions.months.dec'),
         ];
         const labels: { month: string; index: number }[] = [];
         let lastMonth = -1;
@@ -117,7 +117,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
         <div className={cn('space-y-4', className)}>
             <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-foreground">
-                    {t('workspaceDashboard.contributions.lastYear', { count: totalContributions })}
+                    {t('frontend.workspaceDashboard.contributions.lastYear', { count: totalContributions })}
                 </div>
             </div>
 
@@ -126,13 +126,13 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                 <div className="flex flex-col gap-1 pt-2.5 pr-2">
                     <div className="h-2.5" /> {/* Spacer for month labels */}
                     {[
-                        t('workspaceDashboard.contributions.days.mon'),
+                        t('frontend.workspaceDashboard.contributions.days.mon'),
                         '',
-                        t('workspaceDashboard.contributions.days.wed'),
+                        t('frontend.workspaceDashboard.contributions.days.wed'),
                         '',
-                        t('workspaceDashboard.contributions.days.fri'),
+                        t('frontend.workspaceDashboard.contributions.days.fri'),
                         '',
-                        t('workspaceDashboard.contributions.days.sun'),
+                        t('frontend.workspaceDashboard.contributions.days.sun'),
                     ].map((day, i) => (
                         <div key={i} className="typo-caption text-muted-foreground h-2.5 leading-tight">
                             {day}
@@ -157,7 +157,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                                             'w-2.5 h-2.5 rounded-sm transition-all hover:scale-125 hover:z-10 relative cursor-pointer',
                                             getColorIntensity(day.count)
                                         )}
-                                        title={t('workspaceDashboard.contributions.tooltip', {
+                                        title={t('frontend.workspaceDashboard.contributions.tooltip', {
                                             count: day.count,
                                             date: day.date,
                                         })}
@@ -173,7 +173,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
 
             {/* Legend */}
             <div className="flex items-center gap-2 typo-caption text-muted-foreground">
-                <span>{t('workspaceDashboard.contributions.legendLess')}</span>
+                <span>{t('frontend.workspaceDashboard.contributions.legendLess')}</span>
                 <div className="flex gap-0.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-muted/10 border border-muted/20" />
                     <div className="w-2.5 h-2.5 rounded-sm bg-success/20 border border-success/30" />
@@ -181,7 +181,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                     <div className="w-2.5 h-2.5 rounded-sm bg-success/60 border border-success/70" />
                     <div className="w-2.5 h-2.5 rounded-sm bg-success border border-success" />
                 </div>
-                <span>{t('workspaceDashboard.contributions.legendMore')}</span>
+                <span>{t('frontend.workspaceDashboard.contributions.legendMore')}</span>
             </div>
         </div>
     );

@@ -41,7 +41,7 @@ export const MarkdownImage = memo(
         <span className="block my-2 relative group/image">
             <img
                 src={src}
-                alt={alt ?? t('messageBubble.imageAlt')}
+                alt={alt ?? t('frontend.messageBubble.imageAlt')}
                 className={C_MARKDOWNIMAGE_1}
                 onClick={() => {
                     if (src) {
@@ -61,7 +61,7 @@ export const MarkdownImage = memo(
                     className={C_MARKDOWNIMAGE_2}
                 >
                     <IconCode className="w-3.5 h-3.5" />
-                    {t('messageBubble.convertToCode')}
+                    {t('frontend.messageBubble.convertToCode')}
                 </button>
             )}
         </span>

@@ -211,7 +211,7 @@ describe('TokenService - Refresh Logic', () => {
         const emptyMetrics = tokenService.getHealthMetrics();
         expect(emptyMetrics.uiState).toBe('empty');
         expect(emptyMetrics.performanceBudget.executeMs).toBeDefined();
-        expect(en.serviceHealth.token.empty).toBe(emptyMetrics.messageKey);
+        expect(en.frontend.serviceHealth.token.empty).toBe(emptyMetrics.messageKey);
     });
 
     it('should bootstrap native accounts from proxy-backed database state on initialize', async () => {

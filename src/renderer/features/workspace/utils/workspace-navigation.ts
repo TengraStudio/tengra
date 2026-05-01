@@ -15,7 +15,7 @@
 
 export type WorkspaceNavigationAction =
     | { type: 'open_file'; path: string; line?: number; readOnly?: boolean }
-    | { type: 'open_diff'; path: string };
+    | { type: 'open_diff'; path: string; diffId?: string };
 
 /**
  * Dispatches a navigation event that can be caught by the WorkspaceDashboard

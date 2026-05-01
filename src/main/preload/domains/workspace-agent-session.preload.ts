@@ -51,6 +51,8 @@ export function createWorkspaceAgentSessionBridge(
             ),
         archive: payload =>
             ipc.invoke(WORKSPACE_AGENT_SESSION_CHANNELS.ARCHIVE, payload),
+        delete: payload =>
+            ipc.invoke(WORKSPACE_AGENT_SESSION_CHANNELS.DELETE, payload),
         resumeBackgroundState: payload =>
             ipc.invoke(
                 WORKSPACE_AGENT_SESSION_CHANNELS.RESUME_BACKGROUND_STATE,

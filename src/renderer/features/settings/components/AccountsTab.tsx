@@ -17,6 +17,7 @@ import claudeLogo from '@assets/claude.svg?url';
 import copilotLogo from '@assets/copilot.svg?url';
 import geminiLogo from '@assets/gemini.png';
 import ollamaLogo from '@assets/ollama.svg?url';
+import opencodeLogo from '@assets/opencode.svg?url';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,7 +78,8 @@ const PROVIDER_ACCOUNT_ALIASES: Record<string, string[]> = {
     antigravity: ['antigravity', 'google', 'gemini'],
     ollama: ['ollama'],
     github: ['github'],
-    copilot: ['copilot', 'copilot_token']
+    copilot: ['copilot', 'copilot_token'],
+    opencode: ['opencode']
 };
 
 function normalizeEmail(email?: string): string | null {
@@ -146,7 +148,7 @@ export function buildAntigravityCreditModeSettings(
  * API Key provider configuration for direct API access
  */
 interface ApiKeyProviderConfig {
-    id: keyof Pick<AppSettings, 'openai' | 'anthropic' | 'gemini' | 'mistral' | 'groq' | 'together' | 'perplexity' | 'cohere' | 'xai' | 'deepseek' | 'openrouter' | 'nvidia'>;
+    id: keyof Pick<AppSettings, 'openai' | 'anthropic' | 'gemini' | 'mistral' | 'groq' | 'together' | 'perplexity' | 'cohere' | 'xai' | 'deepseek' | 'openrouter' | 'nvidia' | 'opencode'>;
     name: string;
     description: string;
     logo?: string;
@@ -168,6 +170,7 @@ const API_KEY_PROVIDERS: ApiKeyProviderConfig[] = [
     { id: 'xai', name: 'accounts.apiProviders.xai.name', description: 'accounts.apiProviders.xai.description', icon: IconSparkles, placeholder: 'xai-...', docsUrl: 'https://console.x.ai/' },
     { id: 'deepseek', name: 'accounts.apiProviders.deepseek.name', description: 'accounts.apiProviders.deepseek.description', icon: IconRobot, placeholder: 'sk-...', docsUrl: 'https://platform.deepseek.com/api_keys' },
     { id: 'openrouter', name: 'accounts.apiProviders.openrouter.name', description: 'accounts.apiProviders.openrouter.description', icon: IconKey, placeholder: 'sk-or-...', docsUrl: 'https://openrouter.ai/keys' },
+    { id: 'opencode', name: 'accounts.apiProviders.opencode.name', description: 'accounts.apiProviders.opencode.description', logo: opencodeLogo, placeholder: 'API key', docsUrl: 'https://opencode.ai' },
 ];
 
 const LOGO_INVERT_PROVIDERS = new Set([
@@ -292,7 +295,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                     {hasAccounts ? (
                         <>
                             <Badge variant="secondary" className="h-6 border-success/20 bg-success/10 px-2.5 typo-body font-medium text-success">
-                                {accountCount} {t('accounts.accountCount').replace('{{count}}', '').trim()}
+                                {accountCount} {t('frontend.accounts.accountCount').replace('{{count}}', '').trim()}
                             </Badge>
                             <div className={cn(
                                 'flex h-8 w-8 items-center justify-center rounded-full border border-border/30 bg-muted/20 text-muted-foreground transition-transform',
@@ -314,7 +317,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                             className={cn(BUTTON_PRIMARY_GHOST, "h-10 px-4")}
                         >
                             <IconUserPlus className="h-4 w-4 mr-2" />
-                            {t('accounts.connect')}
+                            {t('frontend.accounts.connect')}
                         </Button>
                     )}
                 </div>
@@ -359,7 +362,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                             className={BUTTON_SECONDARY_GHOST}
                         >
                             <IconPlus className="h-3.5 w-3.5" />
-                            {t('accounts.addAnotherAccount')}
+                            {t('frontend.accounts.addAnotherAccount')}
                         </Button>
                     </div>
                 </div>
@@ -482,7 +485,7 @@ const ApiKeyProviderCard = React.memo(({
                     {hasKeys ? (
                         <>
                             <Badge variant="outline" className="h-6 border-success/20 bg-success/10 px-2.5 typo-body font-medium text-success">
-                                {apiKeys.length} {t('accounts.apiKey')}
+                                {apiKeys.length} {t('frontend.accounts.apiKey')}
                             </Badge>
                             <div className={cn(
                                 'flex h-8 w-8 items-center justify-center rounded-full border border-border/30 bg-muted/20 text-muted-foreground transition-transform',
@@ -503,7 +506,7 @@ const ApiKeyProviderCard = React.memo(({
                             className={cn(BUTTON_PRIMARY_GHOST, "h-10 px-4")}
                         >
                             <IconPlus className="h-4 w-4 mr-2" />
-                            {t('accounts.addApiKey')}
+                            {t('frontend.accounts.addApiKey')}
                         </Button>
                     )}
                 </div>
@@ -574,7 +577,7 @@ const ApiKeyProviderCard = React.memo(({
                             >
                                 <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer">
                                     <IconGlobe className="h-3 w-3" />
-                                    {t('accounts.getApiKey')}
+                                    {t('frontend.accounts.getApiKey')}
                                     <IconExternalLink className="ml-1 h-2.5 w-2.5" />
                                 </a>
                             </Button>
@@ -624,6 +627,7 @@ const ApiKeyProvidersSection = React.memo(({
             perplexity: 'llama-3-sonar-large-32k-chat', cohere: 'command-r-plus', xai: 'grok-beta',
             deepseek: 'deepseek-chat', openrouter: 'anthropic/claude-3.5-sonnet',
             nvidia: 'nvidia/llama3-chatqa-1.5-70b',
+            opencode: 'big-pickle',
         };
         const nextSettings = {
             ...settings,
@@ -649,11 +653,11 @@ const ApiKeyProvidersSection = React.memo(({
                 <div className="flex items-center gap-3">
                     <IconKey className="w-4 h-4 text-primary" />
                     <h3 className="typo-caption font-medium text-muted-foreground">
-                        {t('accounts.categories.apiKeyProviders')}
+                        {t('frontend.accounts.categories.apiKeyProviders')}
                     </h3>
                 </div>
                 <p className="text-sm text-muted-foreground font-medium leading-relaxed opacity-70 max-w-2xl">
-                    {t('accounts.apiKeyProvidersDescription')}
+                    {t('frontend.accounts.apiKeyProvidersDescription')}
                 </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
@@ -695,7 +699,7 @@ const OllamaSection = React.memo(({
             <div className="flex items-center gap-3 mb-2 px-1">
                 <IconTerminal className="w-4 h-4 text-primary" />
                 <h3 className="typo-caption font-medium text-muted-foreground">
-                    {t('accounts.categories.localModels')}
+                    {t('frontend.accounts.categories.localModels')}
                 </h3>
             </div>
             <div className="group overflow-hidden rounded-2xl border border-border/30 bg-card transition-colors hover:border-border/50">
@@ -703,13 +707,13 @@ const OllamaSection = React.memo(({
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-muted/30">
                         <img 
                             src={ollamaLogo} 
-                            alt={t('accounts.providers.ollama.name')} 
+                            alt={t('frontend.accounts.providers.ollama.name')} 
                             className="h-7 w-7 object-contain theme-logo-invert" 
                         />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-foreground">{t('accounts.providers.ollama.name')}</div>
-                        <div className="mt-1 typo-caption text-muted-foreground">{t('accounts.providers.ollama.description')}</div>
+                        <div className="text-sm font-semibold text-foreground">{t('frontend.accounts.providers.ollama.name')}</div>
+                        <div className="mt-1 typo-caption text-muted-foreground">{t('frontend.accounts.providers.ollama.description')}</div>
                     </div>
                     <Badge className={cn(
                         'h-7 rounded-lg px-3 typo-body font-medium',
@@ -717,14 +721,14 @@ const OllamaSection = React.memo(({
                             ? 'border-success/20 bg-success/10 text-success'
                             : 'border-transparent bg-muted text-muted-foreground'
                     )}>
-                        {isRunning ? t('accounts.running') : t('accounts.notRunning')}
+                        {isRunning ? t('frontend.accounts.running') : t('frontend.accounts.notRunning')}
                     </Badge>
                 </div>
 
                 <div className="border-t border-border/20 bg-muted/02 p-5 space-y-5">
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('accounts.serverAddress')}</Label>
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.serverAddress')}</Label>
                             <Input
                                 type="text"
                                 value={settings.ollama.url}
@@ -746,7 +750,7 @@ const OllamaSection = React.memo(({
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('accounts.contextLimit')}</Label>
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.contextLimit')}</Label>
                             <Input
                                 type="number"
                                 value={settings.ollama.numCtx ?? 16384}
@@ -786,7 +790,7 @@ const OllamaSection = React.memo(({
                             className={C_ACCOUNTSTAB_5}
                         >
                             <IconRefresh className={cn("h-3 w-3 mr-2", !isRunning && "animate-spin")} />
-                            {t('accounts.check')}
+                            {t('frontend.accounts.check')}
                         </Button>
                         {!isRunning && (
                             <Button
@@ -800,7 +804,7 @@ const OllamaSection = React.memo(({
                                 className={C_ACCOUNTSTAB_6}
                             >
                                 <IconBolt className="h-3.5 w-3.5 mr-2" />
-                                {t('accounts.start')}
+                                {t('frontend.accounts.start')}
                             </Button>
                         )}
                     </div>
@@ -859,11 +863,11 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                         <div className="bg-primary/10 p-2 rounded-xl">
                             <IconUserPlus className="w-5 h-5 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-semibold text-foreground">{t('accounts.title')}</h2>
+                        <h2 className="text-2xl font-semibold text-foreground">{t('frontend.accounts.title')}</h2>
                     </div>
                     <p className="flex items-center gap-2 text-sm text-muted-foreground/70">
                         <IconInfoCircle className="w-3 h-3" />
-                        {t('accounts.subtitle')}
+                        {t('frontend.accounts.subtitle')}
                     </p>
                 </div>
                 <Button
@@ -908,7 +912,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
 
             <div className="space-y-10">
                 <ProviderList
-                    title={t('accounts.categories.aiProviders')}
+                    title={t('frontend.accounts.categories.aiProviders')}
                     providers={aiProviders}
                     accounts={linkedAccounts.accounts}
                     quotaData={quotaData}
@@ -925,7 +929,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                 <div className="my-2 h-px bg-border/30" />
 
                 <ProviderList
-                    title={t('accounts.categories.developerTools')}
+                    title={t('frontend.accounts.categories.developerTools')}
                     providers={developerProviders}
                     accounts={linkedAccounts.accounts}
                     quotaData={quotaData}

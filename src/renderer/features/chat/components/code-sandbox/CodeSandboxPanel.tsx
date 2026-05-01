@@ -66,7 +66,7 @@ export const CodeSandboxPanel: React.FC = () => {
             setResult({
                 success: false,
                 stdout: '',
-                stderr: t('codeSandbox.error'),
+                stderr: t('frontend.codeSandbox.error'),
                 durationMs: 0,
             });
         } finally {
@@ -88,7 +88,7 @@ export const CodeSandboxPanel: React.FC = () => {
         <div className="rounded-xl border border-border/50 bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-foreground">
-                    {t('codeSandbox.title')}
+                    {t('frontend.codeSandbox.title')}
                 </h3>
                 <LanguageSelector
                     value={language}
@@ -101,7 +101,7 @@ export const CodeSandboxPanel: React.FC = () => {
                 value={code}
                 onChange={handleCodeChange}
                 onKeyDown={handleKeyDown}
-                placeholder={t('codeSandbox.codePlaceholder')}
+                placeholder={t('frontend.codeSandbox.codePlaceholder')}
                 disabled={isRunning}
                 rows={8}
                 className={C_CODESANDBOXPANEL_1}
@@ -114,7 +114,7 @@ export const CodeSandboxPanel: React.FC = () => {
                     disabled={isRunning || !code.trim()}
                     className={C_CODESANDBOXPANEL_2}
                 >
-                    {isRunning ? t('codeSandbox.running') : t('codeSandbox.run')}
+                    {isRunning ? t('frontend.codeSandbox.running') : t('frontend.codeSandbox.run')}
                 </button>
             </div>
 

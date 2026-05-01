@@ -17,11 +17,11 @@ export const GitSection: React.FC<SettingsSectionProps> = ({ formData, setFormDa
                         <IconGitBranch className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                            {t('workspaces.gitConfig')}
+                        <h2 className="text-lg font-semibold text-foreground ">
+                            {t('frontend.workspaces.gitConfig')}
                         </h2>
                         <p className="text-sm text-muted-foreground/60">
-                            {t('workspaces.gitConfigDesc')}
+                            {t('frontend.workspaces.gitConfigDesc')}
                         </p>
                     </div>
                 </div>
@@ -29,31 +29,31 @@ export const GitSection: React.FC<SettingsSectionProps> = ({ formData, setFormDa
                 <div className="space-y-6 pl-11">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider flex items-center gap-2">
+                            <Label className="text-sm font-medium text-muted-foreground/50 uppercase  flex items-center gap-2">
                                 <IconTypography className="w-3.5 h-3.5" />
-                                {t('workspaces.commitPrefix')}
+                                {t('frontend.workspaces.commitPrefix')}
                             </Label>
-                            <Input 
-                                placeholder="e.g. [FEAT]" 
+                            <Input
+                                placeholder="e.g. [FEAT]"
                                 className="bg-muted/5 border-border/10 font-mono"
                                 value={formData.gitCommitPrefix}
                                 onChange={(e) => setFormData(prev => ({ ...prev, gitCommitPrefix: e.target.value }))}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                                {t('workspaces.branchPrefix')}
+                            <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                                {t('frontend.workspaces.branchPrefix')}
                             </Label>
-                            <Input 
-                                placeholder="e.g. feature/" 
+                            <Input
+                                placeholder="e.g. feature/"
                                 className="bg-muted/5 border-border/10 font-mono"
                                 value={formData.gitBranchPrefix}
                                 onChange={(e) => setFormData(prev => ({ ...prev, gitBranchPrefix: e.target.value }))}
                             />
                         </div>
                     </div>
-                    <p className="text-xs text-muted-foreground/40 italic">
-                        {t('workspaces.gitHint')}
+                    <p className="text-sm text-muted-foreground/40 italic">
+                        {t('frontend.workspaces.gitHint')}
                     </p>
                 </div>
             </div>
@@ -67,11 +67,11 @@ export const GitSection: React.FC<SettingsSectionProps> = ({ formData, setFormDa
                         <IconRefresh className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                            {t('workspaces.automation')}
+                        <h2 className="text-lg font-semibold text-foreground ">
+                            {t('frontend.workspaces.automation')}
                         </h2>
                         <p className="text-sm text-muted-foreground/60">
-                            {t('workspaces.automationDesc')}
+                            {t('frontend.workspaces.automationDesc')}
                         </p>
                     </div>
                 </div>
@@ -79,12 +79,12 @@ export const GitSection: React.FC<SettingsSectionProps> = ({ formData, setFormDa
                 <div className="pl-11">
                     <div className="flex items-center justify-between p-4 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
                         <div className="space-y-0.5">
-                            <Label className="text-sm font-medium text-foreground">{t('workspaces.autoFetch')}</Label>
-                            <p className="text-xs text-muted-foreground/60">
-                                {t('workspaces.autoFetchDesc')}
+                            <Label className="text-sm font-medium text-foreground">{t('frontend.workspaces.autoFetch')}</Label>
+                            <p className="text-sm text-muted-foreground/60">
+                                {t('frontend.workspaces.autoFetchDesc')}
                             </p>
                         </div>
-                        <Switch 
+                        <Switch
                             checked={formData.gitAutoFetch}
                             onCheckedChange={(val) => setFormData(prev => ({ ...prev, gitAutoFetch: val }))}
                         />

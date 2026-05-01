@@ -555,6 +555,32 @@ export const webElectronMock: ElectronAPI = {
         }) => '',
     },
 
+    imageStudio: {
+        generate: async (_payload: {
+            prompt: string;
+            modelId: string;
+            count?: number;
+            width?: number;
+            height?: number;
+        }) => [],
+        edit: async (_payload: {
+            contextImage?: string;
+            sourceImage: string;
+            maskImage: string;
+            prompt: string;
+            mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
+            strength?: number;
+            modelId: string;
+        }) => [],
+        save: async (_payload: {
+            image: string;
+            prompt?: string;
+            modelId?: string;
+            width?: number;
+            height?: number;
+        }) => '',
+    },
+
     clipboard: {
         writeText: async (text: string) => {
             await navigator.clipboard.writeText(text);

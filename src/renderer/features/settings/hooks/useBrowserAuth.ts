@@ -369,7 +369,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         pendingBrowserAuthRef.current = null;
         sawProviderAuthUpdateRef.current = false;
         setAuthBusy(null);
-        setAuthNotice(t('auth.providerSuccess', { provider: request.provider }));
+        setAuthNotice(t('frontend.auth.providerSuccess', { provider: request.provider }));
 
         try {
             await linkedAccounts.refreshAccounts();
@@ -468,7 +468,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             }
             if (hasAuthTimedOut()) {
                 await cancelBrowserAuthAttempt(request);
-                resetBrowserAuthState(t('auth.providerTimeout', { provider: request.provider }));
+                resetBrowserAuthState(t('frontend.auth.providerTimeout', { provider: request.provider }));
                 return;
             }
 
@@ -477,7 +477,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 const remainingFlowMs = BROWSER_AUTH_FLOW_TIMEOUT_MS - (Date.now() - request.startedAt);
                 if (remainingFlowMs <= 0) {
                     await cancelBrowserAuthAttempt(request);
-                    resetBrowserAuthState(t('auth.providerTimeout', { provider: request.provider }));
+                    resetBrowserAuthState(t('frontend.auth.providerTimeout', { provider: request.provider }));
                     return;
                 }
                 const boundedAuthState = await withTimeout(
@@ -521,7 +521,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
                 if (boundedAuthState.status === 'error') {
                     await cancelBrowserAuthAttempt(request);
-                    resetBrowserAuthState(boundedAuthState.error?.trim() || t('auth.providerFailed', { provider: request.provider }));
+                    resetBrowserAuthState(boundedAuthState.error?.trim() || t('frontend.auth.providerFailed', { provider: request.provider }));
                     return;
                 }
 
@@ -531,7 +531,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 }
 
                 await cancelBrowserAuthAttempt(request);
-                resetBrowserAuthState(t('auth.providerTimeout', { provider: request.provider }));
+                resetBrowserAuthState(t('frontend.auth.providerTimeout', { provider: request.provider }));
             } catch (error) {
                 appLogger.error('BrowserAuth', 'pollConnection error', error as Error);
                 if (!mountedRef.current || requestId !== activeRequestRef.current) {
@@ -550,7 +550,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 }
 
                 await cancelBrowserAuthAttempt(request);
-                resetBrowserAuthState(t('auth.providerTimeout', { provider: request.provider }));
+                resetBrowserAuthState(t('frontend.auth.providerTimeout', { provider: request.provider }));
             }
         };
 
@@ -561,7 +561,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
     const connectBrowserProvider = useCallback(async (provider: BrowserOAuthProvider) => {
         if (authBusy && !isBrowserOAuthProvider(authBusy.provider)) {
-            setAuthNotice(t('auth.anotherFlowRunning'), 3000);
+            setAuthNotice(t('frontend.auth.anotherFlowRunning'), 3000);
             return;
         }
 
@@ -570,7 +570,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         await cancelBrowserAuthAttempt(pendingBrowserAuth);
         clearPollTimeout();
         setAuthBusy(null);
-        setAuthNotice(t('auth.preparingConnection'));
+        setAuthNotice(t('frontend.auth.preparingConnection'));
 
         try {
             appLogger.debug('BrowserAuth', `[${provider}] Step 1: Getting linked accounts (requestId=${requestId})`);
@@ -593,7 +593,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
                 if (requestId !== activeRequestRef.current) {return;}
                 if (!response.success || !response.connectUrl || !response.code) {
-                    resetBrowserAuthState(response.error || t('auth.failedUrlForProvider', { provider }));
+                    resetBrowserAuthState(response.error || t('frontend.auth.failedUrlForProvider', { provider }));
                     return;
                 }
 
@@ -608,7 +608,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 pendingBrowserAuthRef.current = request;
                 setAuthBusy(request);
                 window.electron.openExternal(response.connectUrl);
-                setAuthNotice(t('auth.connecting'));
+                setAuthNotice(t('frontend.auth.connecting'));
 
                 // Custom polling for Ollama connect
                 const pollOllama = async () => {
@@ -656,7 +656,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             }
             if (!response.url || !response.state || !response.accountId) {
                 appLogger.debug('BrowserAuth', `[${provider}] Step 3c: MISSING DATA — url=${!!response.url}, state=${!!response.state}, accountId=${!!response.accountId}`);
-                resetBrowserAuthState(t('auth.failedUrlForProvider', { provider }));
+                resetBrowserAuthState(t('frontend.auth.failedUrlForProvider', { provider }));
                 return;
             }
 
@@ -677,22 +677,22 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             setAuthBusy(request);
             appLogger.debug('BrowserAuth', `[${provider}] Step 4: Opening browser with URL`);
             window.electron.openExternal(response.url);
-            setAuthNotice(t('auth.connecting'));
+            setAuthNotice(t('frontend.auth.connecting'));
             pollConnection(request);
         } catch (error) {
             appLogger.error('BrowserAuth', `Connection failure for ${provider}`, error as Error);
             const reason = extractErrorMessage(error as Error | string).trim();
             resetBrowserAuthState(
                 reason.length > 0
-                    ? t('auth.failedWithReason', { reason })
-                    : t('auth.connectionFailedGeneric')
+                    ? t('frontend.auth.failedWithReason', { reason })
+                    : t('frontend.auth.connectionFailedGeneric')
             );
         }
     }, [authBusy, cancelBrowserAuthAttempt, clearPollTimeout, completeBrowserAuth, pendingBrowserAuth, pollConnection, resetBrowserAuthState, setAuthBusy, setAuthNotice, t]);
 
     const cancelBrowserAuth = useCallback(async () => {
         await cancelBrowserAuthAttempt(pendingBrowserAuth);
-        resetBrowserAuthState(t('auth.connectionCancelled'));
+        resetBrowserAuthState(t('frontend.auth.connectionCancelled'));
     }, [cancelBrowserAuthAttempt, pendingBrowserAuth, resetBrowserAuthState, t]);
 
     const cancelBrowserAuthForAccount = useCallback(async (accountId: string) => {
@@ -700,16 +700,16 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             return;
         }
         await cancelBrowserAuthAttempt(pendingBrowserAuth);
-        resetBrowserAuthState(t('auth.connectionCancelled'));
+        resetBrowserAuthState(t('frontend.auth.connectionCancelled'));
     }, [cancelBrowserAuthAttempt, pendingBrowserAuth, resetBrowserAuthState, t]);
 
     const handleSaveClaudeSession = useCallback(async (key: string, id?: string) => {
-        setAuthNotice(t('auth.savingSession'));
+        setAuthNotice(t('frontend.auth.savingSession'));
         try {
             const result = await window.electron.saveClaudeSession(key.trim(), id);
             if (!result.success) {
                 const errorMessage = result.error ?? t('common.unknownError');
-                setAuthNotice(t('auth.failedWithReason', { reason: errorMessage }));
+                setAuthNotice(t('frontend.auth.failedWithReason', { reason: errorMessage }));
                 return { success: false, error: errorMessage };
             }
 
@@ -718,7 +718,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             return { success: true };
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setAuthNotice(t('auth.failedWithReason', { reason: message }));
+            setAuthNotice(t('frontend.auth.failedWithReason', { reason: message }));
             return { success: false, error: message };
         } finally {
             setAuthBusy(null);

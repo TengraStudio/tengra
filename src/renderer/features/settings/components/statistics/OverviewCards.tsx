@@ -53,19 +53,19 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ t, statsData }) =>
     return (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <SimpleStatLabel
-                label={t('statistics.messages')}
+                label={t('frontend.statistics.messages')}
                 value={formatNumber(messageCount)}
-                subtext={t('statistics.totalMessages')}
+                subtext={t('frontend.statistics.totalMessages')}
             />
             <SimpleStatLabel
-                label={t('statistics.chats')}
+                label={t('frontend.statistics.chats')}
                 value={formatNumber(chatCount)}
-                subtext={t('statistics.activeThreads')}
+                subtext={t('frontend.statistics.activeThreads')}
             />
             <SimpleStatLabel
-                label={t('statistics.totalTokens')}
+                label={t('frontend.statistics.totalTokens')}
                 value={formatNumber(totalTokens)}
-                subtext={t('tokenUsageDashboard.totalTokens')}
+                subtext={t('frontend.tokenUsageDashboard.totalTokens')}
             />
         </div>
     );

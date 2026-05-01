@@ -48,6 +48,10 @@ pub async fn fetch_copilot_quota(token: &str) -> anyhow::Result<crate::quota::ty
         error: None,
     };
 
+    let mut session_limits = crate::quota::types::SessionLimits::default();
+    let mut session_usage = crate::quota::types::SessionUsage::default();
+    let mut has_session_info = false;
+
     match billing_req {
         Ok(res) if res.status().is_success() => {
             if let Ok(data) = res.json::<Value>().await {
@@ -57,6 +61,55 @@ pub async fn fetch_copilot_quota(token: &str) -> anyhow::Result<crate::quota::ty
                 if let Some(reset) = data.get("quota_reset_date").and_then(|v| v.as_str()) {
                     quota_res.reset = Some(reset.to_string());
                 }
+
+                // Extract session limits if present
+                if let Some(limits) = data.get("session_limits") {
+                    has_session_info = true;
+                    if let Some(weekly) = limits.get("weekly") {
+                        session_limits.weekly = Some(crate::quota::types::SessionLimitItem {
+                            limit: weekly.get("limit").and_then(|v| v.as_i64()).unwrap_or(0),
+                            current: weekly.get("current").and_then(|v| v.as_i64()).unwrap_or(0),
+                            reset_at: weekly
+                                .get("reset_at")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                        });
+                    }
+                    if let Some(sess) = limits.get("session") {
+                        session_limits.session = Some(crate::quota::types::SessionLimitItem {
+                            limit: sess.get("limit").and_then(|v| v.as_i64()).unwrap_or(0),
+                            current: sess.get("current").and_then(|v| v.as_i64()).unwrap_or(0),
+                            reset_at: sess
+                                .get("reset_at")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                        });
+                    }
+                }
+
+                // Extract session usage if present
+                if let Some(usage) = data.get("session_usage") {
+                    has_session_info = true;
+                    session_usage.input_tokens = usage
+                        .get("input_tokens")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0);
+                    session_usage.output_tokens = usage
+                        .get("output_tokens")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0);
+                    session_usage.cache_read_tokens = usage
+                        .get("cache_read_tokens")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0);
+                    session_usage.cache_write_tokens = usage
+                        .get("cache_write_tokens")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0);
+                    session_usage.reasoning_tokens =
+                        usage.get("reasoning_tokens").and_then(|v| v.as_i64());
+                }
+
                 if let Some(premium) = data
                     .get("quota_snapshots")
                     .and_then(|v| v.get("premium_interactions"))
@@ -118,10 +171,17 @@ pub async fn fetch_copilot_quota(token: &str) -> anyhow::Result<crate::quota::ty
             remaining: quota_res.remaining as f64,
             total: quota_res.limit as f64,
             reset_at: quota_res.reset.clone(),
-            five_hour_used_percent: None,
-            five_hour_reset_at: None,
-            weekly_used_percent: None,
-            weekly_reset_at: None,
+            session_limits: if has_session_info {
+                Some(session_limits)
+            } else {
+                None
+            },
+            session_usage: if has_session_info {
+                Some(session_usage)
+            } else {
+                None
+            },
+            ..Default::default()
         })
     } else {
         None

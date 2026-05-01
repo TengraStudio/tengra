@@ -52,26 +52,26 @@ export function TerminalSemanticPanel({
             <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2 typo-caption font-semibold">
                     <IconAlertTriangle className="w-3.5 h-3.5 text-warning" />
-                    {t('terminal.semanticIssues')}
+                    {t('frontend.terminal.semanticIssues')}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>
-                        {t('terminal.semanticErrors')}: {activeSemanticErrorCount}
+                        {t('frontend.terminal.semanticErrors')}: {activeSemanticErrorCount}
                     </span>
                     <span>
-                        {t('terminal.semanticWarnings')}: {activeSemanticWarningCount}
+                        {t('frontend.terminal.semanticWarnings')}: {activeSemanticWarningCount}
                     </span>
                     <button
                         onClick={clearActiveSemanticIssues}
                         className="px-1.5 py-0.5 rounded border border-border hover:bg-accent/50 transition-colors text-foreground"
                     >
-                        {t('terminal.clearIssues')}
+                        {t('frontend.terminal.clearIssues')}
                     </button>
                 </div>
             </div>
             {activeSemanticIssues.length === 0 ? (
                 <div className="px-1 py-2 typo-caption text-muted-foreground">
-                    {t('terminal.semanticNoIssues')}
+                    {t('frontend.terminal.semanticNoIssues')}
                 </div>
             ) : (
                 <div className="max-h-56 overflow-y-auto space-y-1">
@@ -100,7 +100,7 @@ export function TerminalSemanticPanel({
                                                     void handleAiExplainError(issue);
                                                 }}
                                                 className={C_TERMINALSEMANTICPANEL_2}
-                                                title={t('terminal.aiExplainError')}
+                                                title={t('frontend.terminal.aiExplainError')}
                                             >
                                                 <IconSparkles className="w-3 h-3" />
                                             </button>
@@ -110,7 +110,7 @@ export function TerminalSemanticPanel({
                                                     void handleAiFixError(issue);
                                                 }}
                                                 className={C_TERMINALSEMANTICPANEL_3}
-                                                title={t('terminal.aiFixError')}
+                                                title={t('frontend.terminal.aiFixError')}
                                             >
                                                 <IconTools className="w-3 h-3" />
                                             </button>

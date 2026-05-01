@@ -309,7 +309,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
             return;
         }
         dispatch({ type: 'SET_SEMANTIC_PREVIEW', value: activeTab.content.replace(/\bvar\b/g, 'const').slice(0, 1200) });
-        setStatusMessage(t('workspaceDashboard.editor.semanticPreviewReady'));
+        setStatusMessage(t('frontend.workspaceDashboard.editor.semanticPreviewReady'));
     }, [activeTab, dispatch, setStatusMessage, t]);
 
     const applySemanticRefactor = useCallback(() => {
@@ -317,7 +317,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
             return;
         }
         updateTabContent(activeTab.content.replace(/\bvar\b/g, 'const'));
-        setStatusMessage(t('workspaceDashboard.editor.semanticApplied'));
+        setStatusMessage(t('frontend.workspaceDashboard.editor.semanticApplied'));
     }, [activeTab, setStatusMessage, t, updateTabContent]);
 
     const previewRename = useCallback(async () => {
@@ -327,10 +327,10 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
         const preview = await window.electron.code.previewRenameSymbol(workspacePath, tools.renameFrom, tools.renameTo, 200);
         const excluded = preview.updatedFiles.filter(file => new RegExp(tools.excludePattern, 'i').test(file));
         if (excluded.length > 0) {
-            dispatch({ type: 'SET_RENAME_IMPACT', value: t('workspaceDashboard.editor.renameBlocked', { count: excluded.length }) });
+            dispatch({ type: 'SET_RENAME_IMPACT', value: t('frontend.workspaceDashboard.editor.renameBlocked', { count: excluded.length }) });
             return;
         }
-        dispatch({ type: 'SET_RENAME_IMPACT', value: t('workspaceDashboard.editor.renameImpact', { files: preview.totalFiles, occurrences: preview.totalOccurrences }) });
+        dispatch({ type: 'SET_RENAME_IMPACT', value: t('frontend.workspaceDashboard.editor.renameImpact', { files: preview.totalFiles, occurrences: preview.totalOccurrences }) });
     }, [dispatch, workspacePath, tools.excludePattern, tools.renameFrom, tools.renameTo, t]);
 
     return { previewSemanticRefactor, applySemanticRefactor, previewRename };
@@ -422,10 +422,21 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         return () => cancelAnimationFrame(rafId);
     }, [activeTab?.path]);
 
-    const handleEditorChange = useCallback((val?: string) => {
+    const handleEditorChange = useCallback((val?: string, modelPath?: string) => {
         if (!activeTab) {
             return;
         }
+
+        // Safety: Only update content if the change event matches the active tab's path
+        // This prevents race conditions during tab switching where an old model might trigger a change
+        if (modelPath && activeTab.path) {
+            const expectedPath = activeTab.path.replace(/\\/g, '/').toLowerCase();
+            const actualPath = modelPath.replace(/^file:\/\/\//, '').replace(/\\/g, '/').toLowerCase();
+            if (!actualPath.endsWith(expectedPath)) {
+                return;
+            }
+        }
+
         const nextValue = val ?? '';
         updateTabContent(nextValue);
         if (macros.recording && nextValue !== activeTab.content) {
@@ -538,6 +549,8 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                         onShowWorkspaceResults={payload => {
                             setWorkspaceResults(payload);
                         }}
+                        diffMode={activeTab?.type === 'diff'}
+                        originalValue={activeTab?.originalContent}
                     />
                 </div>
             )}

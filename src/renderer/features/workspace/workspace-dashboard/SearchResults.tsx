@@ -192,7 +192,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     if (normalizedResults.length === 0) {
         return (
             <div className="flex items-center justify-center p-6 typo-caption text-muted-foreground/60">
-                {t('workspaceDashboard.noResults')}
+                {t('frontend.workspaceDashboard.noResults')}
             </div>
         );
     }

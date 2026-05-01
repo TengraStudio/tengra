@@ -23,7 +23,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
     const formattedSize = React.useMemo(() => {
         return stats ? formatBytes(stats.totalSize) : '0 B';
     }, [stats]);
-    
+
     const formattedLoc = React.useMemo(() => {
         const loc = stats?.loc ?? 0;
         return new Intl.NumberFormat().format(loc);
@@ -32,16 +32,16 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-                { label: t('workspaceDashboard.fileCount'), value: stats?.fileCount ?? 0 },
-                { label: t('workspaceDashboard.loc'), value: `~${formattedLoc}` },
-                { label: t('workspaceDashboard.modules'), value: moduleCount },
-                { label: t('workspaceDashboard.totalSize'), value: formattedSize }
+                { label: t('frontend.workspaceDashboard.fileCount'), value: stats?.fileCount ?? 0 },
+                { label: t('frontend.workspaceDashboard.loc'), value: `~${formattedLoc}` },
+                { label: t('frontend.workspaceDashboard.modules'), value: moduleCount },
+                { label: t('frontend.workspaceDashboard.totalSize'), value: formattedSize }
             ].map((stat, i) => (
                 <div key={i} className="group px-5 py-4 rounded-2xl border border-border/5 bg-muted/5 transition-all hover:bg-muted/10">
-                    <div className="text-[11px] font-bold text-muted-foreground/30 tracking-wider mb-1.5 transition-colors group-hover:text-primary/40">
+                    <div className="text-sm font-bold text-muted-foreground/30  mb-1.5 transition-colors group-hover:text-primary/40">
                         {stat.label.toLowerCase()}
                     </div>
-                    <div className="text-2xl font-bold text-foreground/80 tracking-tight">
+                    <div className="text-2xl font-bold text-foreground/80 ">
                         {stat.value}
                     </div>
                 </div>

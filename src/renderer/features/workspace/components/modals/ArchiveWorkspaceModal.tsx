@@ -33,14 +33,14 @@ export const ArchiveWorkspaceModal: React.FC<ArchiveWorkspaceModalProps> = ({
 }) => (
     <AnimatePresence>
         {workspace && (
-            <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.archiveWorkspace')}>
+            <Modal isOpen={!!workspace} onClose={onClose} title={t('frontend.workspaces.archiveWorkspace')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
-                            {t('workspaces.archiveConfirmation')}{' '}
+                            {t('frontend.workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{workspace.title}</span>?
                             <span className="block mt-1 typo-caption text-success font-normal opacity-80">
-                                {t('workspaces.archiveWarning')}
+                                {t('frontend.workspaces.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -59,7 +59,7 @@ export const ArchiveWorkspaceModal: React.FC<ArchiveWorkspaceModalProps> = ({
                         >
                             {workspace.status === 'archived'
                                 ? t('common.unarchive')
-                                : t('workspaces.archiveWorkspace')}
+                                : t('frontend.workspaces.archiveWorkspace')}
                         </button>
                     </div>
                 </div>

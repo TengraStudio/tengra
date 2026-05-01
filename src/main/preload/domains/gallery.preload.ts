@@ -11,7 +11,24 @@
 import { IpcRenderer } from 'electron';
 
 export interface GalleryBridge {
-    list: () => Promise<{ name: string; path: string; url: string; mtime: number }[]>;
+    list: () => Promise<{
+        name: string;
+        path: string;
+        url: string;
+        mtime: number;
+        type: 'image' | 'video';
+        metadata?: {
+            prompt?: string;
+            negative_prompt?: string;
+            seed?: number;
+            steps?: number;
+            cfg_scale?: number;
+            width?: number;
+            height?: number;
+            model?: string;
+            created_at?: number;
+        };
+    }[]>;
     delete: (path: string) => Promise<boolean>;
     open: (path: string) => Promise<boolean>;
     reveal: (path: string) => Promise<boolean>;

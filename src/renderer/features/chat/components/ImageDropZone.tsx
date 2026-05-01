@@ -102,12 +102,12 @@ export const ImageDropZone: React.FC<ImageDropZoneProps> = ({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
                         className={C_IMAGEDROPZONE_1}
-                        aria-label={t('imageAttachment.dropHere')}
+                        aria-label={t('frontend.imageAttachment.dropHere')}
                     >
                         <div className="flex flex-col items-center gap-2 text-primary">
                             <IconPhotoPlus size={32} aria-hidden="true" />
                             <span className="text-sm font-medium">
-                                {t('imageAttachment.dropHere')}
+                                {t('frontend.imageAttachment.dropHere')}
                             </span>
                         </div>
                     </motion.div>

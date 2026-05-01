@@ -82,7 +82,7 @@ describe('UpdateService', () => {
 
         it('should configure autoUpdater settings when app-update.yml exists', () => {
             expect(autoUpdater.autoDownload).toBe(false);
-            expect(autoUpdater.autoInstallOnAppQuit).toBe(true);
+            expect(autoUpdater.autoInstallOnAppQuit).toBe(false);
         });
     });
 
@@ -100,7 +100,7 @@ describe('UpdateService', () => {
 
         it('should swallow expected failures', async () => {
             vi.mocked(autoUpdater.checkForUpdates).mockRejectedValueOnce(new Error('Network error'));
-            await expect(service.checkForUpdates()).resolves.toBeUndefined();
+            await expect(service.checkForUpdates()).resolves.toBeNull();
         });
 
         it('should surface feed access failures as warnings', async () => {
@@ -166,7 +166,7 @@ describe('UpdateService', () => {
             );
 
             service.init(mockWindow as never);
-            await vi.advanceTimersByTimeAsync(10000);
+            await vi.advanceTimersByTimeAsync(15001);
             vi.useRealTimers();
 
             expect(mockWindow.webContents.send).toHaveBeenCalledWith(

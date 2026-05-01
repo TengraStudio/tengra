@@ -115,7 +115,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                     <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
                         <IconGitBranch className="w-8 h-8 text-muted-foreground/30" />
                     </div>
-                    <h3 className="text-lg font-medium">{t('workspaceDashboard.notAGitRepo')}</h3>
+                    <h3 className="text-lg font-medium">{t('frontend.workspaceDashboard.notAGitRepo')}</h3>
                     <Button variant="outline" className="rounded-lg px-8">
                         Initialize Repository
                     </Button>

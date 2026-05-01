@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import React, { Suspense, useEffect, useMemo } from 'react';
+import React, { Suspense, useEffect } from 'react';
 
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -25,19 +25,13 @@ import { ChatTemplate } from '@/features/chat/types';
 import { ExtensionViewHost } from '@/features/extensions/components/ExtensionViewHost';
 import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
-import {
-    getAnimationDurationMs,
-    resolveAnimationPreset,
-    usePrefersReducedMotion,
-} from '@/lib/animation-system';
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
-import { trackAnimationEvent } from '@/store/animation-analytics.store';
 import type { GroupedModels } from '@/types';
 
 import {
     ChatViewWrapperView,
     DockerDashboardView,
+    ImageStudioView,
     MarketplaceView,
     ModelsPageView,
     SettingsRouteView,
@@ -143,6 +137,12 @@ const ModelsSection: React.FC = () => {
     );
 };
 
+const ImagesSection: React.FC = () => (
+    <Suspense fallback={<LoadingState size="md" />}>
+        <ImageStudioView />
+    </Suspense>
+);
+
 
 const TerminalPlaceholderSection: React.FC = () => {
     const { t } = useTranslation();
@@ -150,7 +150,7 @@ const TerminalPlaceholderSection: React.FC = () => {
     return (
         <div className="h-full p-6 flex flex-col items-center justify-center bg-tech-grid opacity-50">
             <div className="text-muted-foreground text-sm font-mono border border-border/50 p-4 rounded-xl">
-                {t('terminal.dashboardPlaceholder')}
+                {t('frontend.terminal.dashboardPlaceholder')}
             </div>
         </div>
     );
@@ -187,7 +187,7 @@ const ListeningOverlay: React.FC = () => {
         >
             <div className="w-2 h-2 rounded-full bg-current animate-ping" />
             <span className="text-sm font-bold text-sm">
-                {t('audioChat.listeningLabel')}
+                {t('frontend.audioChat.listeningLabel')}
             </span>
         </div>
     );
@@ -195,21 +195,6 @@ const ListeningOverlay: React.FC = () => {
 
 export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const { currentView } = props;
-    const prefersReducedMotion = usePrefersReducedMotion();
-
-    const pagePreset = useMemo(
-        () => resolveAnimationPreset('page', prefersReducedMotion),
-        [prefersReducedMotion]
-    );
-
-    useEffect(() => {
-        trackAnimationEvent({
-            name: `view-transition:${currentView}`,
-            preset: 'page',
-            durationMs: getAnimationDurationMs('page', prefersReducedMotion),
-            reducedMotion: prefersReducedMotion,
-        });
-    }, [currentView, prefersReducedMotion]);
 
     const renderView = () => {
         switch (currentView) {
@@ -218,6 +203,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             case 'settings': return <SettingsSection />;
             case 'mcp': return <DockerSection />;
             case 'models': return <ModelsSection />;
+            case 'images': return <ImagesSection />;
             case 'docker': return <DockerSection />;
             case 'terminal': return <TerminalPlaceholderSection />;
             case 'marketplace': return <Suspense fallback={<LoadingState size="md" />}><MarketplaceView /></Suspense>;
@@ -231,26 +217,17 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     return (
         <>
             <ModelMenuHotkeyHandler />
-            <AnimatePresence initial={false}>
-                <motion.div
-                    key={currentView}
-                    className={cn("h-full overflow-hidden will-change-opacity")}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: pagePreset.duration, ease: pagePreset.ease }}
-                >
-                    <ErrorBoundary resetKeys={[currentView]}>
-                        <Suspense fallback={renderViewSkeleton(
-                            ['chat', 'workspace', 'settings', 'mcp', 'agent', 'models', 'docker', 'terminal', 'marketplace'].includes(currentView)
-                                ? currentView as ViewSkeletonId
-                                : 'marketplace'
-                        )}>
-                            {renderView()}
-                        </Suspense>
-                    </ErrorBoundary>
-                </motion.div>
-            </AnimatePresence>
+            <div key={currentView} className={cn("h-full overflow-hidden")}>
+                <ErrorBoundary resetKeys={[currentView]}>
+                    <Suspense fallback={renderViewSkeleton(
+                        ['chat', 'workspace', 'settings', 'mcp', 'agent', 'models', 'docker', 'terminal', 'marketplace', 'images'].includes(currentView)
+                            ? currentView as ViewSkeletonId
+                            : 'marketplace'
+                    )}>
+                        {renderView()}
+                    </Suspense>
+                </ErrorBoundary>
+            </div>
             <ListeningOverlay />
         </>
     );

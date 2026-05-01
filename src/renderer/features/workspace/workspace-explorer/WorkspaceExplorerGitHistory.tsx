@@ -43,7 +43,7 @@ export function WorkspaceExplorerGitHistory({
                 <div className="min-w-0">
                     <div className="flex items-center gap-1.5 typo-overline font-bold text-muted-foreground/50">
                         <IconHistory className="h-3 w-3" />
-                        <span>{t('agent.history')}</span>
+                        <span>{t('frontend.agent.history')}</span>
                     </div>
                     <div className="mt-1 truncate typo-caption font-semibold text-foreground">
                         {fileName}

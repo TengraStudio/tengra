@@ -288,7 +288,7 @@ const useTerminalInstance = (
                 });
 
                 if (!sessionId) {
-                    const errorMessage = t('workspaceDashboard.terminalFailedSession');
+                    const errorMessage = t('frontend.workspaceDashboard.terminalFailedSession');
                     term.write(`\r\n\x1b[31m[ERROR] ${errorMessage}\x1b[0m\r\n`);
                     initializingTerminals.delete(finalTerminalId);
                     throw new Error(errorMessage);
@@ -304,7 +304,7 @@ const useTerminalInstance = (
 
                 const cleanupExit = window.electron.terminal.onExit(({ id, code }) => {
                     if (pidRef.current && id === pidRef.current) {
-                        term.write(`\r\n\x1b[33m${t('workspaceDashboard.terminalExited')} ${code}\x1b[0m\r\n`);
+                        term.write(`\r\n\x1b[33m${t('frontend.workspaceDashboard.terminalExited')} ${code}\x1b[0m\r\n`);
                     }
                 });
 
@@ -320,7 +320,7 @@ const useTerminalInstance = (
                     }
                 });
             } catch (error) {
-                term.write(`\r\n\x1b[31m${t('workspaceDashboard.terminalFailedStart')}\x1b[0m\r\n`);
+                term.write(`\r\n\x1b[31m${t('frontend.workspaceDashboard.terminalFailedStart')}\x1b[0m\r\n`);
                 appLogger.error('TerminalComponent', 'Failed to start terminal', error as Error);
             }
         };
@@ -438,19 +438,19 @@ export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) 
                     'inline-flex items-center rounded-full px-2 py-1 border',
                     terminalRuntimeHealth?.terminalAvailable ? 'border-success/50 text-success' : 'border-destructive/50 text-destructive'
                 )}>
-                    {t('workspace.terminalStatusTerm')} {terminalRuntimeHealth?.availableBackends ?? 0}/{terminalRuntimeHealth?.totalBackends ?? 0}
+                    {t('frontend.workspace.terminalStatusTerm')} {terminalRuntimeHealth?.availableBackends ?? 0}/{terminalRuntimeHealth?.totalBackends ?? 0}
                 </span>
                 <span className={cn(
                     'inline-flex items-center rounded-full px-2 py-1 border',
                     sshConnectionCount > 0 ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'
                 )}>
-                    {t('workspace.terminalStatusSsh')} {sshConnectionCount}
+                    {t('frontend.workspace.terminalStatusSsh')} {sshConnectionCount}
                 </span>
                 <span className={cn(
                     'inline-flex items-center rounded-full px-2 py-1 border',
                     dockerAvailable ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'
                 )}>
-                    {t('workspace.terminalStatusDocker')} {dockerAvailable ? t('workspace.terminalStatusReady') : t('workspace.terminalStatusUnavailable')}
+                    {t('frontend.workspace.terminalStatusDocker')} {dockerAvailable ? t('frontend.workspace.terminalStatusReady') : t('frontend.workspace.terminalStatusUnavailable')}
                 </span>
             </div>
             <div className="relative flex-1">

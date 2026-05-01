@@ -18,7 +18,7 @@ export function WorkspaceTechStack({ frameworks, t }: WorkspaceTechStackProps) {
         <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                {t('workspaceDashboard.techStack')}
+                {t('frontend.workspaceDashboard.techStack')}
             </h3>
             <div className="flex flex-wrap gap-2">
                 {frameworks.map((fw: string) => (
@@ -26,7 +26,7 @@ export function WorkspaceTechStack({ frameworks, t }: WorkspaceTechStackProps) {
                         {fw}
                     </span>
                 ))}
-                {frameworks.length === 0 && <span className="typo-caption text-muted-foreground">{t('workspaceDashboard.noFrameworks')}</span>}
+                {frameworks.length === 0 && <span className="typo-caption text-muted-foreground">{t('frontend.workspaceDashboard.noFrameworks')}</span>}
             </div>
         </div>
     );
@@ -62,7 +62,7 @@ export function WorkspaceLanguageDistribution({ languages, t }: WorkspaceLanguag
         <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-success" />
-                {t('workspaceDashboard.langDist')}
+                {t('frontend.workspaceDashboard.langDist')}
             </h3>
             <div className="space-y-3 max-h-250 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
                 {Object.entries(languages)
@@ -105,7 +105,7 @@ export function WorkspaceAnalysisTodos({ todos, t }: WorkspaceAnalysisTodosProps
         <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-warning" />
-                {t('workspaceDashboard.todoList')}
+                {t('frontend.workspaceDashboard.todoList')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {todos.map((todo: string, i: number) => (

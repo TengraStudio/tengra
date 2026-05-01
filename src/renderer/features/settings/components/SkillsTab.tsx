@@ -90,7 +90,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                 version: mItem.version,
             });
             if (result.success) {
-                pushNotification({ type: 'success', message: t('settings.extensions.plugins.updateSuccess') });
+                pushNotification({ type: 'success', message: t('frontend.settings.extensions.plugins.updateSuccess') });
                 void marketplaceStore.checkLiveUpdates();
                 await loadData();
             }
@@ -103,16 +103,16 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
         <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-10">
             <header className="space-y-2 px-1">
                 <h2 className="text-2xl font-semibold ">
-                    {normalizeTranslation(t('settings.tabs.skills'), 'Skills')}
+                    {normalizeTranslation(t('frontend.settings.tabs.skills'), 'Skills')}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                    {normalizeTranslation(t('settings.skills.description'), 'Manage installed skills. Install new ones from Marketplace > Skills.')}
+                    {normalizeTranslation(t('frontend.settings.skills.description'), 'Manage installed skills. Install new ones from Marketplace > Skills.')}
                 </p>
             </header>
 
             <SettingsPanel
-                title={normalizeTranslation(t('settings.skills.libraryTitle'), 'Installed Skills')}
-                description={normalizeTranslation(t('settings.skills.libraryDescription'), 'Enable, disable, or uninstall installed skills.')}
+                title={normalizeTranslation(t('frontend.settings.skills.libraryTitle'), 'Installed Skills')}
+                description={normalizeTranslation(t('frontend.settings.skills.libraryDescription'), 'Enable, disable, or uninstall installed skills.')}
                 icon={IconSparkles}
             >
                 {loading ? (
@@ -121,7 +121,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                     </div>
                 ) : skills.length === 0 ? (
                     <div className="rounded-xl border border-border/25 bg-background/40 p-3 typo-caption text-muted-foreground">
-                        {normalizeTranslation(t('settings.skills.empty'), 'No installed skills yet.')}
+                        {normalizeTranslation(t('frontend.settings.skills.empty'), 'No installed skills yet.')}
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -160,7 +160,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                                 </Badge>
                                             </div>
                                             <p className="mt-2 text-sm font-medium text-muted-foreground/70 line-clamp-1 leading-relaxed">
-                                                {skill.description || normalizeTranslation(t('settings.skills.noDescription'), 'No description')}
+                                                {skill.description || normalizeTranslation(t('frontend.settings.skills.noDescription'), 'No description')}
                                             </p>
                                         </div>
                                     </div>

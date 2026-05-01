@@ -35,7 +35,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
             <div className="flex items-center gap-3 px-1">
                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                 <h4 className="text-sm font-bold text-muted-foreground">
-                    {t('settings.images.provider')}
+                    {t('frontend.settings.images.provider')}
                 </h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -64,7 +64,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                                     {p === 'sd-cpp' ? 'Local Runtime' : 'Remote Cloud'}
                                 </div>
                                 <p className="typo-body text-muted-foreground/40 leading-none mt-1.5 font-bold">
-                                    {p === 'sd-cpp' ? t('settings.images.localRuntime') : t('settings.images.remoteCloud')}
+                                    {p === 'sd-cpp' ? t('frontend.settings.images.localRuntime') : t('frontend.settings.images.remoteCloud')}
                                 </p>
                             </div>
                         </div>

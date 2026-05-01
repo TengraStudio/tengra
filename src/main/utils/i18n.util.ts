@@ -10,11 +10,22 @@
 
 import fs from 'fs';
 import path from 'path';
+import { app } from 'electron';
 
 import { appLogger } from '@main/logging/logger';
+import { JsonValue } from '@shared/types/common';
 import { LocalePack } from '@shared/types/locale';
 
-let translations: LocalePack | null = null;
+type TranslationTree = Record<string, JsonValue | undefined>;
+
+let translations: TranslationTree | null = null;
+
+function asTranslationTree(value: unknown): TranslationTree | null {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+        return value as TranslationTree;
+    }
+    return null;
+}
 
 /**
  * Load translations from the locale file.
@@ -22,13 +33,41 @@ let translations: LocalePack | null = null;
  */
 function loadTranslations(): void {
     try {
-        // This path might need adjustment based on build environment
-        const localePath = path.join(__dirname, '../../renderer/i18n/locales/en.locale.json');
-        if (fs.existsSync(localePath)) {
+        const appPath = app.getAppPath();
+        
+        const possiblePaths = [
+            // User Data: Marketplace/Override location
+            path.join(app.getPath('userData'), 'runtime/locales/en.locale.json'),
+            // Production: Extra resources (from package.json extraResources)
+            path.join(path.dirname(appPath), 'locales/en.locale.json'),
+            // Production: Inside app.asar (legacy/fallback)
+            path.join(appPath, 'dist/renderer/i18n/locales/en.locale.json'),
+            path.join(appPath, 'renderer/i18n/locales/en.locale.json'),
+            // Development: Relative to __dirname
+            path.join(__dirname, '../../src/renderer/i18n/locales/en.locale.json'),
+            path.join(__dirname, '../../../src/renderer/i18n/locales/en.locale.json'),
+            // Portable/extracted fallbacks
+            path.join(process.cwd(), 'resources/app.asar/dist/renderer/i18n/locales/en.locale.json'),
+            path.join(process.cwd(), 'resources/locales/en.locale.json'),
+            path.join(process.cwd(), 'dist/renderer/i18n/locales/en.locale.json'),
+        ];
+
+        let localePath = '';
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                localePath = p;
+                break;
+            }
+        }
+
+        if (localePath) {
             const data = fs.readFileSync(localePath, 'utf8');
-            translations = JSON.parse(data) as LocalePack;
+            const localePack = JSON.parse(data) as LocalePack;
+            const parsedTranslations = asTranslationTree(localePack.translations);
+            translations = parsedTranslations ?? asTranslationTree(localePack);
+            appLogger.debug('BackendI18n', `Translations loaded from ${localePath}`);
         } else {
-            appLogger.warn('BackendI18n', `Locale file not found at ${localePath}`);
+            appLogger.warn('BackendI18n', `Locale file not found. Checked ${possiblePaths.length} locations. Last attempted: ${possiblePaths[0]}`);
         }
     } catch (error) {
         appLogger.error('BackendI18n', 'Failed to load translations', error as Error);
@@ -64,19 +103,22 @@ export function t(path: string, options?: Record<string, unknown>): string {
 
 
     let translation: string | null = null;
+    const normalizedPath = path.startsWith('translations.') ? path.slice('translations.'.length) : path;
+    const hasScopePrefix = normalizedPath.startsWith('backend.')
+        || normalizedPath.startsWith('frontend.')
+        || normalizedPath.startsWith('common.');
 
-    // Try auto-resolving with backend prefix first if it doesn't have one
-    if (!path.startsWith('backend.') && !path.startsWith('frontend.') && !path.startsWith('common.')) {
-        translation = resolve(`backend.${path}`);
+    // Resolve common keys first, then backend keys for unscoped requests.
+    if (!hasScopePrefix) {
+        translation = resolve(`common.${normalizedPath}`);
         if (translation === null) {
-            // Try common prefix as fallback
-            translation = resolve(`common.${path}`);
+            translation = resolve(`backend.${normalizedPath}`);
         }
     }
 
 
     if (translation === null) {
-        translation = resolve(path);
+        translation = resolve(normalizedPath);
     }
 
 
@@ -93,4 +135,3 @@ export function t(path: string, options?: Record<string, unknown>): string {
 
     return result;
 }
-

@@ -139,10 +139,10 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                 <div className="flex flex-col gap-2">
                     <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <IconSettings className="w-8 h-8 text-primary" />
-                        {t('workspaceDashboard.environment')}
+                        {t('frontend.workspaceDashboard.environment')}
                     </h2>
                     <p className="text-muted-foreground text-sm max-w-xl">
-                        {t('workspaceDashboard.envDescription')}
+                        {t('frontend.workspaceDashboard.envDescription')}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -151,7 +151,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                         className={C_WORKSPACEENVIRONMENTTAB_1}
                     >
                         <IconPlus className="w-4 h-4" />
-                        {t('workspaceDashboard.envAddVar')}
+                        {t('frontend.workspaceDashboard.envAddVar')}
                     </button>
                     <button
                         onClick={() => void handleSave()}
@@ -162,7 +162,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                         )}
                     >
                         <IconDeviceFloppy className="w-4 h-4" />
-                        {saving ? t('common.loading') : t('workspaceDashboard.envSave')}
+                        {saving ? t('common.loading') : t('frontend.workspaceDashboard.envSave')}
                     </button>
                 </div>
             </div>
@@ -171,9 +171,9 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
             <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-border/50 bg-muted/20">
                     <div className="grid grid-cols-12 gap-4 text-sm font-bold text-muted-foreground/60">
-                        <div className="col-span-4">{t('workspaceDashboard.envKey')}</div>
-                        <div className="col-span-6">{t('workspaceDashboard.envValue')}</div>
-                        <div className="col-span-2 text-right">{t('workspaceDashboard.envActions')}</div>
+                        <div className="col-span-4">{t('frontend.workspaceDashboard.envKey')}</div>
+                        <div className="col-span-6">{t('frontend.workspaceDashboard.envValue')}</div>
+                        <div className="col-span-2 text-right">{t('frontend.workspaceDashboard.envActions')}</div>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
@@ -189,7 +189,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                         value={envVar.key}
                                         onChange={(e) => updateVar(idx, 'key', e.target.value)}
                                         className={C_WORKSPACEENVIRONMENTTAB_2}
-                                        placeholder={t('workspaceDashboard.envNamePlaceholder')}
+                                        placeholder={t('frontend.workspaceDashboard.envNamePlaceholder')}
                                     />
                                 </div>
                                 <div className="col-span-6 flex items-center gap-2">
@@ -198,12 +198,12 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                         value={envVar.value}
                                         onChange={(e) => updateVar(idx, 'value', e.target.value)}
                                         className={C_WORKSPACEENVIRONMENTTAB_3}
-                                        placeholder={t('placeholder.envValue')}
+                                        placeholder={t('frontend.placeholder.envValue')}
                                     />
                                     <button
                                         onClick={() => toggleVisibility(idx)}
                                         className="p-1.5 hover:bg-muted/30 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                                        title={envVar.visible ? t('workspaceDashboard.envHideValue') : t('workspaceDashboard.envShowValue')}
+                                        title={envVar.visible ? t('frontend.workspaceDashboard.envHideValue') : t('frontend.workspaceDashboard.envShowValue')}
                                     >
                                         {envVar.visible ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
                                     </button>
@@ -224,7 +224,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                 <IconSettings className="w-8 h-8 text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-foreground">{t('workspaceDashboard.envNoVars')}</h3>
+                                <h3 className="text-lg font-bold text-foreground">{t('frontend.workspaceDashboard.envNoVars')}</h3>
                             </div>
                         </div>
                     )}

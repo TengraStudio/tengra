@@ -26,6 +26,8 @@ let marketplaceState: MarketplaceState = {
 };
 
 const listeners = new Set<() => void>();
+let checkForUpdatesPromise: Promise<number> | null = null;
+let checkLiveUpdatesPromise: Promise<number> | null = null;
 
 export const marketplaceStore = {
     getState: () => marketplaceState,
@@ -42,6 +44,11 @@ export const marketplaceStore = {
         listeners.forEach(l => l());
     },
     checkForUpdates: async () => {
+        if (checkForUpdatesPromise) {
+            return await checkForUpdatesPromise;
+        }
+
+        checkForUpdatesPromise = (async () => {
         try {
             const [count, registry] = await Promise.all([
                 window.electron.marketplace.getUpdateCount(),
@@ -54,8 +61,18 @@ export const marketplaceStore = {
             appLogger.error('MarketplaceStore', 'Failed to check for marketplace updates:', error as Error);
             return 0;
         }
+        })().finally(() => {
+            checkForUpdatesPromise = null;
+        });
+
+        return await checkForUpdatesPromise;
     },
     checkLiveUpdates: async (silent: boolean = false) => { 
+        if (checkLiveUpdatesPromise) {
+            return await checkLiveUpdatesPromise;
+        }
+
+        checkLiveUpdatesPromise = (async () => {
         try {
             const count = await window.electron.marketplace.checkLiveUpdates();
             marketplaceState = { ...marketplaceState, updateCount: count };
@@ -81,6 +98,11 @@ export const marketplaceStore = {
             appLogger.error('MarketplaceStore', 'Failed to check for live marketplace updates:', error as Error);
             return 0;
         }
+        })().finally(() => {
+            checkLiveUpdatesPromise = null;
+        });
+
+        return await checkLiveUpdatesPromise;
     },
     fetchReadme: async (extensionId: string, repository?: string) => {
         try {

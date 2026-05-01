@@ -18,17 +18,17 @@ interface LogEntry {
     timestamp: Date;
 }
 
-const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
-const mockIpcMainListeners = new Map<string, (...args: TestValue[]) => void>();
-const mockWindows: TestValue[] = [];
+const mockIpcMainHandlers = new Map<string, (...args: any[]) => Promise<any>>();
+const mockIpcMainListeners = new Map<string, (...args: any[]) => void>();
+const mockWindows: any[] = [];
 
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
-            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
+        handle: vi.fn((channel: string, handler: (...args: any[]) => any | Promise<any>) => {
+            mockIpcMainHandlers.set(channel, async (...args: any[]) => Promise.resolve(handler(...args)));
         }),
-        on: vi.fn((channel: string, handler: (...args: TestValue[]) => void) => {
+        on: vi.fn((channel: string, handler: (...args: any[]) => void) => {
             mockIpcMainListeners.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -37,10 +37,13 @@ vi.mock('electron', () => ({
         removeListener: vi.fn((channel: string) => {
             mockIpcMainListeners.delete(channel);
         }),
+        removeAllListeners: vi.fn((channel: string) => {
+            mockIpcMainListeners.delete(channel);
+        }),
     },
     BrowserWindow: {
         getAllWindows: vi.fn(() => mockWindows),
-        fromWebContents: vi.fn((sender: TestValue) => {
+        fromWebContents: vi.fn((sender: any) => {
             return { id: (sender as { id: number }).id };
         }),
     },
@@ -61,8 +64,6 @@ vi.mock('@main/logging/logger', () => ({
         ERROR: 3,
     },
 }));
-
-// Mock IPC wrapper
 
 // Import module under test AFTER mocks
 import { pushLogEntry, registerLoggingIpc } from '@main/ipc/logging';
@@ -317,4 +318,3 @@ describe('Logging IPC Handlers', () => {
         });
     });
 });
-

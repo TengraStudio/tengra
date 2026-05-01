@@ -9,15 +9,17 @@
  */
 
 const { spawn } = require('child_process');
+const path = require('path');
 
 function runDevServer() {
     const env = { ...process.env, NODE_OPTIONS: '--max-old-space-size=8192' };
     delete env.ELECTRON_RUN_AS_NODE;
 
-    const command = 'npx';
-    const child = spawn(command, ['vite'], {
+    const command = process.execPath;
+    const viteBin = path.resolve(__dirname, '..', 'node_modules', 'vite', 'bin', 'vite.js');
+    const child = spawn(command, [viteBin], {
         stdio: 'inherit',
-        shell: true,
+        shell: false,
         env
     });
 

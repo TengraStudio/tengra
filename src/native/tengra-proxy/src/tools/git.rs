@@ -287,7 +287,9 @@ async fn checkout(args: Value) -> ToolDispatchResponse {
         Ok(repo) => {
             let obj = match repo.revparse_single(branch) {
                 Ok(obj) => obj,
-                Err(e) => return error_response(&format!("Failed to resolve branch '{}': {}", branch, e)),
+                Err(e) => {
+                    return error_response(&format!("Failed to resolve branch '{}': {}", branch, e))
+                }
             };
             if let Err(e) = repo.checkout_tree(&obj, None) {
                 return error_response(&format!("Failed to checkout tree for '{}': {}", branch, e));

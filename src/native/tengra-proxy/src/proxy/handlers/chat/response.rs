@@ -13,9 +13,271 @@ pub fn translate_response(provider: &str, upstream_response: Value) -> Value {
     match provider {
         "antigravity" => translate_gemini_response(upstream_response),
         "claude" => translate_claude_response(upstream_response),
+        "codex" => translate_codex_response(upstream_response),
+        "openai" => translate_openai_response(upstream_response),
         "copilot" => translate_copilot_response(upstream_response),
         _ => upstream_response,
     }
+}
+
+fn translate_openai_response(v: Value) -> Value {
+    if has_image_api_payload(&v) {
+        return translate_image_api_response(v);
+    }
+    if v.get("output").and_then(Value::as_array).is_some() {
+        return translate_responses_api_response(v);
+    }
+    v
+}
+
+fn translate_codex_response(v: Value) -> Value {
+    if v.get("choices").and_then(Value::as_array).is_some() {
+        return v;
+    }
+    if v.get("output").and_then(Value::as_array).is_some() {
+        return translate_responses_api_response(v);
+    }
+    v
+}
+
+fn has_image_api_payload(v: &Value) -> bool {
+    v.get("data")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items.iter().any(|item| {
+                item.get("b64_json").and_then(Value::as_str).is_some()
+                    || item.get("url").and_then(Value::as_str).is_some()
+            })
+        })
+        .unwrap_or(false)
+}
+
+fn translate_image_api_response(v: Value) -> Value {
+    let images = v
+        .get("data")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(image_from_image_api_item)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    json!({
+        "id": format!("image-{}", uuid::Uuid::new_v4()),
+        "object": "chat.completion",
+        "created": v.get("created").and_then(Value::as_i64).unwrap_or_else(|| chrono::Utc::now().timestamp()),
+        "model": "image",
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "",
+                    "images": if images.is_empty() { Value::Null } else { Value::Array(images) }
+                },
+                "finish_reason": "stop"
+            }
+        ],
+        "usage": v.get("usage").cloned().unwrap_or_else(|| json!({}))
+    })
+}
+
+fn translate_responses_api_response(v: Value) -> Value {
+    let (content, reasoning, tool_calls, images) = extract_responses_output(&v);
+    let usage = normalize_responses_usage(v.get("usage"));
+
+    json!({
+        "id": v.get("id").and_then(Value::as_str).unwrap_or("resp_local"),
+        "object": "chat.completion",
+        "created": v.get("created_at").and_then(Value::as_i64).unwrap_or_else(|| chrono::Utc::now().timestamp()),
+        "model": v.get("model").and_then(Value::as_str).unwrap_or_default(),
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": content,
+                    "reasoning_content": reasoning,
+                    "tool_calls": tool_calls,
+                    "images": images
+                },
+                "finish_reason": "stop"
+            }
+        ],
+        "usage": usage
+    })
+}
+
+fn image_from_image_api_item(item: &Value) -> Option<Value> {
+    if let Some(data) = item.get("b64_json").and_then(Value::as_str) {
+        if !data.is_empty() {
+            return Some(json!({
+                "type": "image_url",
+                "image_url": {
+                    "url": format!("data:image/png;base64,{}", data)
+                }
+            }));
+        }
+    }
+    item.get("url").and_then(Value::as_str).map(|url| {
+        json!({
+            "type": "image_url",
+            "image_url": { "url": url }
+        })
+    })
+}
+
+fn extract_responses_output(v: &Value) -> (String, String, Value, Value) {
+    let mut content = String::new();
+    let mut reasoning = String::new();
+    let mut tool_calls = Vec::new();
+    let mut images = Vec::new();
+
+    if let Some(output_text) = v.get("output_text").and_then(Value::as_str) {
+        content.push_str(output_text);
+    }
+
+    for (index, item) in v
+        .get("output")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .enumerate()
+    {
+        match item.get("type").and_then(Value::as_str).unwrap_or_default() {
+            "message" => extract_responses_message_item(item, &mut content, &mut images),
+            "reasoning" => extract_responses_reasoning_item(item, &mut reasoning),
+            "function_call" => tool_calls.push(json!({
+                "id": item.get("id").and_then(Value::as_str).unwrap_or_else(|| item.get("call_id").and_then(Value::as_str).unwrap_or("tool")),
+                "type": "function",
+                "function": {
+                    "name": item.get("name").and_then(Value::as_str).unwrap_or_default(),
+                    "arguments": item.get("arguments").and_then(Value::as_str).unwrap_or_default()
+                }
+            })),
+            "image_generation_call" => {
+                if let Some(image) = image_from_responses_image_item(item) {
+                    images.push(image);
+                }
+            }
+            "output_text" => {
+                if let Some(text) = item.get("text").and_then(Value::as_str) {
+                    content.push_str(text);
+                }
+            }
+            "output_image" => {
+                if let Some(image) = image_from_responses_image_item(item) {
+                    images.push(image);
+                }
+            }
+            other if other.ends_with("image_generation_call") => {
+                if let Some(image) = image_from_responses_image_item(item) {
+                    images.push(image);
+                }
+            }
+            _ => {
+                if let Some(text) = item.get("text").and_then(Value::as_str) {
+                    if index > 0 && !content.is_empty() {
+                        content.push('\n');
+                    }
+                    content.push_str(text);
+                }
+            }
+        }
+    }
+
+    let tool_calls = if tool_calls.is_empty() {
+        Value::Null
+    } else {
+        Value::Array(tool_calls)
+    };
+    let images = if images.is_empty() {
+        Value::Null
+    } else {
+        Value::Array(images)
+    };
+    (content, reasoning, tool_calls, images)
+}
+
+fn extract_responses_message_item(item: &Value, content: &mut String, images: &mut Vec<Value>) {
+    for part in item
+        .get("content")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+    {
+        match part.get("type").and_then(Value::as_str).unwrap_or_default() {
+            "output_text" | "text" => {
+                content.push_str(part.get("text").and_then(Value::as_str).unwrap_or_default());
+            }
+            "output_image" | "image" => {
+                if let Some(image) = image_from_responses_image_item(&part) {
+                    images.push(image);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn extract_responses_reasoning_item(item: &Value, reasoning: &mut String) {
+    if let Some(summary) = item.get("summary").and_then(Value::as_array) {
+        for part in summary {
+            if let Some(text) = part
+                .get("text")
+                .or_else(|| part.get("summary_text"))
+                .and_then(Value::as_str)
+            {
+                reasoning.push_str(text);
+            }
+        }
+    }
+}
+
+fn image_from_responses_image_item(item: &Value) -> Option<Value> {
+    if let Some(data) = item.get("result").and_then(Value::as_str) {
+        if !data.is_empty() {
+            return Some(json!({
+                "type": "image_url",
+                "image_url": {
+                    "url": format!("data:image/png;base64,{}", data)
+                }
+            }));
+        }
+    }
+    if let Some(url) = item
+        .get("image_url")
+        .and_then(Value::as_str)
+        .or_else(|| {
+            item.get("image_url")
+                .and_then(|value| value.get("url"))
+                .and_then(Value::as_str)
+        })
+        .or_else(|| item.get("url").and_then(Value::as_str))
+    {
+        return Some(json!({
+            "type": "image_url",
+            "image_url": { "url": url }
+        }));
+    }
+    None
+}
+
+fn normalize_responses_usage(usage: Option<&Value>) -> Value {
+    let Some(usage) = usage else {
+        return json!({});
+    };
+    if usage.get("prompt_tokens").is_some() {
+        return usage.clone();
+    }
+    json!({
+        "prompt_tokens": usage.get("input_tokens").and_then(Value::as_u64).unwrap_or(0),
+        "completion_tokens": usage.get("output_tokens").and_then(Value::as_u64).unwrap_or(0),
+        "total_tokens": usage.get("total_tokens").and_then(Value::as_u64).unwrap_or(0)
+    })
 }
 
 fn translate_copilot_response(mut v: Value) -> Value {
@@ -299,7 +561,10 @@ fn extract_claude_content(v: &Value) -> (String, String, Value, Value) {
 mod tests {
     use serde_json::json;
 
-    use super::{translate_claude_response, translate_copilot_response, translate_gemini_response};
+    use super::{
+        translate_claude_response, translate_copilot_response, translate_gemini_response,
+        translate_response,
+    };
 
     #[test]
     fn translates_claude_tool_use_blocks() {
@@ -369,6 +634,47 @@ mod tests {
             Some("hello")
         );
         assert_eq!(translated["model"].as_str(), Some("gemini-3-flash"));
+    }
+
+    #[test]
+    fn translates_codex_image_generation_call() {
+        let translated = translate_response(
+            "codex",
+            json!({
+                "id": "resp_1",
+                "model": "gpt-5.4",
+                "output": [
+                    { "type": "image_generation_call", "result": "abc123" }
+                ],
+                "usage": {
+                    "input_tokens": 1,
+                    "output_tokens": 2,
+                    "total_tokens": 3
+                }
+            }),
+        );
+
+        assert_eq!(
+            translated["choices"][0]["message"]["images"][0]["image_url"]["url"].as_str(),
+            Some("data:image/png;base64,abc123")
+        );
+        assert_eq!(translated["usage"]["prompt_tokens"].as_u64(), Some(1));
+    }
+
+    #[test]
+    fn translates_openai_images_api_payload() {
+        let translated = translate_response(
+            "openai",
+            json!({
+                "created": 123,
+                "data": [{ "b64_json": "xyz789" }]
+            }),
+        );
+
+        assert_eq!(
+            translated["choices"][0]["message"]["images"][0]["image_url"]["url"].as_str(),
+            Some("data:image/png;base64,xyz789")
+        );
     }
 
     #[test]

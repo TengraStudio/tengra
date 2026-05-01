@@ -264,8 +264,18 @@ export const useMessageContent = (
                 return cached;
             }
         }
-        if (streaming && !hasStructuredStreamMarkup(content)) {
-            return parseStreamingFastPath(content, reasoning, streaming);
+        if (!hasStructuredStreamMarkup(content)) {
+            const parsed = parseStreamingFastPath(content, reasoning, streaming);
+            if (!streaming) {
+                messageContentParseCache.set(cacheKey, parsed);
+                if (messageContentParseCache.size > 500) {
+                    const oldest = messageContentParseCache.keys().next().value;
+                    if (oldest) {
+                        messageContentParseCache.delete(oldest);
+                    }
+                }
+            }
+            return parsed;
         }
         const parsed = parseMessageTaggedSections(content, reasoning, streaming);
         if (!streaming) {
@@ -293,12 +303,12 @@ export interface QuotaErrorDetails {
 
 function buildQuotaMessage(error: ChatError, t: TranslationFn): string {
     if (error.kind === 'capacity_exhausted') {
-        return error.message || t('chat.errorCapacityExhausted');
+        return error.message || t('frontend.chat.errorCapacityExhausted');
     }
     if (error.kind === 'rate_limited') {
-        return error.message || t('chat.errorRateLimited');
+        return error.message || t('frontend.chat.errorRateLimited');
     }
-    return error.message || t('messageBubble.quotaMessage');
+    return error.message || t('frontend.messageBubble.quotaMessage');
 }
 
 export const useQuotaDetails = (chatError: ChatError | null, t: TranslationFn): QuotaErrorDetails | null =>

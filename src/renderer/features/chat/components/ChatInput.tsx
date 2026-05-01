@@ -135,7 +135,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
         return (
             <div
                 role="group"
-                aria-label={t('aria.chatInput')}
+                aria-label={t('frontend.aria.chatInput')}
                 className={cn('relative z-30 px-2 pb-3 pt-1 sm:px-4 sm:pb-4', ctrl.isDragging && 'bg-primary/5')}
                 onDragOver={e => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(true); }}
                 onDragLeave={e => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(false); }}
@@ -174,10 +174,10 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                             value={ctrl.input}
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
-                            placeholder={ctrl.t('input.placeholder.default')}
+                            placeholder={ctrl.t('frontend.input.placeholder.default')}
                             className={C_CHATINPUT_2}
                             rows={1}
-                            aria-label={ctrl.t('input.placeholder.default')}
+                            aria-label={ctrl.t('frontend.input.placeholder.default')}
                             role="combobox"
                             aria-expanded={ctrl.showCommandMenu && ctrl.filteredPrompts.length > 0}
                         />

@@ -65,9 +65,16 @@ describe('Key Rotation IPC Handlers', () => {
             initializeProviderKeys: vi.fn()
         } as never as KeyRotationService;
 
-        mockEvent = {} as IpcMainInvokeEvent;
+        // Mock window and sender for validation
+        const mockWindow = {
+            webContents: { id: 1 }
+        } as never as Electron.BrowserWindow;
 
-        registerKeyRotationIpc(() => null, mockKeyRotationService);
+        mockEvent = {
+            sender: { id: 1 }
+        } as never as IpcMainInvokeEvent;
+
+        registerKeyRotationIpc(() => mockWindow, mockKeyRotationService);
     });
 
     describe('key-rotation:getCurrentKey', () => {

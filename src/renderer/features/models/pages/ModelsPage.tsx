@@ -207,8 +207,8 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold">{t('modelsPage.title')}</h1>
-                            <p className="text-sm text-muted-foreground mt-1">{t('modelsPage.subtitle')}</p>
+                            <h1 className="text-2xl font-bold">{t('frontend.modelsPage.title')}</h1>
+                            <p className="text-sm text-muted-foreground mt-1">{t('frontend.modelsPage.subtitle')}</p>
                         </div> 
                     </div>
 
@@ -217,7 +217,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
                         <div className={cn(
                             'rounded-full border border-primary/30 bg-primary/20 px-5 py-2.5 typo-caption font-bold text-primary shadow-sm'
                         )}>
-                            {t('modelsPage.installedModels')}
+                            {t('frontend.modelsPage.installedModels')}
                         </div>
                     </div>
                 </div>

@@ -22,7 +22,7 @@ Production build:
 
 ```bash
 npm run build          # Builds everything
-npm run build:package  # Creates installer/package
+npm run build:publish  # Creates installer/package
 ```
 
 ## Documentation
@@ -32,20 +32,10 @@ Start with [docs/README.md](docs/README.md) for the full documentation index.
 Common entry points:
 
 - [Contributing](docs/CONTRIBUTING.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Project Structure](docs/PROJECT_STRUCTURE.md)
-- [Managed Runtime](docs/MANAGED_RUNTIME.md)
-- [Security](docs/SECURITY.md)
-- [Release Checklist](docs/RELEASE_CHECKLIST.md)
+- [Architecture](docs/ARCHITECTURE.md)  
 
-Before opening a release PR, run:
+## Known Issues
 
-```bash
-npm run verify
-npm run build
-npm run tool secrets:scan
-npm run audit:deps:gate
-```
 
 ## License
 

@@ -91,8 +91,8 @@ export const ErrorBoundary = (props: Props): JSX.Element => {
     const { t } = useTranslation();
     const defaultFallbackRender = ({ resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
         <div className="min-h-56 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <h1 className="text-lg font-semibold">{t('errors.unexpected')}</h1>
-            <p className="text-sm text-muted-foreground">{t('errors.tryAgain')}</p>
+            <h1 className="text-lg font-semibold">{t('frontend.errors.unexpected')}</h1>
+            <p className="text-sm text-muted-foreground">{t('frontend.errors.tryAgain')}</p>
             <div className="flex items-center gap-2">
                 <button
                     type="button"
@@ -108,7 +108,7 @@ export const ErrorBoundary = (props: Props): JSX.Element => {
         <ErrorBoundaryBase
             {...props}
             fallbackRender={props.fallbackRender ?? defaultFallbackRender}
-            defaultFallback={<h1>{t('errors.unexpected')}</h1>}
+            defaultFallback={<h1>{t('frontend.errors.unexpected')}</h1>}
         />
     );
 };

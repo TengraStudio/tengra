@@ -52,7 +52,15 @@ interface UseWorkspaceDashboardLogicProps {
 }
 
 export interface OpenFile {
-    path: string; name: string; content: string; isDirty: boolean; initialLine?: number;
+    path: string;
+    name: string;
+    content: string;
+    isDirty: boolean;
+    initialLine?: number;
+    diff?: {
+        oldValue: string;
+        newValue: string;
+    };
 }
 
 function normalizeSearchResults(value: FileSearchResult[] | null | undefined): FileSearchResult[] {
@@ -199,7 +207,7 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         if (onOpenFile) { return onOpenFile(path, line); }
         if (openFiles.find(f => f.path === path)) {
             setActiveFile(path);
-            if (line !== undefined) { setOpenFiles(prev => prev.map(f => f.path === path ? { ...f, initialLine: line } : f)); }
+            if (line !== undefined) { setOpenFiles(prev => prev.map(f => f.path === path ? { ...f, initialLine: line, diff: undefined } : f)); }
             setActiveTab('files');
             return;
         }
@@ -213,6 +221,59 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
             appLogger.error('WorkspaceDashboard', 'Failed to open file', error as Error);
         }
     };
+
+    const handleDiffSelect = async (path: string, diffId?: string) => {
+        try {
+            const diff = diffId ? await window.electron.workspace.getFileDiff(diffId) : null;
+            if (!diff) {
+                // If no diffId or diff not found, just open the file normally
+                return handleFileSelect(path);
+            }
+
+            const name = `Diff: ${path.split(/[\\/]/).pop() ?? 'file'}`;
+            const virtualPath = `diff:${diffId}:${path}`;
+
+            if (openFiles.find(f => f.path === virtualPath)) {
+                setActiveFile(virtualPath);
+                setActiveTab('files');
+                return;
+            }
+
+            setOpenFiles(prev => [...prev, {
+                path: virtualPath,
+                name,
+                content: diff.newValue,
+                isDirty: false,
+                diff: {
+                    oldValue: diff.oldValue,
+                    newValue: diff.newValue
+                }
+            }]);
+            setActiveFile(virtualPath);
+            setActiveTab('files');
+        } catch (error) {
+            appLogger.error('WorkspaceDashboard', 'Failed to open diff', error as Error);
+            // Fallback to normal file select
+            void handleFileSelect(path);
+        }
+    };
+
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            const action = customEvent.detail;
+            if (!action || typeof action !== 'object') { return; }
+
+            if (action.type === 'open_file') {
+                void handleFileSelect(action.path, action.line);
+            } else if (action.type === 'open_diff') {
+                void handleDiffSelect(action.path, action.diffId);
+            }
+        };
+
+        window.addEventListener('tengra:workspace-navigate', handler);
+        return () => window.removeEventListener('tengra:workspace-navigate', handler);
+    }, [openFiles, handleFileSelect, handleDiffSelect]);
 
     const closeFile = (e: React.MouseEvent, path: string) => {
         e.stopPropagation();

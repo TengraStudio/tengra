@@ -180,12 +180,12 @@ export const WorkspaceAgentPermissionEditor: React.FC<
                     entries={permissionPolicy.allowedCommands}
                     icon={<IconPlus className="h-3.5 w-3.5" />}
                     inputValue={commandInput}
-                    label={t('workspaceAgent.permissions.allowedCommands')}
+                    label={t('frontend.workspaceAgent.permissions.allowedCommands')}
                     onAddEntry={addCommand}
                     onInputChange={setCommandInput}
                     onRemoveEntry={removeCommand}
-                    noEntriesLabel={t('workspaceAgent.permissions.noCommands')}
-                    addLabel={t('workspaceAgent.permissions.addCommand')}
+                    noEntriesLabel={t('frontend.workspaceAgent.permissions.noCommands')}
+                    addLabel={t('frontend.workspaceAgent.permissions.addCommand')}
                     t={t}
                 />
             )}
@@ -194,12 +194,12 @@ export const WorkspaceAgentPermissionEditor: React.FC<
                     entries={permissionPolicy.allowedPaths}
                     icon={<IconPlus className="h-3.5 w-3.5" />}
                     inputValue={pathInput}
-                    label={t('workspaceAgent.permissions.allowedPaths')}
+                    label={t('frontend.workspaceAgent.permissions.allowedPaths')}
                     onAddEntry={addPath}
                     onInputChange={setPathInput}
                     onRemoveEntry={removePath}
-                    noEntriesLabel={t('workspaceAgent.permissions.noPaths')}
-                    addLabel={t('workspaceAgent.permissions.addPath')}
+                    noEntriesLabel={t('frontend.workspaceAgent.permissions.noPaths')}
+                    addLabel={t('frontend.workspaceAgent.permissions.addPath')}
                     t={t}
                 />
             )}

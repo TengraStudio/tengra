@@ -230,13 +230,13 @@ describe('RuntimeBootstrapService', () => {
             componentId: 'tengra-proxy',
             status: 'ready',
             reason: 'file-present',
-            installPath: path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'tengra-proxy.exe'),
+            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', 'tengra-proxy.exe'),
         });
         expect(llamaEntry).toMatchObject({
             componentId: 'llama-server',
             status: 'install',
             reason: 'missing-file',
-            installPath: path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'llama-server.exe'),
+            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', 'llama-server.exe'),
         });
         expect(ollamaEntry).toMatchObject({
             componentId: 'ollama',
@@ -324,8 +324,8 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary.installed).toBe(1);
         expect(result.summary.installRequired).toBe(0);
         expect(result.summary.blockingFailures).toBe(0);
-        const downloadedPath = path.join('/mock/appData', 'Tengra', 'runtime', 'downloads', 'llama-server-win32-x64.exe');
-        const targetPath = path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'llama-server.exe');
+        const downloadedPath = path.join('/mock/appData', 'runtime', 'cache', 'downloads', 'llama-server-win32-x64.exe');
+        const targetPath = path.join('/mock/appData', 'runtime', 'managed', 'bin', 'llama-server.exe');
         expect(runtimeMocks.writeFile).toHaveBeenCalledWith(downloadedPath, expect.any(Buffer));
         expect(runtimeMocks.copyFile).toHaveBeenCalledWith(downloadedPath, targetPath);
     });
@@ -375,7 +375,7 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary.ready).toBe(1);
         expect(result.summary.installRequired).toBe(0);
         expect(runtimeMocks.readFile).toHaveBeenCalledWith(
-            path.join('/mock/appData', 'Tengra', 'runtime', 'manifests', 'runtime-manifest.json'),
+            path.join('/mock/appData', 'runtime', 'cache', 'manifests', 'runtime-manifest.json'),
             'utf8'
         );
     });

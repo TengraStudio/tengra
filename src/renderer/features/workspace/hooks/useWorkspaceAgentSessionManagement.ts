@@ -94,8 +94,17 @@ export function useWorkspaceAgentSessionManagement({
                 sessionId,
             });
             setCurrentSessionId(sessionId);
+            if (!sessionId) {
+                return;
+            }
+
+            const messages = await window.electron.db.getMessages(sessionId);
+            updateChatCollection(sessionId, currentChatState => ({
+                ...currentChatState,
+                messages,
+            }));
         },
-        [workspaceId, setCurrentSessionId]
+        [setCurrentSessionId, updateChatCollection, workspaceId]
     );
 
     const updateModes = useCallback(
@@ -150,6 +159,19 @@ export function useWorkspaceAgentSessionManagement({
         [currentSessionId, loadWorkspaceSessions, setCurrentSessionId]
     );
 
+    const deleteSession = useCallback(
+        async (sessionId: string) => {
+            await window.electron.session.workspaceAgent.delete({
+                sessionId,
+            });
+            if (currentSessionId === sessionId) {
+                setCurrentSessionId(null);
+            }
+            await loadWorkspaceSessions();
+        },
+        [currentSessionId, loadWorkspaceSessions, setCurrentSessionId]
+    );
+
     const renameSession = useCallback(
         async (sessionId: string, title: string) => {
             const trimmedTitle = title.trim();
@@ -179,6 +201,7 @@ export function useWorkspaceAgentSessionManagement({
         updateStrategy,
         updatePermissions,
         archiveSession,
+        deleteSession,
         renameSession,
         updateSessionSummary,
     };

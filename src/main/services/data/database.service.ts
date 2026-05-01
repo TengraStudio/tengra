@@ -1594,6 +1594,38 @@ export class DatabaseService extends BaseService {
         return this._system.cleanupUsageRecords(before);
     }
 
+    async addAuditLog(entry: {
+        category: string;
+        action: string;
+        success: boolean;
+        details?: JsonObject;
+        timestamp?: number;
+    }): Promise<void> {
+        await this.ensureInitialized();
+        return this._system.addAuditLog(entry);
+    }
+
+    async getAuditLogs(filters: {
+        startDate?: string;
+        endDate?: string;
+        category?: string;
+    } = {}): Promise<Array<{
+        id: string;
+        category: string;
+        action: string;
+        success: boolean;
+        details?: JsonObject;
+        timestamp: number;
+    }>> {
+        await this.ensureInitialized();
+        return this._system.getAuditLogs(filters);
+    }
+
+    async clearAuditLogs(): Promise<void> {
+        await this.ensureInitialized();
+        return this._system.clearAuditLogs();
+    }
+
     private async ensureInitialized(): Promise<void> {
         if (!this.isInitialized) {
             await this.initialize();

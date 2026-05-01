@@ -29,7 +29,6 @@ import {
     categorizeConversationError,
     formatStreamErrorContent,
     patchAssistantMessage,
-    toTextContent,
 } from './session-conversation-stream.util';
 
 export interface ConsumeConversationStreamOptions {
@@ -483,27 +482,16 @@ export async function consumeConversationStream(
                 assistantTimestamp,
             });
         } else {
-            setMessages(previous => {
-                const assistantMessage = previous.find(message => message.id === assistantId);
-                if (!assistantMessage) {
-                    return previous;
-                }
-                const content = toTextContent(assistantMessage.content);
-                return patchAssistantMessage(previous, assistantId, buildAssistantMessageUpdates(
-                    intentClassification,
-                    language,
-                    {
-                        completedReasonings,
-                        pendingReasonings: [],
-                        completedToolCalls,
-                        pendingToolCalls: [],
-                        toolMessages,
-                        images: generatedImages,
-                        displayContent: content,
-                        isStreaming: false,
-                        assistantTimestamp,
-                    }
-                ));
+            patchAssistantState(setMessages, assistantId, intentClassification, language, {
+                completedReasonings,
+                pendingReasonings: [],
+                completedToolCalls,
+                pendingToolCalls: [],
+                toolMessages,
+                images: generatedImages,
+                displayContent,
+                isStreaming: false,
+                assistantTimestamp,
             });
         }
         setIsStreaming(false);

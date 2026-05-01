@@ -40,10 +40,10 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                 </div>
                 <div>
                     <h3 className="text-sm font-bold text-foreground">
-                        {t('settings.usageLimits.codex.title')}
+                        {t('frontend.settings.usageLimits.codex.title')}
                     </h3>
                     <p className="typo-caption text-muted-foreground mt-0.5">
-                        {t('settings.usageLimits.codex.description')}
+                        {t('frontend.settings.usageLimits.codex.description')}
                     </p>
                 </div>
             </div>
@@ -61,7 +61,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                             <div className="flex items-center justify-between gap-4 mb-1">
                                 <div className="flex-1 min-w-0">
                                     <div className="text-sm font-bold text-foreground">
-                                        {t('settings.usageLimits.limitLabel', {
+                                        {t('frontend.settings.usageLimits.limitLabel', {
                                             period: periodLabel,
                                         })}
                                     </div>
@@ -71,7 +71,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                                 </div>
                                 <div className="flex items-center gap-3 px-2 py-1 rounded-full bg-background/50 border border-border/50 self-start">
                                     <span className="typo-body font-bold text-muted-foreground/80">
-                                        {t('settings.usageLimits.enable')}
+                                        {t('frontend.settings.usageLimits.enable')}
                                     </span>
                                     <Switch
                                         checked={periodLimit.enabled}
@@ -86,7 +86,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                             {periodLimit.enabled && (
                                 <div className="mt-5 pt-4 border-t border-border/40 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <label className="text-sm font-bold text-muted-foreground/70 ml-1">
-                                        {t('settings.usageLimits.maxPercentQuota')}
+                                        {t('frontend.settings.usageLimits.maxPercentQuota')}
                                     </label>
                                     <div className="relative group">
                                         <Input
@@ -102,7 +102,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                                                 )
                                             }
                                             className="bg-background/50 border-border/50 h-10 font-mono text-sm pr-10 focus:ring-success/20"
-                                            placeholder={t('settings.usageLimits.maxPercentPlaceholder')}
+                                            placeholder={t('frontend.settings.usageLimits.maxPercentPlaceholder')}
                                         />
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold typo-caption">
                                             %

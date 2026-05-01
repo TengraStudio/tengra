@@ -83,7 +83,7 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
 
     const handleSaveProfile = (): void => {
         if (name.trim().length === 0 || remotePath.trim().length === 0) {
-            setStatusMessage(t('ssh.syncProfileValidation'));
+            setStatusMessage(t('frontend.ssh.syncProfileValidation'));
             return;
         }
         const profile: EnvSyncProfile = {
@@ -97,7 +97,7 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
         setName('');
         setRemotePath('');
         setDesiredContent('');
-        setStatusMessage(t('ssh.syncProfileSaved'));
+        setStatusMessage(t('frontend.ssh.syncProfileSaved'));
     };
 
     const handlePreviewDiff = async (): Promise<void> => {
@@ -106,7 +106,7 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
         }
         const result = await window.electron.ssh.readFile(connectionId, selectedProfile.remotePath);
         setRemoteContent(result.success ? (result.content ?? '') : '');
-        setStatusMessage(result.success ? t('ssh.syncDiffReady') : t('ssh.syncReadFailed'));
+        setStatusMessage(result.success ? t('frontend.ssh.syncDiffReady') : t('frontend.ssh.syncReadFailed'));
     };
 
     const handleApply = async (): Promise<void> => {
@@ -134,7 +134,7 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
             selectedProfile.remotePath,
             selectedProfile.desiredContent
         );
-        setStatusMessage(writeResult.success ? t('ssh.syncApplied') : t('ssh.syncApplyFailed'));
+        setStatusMessage(writeResult.success ? t('frontend.ssh.syncApplied') : t('frontend.ssh.syncApplyFailed'));
         if (writeResult.success) {
             setRemoteContent(selectedProfile.desiredContent);
         }
@@ -150,7 +150,7 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
         );
         const rollback = rollbackEntries.find(entry => entry.profileId === selectedProfile.id);
         if (!rollback) {
-            setStatusMessage(t('ssh.syncRollbackMissing'));
+            setStatusMessage(t('frontend.ssh.syncRollbackMissing'));
             return;
         }
         const result = await window.electron.ssh.writeFile(
@@ -158,42 +158,42 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
             rollback.remotePath,
             rollback.previousContent
         );
-        setStatusMessage(result.success ? t('ssh.syncRollbackDone') : t('ssh.syncRollbackFailed'));
+        setStatusMessage(result.success ? t('frontend.ssh.syncRollbackDone') : t('frontend.ssh.syncRollbackFailed'));
     };
 
     return (
         <div className="p-3 space-y-3 border-t border-border/40">
-            <div className="text-sm font-semibold">{t('ssh.syncProfiles')}</div>
+            <div className="text-sm font-semibold">{t('frontend.ssh.syncProfiles')}</div>
             <div className="grid grid-cols-2 gap-2">
-                <input value={name} onChange={event => setName(event.target.value)} placeholder={t('ssh.syncProfileName')} />
-                <input value={remotePath} onChange={event => setRemotePath(event.target.value)} placeholder={t('ssh.syncRemotePath')} />
+                <input value={name} onChange={event => setName(event.target.value)} placeholder={t('frontend.ssh.syncProfileName')} />
+                <input value={remotePath} onChange={event => setRemotePath(event.target.value)} placeholder={t('frontend.ssh.syncRemotePath')} />
             </div>
             <div className="flex gap-2">
                 <select value={kind} onChange={event => setKind(event.target.value === 'shell' ? 'shell' : 'env')}>
-                    <option value="env">{t('ssh.syncKindEnv')}</option>
-                    <option value="shell">{t('ssh.syncKindShell')}</option>
+                    <option value="env">{t('frontend.ssh.syncKindEnv')}</option>
+                    <option value="shell">{t('frontend.ssh.syncKindShell')}</option>
                 </select>
-                <button className="secondary-btn" onClick={handleSaveProfile}>{t('ssh.syncSaveProfile')}</button>
+                <button className="secondary-btn" onClick={handleSaveProfile}>{t('frontend.ssh.syncSaveProfile')}</button>
             </div>
             <textarea
                 value={desiredContent}
                 onChange={event => setDesiredContent(event.target.value)}
-                placeholder={t('ssh.syncDesiredContent')}
+                placeholder={t('frontend.ssh.syncDesiredContent')}
                 className="min-h-90"
             />
             <select value={selectedId} onChange={event => setSelectedId(event.target.value)}>
-                <option value="">{t('ssh.syncSelectProfile')}</option>
+                <option value="">{t('frontend.ssh.syncSelectProfile')}</option>
                 {profiles.map(profile => (
                     <option key={profile.id} value={profile.id}>{profile.name} ({profile.remotePath})</option>
                 ))}
             </select>
             <div className="flex gap-2">
-                <button className="secondary-btn" onClick={() => { void handlePreviewDiff(); }} disabled={!selectedProfile}>{t('ssh.syncPreviewDiff')}</button>
-                <button className="primary-btn" onClick={() => { void handleApply(); }} disabled={!selectedProfile}>{t('ssh.syncApply')}</button>
-                <button className="secondary-btn" onClick={() => { void handleRollback(); }} disabled={!selectedProfile}>{t('ssh.syncRollback')}</button>
+                <button className="secondary-btn" onClick={() => { void handlePreviewDiff(); }} disabled={!selectedProfile}>{t('frontend.ssh.syncPreviewDiff')}</button>
+                <button className="primary-btn" onClick={() => { void handleApply(); }} disabled={!selectedProfile}>{t('frontend.ssh.syncApply')}</button>
+                <button className="secondary-btn" onClick={() => { void handleRollback(); }} disabled={!selectedProfile}>{t('frontend.ssh.syncRollback')}</button>
             </div>
             <div className="typo-caption text-muted-foreground">
-                {t('ssh.syncDiffSummary', { added: diffSummary.added, removed: diffSummary.removed })}
+                {t('frontend.ssh.syncDiffSummary', { added: diffSummary.added, removed: diffSummary.removed })}
             </div>
             {statusMessage && <div className="typo-caption text-muted-foreground">{statusMessage}</div>}
         </div>

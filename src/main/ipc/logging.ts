@@ -22,7 +22,7 @@ const logBuffer: Array<{
     message: string
 }> = [];
 const MAX_BUFFER_SIZE = 1000;
-const streamingEnabled = false;
+let streamingEnabled = false;
 const LOG_STREAM_BATCH_INTERVAL_MS = 50;
 const pendingLogEntries: Array<{
     id: string
@@ -94,10 +94,37 @@ export function registerLoggingIpc() {
 
     safeOn('log:write', handleLogWrite);
 
+    /**
+     * Get the current log buffer
+     */
+    ipcMain.handle('log:buffer:get', () => {
+        // Return only the last 500 entries for performance
+        return logBuffer.slice(-500);
+    });
 
+    /**
+     * Clear the log buffer
+     */
+    ipcMain.handle('log:buffer:clear', () => {
+        logBuffer.length = 0;
+        return { success: true };
+    });
 
+    /**
+     * Enable log streaming to renderer processes
+     */
+    ipcMain.handle('log:stream:start', () => {
+        streamingEnabled = true;
+        return { success: true };
+    });
 
-
+    /**
+     * Disable log streaming to renderer processes
+     */
+    ipcMain.handle('log:stream:stop', () => {
+        streamingEnabled = false;
+        return { success: true };
+    });
 }
 
 /**

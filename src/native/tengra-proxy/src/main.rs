@@ -32,11 +32,18 @@ use tokio::time::timeout;
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
-    // Initialize tracing with JSON output to stdout
-    tracing_subscriber::fmt()
-        .json()
-        .with_writer(std::io::stdout)
-        .init();
+    // Initialize tracing
+    let use_json = std::env::var("TENGRA_PROXY_JSON_LOGS").is_ok();
+    if use_json {
+        tracing_subscriber::fmt()
+            .json()
+            .with_writer(std::io::stdout)
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_writer(std::io::stdout)
+            .init();
+    }
 
     let args: Vec<String> = env::args().collect();
     let mode = args.get(1).map(|s| s.as_str()).unwrap_or("--help");

@@ -43,8 +43,8 @@
         --brand-nodejs: #339933;
 
         /* Git Related Colors (shared) */
-        --git-modified: #e2c522;
-        --git-added: #81b88b;
+        --git-modified: #81b88b;
+        --git-added: #2ea043;
         --git-deleted: #c74e39;
         --git-untracked: #73c991;
         --git-ignored: #8e8e8e;
@@ -246,7 +246,7 @@
         --secondary-foreground: 0 0% 10%;
 
         --muted: 0 0% 96%;
-        --muted-foreground: 0 0% 45%;
+        --muted-foreground: 0 0% 35%;
 
         --accent: 0 0% 96%;
         --accent-foreground: 250 100% 40%;
@@ -347,7 +347,7 @@
         --secondary-foreground: 0 0% 100%;
 
         --muted: 0 0% 10%;
-        --muted-foreground: 0 0% 60%;
+        --muted-foreground: 0 0% 70%;
 
         --accent: 0 0% 10%;
         --accent-foreground: 190 100% 60%;

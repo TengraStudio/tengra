@@ -186,13 +186,13 @@ describe('WorkspaceExplorer', () => {
     describe('Rendering', () => {
         it('should render with panel variant', () => {
             render(<WorkspaceExplorer {...mockProps} />);
-            expect(screen.getByText('workspace.files')).toBeInTheDocument();
+            expect(screen.getByText('frontend.workspace.files')).toBeInTheDocument();
         });
 
         it('should render with embedded variant', () => {
             const props = createMockProps({ variant: 'embedded' });
             render(<WorkspaceExplorer {...props} />);
-            expect(screen.getByText('workspace.files')).toBeInTheDocument();
+            expect(screen.getByText('frontend.workspace.files')).toBeInTheDocument();
         });
 
         it('should render add mount button', () => {
@@ -215,7 +215,7 @@ describe('WorkspaceExplorer', () => {
         it('should show empty state when no mounts', () => {
             const props = createMockProps({ mounts: [] });
             render(<WorkspaceExplorer {...props} />);
-            expect(screen.getByText('workspace.noMounts')).toBeInTheDocument();
+            expect(screen.getByText('frontend.workspace.noMounts')).toBeInTheDocument();
         });
     });
 
@@ -225,7 +225,7 @@ describe('WorkspaceExplorer', () => {
             const props = createMockProps({ onAddMount });
             render(<WorkspaceExplorer {...props} />);
 
-            const addButton = screen.getByTitle('workspace.addConnection');
+            const addButton = screen.getByTitle('frontend.workspace.addConnection');
             fireEvent.click(addButton);
 
             expect(onAddMount).toHaveBeenCalled();
@@ -329,13 +329,13 @@ describe('WorkspaceExplorer', () => {
         it('should handle empty mounts array', () => {
             const props = createMockProps({ mounts: [] });
             render(<WorkspaceExplorer {...props} />);
-            expect(screen.getByText('workspace.noMounts')).toBeInTheDocument();
+            expect(screen.getByText('frontend.workspace.noMounts')).toBeInTheDocument();
         });
 
         it('should handle undefined selectedEntries', () => {
             const props = createMockProps({ selectedEntries: undefined });
             render(<WorkspaceExplorer {...props} />);
-            expect(screen.getByText('workspace.files')).toBeInTheDocument();
+            expect(screen.getByText('frontend.workspace.files')).toBeInTheDocument();
         });
 
         it('should handle multiple mounts', () => {
@@ -380,7 +380,7 @@ describe('WorkspaceExplorer', () => {
 
         it('should have proper structure for screen readers', () => {
             render(<WorkspaceExplorer {...mockProps} />);
-            expect(screen.getByText('workspace.files')).toBeInTheDocument();
+            expect(screen.getByText('frontend.workspace.files')).toBeInTheDocument();
         });
     });
 
@@ -405,7 +405,7 @@ describe('WorkspaceExplorer', () => {
             // Re-render with same props
             rerender(<WorkspaceExplorer {...mockProps} />);
 
-            expect(screen.getByText('workspace.files')).toBeInTheDocument();
+            expect(screen.getByText('frontend.workspace.files')).toBeInTheDocument();
         });
     });
 

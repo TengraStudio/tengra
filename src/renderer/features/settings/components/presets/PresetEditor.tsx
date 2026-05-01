@@ -34,11 +34,11 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
                 value={preset.name}
                 onChange={(e) => onUpdate({ ...preset, name: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg bg-background/50 border border-border/50 text-sm text-foreground"
-                placeholder={t('ssh.presets.placeholders.name')}
+                placeholder={t('frontend.ssh.presets.placeholders.name')}
             />
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="typo-caption text-muted-foreground mb-1 block">{t('ssh.presets.labels.temperature')}</label>
+                    <label className="typo-caption text-muted-foreground mb-1 block">{t('frontend.ssh.presets.labels.temperature')}</label>
                     <input
                         type="range"
                         min="0"
@@ -51,7 +51,7 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
                     <div className="typo-caption text-center">{preset.temperature}</div>
                 </div>
                 <div>
-                    <label className="typo-caption text-muted-foreground mb-1 block">{t('ssh.presets.labels.topP')}</label>
+                    <label className="typo-caption text-muted-foreground mb-1 block">{t('frontend.ssh.presets.labels.topP')}</label>
                     <input
                         type="range"
                         min="0"

@@ -18,6 +18,7 @@ import { CodexUsage } from '@/types/quota';
 import { AccountWrapper } from '../../types';
 
 import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
+import CodexIcon from '@assets/chatgpt.svg?url';
 
 interface CodexCardProps {
     codexUsage: AccountWrapper<{ usage: CodexUsage }> | null
@@ -29,65 +30,82 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
     if (!codexUsage?.accounts || codexUsage.accounts.length === 0) { return null; }
 
     return (
-        <div className="col-span-1 space-y-3 rounded-2xl border border-border/20 bg-background p-4">
-            <div className="text-sm font-medium text-foreground">{t('statistics.codexTitle')}</div>
-            <div className="space-y-3">
-                {codexUsage.accounts.map((acc, idx: number) => {
-                    const usage = acc.usage as CodexUsage & { error?: string };
-                    const usageError = typeof usage?.error === 'string' ? usage.error : null;
-                    const status = usageError ? 'error' : 'active';
-                    const statusText = usageError ? t('common.error') : t('statistics.active');
-                    const percentFromRequests =
-                        typeof usage?.remainingRequests === 'number'
-                            && typeof usage?.totalRequests === 'number'
-                            && usage.totalRequests > 0
+        <div className="space-y-4">
+            {codexUsage.accounts.map((acc, idx: number) => {
+                const usage = acc.usage as CodexUsage & { error?: string };
+                const usageError = typeof usage?.error === 'string' ? usage.error : null;
+                const status = usageError ? 'error' : 'active';
+                const statusText = usageError ? t('common.error') : t('frontend.statistics.active');
+
+                const percentFromRequests =
+                    typeof usage?.remainingRequests === 'number'
+                        && typeof usage?.totalRequests === 'number'
+                        ? (usage.totalRequests > 0
                             ? Math.max(0, Math.min(100, Math.round((usage.remainingRequests / usage.totalRequests) * 100)))
-                            : null;
-                    const dailyRemaining = typeof usage?.dailyUsedPercent === 'number'
-                        ? Math.max(0, Math.min(100, Math.round(100 - usage.dailyUsedPercent)))
-                        : (percentFromRequests ?? 0);
-                    const weeklyRemaining = typeof usage?.weeklyUsedPercent === 'number'
-                        ? Math.max(0, Math.min(100, Math.round(100 - usage.weeklyUsedPercent)))
-                        : (percentFromRequests ?? dailyRemaining);
+                            : 0)
+                        : null;
+                const dailyRemaining = typeof usage?.dailyUsedPercent === 'number'
+                    ? Math.max(0, Math.min(100, Math.round(100 - usage.dailyUsedPercent)))
+                    : (percentFromRequests ?? 0);
+                const weeklyRemaining = typeof usage?.weeklyUsedPercent === 'number'
+                    ? Math.max(0, Math.min(100, Math.round(100 - usage.weeklyUsedPercent)))
+                    : (percentFromRequests ?? dailyRemaining);
 
-                    return (
-                        <div key={acc.accountId ?? idx} className={cn('space-y-3 rounded-xl border border-border/15 bg-muted/4 px-4 py-3', idx > 0 && 'mt-2')}>
-                            <div className="flex flex-wrap items-center gap-4">
-                                <div className="truncate text-sm font-medium text-foreground/90">
-                                    {acc.email ?? t('statistics.codexAccount')}
-                                </div>
-                                {(usageError || acc.isActive) && <StatusBadge status={status} text={statusText} />}
-                                {usageError && <span className="typo-overline text-destructive truncate ml-2">{usageError}</span>}
+                return (
+                    <div key={acc.accountId ?? idx} className="overflow-hidden rounded-2xl border border-border/15 bg-background shadow-sm">
+                        <div className="flex items-center justify-between border-b border-border/10 bg-muted/5 px-4 py-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                                <img src={CodexIcon} alt="Codex Icon" className="w-6 h-6 invert" />
                             </div>
-
-                            {!usageError && usage && (
-                                <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <div className="typo-overline flex items-center justify-between font-medium">
-                                            <span className="text-muted-foreground truncate pr-2">{t('statistics.dailyStatus')}</span>
-                                            <span className="text-foreground/80 tabular-nums shrink-0">{dailyRemaining}%</span>
-                                        </div>
-                                        <HorizontalProgressBar percentage={dailyRemaining} color={getQuotaColor(dailyRemaining)} />
-                                        <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                            {t('statistics.resetsAt', { time: formatReset(usage.dailyResetAt, locale) })}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="typo-overline flex items-center justify-between font-medium">
-                                            <span className="text-muted-foreground truncate pr-2">{t('statistics.weeklyStatus')}</span>
-                                            <span className="text-foreground/80 tabular-nums shrink-0">{weeklyRemaining}%</span>
-                                        </div>
-                                        <HorizontalProgressBar percentage={weeklyRemaining} color={getQuotaColor(weeklyRemaining)} />
-                                        <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                            {t('statistics.resetsAt', { time: formatReset(usage.weeklyResetAt, locale) })}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            <div className="flex items-center gap-3 min-w-0">
+                                <span className="truncate text-sm font-semibold text-foreground">
+                                    {acc.email ?? t('frontend.statistics.codexAccount')}
+                                </span>
+                            </div>
+                            <span>{acc.isActive ? t('frontend.statistics.active') : ""}</span>
                         </div>
-                    );
-                })}
-            </div>
+
+                        {!usageError && usage && (
+                            <div className="divide-y divide-border/5">
+                                <div className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/5 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="truncate text-sm font-medium text-foreground/90">{t('frontend.statistics.dailyStatus')}</span>
+                                            <span className="text-sm font-medium text-muted-foreground/60 tabular-nums">
+                                                {t('frontend.statistics.resetsAt', { time: formatReset(usage.dailyResetAt, locale) })}
+                                            </span>
+                                        </div>
+                                        <span className={cn("text-sm font-bold", dailyRemaining <= 10 ? "text-destructive" : "text-foreground/80")}>
+                                            {dailyRemaining}%
+                                        </span>
+                                    </div>
+                                    <HorizontalProgressBar percentage={dailyRemaining} color={getQuotaColor(dailyRemaining)} />
+                                </div>
+
+                                <div className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/5 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="truncate text-sm font-medium text-foreground/90">{t('frontend.statistics.weeklyStatus')}</span>
+                                            <span className="text-sm font-medium text-muted-foreground/60 tabular-nums">
+                                                {t('frontend.statistics.resetsAt', { time: formatReset(usage.weeklyResetAt, locale) })}
+                                            </span>
+                                        </div>
+                                        <span className={cn("text-sm font-bold", weeklyRemaining <= 10 ? "text-destructive" : "text-foreground/80")}>
+                                            {weeklyRemaining}%
+                                        </span>
+                                    </div>
+                                    <HorizontalProgressBar percentage={weeklyRemaining} color={getQuotaColor(weeklyRemaining)} />
+                                </div>
+                            </div>
+                        )}
+                        {usageError && (
+                            <div className="px-4 py-3 bg-destructive/5">
+                                <span className="text-sm text-destructive font-bold">{usageError}</span>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 };

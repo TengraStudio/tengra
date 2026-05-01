@@ -56,7 +56,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
     t
 }) => {
     const creditLabel = typeof creditAmount === 'number'
-        ? `${t('models.creditsLeft')}: ${Math.max(0, Math.round(creditAmount))}`
+        ? `${t('frontend.models.creditsLeft')}: ${Math.max(0, Math.round(creditAmount))}`
         : null;
     const showAntigravityControls = providerId === 'antigravity';
 
@@ -81,10 +81,10 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-foreground">
-                        {account.displayName ?? account.email ?? t('accounts.account')}
+                        {account.displayName ?? account.email ?? t('frontend.accounts.account')}
                     </div>
                     <div className="truncate typo-caption text-muted-foreground">
-                        {account.email ?? t('accounts.noEmail')}
+                        {account.email ?? t('frontend.accounts.noEmail')}
                     </div>
                 </div>
             </div>
@@ -110,13 +110,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                             <SelectTrigger
                                 className="h-8 rounded-lg border-border/30 bg-muted/20 typo-caption text-muted-foreground"
                                 data-testid={`antigravity-credit-mode-${account.id}`}
-                                aria-label={t('modelSelector.mode')}
+                                aria-label={t('frontend.modelSelector.mode')}
                             >
-                                <SelectValue placeholder={t('modelSelector.mode')} />
+                                <SelectValue placeholder={t('frontend.modelSelector.mode')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="auto">{t('common.auto')}</SelectItem>
-                                <SelectItem value="ask-every-time">{t('workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
+                                <SelectItem value="ask-every-time">{t('frontend.workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -124,7 +124,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                 {account.isActive ? (
                     <span className={C_ACCOUNTROW_1}>
                         <IconCheck className="h-3 w-3" />
-                        {t('accounts.active')}
+                        {t('frontend.accounts.active')}
                     </span>
                 ) : (
                     <Button
@@ -138,7 +138,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                         disabled={isBusy}
                         className={C_ACCOUNTROW_2}
                     >
-                        {t('accounts.setActive')}
+                        {t('frontend.accounts.setActive')}
                     </Button>
                 )}
                 {providerId === 'claude' && (
@@ -152,7 +152,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                         }}
                         disabled={isBusy}
                         className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-primary/10"
-                        title={t('auth.sessionKeyLabel')}
+                        title={t('frontend.auth.sessionKeyLabel')}
                     >
                         <IconKey className="h-3.5 w-3.5" />
                     </Button>
@@ -167,7 +167,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                     }}
                     disabled={isBusy}
                     className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10"
-                    title={t('accounts.removeAccount')}
+                    title={t('frontend.accounts.removeAccount')}
                 >
                     <IconTrash className="h-3.5 w-3.5" />
                 </Button>

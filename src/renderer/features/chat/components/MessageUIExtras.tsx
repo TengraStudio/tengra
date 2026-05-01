@@ -30,7 +30,7 @@ export const TypingDots = () => {
                 <div className="w-2 h-2 bg-gradient-to-r from-primary to-primary/80 rounded-full animate-bounce shadow-lg shadow-primary/30" />
             </div>
             <span className="text-sm text-muted-foreground/50 font-medium animate-pulse">
-                {t('messageBubble.thinking')}
+                {t('frontend.messageBubble.thinking')}
             </span>
         </div>
     );

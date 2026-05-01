@@ -14,26 +14,34 @@ import type {
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionSummary,
 } from '@shared/types/workspace-agent-session';
-import { IconCheck, IconMap, IconSend, IconSquare } from '@tabler/icons-react';
+import { IconMap, IconPlayerStop, IconPlus, IconSend } from '@tabler/icons-react';
 import React from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Button } from '@/components/ui/button';
-import { Modal } from '@/components/ui/modal';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuRadioButtonGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Modal } from '@/components/ui/modal';
+import { Textarea } from '@/components/ui/textarea';
+import { Tooltip } from '@/components/ui/tooltip';
 import type { AppSettings, CodexUsage, GroupedModels, QuotaResponse } from '@/types';
 
 import { WorkspaceAgentCouncilSetup } from './WorkspaceAgentCouncilSetup';
 
-/* Batch-02: Extracted Long Classes */
-const C_WORKSPACEAGENTCOMPOSER_1 = "min-h-44 h-11 flex-1 rounded-2xl border-border/30 bg-background/40 px-4 py-2.5 placeholder:text-muted-foreground/40 text-sm focus:border-border/20 transition-colors resize-none overflow-hidden";
-const C_WORKSPACEAGENTCOMPOSER_2 = "h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-background/30 hover:bg-background/40 transition-colors p-0";
-const C_WORKSPACEAGENTCOMPOSER_3 = "relative w-280 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none animate-in fade-in zoom-in-95 duration-200";
-
-
 export type WorkspaceAgentComposerPreset = 'default-agent' | 'plan' | 'agent';
+export type WorkspaceAgentDeliveryMode = 'send' | 'queue' | 'steer';
 
 interface WorkspaceAgentComposerProps {
     currentSession: WorkspaceAgentSessionSummary | null;
@@ -41,7 +49,10 @@ interface WorkspaceAgentComposerProps {
     currentPermissionPolicy: WorkspaceAgentPermissionPolicy;
     composerValue: string;
     setComposerValue: (value: string) => void;
-    onSend: () => void;
+    deliveryMode: WorkspaceAgentDeliveryMode;
+    setDeliveryMode: (value: WorkspaceAgentDeliveryMode) => void;
+    queuedMessageCount: number;
+    onSend: (mode?: WorkspaceAgentDeliveryMode) => void;
     onStop: () => void;
     onToggleCouncil: () => void;
     onSelectPreset: (preset: WorkspaceAgentComposerPreset) => void;
@@ -63,12 +74,6 @@ interface WorkspaceAgentComposerProps {
     t: (key: string) => string;
 }
 
-interface ComposerPresetOption {
-    description: string;
-    title: string;
-    value: WorkspaceAgentComposerPreset;
-}
-
 function getPresetValue(modes: WorkspaceAgentSessionModes): WorkspaceAgentComposerPreset {
     if (modes.plan) {
         return 'plan';
@@ -79,24 +84,26 @@ function getPresetValue(modes: WorkspaceAgentSessionModes): WorkspaceAgentCompos
     return 'default-agent';
 }
 
-function buildPresetOptions(t: (key: string) => string): ComposerPresetOption[] {
-    return [
-        {
-            value: 'default-agent',
-            title: t('workspaceAgent.defaultAgent'),
-            description: t('workspaceAgent.defaultAgentDesc'),
-        },
-        {
-            value: 'plan',
-            title: t('workspaceAgent.planAction'),
-            description: t('workspaceAgent.planning'),
-        },
-        {
-            value: 'agent',
-            title: t('workspaceAgent.executeAction'),
-            description: t('workspaceAgent.executingTask'),
-        },
-    ];
+function modeLabel(value: WorkspaceAgentComposerPreset): string {
+    switch (value) {
+        case 'plan':
+            return 'Plan';
+        case 'agent':
+            return 'Agent';
+        default:
+            return 'Ask';
+    }
+}
+
+function deliveryModeLabel(value: WorkspaceAgentDeliveryMode): string {
+    switch (value) {
+        case 'queue':
+            return 'Queue';
+        case 'steer':
+            return 'Steer';
+        default:
+            return 'Send';
+    }
 }
 
 export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
@@ -105,6 +112,9 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
     currentPermissionPolicy,
     composerValue,
     setComposerValue,
+    deliveryMode,
+    setDeliveryMode,
+    queuedMessageCount,
     onSend,
     onStop,
     onToggleCouncil,
@@ -126,27 +136,19 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
     codexUsage,
     t,
 }) => {
-    const handleEnter = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            if (isLoading) {
-                void Promise.resolve(onStop());
-                return;
+            if (event.ctrlKey || event.metaKey) {
+                onSend('queue');
+            } else {
+                onSend(isLoading ? 'steer' : 'send');
             }
-            void Promise.resolve(onSend());
         }
     };
 
+    const selectedPreset = getPresetValue(currentModes);
     const permissionPolicy = currentSession?.permissionPolicy ?? currentPermissionPolicy;
-    const presetOptions = React.useMemo(() => buildPresetOptions(t), [t]);
-
-    const selectedPreset = React.useMemo(
-        () =>
-            presetOptions.find(option => option.value === getPresetValue(currentModes)) ??
-            presetOptions[0],
-        [currentModes, presetOptions]
-    );
-
     const handlePermissionUpdate = React.useCallback(
         (nextPermissionPolicy: WorkspaceAgentPermissionPolicy) => {
             void onUpdatePermissionPolicy(nextPermissionPolicy);
@@ -155,11 +157,11 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
     );
 
     return (
-        <div className="border-t border-border/5 bg-background/30 p-3">
+        <div className="border-t border-border bg-background px-3 py-2">
             <Modal
                 isOpen={showCouncilSetup}
                 onClose={onToggleCouncil}
-                title={t('council.setupTitle')}
+                title="Council setup"
                 size="3xl"
             >
                 <WorkspaceAgentCouncilSetup
@@ -174,89 +176,79 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                 />
             </Modal>
 
-            <div className="flex items-end gap-2">
-                <Textarea
-                    value={composerValue}
-                    onChange={event => setComposerValue(event.target.value)}
-                    onKeyDown={handleEnter}
-                    placeholder={t('workspace.writeSomething')}
-                    className={C_WORKSPACEAGENTCOMPOSER_1}
-                    disabled={isLoading}
-                />
-                <Button
-                    onClick={isLoading ? onStop : onSend}
-                    className="h-11 w-11 rounded-2xl bg-primary/95 hover:bg-primary shrink-0"
-                >
-                    {isLoading ? (
-                        <IconSquare className="h-4 w-4 fill-current" />
-                    ) : (
-                        <IconSend className="h-4 w-4" />
-                    )}
-                </Button>
-            </div>
+            <Textarea
+                value={composerValue}
+                onChange={event => setComposerValue(event.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about the workspace or give the agent a task"
+                className="min-h-14 resize-none rounded-md border-border/60 bg-background px-3 py-2 text-sm"
+            />
 
-            <div className="mt-3 flex items-center gap-2">
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            title={t('workspaceAgent.permissions.profile')}
-                            className={C_WORKSPACEAGENTCOMPOSER_2}
-                        >
-                            <span className="typo-caption font-bold text-muted-foreground/60">
-                                {selectedPreset.value === 'default-agent' ? 'A' : selectedPreset.value === 'plan' ? 'P' : 'E'}
-                            </span>
+            <div className="mt-2 flex w-full items-center gap-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="outline" className="h-8 w-8 rounded-md p-0">
+                            <IconPlus className="h-4 w-4" />
                         </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                        align="start"
-                        className={C_WORKSPACEAGENTCOMPOSER_3}
-                    >
-                        <div className="px-3 py-1.5 typo-overline font-bold uppercase text-muted-foreground/30 border-b border-border/30 mb-1.5">
-                            {t('workspaceAgent.permissions.profile')}
-                        </div>
-                        <div className="space-y-0.5">
-                            {presetOptions.map(option => (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    className="flex w-full items-start justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
-                                    onClick={() => void onSelectPreset(option.value)}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56 border-border/60">
+                        <DropdownMenuLabel>Agent mode</DropdownMenuLabel>
+                        <DropdownMenuRadioButtonGroup
+                            value={selectedPreset}
+                            onValueChange={value => void onSelectPreset(value as WorkspaceAgentComposerPreset)}
+                        >
+                            <DropdownMenuRadioItem value="default-agent">Ask</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="plan">Plan</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="agent">Agent</DropdownMenuRadioItem>
+                        </DropdownMenuRadioButtonGroup>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={onToggleCouncil}>
+                            <IconMap className="mr-2 h-4 w-4" />
+                            {currentModes.council ? 'Disable council' : 'Council setup'}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>Command permissions</DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="w-56">
+                                <DropdownMenuRadioButtonGroup
+                                    value={permissionPolicy.commandPolicy}
+                                    onValueChange={value =>
+                                        handlePermissionUpdate({
+                                            ...permissionPolicy,
+                                            commandPolicy: value as WorkspaceAgentPermissionPolicy['commandPolicy'],
+                                        })
+                                    }
                                 >
-                                    <span className="min-w-0">
-                                        <span className="block text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
-                                            {option.title}
-                                        </span>
-                                        <span className="block typo-overline text-muted-foreground/50 leading-snug mt-0.5">
-                                            {option.description}
-                                        </span>
-                                    </span>
-                                    {selectedPreset.value === option.value && (
-                                        <IconCheck className="ml-3 h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
+                                    <DropdownMenuRadioItem value="ask-every-time">Ask before commands</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="blocked">Block commands</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="allowlist">Allowlist only</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="full-access">Full access</DropdownMenuRadioItem>
+                                </DropdownMenuRadioButtonGroup>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>File permissions</DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="w-56">
+                                <DropdownMenuRadioButtonGroup
+                                    value={permissionPolicy.pathPolicy}
+                                    onValueChange={value =>
+                                        handlePermissionUpdate({
+                                            ...permissionPolicy,
+                                            pathPolicy: value as WorkspaceAgentPermissionPolicy['pathPolicy'],
+                                        })
+                                    }
+                                >
+                                    <DropdownMenuRadioItem value="workspace-root-only">Workspace only</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="allowlist">Allowlist only</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="restricted-off-dangerous">Restricted</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="full-access">Full access</DropdownMenuRadioItem>
+                                </DropdownMenuRadioButtonGroup>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
-                <Button
-                    type="button"
-                    variant={currentModes.council ? 'secondary' : 'outline'}
-                    title={t('agents.council')}
-                    className={cn(
-                        'h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 transition-colors p-0',
-                        currentModes.council
-                            ? 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary'
-                            : 'bg-background/30 hover:bg-background/40'
-                    )}
-                    onClick={onToggleCouncil}
-                >
-                    <IconMap className="h-4 w-4 text-muted-foreground/60" />
-                </Button>
-
-                <div className="shrink-0 rounded-xl border border-border/10 bg-background/30 p-0.5 hover:bg-background/40 transition-colors">
+                <div className="min-w-0 max-w-[280px] flex-1">
                     <ModelSelector
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
@@ -269,10 +261,51 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                         groupedModels={groupedModels ?? undefined}
                         quotas={quotas}
                         codexUsage={codexUsage}
-                        isIconOnly
                         permissionPolicy={permissionPolicy}
                         onUpdatePermissionPolicy={handlePermissionUpdate}
+                        showChatModeControls={false}
+                        showModeBadge={false}
+                        triggerVariant="compact"
                     />
+                </div>
+
+                {isLoading ? (
+                    <Button type="button" variant="outline" className="ml-auto h-8 gap-2 rounded-md px-3" onClick={onStop}>
+                        <IconPlayerStop className="h-4 w-4" />
+                        Stop
+                    </Button>
+                ) : null}
+
+                <div className="flex items-center gap-1">
+                    <Tooltip
+                        delay={300}
+                        side="top"
+                        content={
+                            <div className="space-y-1.5 min-w-[180px]">
+                                <div className="flex items-center justify-between gap-4">
+                                    <span className="text-muted-foreground">Queue message</span>
+                                    <kbd className="rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-foreground border border-border/50">Ctrl+Enter</kbd>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                    <span className="text-muted-foreground">Steer current stream</span>
+                                    <kbd className="rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-foreground border border-border/50">Enter</kbd>
+                                </div>
+                            </div>
+                        }
+                    >
+                        <Button
+                            type="button"
+                            className={cn(
+                                'h-8 gap-2 rounded-md px-3',
+                                !isLoading && 'ml-auto'
+                            )}
+                            onClick={() => onSend()}
+                        >
+                            <IconSend className="h-4 w-4" />
+                            {isLoading ? 'Steer' : 'Send'}
+                            {queuedMessageCount > 0 ? ` (${queuedMessageCount})` : ''}
+                        </Button>
+                    </Tooltip>
                 </div>
             </div>
         </div>

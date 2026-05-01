@@ -86,9 +86,9 @@ interface UseMemoryReturn {
 
 export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryReturn {
     const { t } = useTranslation();
-    const unexpectedMessage = t('errors.unexpected');
-    const exportFailedMessage = t('memory.errors.exportFailed');
-    const importFailedMessage = t('memory.errors.importFailed');
+    const unexpectedMessage = t('frontend.errors.unexpected');
+    const exportFailedMessage = t('frontend.memory.errors.exportFailed');
+    const importFailedMessage = t('frontend.memory.errors.importFailed');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [lastErrorCode, setLastErrorCode] = useState<string | null>(null);

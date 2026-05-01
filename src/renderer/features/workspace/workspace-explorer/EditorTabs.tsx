@@ -25,8 +25,9 @@ interface EditorTabsProps {
     togglePinTab: (id: string) => void;
     closeAllTabs: () => void;
     closeTabsToRight: (id: string) => void;
-    closeOtherTabs: (id: string) => void;
-    copyTabAbsolutePath: (id: string) => Promise<void>;
+    closeOtherTabs: (tabId: string) => void;
+    revertTab: (tabId: string) => void;
+    copyTabAbsolutePath: (tabId: string) => Promise<void>;
     copyTabRelativePath: (id: string) => Promise<void>;
     revealTabInExplorer: (id: string) => Promise<void>;
     workspacePath?: string;
@@ -66,6 +67,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     closeAllTabs,
     closeTabsToRight,
     closeOtherTabs,
+    revertTab,
     copyTabAbsolutePath,
     copyTabRelativePath,
     revealTabInExplorer,
@@ -226,11 +228,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         if (dirtyTabs.length === 0) {
             return true;
         }
-        appLogger.warn(
-            'EditorTabs',
-            t('workspace.unsavedTabsWarning')
-        );
-        return false;
+        return window.confirm(t('frontend.workspace.unsavedTabsWarning'));
     };
 
     return (
@@ -317,7 +315,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                     onMouseDown={event => event.stopPropagation()}
                 >
                     {breadcrumbDropdown.items.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('workspaceDashboard.empty')}</div>
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('frontend.workspaceDashboard.empty')}</div>
                     ) : (
                         breadcrumbDropdown.items.map(item => (
                             <button
@@ -383,6 +381,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                             }
                         })
                     }
+                    onRevertTab={() => runMenuAction(() => revertTab(contextTab.id))}
                     onCopyPath={() => runMenuAction(() => copyTabAbsolutePath(contextTab.id))}
                     onCopyRelativePath={() =>
                         runMenuAction(() => copyTabRelativePath(contextTab.id))

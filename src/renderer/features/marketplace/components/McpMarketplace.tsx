@@ -277,7 +277,7 @@ export function McpMarketplace({
                 provider: modelItem?.provider
             });
             if (!installResult.success) {
-                throw new Error(installResult.message || t('marketplace.installFailed', { name: item.name }));
+                throw new Error(installResult.message || t('frontend.marketplace.installFailed', { name: item.name }));
             }
             if (item.itemType === 'mcp') {
                 const mcpItem = item as MarketplaceMcp;
@@ -314,9 +314,9 @@ export function McpMarketplace({
                 }, true);
             }
             void refreshModels(); // Background refresh of local models
-            pushNotification({ type: 'success', message: t('marketplace.installSuccess', { name: item.name }) });
+            pushNotification({ type: 'success', message: t('frontend.marketplace.installSuccess', { name: item.name }) });
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : t('marketplace.installFailed', { name: item.name });
+            const message = error instanceof Error ? error.message : t('frontend.marketplace.installFailed', { name: item.name });
             pushNotification({ type: 'error', message });
         } finally {
             setInstallingId(null);
@@ -442,7 +442,7 @@ export function McpMarketplace({
 
         let active = true;
         setExtReadmeLoadingId(extension.id);
-        
+
         void marketplaceStore.fetchReadme(extension.id, repoUrl)
             .then((readme: string | null) => {
                 if (!active || !readme) {
@@ -501,8 +501,8 @@ export function McpMarketplace({
         if (!displaySize && modelItem?.name) {
             const params = extractParametersFromName(modelItem.name);
             if (params) {
-                 // Guestimate Q4 size if absolutely nothing else known
-                 displaySize = `~${(params * 0.6 / 1024 ** 3).toFixed(1)} GB`;
+                // Guestimate Q4 size if absolutely nothing else known
+                displaySize = `~${(params * 0.6 / 1024 ** 3).toFixed(1)} GB`;
             }
         }
 
@@ -523,8 +523,8 @@ export function McpMarketplace({
             submodels: modelItem?.submodels,
             performance,
             provider: modelItem?.provider,
-            isReadmeLoading: (isHf && !resolvedReadme && hfPreviewLoadingId === modelItem.id) || 
-                             (item.itemType === 'extension' && !extensionReadmes[item.id] && extReadmeLoadingId === item.id),
+            isReadmeLoading: (isHf && !resolvedReadme && hfPreviewLoadingId === modelItem.id) ||
+                (item.itemType === 'extension' && !extensionReadmes[item.id] && extReadmeLoadingId === item.id),
         };
     }, [hfPreviewLoadingId, hfReadmeByModelId, hfPreviewByModelId, extensionReadmes, extReadmeLoadingId, selectedEntry]);
 
@@ -570,7 +570,7 @@ export function McpMarketplace({
                 ? await window.electron.extension.uninstall(item.id)
                 : await window.electron.marketplace.uninstall(item.id, item.itemType);
             if (!result.success) {
-                throw new Error(result.error || t('marketplace.uninstallFailure'));
+                throw new Error(result.error || t('frontend.marketplace.uninstallFailure'));
             }
 
             if (item.itemType === 'mcp') {
@@ -588,17 +588,17 @@ export function McpMarketplace({
             await onRefreshRegistry(true);
 
             // Determine notification message
-            let successMessage = t('marketplace.uninstallSuccess', { name: item.name });
+            let successMessage = t('frontend.marketplace.uninstallSuccess', { name: item.name });
             if (result.messageKey) {
                 successMessage = t(result.messageKey, { name: item.name });
             }
 
-            pushNotification({ 
-                type: result.messageKey === 'extension.uninstall.partial_success' ? 'warning' : 'success', 
-                message: successMessage 
+            pushNotification({
+                type: result.messageKey === 'extension.uninstall.partial_success' ? 'warning' : 'success',
+                message: successMessage
             });
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : t('marketplace.uninstallFailure');
+            const message = error instanceof Error ? error.message : t('frontend.marketplace.uninstallFailure');
             pushNotification({ type: 'error', message });
         } finally {
             setInstallingId(null);
@@ -623,8 +623,8 @@ export function McpMarketplace({
                 <div className="flex-1 space-y-8">
                     <div className={cn(
                         'transition-all duration-300',
-                        query.viewMode === 'grid' 
-                            ? 'grid grid-cols-1 lg:grid-cols-2 gap-4' 
+                        query.viewMode === 'grid'
+                            ? 'grid grid-cols-1 lg:grid-cols-2 gap-4'
                             : 'flex flex-col gap-4'
                     )}>
                         {enrichedPagedItems.map(entry => {
@@ -728,8 +728,8 @@ function EmptyState({
     return (
         <div className="py-32 flex flex-col items-center justify-center text-center">
             <IconPackage className="w-12 h-12 text-muted-foreground/10 mb-4" />
-            <p className="text-sm text-muted-foreground/40 font-semibold tracking-tight">
-                {t('marketplace.emptyState', { mode: t(modeKeyByMode[mode]) })}
+            <p className="text-sm text-muted-foreground/40 font-semibold ">
+                {t('frontend.marketplace.emptyState', { mode: t(modeKeyByMode[mode]) })}
             </p>
         </div>
     );
@@ -740,8 +740,8 @@ function Loader({ t }: { t: (key: string) => string }) {
     return (
         <div className="flex flex-col items-center justify-center py-32 space-y-5">
             <IconRefresh className="w-8 h-8 text-primary/40 animate-spin" />
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 animate-pulse">
-                {t('marketplace.syncing')}
+            <p className="text-sm font-bold uppercase  text-muted-foreground/30 animate-pulse">
+                {t('frontend.marketplace.syncing')}
             </p>
         </div>
     );
@@ -774,7 +774,7 @@ function Pagination({
             >
                 <IconChevronLeft className="h-5 w-5" />
             </button>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">
+            <span className="text-sm font-bold uppercase  text-muted-foreground/20">
                 {t('common.pageOf', { current: currentPage, total: totalPages })}
             </span>
             <button

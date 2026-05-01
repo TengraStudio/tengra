@@ -135,7 +135,7 @@ export class IpcProvider extends Observable<string> {
                         appLogger.error('IpcProvider', `Collaboration error in ${this.roomId}`, errorMsg);
                         this.emit('status', [{ status: 'disconnected', error: new Error(errorMsg) }]);
                         // Emit error as a string instead of an array (which can cause confusion in consumers)
-                        this.emit('error', [errorMsg]);
+                        this.emit('common.error', [errorMsg]);
                     }
                 })
             );

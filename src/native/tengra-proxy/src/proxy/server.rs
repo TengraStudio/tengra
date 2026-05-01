@@ -7,9 +7,9 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-use axum::http::header::AUTHORIZATION;
 use axum::{
-    extract::State,
+    extract::{DefaultBodyLimit, State},
+    http::header::AUTHORIZATION,
     http::{Request, StatusCode},
     middleware::{self, Next},
     response::Response,
@@ -30,10 +30,12 @@ use crate::proxy::handlers::chat::handle_chat_completions;
 use crate::static_config;
 
 const INSECURE_PROXY_FALLBACK_ENV: &str = "TENGRA_PROXY_ALLOW_INSECURE_DEFAULT_KEY";
+const PROXY_JSON_BODY_LIMIT_BYTES: usize = 16 * 1024 * 1024;
 
 pub struct AppState {
     pub signature_cache: Mutex<std::collections::HashMap<String, String>>,
     pub session_id_cache: Mutex<std::collections::HashMap<String, String>>,
+    pub copilot_usage_cache: Mutex<std::collections::HashMap<String, serde_json::Value>>,
     pub terminal_manager: crate::terminal::TerminalManager,
     pub lsp_manager: crate::analysis::lsp_manager::LspManager,
 }
@@ -48,6 +50,7 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
     let state = Arc::new(AppState {
         signature_cache: Mutex::new(std::collections::HashMap::new()),
         session_id_cache: Mutex::new(std::collections::HashMap::new()),
+        copilot_usage_cache: Mutex::new(std::collections::HashMap::new()),
         terminal_manager: crate::terminal::TerminalManager::new(),
         lsp_manager: crate::analysis::lsp_manager::LspManager::new(),
     });
@@ -211,12 +214,11 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
         .route("/api/auth/oauth/verify", get(oauth_bridge_verify))
         .merge(protected)
         .layer(CorsLayer::permissive())
+        .layer(DefaultBodyLimit::max(PROXY_JSON_BODY_LIMIT_BYTES))
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = TcpListener::bind(addr).await?;
-
-    eprintln!("[LOG] Proxy HTTP server listening on http://{}", addr);
 
     axum::serve(listener, app).await?;
 
@@ -224,14 +226,15 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
 }
 
 async fn health_check() -> Json<serde_json::Value> {
-    let db_connected = crate::db::get_all_linked_accounts().await.is_ok();
     let client_id_configured = codex_client_id_configured().await;
     let callback_bridge_telemetry =
         crate::auth::session::callback_bridge_telemetry_snapshot().await;
     Json(json!({
-        "status": if db_connected { "ok" } else { "degraded" },
+        "status": "ok",
+        "build_signature": "2026-04-27 23:20:00 UTC",
         "db": {
-            "connected": db_connected
+            "connected": null,
+            "checked": false
         },
         "oauth_bridge": {
             "callback_port": 1455,

@@ -122,11 +122,10 @@ export class ApiServerService extends BaseService {
         // Check if proxy is running
         const proxyStatus = this.options.proxyProcessManager.getStatus();
         if (!proxyStatus.running) {
-            appLogger.warn(
+            appLogger.debug(
                 this.name,
-                'Proxy is not running. Browser extension requires proxy to be active.'
+                'Proxy is not running yet. Browser extension proxy routes will attach when the proxy starts.'
             );
-            // We'll still start the API server, but extension will show warning
         }
 
         // Generate API token for this session

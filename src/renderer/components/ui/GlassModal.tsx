@@ -88,7 +88,7 @@ function useFocusTrap(isOpen: boolean, modalRef: React.RefObject<HTMLDivElement 
  * 
  * @example
  * ```tsx
- * <GlassModal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('settings.title')}>
+ * <GlassModal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('frontend.settings.title')}>
  * <p>Modal content here</p>
  * </GlassModal>
  * ```
@@ -171,7 +171,7 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) 
         <div className="flex items-center justify-between p-4 border-b border-border/40">
             {title && <h2 id="modal-title" className="text-lg font-semibold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{title}</h2>}
             {showClose && (
-                <button onClick={onClose} className="p-2 text-muted-foreground bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:bg-muted/60 hover:text-foreground" aria-label={t('modal.close')}>
+                <button onClick={onClose} className="p-2 text-muted-foreground bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:bg-muted/60 hover:text-foreground" aria-label={t('frontend.modal.close')}>
                     <IconX className="w-5 h-5" />
                 </button>
             )}

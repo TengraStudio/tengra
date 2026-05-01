@@ -21,6 +21,10 @@ interface OpenFile {
     content: string;
     isDirty: boolean;
     initialLine?: number;
+    diff?: {
+        oldValue: string;
+        newValue: string;
+    };
 }
 
 interface WorkspaceFilesTabProps {
@@ -72,8 +76,9 @@ export const WorkspaceFilesTab = ({
                         <div className="flex-1 relative">
                             {activeFileObj && (
                                 <CodeEditor
-                                    value={activeFileObj.content}
-                                    language={activeFileObj.name.split('.').pop() ?? 'typescript'}
+                                    value={activeFileObj.diff ? undefined : activeFileObj.content}
+                                    diff={activeFileObj.diff}
+                                    language={activeFileObj.name.split('.').pop()?.replace('Diff: ', '') ?? 'typescript'}
                                     initialLine={activeFileObj.initialLine}
                                     showMinimap={false}
                                     enableCodeLens={false}
@@ -93,7 +98,7 @@ export const WorkspaceFilesTab = ({
                         <div className="w-16 h-16 mb-4 opacity-10 flex items-center justify-center border-2 border-current rounded-full">
                             <IconFileCode size={32} />
                         </div>
-                        <p>{t('workspaceDashboard.selectFile')}</p>
+                        <p>{t('frontend.workspaceDashboard.selectFile')}</p>
                     </div>
                 )}
             </div>

@@ -64,6 +64,7 @@ function extractHandlerChannels(): { handleChannels: Set<string>; onChannels: Se
         /ipcMain\.handle\(\s*['"]([^'"]+)['"]/g,
         /registerBatchableHandler\(\s*['"]([^'"]+)['"]/g,
         /registerSecureBatchableHandler\(\s*['"]([^'"]+)['"]/g,
+        /safeHandle\(\s*['"]([^'"]+)['"]/g,
     ];
     // secureHandle may have the channel on the next line with indentation
     const secureHandleRe = /secureHandle\(\s*\n?\s*['"]([^'"]+)['"]/g;

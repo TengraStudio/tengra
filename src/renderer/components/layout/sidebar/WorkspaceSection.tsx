@@ -51,7 +51,7 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
             variant="ghost"
             onClick={() => onChangeView('chat')}
             className={cn('nav-item justify-center', currentView === 'chat' && 'nav-item-active')}
-            title={t('sidebar.chats')}
+            title={t('frontend.sidebar.chats')}
         >
             <IconMessage className="w-4 h-4 shrink-0" />
         </Button>
@@ -62,7 +62,7 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
                 'nav-item justify-center',
                 currentView === 'workspace' && 'nav-item-active'
             )}
-            title={t('sidebar.workspace')}
+            title={t('frontend.sidebar.workspace')}
         >
             <IconRocket className="w-4 h-4 shrink-0" />
         </Button>
@@ -80,7 +80,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
 }) => (
     <SidebarSection
         id="workspace"
-        title={t('sidebar.workspace')}
+        title={t('frontend.sidebar.workspace')}
         icon={<FolderIcon className="w-3.5 h-3.5" />}
         defaultExpanded={true}
         badge={chatsCount + (selectedWorkspace ? 1 : 0)}
@@ -88,7 +88,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
         <SidebarMenuItem
             id="chats"
             icon={<IconMessage className="w-4 h-4" />}
-            label={t('sidebar.chats')}
+            label={t('frontend.sidebar.chats')}
             onClick={() => onChangeView('chat')}
             isActive={currentView === 'chat'}
             badge={chatsCount}
@@ -96,16 +96,16 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
         <SidebarMenuItem
             id="workspace"
             icon={<IconRocket className="w-4 h-4" />}
-            label={t('sidebar.workspace')}
+            label={t('frontend.sidebar.workspace')}
             onClick={() => onChangeView('workspace')}
             isActive={currentView === 'workspace'}
             status={selectedWorkspace ? 'online' : undefined}
-            statusLabel={selectedWorkspace ? t('sidebar.active') : undefined}
+            statusLabel={selectedWorkspace ? t('frontend.sidebar.active') : undefined}
         />
         <SidebarMenuItem
             id="prompts"
             icon={<IconBook className="w-4 h-4" />}
-            label={t('sidebar.prompts')}
+            label={t('frontend.sidebar.prompts')}
             onClick={() => setShowPrompts(true)}
             badge={promptsCount}
         />

@@ -44,10 +44,10 @@ export const ErrorFallback = ({
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-foreground mb-1">
-                            {t('errors.somethingWentWrong')}
+                            {t('frontend.errors.somethingWentWrong')}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            {t('errors.unexpectedDescription')}
+                            {t('frontend.errors.unexpectedDescription')}
                         </p>
                     </div>
                 </div>
@@ -55,7 +55,7 @@ export const ErrorFallback = ({
                 <div className="p-6 pt-2 space-y-4">
                     <div className="relative group">
                         <div className="absolute -top-2 left-3 px-2 py-0.5 typo-overline font-bold text-destructive/70 bg-card border border-border rounded pointer-events-none">
-                            {t('errors.errorMessageLabel')}
+                            {t('frontend.errors.errorMessageLabel')}
                         </div>
                         <pre className="text-sm font-mono bg-muted/30 text-foreground p-5 border border-border/50 rounded-xl overflow-auto whitespace-pre-wrap max-h-200">
                             {error.message || t('common.unknownError')}
@@ -70,7 +70,7 @@ export const ErrorFallback = ({
                             >
                                 <span className="flex items-center gap-2">
                                     {showStack ? <IconChevronUp className="w-4 h-4" /> : <IconChevronDown className="w-4 h-4" />}
-                                    {t('errors.technicalDetails')}
+                                    {t('frontend.errors.technicalDetails')}
                                 </span>
                             </button>
                             {showStack && (
@@ -95,7 +95,7 @@ export const ErrorFallback = ({
                         {copied ? <span>{t('common.copied')}</span> : (
                             <>
                                 <IconCopy className="w-4 h-4 opacity-70" />
-                                <span>{t('errors.copyDetails')}</span>
+                                <span>{t('frontend.errors.copyDetails')}</span>
                             </>
                         )}
                     </button>

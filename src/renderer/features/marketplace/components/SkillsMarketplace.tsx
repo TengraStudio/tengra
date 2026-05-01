@@ -28,7 +28,7 @@ import type { MarketplaceQueryState } from '../marketplace-query.types';
 
 /* Batch-02: Extracted Long Classes */
 const C_SKILLSMARKETPLACE_1 = "w-full bg-muted/30 rounded-xl px-12 py-3 text-sm focus:outline-none transition-all font-medium border border-transparent focus:border-primary/20 placeholder:text-muted-foreground/20";
-const C_SKILLSMARKETPLACE_2 = "h-8 px-3 flex items-center gap-2 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/5 transition-colors text-xs font-semibold";
+const C_SKILLSMARKETPLACE_2 = "h-8 px-3 flex items-center gap-2 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/5 transition-colors text-sm font-semibold";
 
 
 const PAGE_SIZE = 24;
@@ -108,16 +108,16 @@ export function SkillsMarketplace({
                 await Promise.all([onRefreshRegistry(true), onRefreshSkills()]);
                 pushNotification({
                     type: 'success',
-                    message: t('marketplace.installSuccess', { name: skillSource.name }),
+                    message: t('frontend.marketplace.installSuccess', { name: skillSource.name }),
                 });
             } else {
                 pushNotification({
                     type: 'error',
-                    message: result.message || t('marketplace.installFailure'),
+                    message: result.message || t('frontend.marketplace.installFailure'),
                 });
             }
         } catch (error) {
-            const message = error instanceof Error ? error.message : t('marketplace.installFailure');
+            const message = error instanceof Error ? error.message : t('frontend.marketplace.installFailure');
             pushNotification({
                 type: 'error',
                 message,
@@ -150,8 +150,8 @@ export function SkillsMarketplace({
         return (
             <div className="flex flex-col items-center justify-center py-32 space-y-5">
                 <IconRefresh className="w-8 h-8 text-primary/40 animate-spin" />
-                <p className="text-xs font-semibold text-muted-foreground/30 uppercase tracking-widest">
-                    {t('marketplace.syncing')}
+                <p className="text-sm font-semibold text-muted-foreground/30 uppercase ">
+                    {t('frontend.marketplace.syncing')}
                 </p>
             </div>
         );
@@ -161,8 +161,8 @@ export function SkillsMarketplace({
         return (
             <div className="col-span-full py-20 text-center border border-dashed border-border/20 rounded-2xl bg-muted/5">
                 <IconSparkles className="w-10 h-10 text-muted-foreground/10 mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground/40 font-semibold tracking-tight">
-                    {t('settings.skills.marketplaceEmpty')}
+                <p className="text-sm text-muted-foreground/40 font-semibold ">
+                    {t('frontend.settings.skills.marketplaceEmpty')}
                 </p>
             </div>
         );
@@ -176,7 +176,7 @@ export function SkillsMarketplace({
                         <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/20" />
                         <input
                             type="text"
-                            placeholder={t('marketplace.search')}
+                            placeholder={t('frontend.marketplace.search')}
                             value={search}
                             onChange={(e) => onQueryChange(prev => ({ ...prev, search: e.target.value, page: 1 }))}
                             className={C_SKILLSMARKETPLACE_1}
@@ -210,13 +210,13 @@ export function SkillsMarketplace({
                         value={filter}
                         onValueChange={value => onQueryChange(prev => ({ ...prev, filter: value as any, page: 1 }))}
                     >
-                        <SelectTrigger className="h-9 w-40 text-xs font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
+                        <SelectTrigger className="h-9 w-40 text-sm font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl rounded-xl">
-                            <SelectItem value="all">{t('marketplace.mcp.filters.all')}</SelectItem>
-                            <SelectItem value="installed">{t('modelExplorer.installed')}</SelectItem>
-                            <SelectItem value="not_installed">{t('marketplace.install')}</SelectItem>
+                            <SelectItem value="all">{t('frontend.marketplace.mcp.filters.all')}</SelectItem>
+                            <SelectItem value="installed">{t('frontend.modelExplorer.installed')}</SelectItem>
+                            <SelectItem value="not_installed">{t('frontend.marketplace.install')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -224,8 +224,8 @@ export function SkillsMarketplace({
 
             <div className={cn(
                 'transition-all duration-300',
-                query.viewMode === 'grid' 
-                    ? 'grid grid-cols-1 lg:grid-cols-2 gap-4' 
+                query.viewMode === 'grid'
+                    ? 'grid grid-cols-1 lg:grid-cols-2 gap-4'
                     : 'flex flex-col gap-4'
             )}>
                 {pagedSkills.map(item => {
@@ -253,14 +253,14 @@ export function SkillsMarketplace({
                             <div className="flex flex-1 flex-col min-w-0 py-0.5">
                                 <div className="flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <h3 className="truncate text-base font-semibold text-foreground tracking-tight">
+                                        <h3 className="truncate text-base font-semibold text-foreground ">
                                             {item.name}
                                         </h3>
                                         {installed && (
                                             <IconCircleCheck className="h-3.5 w-3.5 shrink-0 text-primary/60" />
                                         )}
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-2 shrink-0">
                                         <button
                                             disabled={installed || isInstalling || isUninstalling}
@@ -268,13 +268,13 @@ export function SkillsMarketplace({
                                                 void handleInstall(item.id);
                                             }}
                                             className={cn(
-                                            'h-8 px-4 flex items-center gap-2 rounded-lg transition-all text-xs font-semibold',
-                                            installed
-                                                ? 'bg-primary/5 text-primary'
-                                                : isInstalling
-                                                    ? 'bg-muted/60 text-muted-foreground/40 animate-pulse'
-                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
-                                        )}
+                                                'h-8 px-4 flex items-center gap-2 rounded-lg transition-all text-sm font-semibold',
+                                                installed
+                                                    ? 'bg-primary/5 text-primary'
+                                                    : isInstalling
+                                                        ? 'bg-muted/60 text-muted-foreground/40 animate-pulse'
+                                                        : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
+                                            )}
                                         >
                                             {isInstalling ? (
                                                 <IconRefresh className="h-3.5 w-3.5 animate-spin" />
@@ -282,8 +282,8 @@ export function SkillsMarketplace({
                                                 <IconDownload className={cn('h-3.5 w-3.5', installed && 'hidden')} />
                                             )}
                                             {installed
-                                                ? t('modelExplorer.installed')
-                                                : isInstalling ? t('marketplace.installing') : t('marketplace.install')}
+                                                ? t('frontend.modelExplorer.installed')
+                                                : isInstalling ? t('frontend.marketplace.installing') : t('frontend.marketplace.install')}
                                         </button>
                                         {installed && (
                                             <button
@@ -304,10 +304,10 @@ export function SkillsMarketplace({
                                     </div>
                                 </div>
 
-                                <div className="mt-1.5 flex items-center gap-2 text-xs font-medium text-muted-foreground/40">
+                                <div className="mt-1.5 flex items-center gap-2 text-sm font-medium text-muted-foreground/40">
                                     <span className="truncate">{item.provider}</span>
                                     <span className="opacity-20">•</span>
-                                    <span className="tracking-wider uppercase opacity-80 text-[10px]">skill</span>
+                                    <span className=" uppercase opacity-80 text-sm">skill</span>
                                 </div>
 
                                 <p className="mt-3 line-clamp-1 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
@@ -329,7 +329,7 @@ export function SkillsMarketplace({
                     >
                         <IconChevronLeft className="h-5 w-5" />
                     </button>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">
+                    <span className="text-sm font-bold uppercase  text-muted-foreground/20">
                         {t('common.pageOf', { current: activePage, total: totalPages })}
                     </span>
                     <button

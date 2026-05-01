@@ -24,6 +24,8 @@ import {
     workspaceAgentContextTelemetryResponseSchema,
     workspaceAgentSessionArchiveRequestSchema,
     workspaceAgentSessionCreateRequestSchema,
+    workspaceAgentSessionDeleteRequestSchema,
+    workspaceAgentSessionDeleteResponseSchema,
     workspaceAgentSessionListRequestSchema,
     workspaceAgentSessionListResponseSchema,
     workspaceAgentSessionPersistenceResponseSchema,
@@ -60,6 +62,7 @@ import { randomUUID } from 'node:crypto';
 
 const WORKSPACE_AGENT_METADATA_KEY = 'workspaceAgentSession';
 const WORKSPACE_AGENT_PERSISTENCE_KEY = 'workspaceAgentPanel';
+const TRANSIENT_SESSION_EVENT_TAGS = new Set(['session-select', 'session-resume']);
 
 const DEFAULT_MODES: WorkspaceAgentSessionModes = {
     ask: true,
@@ -380,6 +383,9 @@ export function registerWorkspaceAgentSessionIpc(
         message: string,
         tags: string[]
     ): void => {
+        if (tags.some(tag => TRANSIENT_SESSION_EVENT_TAGS.has(tag))) {
+            return;
+        }
         memoryContextService.rememberInsight({
             content: message,
             sourceId: `workspace-agent:${sessionId}:${Date.now()}`,
@@ -792,6 +798,32 @@ export function registerWorkspaceAgentSessionIpc(
             {
                 argsSchema: workspaceAgentSessionArchiveRequestSchema,
                 responseSchema: workspaceAgentSessionResponseSchema,
+            }
+        )
+    );
+
+    ipcMain.handle(
+        WORKSPACE_AGENT_SESSION_CHANNELS.DELETE,
+        createValidatedIpcHandler(
+            WORKSPACE_AGENT_SESSION_CHANNELS.DELETE,
+            async (
+                event,
+                payload: { sessionId: string }
+            ): Promise<{ success: boolean }> => {
+                validateSender(event);
+                const chat = await requireChat(payload.sessionId, databaseService);
+                const result = await databaseService.deleteChat(chat.id);
+                rememberSessionEvent(
+                    chat.id,
+                    chat.workspaceId,
+                    `Workspace agent session deleted. sessionId=${chat.id}`,
+                    ['agent', 'session-delete']
+                );
+                return result;
+            },
+            {
+                argsSchema: workspaceAgentSessionDeleteRequestSchema,
+                responseSchema: workspaceAgentSessionDeleteResponseSchema,
             }
         )
     );

@@ -174,9 +174,9 @@ export const EntityRelationshipDiagram: React.FC = () => {
                             <IconDatabase className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-sm font-bold">{t('memory.erDiagram')}</h2>
+                            <h2 className="text-sm font-bold">{t('frontend.memory.erDiagram')}</h2>
                             <p className="text-sm text-muted-foreground">
-                                {t('memory.entitiesTracked', { count: nodes.length })}
+                                {t('frontend.memory.entitiesTracked', { count: nodes.length })}
                             </p>
                         </div>
                     </div>

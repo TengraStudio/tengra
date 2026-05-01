@@ -42,10 +42,10 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
                 </div>
                 <div>
                     <h3 className="text-sm font-bold text-foreground">
-                        {t('settings.usageLimits.copilot.title')}
+                        {t('frontend.settings.usageLimits.copilot.title')}
                     </h3>
                     <p className="typo-caption text-muted-foreground mt-0.5">
-                        {t('settings.usageLimits.copilot.current', {
+                        {t('frontend.settings.usageLimits.copilot.current', {
                             remaining: copilotRemaining,
                             limit: copilotLimit,
                         })}

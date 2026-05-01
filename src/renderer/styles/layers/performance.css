@@ -1,0 +1,49 @@
+/**
+ * Tengra renderer performance mode.
+ *
+ * Electron pays a high compositing cost for app-wide backdrop blur, large CSS
+ * filters, and perpetual decorative animations. Keep this override narrow:
+ * loading spinners still animate, while nonessential paint-heavy effects are
+ * flattened.
+ */
+
+html.tengra-performance-mode [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+}
+
+html.tengra-performance-mode [class*="blur-2xl"],
+html.tengra-performance-mode [class*="blur-3xl"],
+html.tengra-performance-mode [class*="blur-xl"] {
+    filter: none !important;
+}
+
+html.tengra-performance-mode [class*="shadow-2xl"],
+html.tengra-performance-mode [class*="shadow-xl"],
+html.tengra-performance-mode [class*="shadow-glow"] {
+    box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 12%)) !important;
+}
+
+html.tengra-performance-mode .animate-pulse,
+html.tengra-performance-mode .animate-ping,
+html.tengra-performance-mode .animate-bounce {
+    animation: none !important;
+}
+
+html.tengra-performance-mode .animate-spin {
+    animation-duration: 1.2s !important;
+}
+
+html.tengra-performance-mode [class*="animate-in"],
+html.tengra-performance-mode [class*="slide-in-"],
+html.tengra-performance-mode [class*="zoom-in-"],
+html.tengra-performance-mode [class*="fade-in"] {
+    animation-duration: 80ms !important;
+}
+
+html.tengra-performance-mode [class*="transition-all"] {
+    transition-property: color, background-color, border-color, opacity, transform !important;
+}
+
+html.tengra-performance-mode [class*="will-change"] {
+    will-change: auto !important;
+}

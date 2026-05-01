@@ -40,21 +40,18 @@ pub async fn fetch_claude_quota(token: &str, org_id: Option<&str>) -> Result<Quo
 
     // Map five_hour (most restrictive usually) as the primary quota
     let quota = usage.get("five_hour").map(|five| QuotaInfo {
-            remaining: 100.0
-                - five
-                    .get("utilization")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0),
-            total: 100.0,
-            reset_at: five
-                .get("resets_at")
-                .and_then(|v| v.as_str())
-                .map(|s| s.to_string()),
-            five_hour_used_percent: None,
-            five_hour_reset_at: None,
-            weekly_used_percent: None,
-            weekly_reset_at: None,
-        });
+        remaining: 100.0
+            - five
+                .get("utilization")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0),
+        total: 100.0,
+        reset_at: five
+            .get("resets_at")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        ..Default::default()
+    });
 
     Ok(QuotaResult {
         success: true,

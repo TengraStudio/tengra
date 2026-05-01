@@ -30,9 +30,9 @@ type OpenCodeFunctionCallOutput = { type: 'function_call_output'; call_id: strin
 type OpenCodeContentPart =
     | OpenCodeInputText
     | OpenCodeOutputText
-    | OpenCodeInputImage
-    | OpenCodeFunctionCall
-    | OpenCodeFunctionCallOutput;
+    | OpenCodeInputImage;
+type OpenCodeMessageItem = { role: 'user' | 'assistant'; content: OpenCodeContentPart[] };
+type OpenCodeResponseInputItem = OpenCodeMessageItem | OpenCodeFunctionCall | OpenCodeFunctionCallOutput;
 
 type NormalizableContentPart = {
     type: string;
@@ -394,9 +394,9 @@ export class MessageNormalizer {
      * @param messages - The source messages.
      * @returns An array suitable for OpenCode API.
      */
-    static normalizeOpenCodeResponsesMessages(messages: Array<Message | ChatMessage>): Array<{ role: 'user' | 'assistant'; content: OpenCodeContentPart[] }> {
+    static normalizeOpenCodeResponsesMessages(messages: Array<Message | ChatMessage>): OpenCodeResponseInputItem[] {
         if (!Array.isArray(messages)) { return []; }
-        const result: Array<{ role: 'user' | 'assistant'; content: OpenCodeContentPart[] }> = [];
+        const result: OpenCodeResponseInputItem[] = [];
         const limit = Math.min(messages.length, MAX_MESSAGES);
 
         for (let i = 0; i < limit; i++) {
@@ -410,25 +410,22 @@ export class MessageNormalizer {
                     ? msg.content
                     : '';
                 result.push({
-                    role: 'user',
-                    content: [{
-                        type: 'function_call_output',
-                        call_id: toolCallId,
-                        output: toolOutput
-                    }]
+                    type: 'function_call_output',
+                    call_id: toolCallId,
+                    output: toolOutput
                 });
                 continue;
             }
             const role = (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant';
             const contentParts: OpenCodeContentPart[] = [];
             const assistantToolCalls = (msg as Message).toolCalls;
-            if (msg.role === 'assistant' && Array.isArray(assistantToolCalls) && assistantToolCalls.length > 0) {
-                this.addAssistantToolCallsToOpenCodeParts(contentParts, assistantToolCalls);
-            }
             this.addContentToOpenCodeParts(contentParts, msg.content, role);
 
             if (contentParts.length > 0) {
                 result.push({ role, content: contentParts });
+            }
+            if (msg.role === 'assistant' && Array.isArray(assistantToolCalls) && assistantToolCalls.length > 0) {
+                result.push(...this.buildAssistantToolCallItems(assistantToolCalls));
             }
         }
 
@@ -454,7 +451,8 @@ export class MessageNormalizer {
         }
     }
 
-    private static addAssistantToolCallsToOpenCodeParts(parts: OpenCodeContentPart[], toolCalls: NonNullable<Message['toolCalls']>): void {
+    private static buildAssistantToolCallItems(toolCalls: NonNullable<Message['toolCalls']>): OpenCodeFunctionCall[] {
+        const result: OpenCodeFunctionCall[] = [];
         const limit = Math.min(toolCalls.length, MAX_CONTENT_PARTS);
         for (let i = 0; i < limit; i++) {
             const toolCall = toolCalls[i];
@@ -462,7 +460,7 @@ export class MessageNormalizer {
             if (callId.trim().length === 0 || toolCall.function.name.trim().length === 0) {
                 continue;
             }
-            parts.push({
+            result.push({
                 type: 'function_call',
                 call_id: callId,
                 name: toolCall.function.name,
@@ -470,6 +468,7 @@ export class MessageNormalizer {
                 thought_signature: (toolCall.function as { thought_signature?: string }).thought_signature
             });
         }
+        return result;
     }
 
     /**

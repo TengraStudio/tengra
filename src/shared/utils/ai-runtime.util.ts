@@ -462,9 +462,6 @@ export function isLowSignalProgressContent(content: string): boolean {
     if (trimmed.length === 0) {
         return false;
     }
-    if (trimmed.length < 20) {
-        return true;
-    }
 
     const normalized = normalizeWhitespace(trimmed).toLowerCase();
     const lowSignalProgressPatterns = [
@@ -483,7 +480,12 @@ export function isLowSignalProgressContent(content: string): boolean {
         /\bjust a second\b/,
     ];
 
-    return lowSignalProgressPatterns.some(pattern => pattern.test(normalized));
+    const matchesPattern = lowSignalProgressPatterns.some(pattern => pattern.test(normalized));
+    if (matchesPattern) {
+        return true;
+    }
+
+    return trimmed.length < 10;
 }
 
 export function inferAiIntentFromAssistantState(context: Pick<

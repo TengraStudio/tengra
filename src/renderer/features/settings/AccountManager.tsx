@@ -41,7 +41,7 @@ export const AccountManager: React.FC = () => {
             setActiveAccountId(activeAccount?.id ?? 'default');
         } catch (error) {
             appLogger.error('AccountManager', 'Failed to load accounts', error as Error);
-            showMessage(t('accounts.loadFailed'), 'error');
+            showMessage(t('frontend.accounts.loadFailed'), 'error');
         }
     }, [t]);
 
@@ -56,9 +56,9 @@ export const AccountManager: React.FC = () => {
             await window.electron.ipcRenderer.invoke('auth:create-account', newAccountName);
             setNewAccountName('');
             await loadAccounts();
-            showMessage(t('accounts.createSuccess', { name: newAccountName }), 'success');
+            showMessage(t('frontend.accounts.createSuccess', { name: newAccountName }), 'success');
         } catch {
-            showMessage(t('accounts.createFailed'), 'error');
+            showMessage(t('frontend.accounts.createFailed'), 'error');
         } finally {
             setIsCreating(false);
         }
@@ -68,10 +68,10 @@ export const AccountManager: React.FC = () => {
         try {
             await window.electron.ipcRenderer.invoke('auth:switch-account', id);
             setActiveAccountId(id);
-            showMessage(t('accounts.switchSuccess', { name }), 'success');
+            showMessage(t('frontend.accounts.switchSuccess', { name }), 'success');
             setTimeout(() => window.location.reload(), 1000); // Reload to apply changes
         } catch {
-            showMessage(t('accounts.switchFailed'), 'error');
+            showMessage(t('frontend.accounts.switchFailed'), 'error');
         }
     };
 
@@ -81,9 +81,9 @@ export const AccountManager: React.FC = () => {
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <IconUsers className="w-5 h-5" />
-                        {t('accounts.management')}
+                        {t('frontend.accounts.management')}
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => { void loadAccounts(); }} title={t('accounts.refreshAccounts')}>
+                    <Button variant="ghost" size="icon" onClick={() => { void loadAccounts(); }} title={t('frontend.accounts.refreshAccounts')}>
                         <IconRefresh className="w-4 h-4" />
                     </Button>
                 </CardTitle>
@@ -99,7 +99,7 @@ export const AccountManager: React.FC = () => {
                 )}
 
                 <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground">{t('accounts.activeAccounts')}</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t('frontend.accounts.activeAccounts')}</h3>
                     <div className="grid gap-3">
                         {accounts.map((account) => (
                             <div
@@ -118,18 +118,18 @@ export const AccountManager: React.FC = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-medium text-foreground">{account.displayName ?? t('accounts.unnamed')}</p>
-                                        <p className="typo-caption text-muted-foreground">{t('accounts.idPrefix')} {account.id.slice(0, 8)}...</p>
+                                        <p className="font-medium text-foreground">{account.displayName ?? t('frontend.accounts.unnamed')}</p>
+                                        <p className="typo-caption text-muted-foreground">{t('frontend.accounts.idPrefix')} {account.id.slice(0, 8)}...</p>
                                     </div>
                                 </div>
                                 {activeAccountId === account.id ? (
                                     <div className="flex items-center gap-2 text-primary text-sm font-bold bg-primary/10 px-3 py-1 rounded-full">
                                         <IconCheck className="w-3 h-3" />
-                                        {t('accounts.active')}
+                                        {t('frontend.accounts.active')}
                                     </div>
                                 ) : (
                                     <Button variant="secondary" size="sm" onClick={() => { void handleSwitchAccount(account.id, account.displayName ?? account.id); }}>
-                                        {t('accounts.switch')}
+                                        {t('frontend.accounts.switch')}
                                     </Button>
                                 )}
                             </div>
@@ -138,17 +138,17 @@ export const AccountManager: React.FC = () => {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-border">
-                    <label className="text-sm font-medium text-muted-foreground block">{t('accounts.addNewAccount')}</label>
+                    <label className="text-sm font-medium text-muted-foreground block">{t('frontend.accounts.addNewAccount')}</label>
                     <div className="flex gap-2">
                         <Input
-                            placeholder={t('accounts.accountNamePlaceholder')}
+                            placeholder={t('frontend.accounts.accountNamePlaceholder')}
                             value={newAccountName}
                             onChange={(e) => setNewAccountName(e.target.value)}
                             className="bg-background"
                         />
                         <Button onClick={() => { void handleCreateAccount(); }} disabled={isCreating || !newAccountName.trim()}>
                             <IconPlus className="w-4 h-4 mr-2" />
-                            {t('accounts.create')}
+                            {t('frontend.accounts.create')}
                         </Button>
                     </div>
                 </div>

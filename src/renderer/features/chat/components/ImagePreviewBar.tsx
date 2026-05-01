@@ -56,7 +56,7 @@ export const ImagePreviewBar: React.FC<ImagePreviewBarProps> = ({
                 className,
             )}
             role="list"
-            aria-label={t('imageAttachment.attached', { count: images.length })}
+            aria-label={t('frontend.imageAttachment.attached', { count: images.length })}
         >
             <AnimatePresence initial={false}>
                 {images.map(img => (
@@ -80,7 +80,7 @@ export const ImagePreviewBar: React.FC<ImagePreviewBarProps> = ({
                                 type="button"
                                 onClick={() => onRemove(img.id)}
                                 className={C_IMAGEPREVIEWBAR_1}
-                                aria-label={t('imageAttachment.remove')}
+                                aria-label={t('frontend.imageAttachment.remove')}
                             >
                                 <IconX size={12} aria-hidden="true" />
                             </button>

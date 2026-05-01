@@ -79,7 +79,7 @@ export function useVoiceActions({
             case 'show-voice-help':
                 addToast({
                     type: 'info',
-                    message: t('voice.helpToast'),
+                    message: t('frontend.voice.helpToast'),
                 });
                 break;
             default:

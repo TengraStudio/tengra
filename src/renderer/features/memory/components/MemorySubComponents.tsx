@@ -108,7 +108,7 @@ export const PendingMemoryCard = memo(({
                         </Badge>
                         {memory.requiresUserValidation && (
                             <Badge variant="outline" className="border-warning/40 text-warning text-sm">
-                                {t('memory.needsReview')}
+                                {t('frontend.memory.needsReview')}
                             </Badge>
                         )}
                     </div>
@@ -117,19 +117,19 @@ export const PendingMemoryCard = memo(({
                 <div className="flex items-center justify-between mt-2">
                     <button
                         type="button"
-                        aria-label={t('memory.confirm')}
+                        aria-label={t('frontend.memory.confirm')}
                         className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-md typo-caption font-bold"
                         onClick={onConfirm}
                     >
-                        {t('memory.confirm')}
+                        {t('frontend.memory.confirm')}
                     </button>
                     <button
                         type="button"
-                        aria-label={t('memory.reject')}
+                        aria-label={t('frontend.memory.reject')}
                         className="flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive rounded-md typo-caption font-bold"
                         onClick={onReject}
                     >
-                        {t('memory.reject')}
+                        {t('frontend.memory.reject')}
                     </button>
                 </div>
             </div>
@@ -168,7 +168,7 @@ export const ConfirmedMemoryCard = memo(({
             <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <button type="button" aria-label={t('memory.select')} onClick={onToggleSelect}>
+                        <button type="button" aria-label={t('frontend.memory.select')} onClick={onToggleSelect}>
                             {isSelected ? <IconSquareCheck className="w-4 h-4 text-primary" /> : <IconSquare className="w-4 h-4 text-muted-foreground/30" />}
                         </button>
                         <Badge className={cn("border-none text-sm font-bold", config.color)}>
@@ -179,10 +179,10 @@ export const ConfirmedMemoryCard = memo(({
                 </div>
                 <p className="text-sm leading-relaxed">{memory.content}</p>
                 <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-muted-foreground">{t('memory.storedAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })}</div>
+                    <div className="text-sm text-muted-foreground">{t('frontend.memory.storedAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })}</div>
                     <div className="flex gap-1">
                         <Button variant="ghost" size="sm" aria-label={t('common.edit')} onClick={onEdit}><IconEdit className="w-4 h-4" /></Button>
-                        {!isArchived ? <Button variant="ghost" size="sm" aria-label={t('memory.archive')} onClick={onArchive}><IconArchive className="w-4 h-4" /></Button> : <Button variant="ghost" size="sm" aria-label={t('memory.restore')} onClick={onRestore}><IconRefresh className="w-4 h-4" /></Button>}
+                        {!isArchived ? <Button variant="ghost" size="sm" aria-label={t('frontend.memory.archive')} onClick={onArchive}><IconArchive className="w-4 h-4" /></Button> : <Button variant="ghost" size="sm" aria-label={t('frontend.memory.restore')} onClick={onRestore}><IconRefresh className="w-4 h-4" /></Button>}
                         <Button variant="ghost" size="sm" aria-label={t('common.delete')} onClick={onDelete} className="text-destructive"><IconTrash className="w-4 h-4" /></Button>
                     </div>
                 </div>

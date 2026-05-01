@@ -21,7 +21,7 @@ import { useModel } from '@/context/ModelContext';
 import { useChatGenerator } from '@/features/chat/hooks/useChatGenerator';
 import type { Language } from '@/i18n';
 import { useTranslation } from '@/i18n';
-import type { Chat, Workspace } from '@/types';
+import type { Chat, Message, Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import type { WorkspaceAgentComposerPreset } from '../components/workspace/WorkspaceAgentComposer';
@@ -32,6 +32,7 @@ import {
     DEFAULT_COUNCIL_SETUP,
     DEFAULT_MODES,
     DEFAULT_PERMISSION_POLICY,
+    dedupeChatMessages,
     toCouncilRuntime,
     toSessionModes,
 } from '../utils/workspace-agent-session-utils';
@@ -45,6 +46,15 @@ import { useWorkspaceAgentSessionTelemetry } from './useWorkspaceAgentSessionTel
 interface UseWorkspaceAgentSessionsOptions {
     workspace: Workspace;
     language: Language;
+}
+
+type WorkspaceMessageDeliveryMode = 'send' | 'queue' | 'steer';
+
+interface PendingWorkspaceMessage {
+    id: string;
+    content: string;
+    mode: Exclude<WorkspaceMessageDeliveryMode, 'send'>;
+    createdAt: number;
 }
 
 /**
@@ -85,6 +95,8 @@ export function useWorkspaceAgentSessions({
     const [councilSetup, setCouncilSetup] = useState<CouncilRunConfig>(DEFAULT_COUNCIL_SETUP);
     const [pendingCouncilSetup, setPendingCouncilSetup] = useState<CouncilRunConfig | null>(null);
     const [draftModes, setDraftModes] = useState<WorkspaceAgentSessionModes>(DEFAULT_MODES);
+    const [deliveryMode, setDeliveryMode] = useState<WorkspaceMessageDeliveryMode>('send');
+    const [pendingMessagesBySession, setPendingMessagesBySession] = useState<Record<string, PendingWorkspaceMessage[]>>({});
     const [draftPermissionPolicy, setDraftPermissionPolicy] =
         useState<WorkspaceAgentPermissionPolicy>({
             ...DEFAULT_PERMISSION_POLICY,
@@ -95,7 +107,13 @@ export function useWorkspaceAgentSessions({
         setChats(previousChats => {
             const existingChat = previousChats.find(chat => chat.id === sessionId);
             if (existingChat) {
-                return previousChats.map(chat => (chat.id === sessionId ? updater(chat) : chat));
+                return previousChats.map(chat => {
+                    if (chat.id === sessionId) {
+                        const updated = updater(chat);
+                        return { ...updated, messages: dedupeChatMessages(updated.messages) };
+                    }
+                    return chat;
+                });
             }
 
             const sessionSummary = sessions.find(session => session.id === sessionId);
@@ -122,6 +140,7 @@ export function useWorkspaceAgentSessions({
         updateStrategy,
         updatePermissions,
         archiveSession,
+        deleteSession,
         renameSession,
     } = useWorkspaceAgentSessionManagement({
         workspaceId: workspace.id,
@@ -162,12 +181,31 @@ export function useWorkspaceAgentSessions({
         language,
         activeWorkspacePath: workspace.path,
         workspaceId: workspace.id,
+        workspaceTitle: workspace.title,
+        workspaceDescription: workspace.description,
         t,
         handleSpeak: () => undefined,
         autoReadEnabled: false,
         formatChatError,
-        systemMode:
-            (currentSessionId ? activeChatModes.agent : draftModes.agent) ? 'agent' : 'thinking',
+        systemMode: 'thinking',
+        onMessageAdded: (chatId, message) => {
+            updateChatCollection(chatId, chat => ({
+                ...chat,
+                messages: [...chat.messages, message],
+            }));
+        },
+        onMessageUpdated: (chatId, messageId, updates) => {
+            updateChatCollection(chatId, chat => ({
+                ...chat,
+                messages: chat.messages.map(m => m.id === messageId ? { ...m, ...updates } : m),
+            }));
+        },
+        onChatUpdated: (chatId, updates) => {
+            updateChatCollection(chatId, chat => ({
+                ...chat,
+                ...updates,
+            }));
+        },
     });
 
     const currentChat = useMemo(
@@ -197,9 +235,13 @@ export function useWorkspaceAgentSessions({
     const currentModes = currentSession?.modes ?? draftModes;
     const currentPermissionPolicy =
         currentSession?.permissionPolicy ?? draftPermissionPolicy;
-    const isLoading = useMemo(() => {
-        return currentSessionId ? Boolean(streamingStates[currentSessionId]) : false;
+    const currentStreamingState = useMemo(() => {
+        return currentSessionId ? streamingStates[currentSessionId] : null;
     }, [currentSessionId, streamingStates]);
+
+    const isLoading = useMemo(() => {
+        return Boolean(currentStreamingState);
+    }, [currentStreamingState]);
 
     const { refreshTelemetry } = useWorkspaceAgentSessionTelemetry({
         currentSessionId,
@@ -266,7 +308,7 @@ export function useWorkspaceAgentSessions({
                     quotaSnapshot,
                     selectedModel,
                     selectedProvider,
-                    titlePrefix: t('agents.council'),
+                    titlePrefix: t('frontend.agents.council'),
                     updateModes,
                     updateStrategy,
                     workspaceDescription: workspace.description,
@@ -295,6 +337,55 @@ export function useWorkspaceAgentSessions({
         updateChatCollection,
     });
 
+    const enqueuePendingMessage = useCallback((
+        sessionId: string,
+        content: string,
+        mode: Exclude<WorkspaceMessageDeliveryMode, 'send'>
+    ) => {
+        setPendingMessagesBySession(previousState => ({
+            ...previousState,
+            [sessionId]: [
+                ...(previousState[sessionId] ?? []),
+                {
+                    id: `${sessionId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    content,
+                    mode,
+                    createdAt: Date.now(),
+                },
+            ],
+        }));
+    }, []);
+
+    const submitMessage = useCallback(async (mode?: WorkspaceMessageDeliveryMode) => {
+        const trimmed = composerValue.trim();
+        if (trimmed.length === 0) {
+            return;
+        }
+
+        const effectiveMode: WorkspaceMessageDeliveryMode =
+            mode ?? (isLoading && deliveryMode === 'send' ? 'steer' : deliveryMode);
+
+        if (effectiveMode === 'send' || !currentSessionId || !currentSession) {
+            await handleSend();
+            setDeliveryMode('send');
+            return;
+        }
+
+        enqueuePendingMessage(currentSessionId, trimmed, effectiveMode);
+        setComposerValue('');
+        setDeliveryMode('send');
+    }, [
+        composerValue,
+        currentSession,
+        currentSessionId,
+        deliveryMode,
+        enqueuePendingMessage,
+        handleSend,
+        isLoading,
+        setComposerValue,
+        setDeliveryMode,
+    ]);
+
     const applyCouncilSetup = useCallback(async () => {
         if (!currentSessionId || !currentSession) {
             setPendingCouncilSetup({
@@ -317,7 +408,7 @@ export function useWorkspaceAgentSessions({
             quotaSnapshot,
             selectedModel,
             selectedProvider,
-            titlePrefix: t('agents.council'),
+            titlePrefix: t('frontend.agents.council'),
             updateModes,
             updateStrategy,
             workspaceDescription: workspace.description,
@@ -452,10 +543,42 @@ export function useWorkspaceAgentSessions({
         void loadMessages();
     }, [chats, currentSessionId, updateChatCollection]);
 
+    useEffect(() => {
+        if (!currentSessionId || isLoading) {
+            return;
+        }
+        const queuedMessages = pendingMessagesBySession[currentSessionId] ?? [];
+        const nextQueuedMessage = queuedMessages[0];
+        if (!nextQueuedMessage) {
+            return;
+        }
+
+        const nextContent = nextQueuedMessage.mode === 'steer'
+            ? `Steer the current task with this update and continue from the latest state:\n\n${nextQueuedMessage.content}`
+            : nextQueuedMessage.content;
+
+        setPendingMessagesBySession(previousState => ({
+            ...previousState,
+            [currentSessionId]: queuedMessages.slice(1),
+        }));
+        void handleSend(nextContent);
+    }, [currentSessionId, handleSend, isLoading, pendingMessagesBySession]);
+
     const recentSessionsVal = useMemo(
-        () => sessions.filter(session => !session.archived).slice(0, 5),
+        () =>
+            [...sessions]
+                .filter(session => !session.archived)
+                .sort((left, right) => right.updatedAt - left.updatedAt)
+                .slice(0, 5),
         [sessions]
     );
+
+    const queuedMessageCount = useMemo(() => {
+        if (!currentSessionId) {
+            return 0;
+        }
+        return pendingMessagesBySession[currentSessionId]?.length ?? 0;
+    }, [currentSessionId, pendingMessagesBySession]);
 
     return {
         sessions,
@@ -469,6 +592,9 @@ export function useWorkspaceAgentSessions({
         currentCouncilState,
         composerValue,
         setComposerValue,
+        deliveryMode,
+        setDeliveryMode,
+        queuedMessageCount,
         showSessionPicker,
         setShowSessionPicker,
         showCouncilSetup,
@@ -482,6 +608,7 @@ export function useWorkspaceAgentSessions({
         setSelectedModel,
         persistLastSelection,
         isLoading,
+        currentStreamingState,
         chatError: lastChatError,
         clearChatError,
         stopGeneration,
@@ -490,13 +617,14 @@ export function useWorkspaceAgentSessions({
         selectSession,
         createSession,
         openEmptySession,
-        handleSend,
+        handleSend: submitMessage,
         toggleCouncil,
         selectPreset,
         updateEffectivePermissions,
         applyCouncilSetup,
         approvePlan,
         archiveSession,
+        deleteSession,
         renameSession,
         updateStrategy,
         updatePermissions,

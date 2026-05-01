@@ -59,21 +59,21 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({ availableModel
                 {/* Title */}
                 <div className="flex items-center gap-2">
                     <IconGitCompare className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-semibold">{t('modelComparison.title')}</h3>
+                    <h3 className="text-lg font-semibold">{t('frontend.modelComparison.title')}</h3>
                 </div>
 
                 {/* Prompt input */}
                 <Textarea
                     value={prompt}
                     onChange={handlePromptChange}
-                    placeholder={t('modelComparison.enterPrompt')}
+                    placeholder={t('frontend.modelComparison.enterPrompt')}
                     disabled={isComparing}
                     rows={3}
                 />
 
                 {/* Model selection */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('modelComparison.selectModels')}</label>
+                    <label className="text-sm font-medium">{t('frontend.modelComparison.selectModels')}</label>
                     {selectedModels.map((model, index) => (
                         <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-md">
                             <span className="flex-1 text-sm">{model.provider}/{model.model}</span>
@@ -92,7 +92,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({ availableModel
                         disabled={isComparing || availableModels.length === 0}
                     >
                         <IconPlus className="w-3.5 h-3.5 mr-1" />
-                        {t('modelComparison.addModel')}
+                        {t('frontend.modelComparison.addModel')}
                     </Button>
                 </div>
 
@@ -103,9 +103,9 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({ availableModel
                     className="w-full"
                 >
                     {isComparing ? (
-                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" />{t('modelComparison.comparing')}</>
+                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" />{t('frontend.modelComparison.comparing')}</>
                     ) : (
-                        <><IconGitCompare className="w-4 h-4 mr-2" />{t('modelComparison.compare')}</>
+                        <><IconGitCompare className="w-4 h-4 mr-2" />{t('frontend.modelComparison.compare')}</>
                     )}
                 </Button>
 

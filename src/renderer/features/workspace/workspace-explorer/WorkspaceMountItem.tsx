@@ -96,7 +96,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                 </div>
                 {mount.type === 'ssh' && (
                     <span className="px-1 py-0.5 rounded-3px bg-primary/20 text-primary text-sm font-bold border border-primary/30">
-                        {t('terminal.sshPrefix')}
+                        {t('frontend.terminal.sshPrefix')}
                     </span>
                 )}
             </div>
@@ -107,7 +107,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                     onRemove(mount.id);
                 }}
                 className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-destructive transition-all"
-                title={t('workspace.removeMount')}
+                title={t('frontend.workspace.removeMount')}
             >
                 <IconX className="w-3 h-3" />
             </button>
@@ -313,7 +313,7 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                     )}
                     {rootNodes.length === 0 && !loading && (
                         <div className="text-sm text-muted-foreground/40 pl-4 py-2 flex items-center gap-2">
-                            {t('workspace.emptyFolder')}
+                            {t('frontend.workspace.emptyFolder')}
                         </div>
                     )}
                 </div>

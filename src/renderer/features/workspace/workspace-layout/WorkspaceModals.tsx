@@ -106,11 +106,11 @@ const EditWorkspaceModal: React.FC<{
     return (
         <AnimatePresence>
             {workspace && (
-                <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.editWorkspace')}>
+                <Modal isOpen={!!workspace} onClose={onClose} title={t('frontend.workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
                             <Label className="typo-caption font-medium text-muted-foreground">
-                                {t('workspaces.nameLabel')}
+                                {t('frontend.workspaces.nameLabel')}
                             </Label>
                             <Input
                                 value={form.title}
@@ -120,7 +120,7 @@ const EditWorkspaceModal: React.FC<{
                                     'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary/20',
                                     !hasValidTitle && 'border-destructive/50 focus-visible:ring-destructive'
                                 )}
-                                placeholder={t('workspaces.namePlaceholder')}
+                                placeholder={t('frontend.workspaces.namePlaceholder')}
                             />
                             {!hasValidTitle && (
                                 <p className="text-sm text-destructive">{t('common.invalidInput')}</p>
@@ -128,7 +128,7 @@ const EditWorkspaceModal: React.FC<{
                         </div>
                         <div className="space-y-2">
                             <Label className="typo-caption font-medium text-muted-foreground">
-                                {t('workspaces.description')}
+                                {t('frontend.workspaces.description')}
                             </Label>
                             <Textarea
                                 value={form.description}
@@ -140,7 +140,7 @@ const EditWorkspaceModal: React.FC<{
                                     'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary/20 min-h-80 resize-none',
                                     !hasValidDescription && 'border-destructive/50 focus-visible:ring-destructive'
                                 )}
-                                placeholder={t('workspaces.workspaceDescPlaceholder')}
+                                placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
                             />
                             {!hasValidDescription && (
                                 <p className="text-sm text-destructive">{t('common.invalidInput')}</p>
@@ -185,14 +185,14 @@ const DeleteWorkspaceModal: React.FC<{
     return (
         <AnimatePresence>
             {workspace && (
-                <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.deleteWorkspace')}>
+                <Modal isOpen={!!workspace} onClose={onClose} title={t('frontend.workspaces.deleteWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive">
-                                {t('workspaces.deleteConfirmation')}{' '}
+                                {t('frontend.workspaces.deleteConfirmation')}{' '}
                                 <span className="font-bold text-foreground">{workspace.title}</span>?
                                 <span className="block mt-1 typo-caption text-destructive/70 font-medium">
-                                    {t('workspaces.deleteWarning')}
+                                    {t('frontend.workspaces.deleteWarning')}
                                 </span>
                             </p>
                         </div>
@@ -233,18 +233,18 @@ const ArchiveWorkspaceModal: React.FC<{
 }> = ({ workspace, onClose, onSubmit, t }) => (
     <AnimatePresence>
         {workspace && (
-            <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.archiveWorkspace')}>
+            <Modal isOpen={!!workspace} onClose={onClose} title={t('frontend.workspaces.archiveWorkspace')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
                             {workspace.status === 'archived'
-                                ? t('workspaces.restoreConfirmation')
-                                : t('workspaces.archiveConfirmation')}{' '}
+                                ? t('frontend.workspaces.restoreConfirmation')
+                                : t('frontend.workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{workspace.title}</span>?
                             <span className="block mt-1 typo-caption text-success font-normal opacity-80">
                                 {workspace.status === 'archived'
-                                    ? t('workspaces.restoreWarning')
-                                    : t('workspaces.archiveWarning')}
+                                    ? t('frontend.workspaces.restoreWarning')
+                                    : t('frontend.workspaces.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -264,7 +264,7 @@ const ArchiveWorkspaceModal: React.FC<{
                         >
                             {workspace.status === 'archived'
                                 ? t('common.unarchive')
-                                : t('workspaces.archiveWorkspace')}
+                                : t('frontend.workspaces.archiveWorkspace')}
                         </Button>
                     </div>
                 </div>
@@ -283,21 +283,21 @@ const BulkArchiveModal: React.FC<{
 }> = ({ isOpen, count, mode, onClose, onSubmit, t }) => (
     <AnimatePresence>
         {isOpen && (
-            <Modal isOpen={isOpen} onClose={onClose} title={t('workspaces.bulkArchive')}>
+            <Modal isOpen={isOpen} onClose={onClose} title={t('frontend.workspaces.bulkArchive')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
                             {mode === 'restore'
-                                ? t('workspaces.restoreConfirmation')
-                                : t('workspaces.archiveConfirmation')}{' '}
+                                ? t('frontend.workspaces.restoreConfirmation')
+                                : t('frontend.workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">
-                                {count} {t('sidebar.workspaces').toLowerCase()}
+                                {count} {t('frontend.sidebar.workspaces').toLowerCase()}
                             </span>
                             ?
                             <span className="block mt-1 typo-caption text-success font-normal opacity-80">
                                 {mode === 'restore'
-                                    ? t('workspaces.restoreWarning')
-                                    : t('workspaces.archiveWarning')}
+                                    ? t('frontend.workspaces.restoreWarning')
+                                    : t('frontend.workspaces.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -316,8 +316,8 @@ const BulkArchiveModal: React.FC<{
                             className="px-6 bg-success/80 hover:bg-success text-success-foreground border-none transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {mode === 'restore'
-                                ? t('workspaces.bulkRestore')
-                                : t('workspaces.bulkArchive')}
+                                ? t('frontend.workspaces.bulkRestore')
+                                : t('frontend.workspaces.bulkArchive')}
                         </Button>
                     </div>
                 </div>
@@ -343,17 +343,17 @@ const BulkDeleteModal: React.FC<{
     return (
         <AnimatePresence>
             {isOpen && (
-                <Modal isOpen={isOpen} onClose={onClose} title={t('workspaces.bulkDelete')}>
+                <Modal isOpen={isOpen} onClose={onClose} title={t('frontend.workspaces.bulkDelete')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive/90 leading-relaxed font-light">
-                                {t('workspaces.deleteConfirmation')}{' '}
+                                {t('frontend.workspaces.deleteConfirmation')}{' '}
                                 <span className="font-semibold text-foreground">
-                                    {count} {t('sidebar.workspaces').toLowerCase()}
+                                    {count} {t('frontend.sidebar.workspaces').toLowerCase()}
                                 </span>
                                 ?
                                 <span className="block mt-1 typo-caption text-destructive/70 font-normal opacity-80">
-                                    {t('workspaces.deleteWarning')}
+                                    {t('frontend.workspaces.deleteWarning')}
                                 </span>
                             </p>
                         </div>
@@ -376,7 +376,7 @@ const BulkDeleteModal: React.FC<{
                                 }}
                                 className="px-6 shadow-lg shadow-destructive/20"
                             >
-                                {t('workspaces.bulkDelete')}
+                                {t('frontend.workspaces.bulkDelete')}
                             </Button>
                         </div>
                     </div>
@@ -400,11 +400,11 @@ const DeleteFilesCheckbox: React.FC<{
         />
         <div className="flex flex-col select-none cursor-pointer" onClick={() => onChange(!checked)}>
             <Label htmlFor="delete-files" className="text-sm font-medium text-foreground group-hover:text-destructive transition-colors cursor-pointer">
-                {t('workspaces.deleteWorkspaceFiles')}
+                {t('frontend.workspaces.deleteWorkspaceFiles')}
             </Label>
             {checked && (
                 <span className="text-sm text-destructive font-bold animate-pulse">
-                    {t('workspaceModals.permanentDeletionWarning')}
+                    {t('frontend.workspaceModals.permanentDeletionWarning')}
                 </span>
             )}
         </div>

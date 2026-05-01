@@ -8,13 +8,13 @@ import { ModelSelector } from '@/features/models/components/ModelSelector';
 
 import { SettingsSectionProps } from './types';
 
-export const IntelligenceSection: React.FC<SettingsSectionProps> = ({ 
-    formData, 
-    setFormData, 
-    t, 
-    models, 
-    settings, 
-    groupedModels 
+export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
+    formData,
+    setFormData,
+    t,
+    models,
+    settings,
+    groupedModels
 }) => {
     const handleModelSelect = useCallback((provider: string, modelId: string) => {
         setFormData(prev => ({ ...prev, intelligenceModelId: modelId }));
@@ -37,11 +37,11 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
                         <IconSparkles className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                            {t('workspaces.intelligence.modelConfig')}
+                        <h2 className="text-lg font-semibold text-foreground ">
+                            {t('frontend.workspaces.intelligence.modelConfig')}
                         </h2>
                         <p className="text-sm text-muted-foreground/60">
-                            {t('workspaces.intelligence.modelConfigDesc')}
+                            {t('frontend.workspaces.intelligence.modelConfigDesc')}
                         </p>
                     </div>
                 </div>
@@ -49,8 +49,8 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
                 <div className="space-y-8 pl-11">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
-                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                                {t('workspaces.intelligence.defaultModel')}
+                            <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                                {t('frontend.workspaces.intelligence.defaultModel')}
                             </Label>
                             <ModelSelector
                                 selectedModel={formData.intelligenceModelId}
@@ -61,8 +61,8 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
                             />
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                                {t('workspaces.intelligence.discussModel')}
+                            <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                                {t('frontend.workspaces.intelligence.discussModel')}
                             </Label>
                             <ModelSelector
                                 selectedModel={formData.intelligenceDiscussModelId}
@@ -76,10 +76,10 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
 
                     <div className="space-y-5 pt-4">
                         <div className="flex items-center justify-between">
-                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-                                {t('workspaces.intelligence.temperature')}
+                            <Label className="text-sm font-medium text-muted-foreground/50 uppercase ">
+                                {t('frontend.workspaces.intelligence.temperature')}
                             </Label>
-                            <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
+                            <span className="text-sm font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
                                 {formData.intelligenceTemperature}
                             </span>
                         </div>
@@ -91,9 +91,9 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
                             onValueChange={([val]) => setFormData(prev => ({ ...prev, intelligenceTemperature: val }))}
                             className="py-2"
                         />
-                        <div className="flex justify-between text-[10px] text-muted-foreground/40 font-medium uppercase tracking-tight">
-                            <span>{t('workspaces.intelligence.precise')}</span>
-                            <span>{t('workspaces.intelligence.creative')}</span>
+                        <div className="flex justify-between text-sm text-muted-foreground/40 font-medium uppercase ">
+                            <span>{t('frontend.workspaces.intelligence.precise')}</span>
+                            <span>{t('frontend.workspaces.intelligence.creative')}</span>
                         </div>
                     </div>
                 </div>
@@ -108,19 +108,19 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
                         <IconSettings2 className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                            {t('workspaces.intelligence.systemPrompt')}
+                        <h2 className="text-lg font-semibold text-foreground ">
+                            {t('frontend.workspaces.intelligence.systemPrompt')}
                         </h2>
                         <p className="text-sm text-muted-foreground/60">
-                            {t('workspaces.intelligence.systemPromptDesc')}
+                            {t('frontend.workspaces.intelligence.systemPromptDesc')}
                         </p>
                     </div>
                 </div>
 
                 <div className="pl-11">
                     <Textarea
-                        placeholder={t('workspaces.intelligence.systemPromptPlaceholder')}
-                        className="min-h-40 bg-muted/5 border-border/10 font-mono text-[13px] leading-relaxed resize-none p-4"
+                        placeholder={t('frontend.workspaces.intelligence.systemPromptPlaceholder')}
+                        className="min-h-40 bg-muted/5 border-border/10 font-mono text-sm leading-relaxed resize-none p-4"
                         value={formData.intelligenceSystemPrompt}
                         onChange={(e) => setFormData(prev => ({ ...prev, intelligenceSystemPrompt: e.target.value }))}
                     />

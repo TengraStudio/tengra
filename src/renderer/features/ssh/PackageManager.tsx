@@ -77,7 +77,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                         type="text"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder={t('ssh.searchPackages')}
+                        placeholder={t('frontend.ssh.searchPackages')}
                         className={C_PACKAGEMANAGER_1}
                     />
                 </div>
@@ -94,7 +94,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
             {/* List */}
             <div className="flex-1 overflow-y-auto p-2">
                 {packages.length === 0 && !loading && (
-                    <div className="text-center text-muted-foreground/40 py-10">{t('ssh.noPackages')}</div>
+                    <div className="text-center text-muted-foreground/40 py-10">{t('frontend.ssh.noPackages')}</div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {filtered.map((pkg, i) => (

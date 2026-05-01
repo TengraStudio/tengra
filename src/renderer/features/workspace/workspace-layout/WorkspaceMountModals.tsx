@@ -64,7 +64,7 @@ const MountTypeToggle: React.FC<MountTypeToggleProps> = ({ type, setMountForm, t
                     : 'text-muted-foreground hover:text-muted-foreground'
             )}
         >
-            {t('workspaceModals.existingFolder')}
+            {t('frontend.workspaceModals.existingFolder')}
         </button>
         <button
             onClick={() => setMountForm(prev => ({ ...prev, type: 'ssh' }))}
@@ -75,7 +75,7 @@ const MountTypeToggle: React.FC<MountTypeToggleProps> = ({ type, setMountForm, t
                     : 'text-muted-foreground hover:text-muted-foreground'
             )}
         >
-            {t('workspaceModals.sshServer')}
+            {t('frontend.workspaceModals.sshServer')}
         </button>
     </div>
 );
@@ -95,7 +95,7 @@ const LocalMountForm: React.FC<LocalMountFormProps> = ({
 }) => (
     <div className="space-y-2">
         <label className="typo-caption text-muted-foreground font-medium">
-            {t('workspaceModals.folderPath')}
+            {t('frontend.workspaceModals.folderPath')}
         </label>
         <div className="flex gap-2">
             <input
@@ -103,13 +103,13 @@ const LocalMountForm: React.FC<LocalMountFormProps> = ({
                 value={mountForm.rootPath || ''}
                 onChange={e => setMountForm(prev => ({ ...prev, rootPath: e.target.value }))}
                 className={C_WORKSPACEMOUNTMODALS_1}
-                placeholder={t('workspace.placeholders.rootPath')}
+                placeholder={t('frontend.workspace.placeholders.rootPath')}
             />
             <button
                 onClick={pickLocalFolder}
                 className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground typo-caption font-medium"
             >
-                {t('workspaceModals.pick')}
+                {t('frontend.workspaceModals.pick')}
             </button>
         </div>
     </div>
@@ -146,7 +146,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
         } catch (error) {
             setTestResult({
                 success: false,
-                message: t('errors.unexpected'),
+                message: t('frontend.errors.unexpected'),
                 error: String(error),
                 latencyMs: 0,
                 authMethod: mountForm.authType
@@ -158,7 +158,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
 
     const pickKeyFile = async () => {
         const result = await (window.electron.ipcRenderer.invoke('files:selectFile', {
-            title: t('workspaceModals.selectPrivateKey'),
+            title: t('frontend.workspaceModals.selectPrivateKey'),
             filters: [{ name: t('common.privateKey'), extensions: ['*', 'pem', 'key'] }]
         }) as Promise<{ success: boolean; path?: string }>);
         if (result.success && result.path) {
@@ -171,19 +171,19 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             <SavedProfileSelector onSelect={onSelectProfile} t={t} />
 
             <div className="space-y-1">
-                <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.mountName')}</label>
+                <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.mountName')}</label>
                 <input
                     type="text"
                     value={mountForm.name || ''}
                     onChange={e => setMountForm(prev => ({ ...prev, name: e.target.value }))}
                     className={C_WORKSPACEMOUNTMODALS_2}
-                    placeholder={t('workspaceModals.mountNamePlaceholder')}
+                    placeholder={t('frontend.workspaceModals.mountNamePlaceholder')}
                 />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2 space-y-1">
-                    <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.host')}</label>
+                    <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.host')}</label>
                     <input
                         type="text"
                         value={mountForm.host || ''}
@@ -192,7 +192,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     />
                 </div>
                 <div className="space-y-1">
-                    <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.port')}</label>
+                    <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.port')}</label>
                     <input
                         type="text"
                         value={mountForm.port || ''}
@@ -203,7 +203,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             </div>
 
             <div className="space-y-1">
-                <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.username')}</label>
+                <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.username')}</label>
                 <input
                     type="text"
                     value={mountForm.username || ''}
@@ -213,7 +213,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             </div>
 
             <div className="space-y-2">
-                <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.authType')}</label>
+                <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.authType')}</label>
                 <div className="flex gap-2">
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'password' }))}
@@ -224,7 +224,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                                 : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
                         )}
                     >
-                        {t('workspaceModals.password')}
+                        {t('frontend.workspaceModals.password')}
                     </button>
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'key' }))}
@@ -235,14 +235,14 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                                 : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
                         )}
                     >
-                        {t('workspaceModals.sshKey')}
+                        {t('frontend.workspaceModals.sshKey')}
                     </button>
                 </div>
             </div>
 
             {mountForm.authType === 'password' ? (
                 <div className="space-y-1">
-                    <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.password')}</label>
+                    <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.password')}</label>
                     <input
                         type="password"
                         value={mountForm.password || ''}
@@ -253,31 +253,31 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             ) : (
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.privateKey')}</label>
+                        <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.privateKey')}</label>
                         <div className="flex gap-2">
                             <input
                                 type="text"
                                 value={mountForm.privateKey || ''}
                                 onChange={e => setMountForm(prev => ({ ...prev, privateKey: e.target.value }))}
                                 className={C_WORKSPACEMOUNTMODALS_7}
-                                placeholder={t('workspaceModals.privateKey')}
+                                placeholder={t('frontend.workspaceModals.privateKey')}
                             />
                             <button
                                 onClick={() => { void pickKeyFile(); }}
                                 className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground typo-caption font-medium"
                             >
-                                {t('workspaceModals.pick')}
+                                {t('frontend.workspaceModals.pick')}
                             </button>
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.passphrase')}</label>
+                        <label className="typo-caption text-muted-foreground font-medium">{t('frontend.workspaceModals.passphrase')}</label>
                         <input
                             type="password"
                             value={mountForm.passphrase || ''}
                             onChange={e => setMountForm(prev => ({ ...prev, passphrase: e.target.value }))}
                             className={C_WORKSPACEMOUNTMODALS_8}
-                            placeholder={t('workspaceModals.optional')}
+                            placeholder={t('frontend.workspaceModals.optional')}
                         />
                     </div>
                 </div>
@@ -292,7 +292,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     className="w-3.5 h-3.5 rounded border-border/40 bg-background/70 text-success focus:ring-success/50"
                 />
                 <label htmlFor="saveProfile" className="typo-caption text-muted-foreground cursor-pointer select-none">
-                    {t('workspaceModals.saveAsProfile')}
+                    {t('frontend.workspaceModals.saveAsProfile')}
                 </label>
             </div>
 
@@ -311,7 +311,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                                     : "bg-muted/40 border-border/40 text-foreground hover:bg-muted/60 hover:border-border/70"
                     )}
                 >
-                    {testing ? t('workspaceModals.testing') : t('workspaceModals.testConnection')}
+                    {testing ? t('frontend.workspaceModals.testing') : t('frontend.workspaceModals.testConnection')}
                 </button>
                 {testResult && (
                     <div className={cn(
@@ -321,7 +321,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                             : "bg-error/5 border-error/20 text-error/80"
                     )}>
                         {testResult.success
-                            ? `${t('workspaceModals.testSuccess')} (${testResult.latencyMs}ms)`
+                            ? `${t('frontend.workspaceModals.testSuccess')} (${testResult.latencyMs}ms)`
                             : testResult.message || testResult.error}
                     </div>
                 )}
@@ -375,7 +375,7 @@ const MountModal: React.FC<MountModalProps> = ({
             <div className="bg-card border border-border/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
                 <div className="p-4 border-b border-border/30 flex justify-between items-center bg-muted/40">
                     <h3 className="text-sm font-bold text-foreground">
-                        {t('workspaceModals.mountTitle')}
+                        {t('frontend.workspaceModals.mountTitle')}
                     </h3>
                     <button
                         onClick={() => { setShowMountModal(false); }}
@@ -407,13 +407,13 @@ const MountModal: React.FC<MountModalProps> = ({
                             onClick={() => { setShowMountModal(false); }}
                             className="px-4 py-2 rounded-lg typo-caption font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         >
-                            {t('workspaceModals.cancel')}
+                            {t('frontend.workspaceModals.cancel')}
                         </button>
                         <button
                             onClick={() => { void addMount(); }}
                             className="px-4 py-2 rounded-lg typo-caption font-semibold bg-success text-background hover:bg-success"
                         >
-                            {t('workspaceModals.add')}
+                            {t('frontend.workspaceModals.add')}
                         </button>
                     </div>
                 </div>
@@ -461,7 +461,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                     <button
                         onClick={closeEntryModal}
                         className="text-muted-foreground hover:text-foreground"
-                        aria-label={t('workspaceModals.closeModal')}
+                        aria-label={t('frontend.workspaceModals.closeModal')}
                     >
                         <IconX className="w-4 h-4" aria-hidden="true" />
                     </button>
@@ -481,18 +481,18 @@ const EntryModal: React.FC<EntryModalProps> = ({
                                 }
                             }}
                             className={C_WORKSPACEMOUNTMODALS_9}
-                            placeholder={t('workspace.placeholders.name')}
-                            aria-label={t('workspaceModals.inputAriaLabel', { type: entryModal.type })}
+                            placeholder={t('frontend.workspace.placeholders.name')}
+                            aria-label={t('frontend.workspaceModals.inputAriaLabel', { type: entryModal.type })}
                         />
                     )}
                     {entryModal.type === 'delete' && (
                         <p className="text-sm text-muted-foreground">
                             {selectedCount > 1
-                                ? t('workspaceModals.deleteMultipleConfirm').replace(
+                                ? t('frontend.workspaceModals.deleteMultipleConfirm').replace(
                                     '{count}',
                                     selectedCount.toString()
                                 )
-                                : t('workspaceModals.deleteConfirm').replace(
+                                : t('frontend.workspaceModals.deleteConfirm').replace(
                                     '{name}',
                                     entryModal.entry?.name ?? ''
                                 )}
@@ -502,16 +502,16 @@ const EntryModal: React.FC<EntryModalProps> = ({
                         <button
                             onClick={closeEntryModal}
                             className="px-3 py-2 rounded-lg typo-caption font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                            aria-label={t('workspaceModals.cancel')}
+                            aria-label={t('frontend.workspaceModals.cancel')}
                         >
-                            {t('workspaceModals.cancel')}
+                            {t('frontend.workspaceModals.cancel')}
                         </button>
                         <button
                             onClick={submitEntryModal}
                             disabled={entryBusy}
                             className="px-3 py-2 rounded-lg typo-caption font-semibold bg-success text-background hover:bg-success disabled:opacity-50"
                         >
-                            {entryBusy ? t('common.ellipsis') : t('workspaceModals.confirm')}
+                            {entryBusy ? t('common.ellipsis') : t('frontend.workspaceModals.confirm')}
                         </button>
                     </div>
                 </div>

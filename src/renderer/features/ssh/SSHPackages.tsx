@@ -56,20 +56,20 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
         <div className="flex flex-col h-full">
             <div className="p-4 border-b border-border space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">{t('ssh.installedPackages')}</h3>
+                    <h3 className="font-semibold">{t('frontend.ssh.installedPackages')}</h3>
                     <button
                         onClick={() => void loadPackages()}
                         className="typo-caption px-2 py-1 bg-muted hover:bg-muted/80 rounded"
                         disabled={loading}
                     >
-                        {loading ? t('ssh.refreshing') : t('ssh.refresh')}
+                        {loading ? t('frontend.ssh.refreshing') : t('frontend.ssh.refresh')}
                     </button>
                 </div>
                 <div className="relative">
                     <IconSearch className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground/50" />
                     <input
                         className={C_SSHPACKAGES_1}
-                        placeholder={t('ssh.searchPackages')}
+                        placeholder={t('frontend.ssh.searchPackages')}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
@@ -80,16 +80,16 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                 <table className="w-full text-sm text-left">
                     <thead className="bg-muted/30 sticky top-0 backdrop-blur-sm">
                         <tr>
-                            <th className="p-3 font-medium text-muted-foreground">{t('ssh.packageName')}</th>
-                            <th className="p-3 font-medium text-muted-foreground">{t('ssh.packageVersion')}</th>
-                            <th className="p-3 font-medium text-muted-foreground">{t('ssh.packageStatus')}</th>
+                            <th className="p-3 font-medium text-muted-foreground">{t('frontend.ssh.packageName')}</th>
+                            <th className="p-3 font-medium text-muted-foreground">{t('frontend.ssh.packageVersion')}</th>
+                            <th className="p-3 font-medium text-muted-foreground">{t('frontend.ssh.packageStatus')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
                         {loading && packages.length === 0 ? (
-                            <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">{t('ssh.loading')}</td></tr>
+                            <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">{t('frontend.ssh.loading')}</td></tr>
                         ) : filtered.length === 0 ? (
-                            <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">{t('ssh.noPackages')}</td></tr>
+                            <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">{t('frontend.ssh.noPackages')}</td></tr>
                         ) : (
                             filtered.map((pkg, i) => (
                                 <tr key={i} className="hover:bg-muted/10 transition-colors">

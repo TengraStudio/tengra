@@ -34,13 +34,13 @@ const CardWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
     <Card className="w-72">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>{title ? t(title) : t('showcase.card.fallback.title')}</CardTitle>
-          {withBadge && <Badge variant="secondary">{badgeText ? t(badgeText) : t('showcase.card.fallback.badge')}</Badge>}
+          <CardTitle>{title ? t(title) : t('frontend.showcase.card.fallback.title')}</CardTitle>
+          {withBadge && <Badge variant="secondary">{badgeText ? t(badgeText) : t('frontend.showcase.card.fallback.badge')}</Badge>}
         </div>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          {content ? t(content) : t('showcase.card.fallback.content')}
+          {content ? t(content) : t('frontend.showcase.card.fallback.content')}
         </p>
       </CardContent>
     </Card>
@@ -57,9 +57,9 @@ const AnimatedCardWrapper: React.FC<Record<string, RendererDataValue>> = (props)
 
   return (
     <AnimatedCard hoverEffect={hoverEffect} className="w-72">
-      <h3 className="font-semibold mb-2">{title ? t(title) : t('showcase.animatedCard.fallback.title')}</h3>
+      <h3 className="font-semibold mb-2">{title ? t(title) : t('frontend.showcase.animatedCard.fallback.title')}</h3>
       <p className="text-sm text-muted-foreground">
-        {content ? t(content) : t('showcase.animatedCard.fallback.content')}
+        {content ? t(content) : t('frontend.showcase.animatedCard.fallback.content')}
       </p>
     </AnimatedCard>
   );
@@ -73,7 +73,7 @@ const BadgeWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
   };
   return (
     <Badge variant={variant}>
-      {typeof children === 'string' ? t(children) : children ?? t('showcase.badge.fallback.label')}
+      {typeof children === 'string' ? t(children) : children ?? t('frontend.showcase.badge.fallback.label')}
     </Badge>
   );
 };

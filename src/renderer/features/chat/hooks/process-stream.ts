@@ -284,7 +284,7 @@ const processChunkIteration = (params: ChunkIterationParams): {
         chunk,
         current,
         streamStartTime,
-        t('chat.streamError'),
+        t('frontend.chat.streamError'),
         toolCallFallbackPrefix
     );
     return { index, result, current };
@@ -475,7 +475,7 @@ const updateChatTitles = (params: UpdateChatTitlesParams): Chat[] => {
         const firstUserContent = typeof userMessages[0]?.content === 'string' ? userMessages[0].content : '';
         const titleLooksLikeUserInput = c.title === firstUserContent.slice(0, 50);
         if ((isFirstResponse || titleLooksLikeUserInput) && finalContent) {
-            title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat');
+            title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('frontend.sidebar.newChat');
         }
         return { ...c, title, messages: c.messages.map((m) => m.id === assistantId ? completedMsg : m), isGenerating: false };
     });
@@ -542,6 +542,7 @@ export interface ProcessStreamOptions {
     initialReasonings?: string[]
     initialContent?: string
     initialToolCalls?: ToolCall[]
+    onMessageUpdate?: (message: Message) => void
 }
 
 const updateFinalValues = (
@@ -608,6 +609,7 @@ const handleThrottledUpdates = (params: {
     intentClassification: AiIntentClassification;
     language?: string;
     activeModel: string;
+    selectedProvider: string;
     finalReasoning: string;
     finalVariants: Record<string, { content: string; reasoning?: string }>;
     finalSources: string[];
@@ -619,6 +621,7 @@ const handleThrottledUpdates = (params: {
     reasoningSegments?: string[];
     initialToolCalls?: ToolCall[];
     usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+    onMessageUpdate?: (message: Message) => void;
 }): { lastSaveTime: number; lastDbSaveTime: number } => {
     const {
         now,
@@ -630,6 +633,7 @@ const handleThrottledUpdates = (params: {
         intentClassification,
         language,
         activeModel,
+        selectedProvider,
         finalReasoning,
         finalVariants,
         finalSources,
@@ -639,6 +643,7 @@ const handleThrottledUpdates = (params: {
         queueDbSave,
         initialToolCalls,
         reasoningSegments,
+        onMessageUpdate,
     } = params;
 
     const effectiveReasoning = finalReasoning.trim().length > 0
@@ -666,6 +671,7 @@ const handleThrottledUpdates = (params: {
             intentClassification,
             language,
             model: activeModel,
+            provider: selectedProvider,
             content: finalContent,
             reasoning: effectiveReasoning,
             reasonings: currentReasonings,
@@ -673,6 +679,7 @@ const handleThrottledUpdates = (params: {
             sources: finalSources,
             images: finalImages,
             toolCalls: mergedToolCalls,
+            onMessageUpdate,
         });
     }
 
@@ -899,6 +906,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             intentClassification,
             language,
             activeModel,
+            selectedProvider,
             finalReasoning,
             finalVariants,
             finalSources,
@@ -910,6 +918,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             reasoningSegments: reasoningState.segments,
             initialToolCalls: options.initialToolCalls,
             usage: finalUsage,
+            onMessageUpdate: options.onMessageUpdate,
         });
         lastSaveTime = throttleResult.lastSaveTime;
         lastDbSaveTime = throttleResult.lastDbSaveTime;
@@ -948,6 +957,10 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
 
     setChats((prev) => updateChatTitles({ prev, chatId, assistantId, completedMsg, finalContent, t }));
 
+    if (options.onMessageUpdate) {
+        options.onMessageUpdate(completedMsg);
+    }
+
     if (autoReadEnabled && finalContent) { handleSpeak(assistantId, finalContent); }
 
     appLogger.info(
@@ -975,6 +988,7 @@ interface UpdateChatsStateOptions {
     intentClassification: AiIntentClassification
     language?: string
     model: string
+    provider: string
     content: string
     reasoning: string
     reasonings?: string[]
@@ -983,6 +997,7 @@ interface UpdateChatsStateOptions {
     images?: string[]
     toolCalls?: ToolCall[]
     usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+    onMessageUpdate?: (message: Message) => void
 }
 
 const updateMessageById = (
@@ -1019,6 +1034,7 @@ const updateChatsState = (options: UpdateChatsStateOptions): void => {
         chatId,
         assistantId,
         model,
+        provider,
         content,
         reasoning,
         reasonings,
@@ -1026,19 +1042,33 @@ const updateChatsState = (options: UpdateChatsStateOptions): void => {
         toolCalls,
         usage,
     } = options;
-    setChats(prev => updateChatById(prev, chatId, (chat) => {
+    const buildStreamingMessage = (baseMessage?: Message): Message => {
         const currentVariants = createVariantsArray(assistantId, model, variants);
         return {
+            ...baseMessage,
+            id: assistantId,
+            role: 'assistant' as const,
+            content,
+            reasoning: reasoning || undefined,
+            reasonings,
+            usage,
+            variants: currentVariants.length > 1 ? currentVariants : undefined,
+            ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
+            timestamp: baseMessage?.timestamp ?? new Date(),
+            provider: baseMessage?.provider ?? provider,
+            model: baseMessage?.model ?? model,
+        };
+    };
+
+    if (options.onMessageUpdate) {
+        options.onMessageUpdate(buildStreamingMessage());
+    }
+
+    setChats(prev => updateChatById(prev, chatId, (chat) => {
+        const updatedMsg = buildStreamingMessage(chat.messages.find(m => m.id === assistantId));
+        return {
             ...chat,
-            messages: updateMessageById(chat.messages, assistantId, (message) => ({
-                ...message,
-                content,
-                reasoning: reasoning || undefined,
-                reasonings,
-                usage,
-                variants: currentVariants.length > 1 ? currentVariants : undefined,
-                ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
-            }))
+            messages: updateMessageById(chat.messages, assistantId, () => updatedMsg)
         };
     }));
 };

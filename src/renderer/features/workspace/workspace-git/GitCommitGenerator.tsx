@@ -39,8 +39,8 @@ const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) 
             <IconGitCommit size={20} className="text-success" />
         </div>
         <div className="flex-1">
-            <h2 className="font-semibold text-foreground">{t('git.commitGenerator')}</h2>
-            <p className="typo-caption text-muted-foreground">{t('git.generatorSubtitle')}</p>
+            <h2 className="font-semibold text-foreground">{t('frontend.git.commitGenerator')}</h2>
+            <p className="typo-caption text-muted-foreground">{t('frontend.git.generatorSubtitle')}</p>
         </div>
         <button
             onClick={onFetch}
@@ -48,7 +48,7 @@ const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) 
             className={C_GITCOMMITGENERATOR_1}
         >
             {isLoading ? <IconRefresh size={16} className="animate-spin" /> : <IconSparkles size={16} />}
-            {t('git.generate')}
+            {t('frontend.git.generate')}
         </button>
     </div>
 );
@@ -69,7 +69,7 @@ const SuggestionArea = ({
     isCopied,
 }: SuggestionAreaProps) => (
     <div className="space-y-2">
-        <label className="typo-caption text-muted-foreground">{t('git.suggestedMessage')}</label>
+        <label className="typo-caption text-muted-foreground">{t('frontend.git.suggestedMessage')}</label>
         <div className="relative">
             <textarea
                 value={suggestion}
@@ -80,7 +80,7 @@ const SuggestionArea = ({
             <button
                 onClick={onCopy}
                 className="absolute top-2 right-2 p-1.5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
-                title={t('git.copy')}
+                title={t('frontend.git.copy')}
             >
                 {isCopied ? <IconCheck size={14} className="text-success" /> : <IconCopy size={14} />}
             </button>
@@ -109,7 +109,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                 workspacePath
             );
             if (result.stderr && !result.stdout) {
-                setError(t('git.noStagedChanges'));
+                setError(t('frontend.git.noStagedChanges'));
                 return;
             }
             setDiff(result.stdout || '');
@@ -117,7 +117,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                 await generateCommitMessage(result.stdout);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('git.error'));
+            setError(err instanceof Error ? err.message : t('frontend.git.error'));
         } finally {
             setIsLoading(false);
         }
@@ -183,7 +183,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
             }
             onClose?.();
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('git.error'));
+            setError(err instanceof Error ? err.message : t('frontend.git.error'));
         }
     };
 
@@ -205,7 +205,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                 )}
                 {!workspacePath && (
                     <div className="text-center py-8 text-muted-foreground text-sm">
-                        {t('git.selectWorkspace')}
+                        {t('frontend.git.selectWorkspace')}
                     </div>
                 )}
                 {suggestion && (
@@ -222,7 +222,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                 {diff && (
                     <div className="space-y-2">
                         <label className="typo-caption text-muted-foreground">
-                            {t('git.stagedChanges')}
+                            {t('frontend.git.stagedChanges')}
                         </label>
                         <pre className={C_GITCOMMITGENERATOR_3}>
                             {diff.slice(0, 2000)}
@@ -237,7 +237,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                         onClick={onClose}
                         className="flex-1 py-2.5 rounded-lg bg-muted/40 text-muted-foreground text-sm font-medium hover:bg-muted/60"
                     >
-                        {t('git.cancel')}
+                        {t('frontend.git.cancel')}
                     </button>
                     <button
                         onClick={() => {
@@ -245,7 +245,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                         }}
                         className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-success to-success-light text-foreground text-sm font-medium"
                     >
-                        {t('git.commit')}
+                        {t('frontend.git.commit')}
                     </button>
                 </div>
             )}

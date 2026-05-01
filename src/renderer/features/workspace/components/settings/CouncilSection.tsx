@@ -30,11 +30,11 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                         <IconRobot className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                            {t('workspaces.councilAI')}
+                        <h2 className="text-lg font-semibold text-foreground ">
+                            {t('frontend.workspaces.councilAI')}
                         </h2>
                         <p className="text-sm text-muted-foreground/60">
-                            {t('workspaces.councilAIDesc')}
+                            {t('frontend.workspaces.councilAIDesc')}
                         </p>
                     </div>
                 </div>
@@ -52,11 +52,11 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
             )}>
                 <div className="space-y-5">
                     <div className="flex items-center justify-between">
-                        <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider flex items-center gap-2">
+                        <Label className="text-sm font-medium text-muted-foreground/50 uppercase  flex items-center gap-2">
                             <IconShield className="w-3.5 h-3.5" />
-                            {t('workspaces.consensusThreshold')}
+                            {t('frontend.workspaces.consensusThreshold')}
                         </Label>
-                        <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        <span className="text-sm font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
                             {Math.round(formData.consensusThreshold * 100)}%
                         </span>
                     </div>
@@ -70,8 +70,8 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                         }
                         className="w-full"
                     />
-                    <p className="text-xs text-muted-foreground/40 italic">
-                        {t('workspaces.councilThresholdHint')}
+                    <p className="text-sm text-muted-foreground/40 italic">
+                        {t('frontend.workspaces.councilThresholdHint')}
                     </p>
                 </div>
             </div>
@@ -89,11 +89,11 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                     <IconUserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className="text-lg font-semibold text-foreground tracking-tight">
-                        {t('workspaces.selectedAgents')}
+                    <h2 className="text-lg font-semibold text-foreground ">
+                        {t('frontend.workspaces.selectedAgents')}
                     </h2>
                     <p className="text-sm text-muted-foreground/60">
-                        {t('workspaces.selectedAgentsDesc') || 'Select the AI models that will participate in the council decision making process.'}
+                        {t('frontend.workspaces.selectedAgentsDesc')}
                     </p>
                 </div>
             </div>
@@ -112,7 +112,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                     >
                         <div className="flex items-center gap-4">
                             <div className={cn(
-                                'w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-colors shadow-inner',
+                                'w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-colors shadow-inner',
                                 formData.councilMembers.includes(agent.id)
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-muted/20 text-muted-foreground/40'
@@ -120,11 +120,11 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                                 {agent.name.charAt(0)}
                             </div>
                             <div className="text-left">
-                                <div className="text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors">
+                                <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                                     {agent.name}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground/60 line-clamp-1">
-                                    {agent.description ?? t('workspaces.generalAI')}
+                                <div className="text-sm text-muted-foreground/60 line-clamp-1">
+                                    {agent.description ?? t('frontend.workspaces.generalAI')}
                                 </div>
                             </div>
                         </div>

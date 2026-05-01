@@ -27,8 +27,6 @@ class EarlyIpcManager {
      */
     public initialize(getMainWindow: () => BrowserWindow | null): void {
         this.getMainWindow = getMainWindow;
-        
-        console.warn('[BOOT] Initializing EarlyIpcManager...');
 
         const register = (channel: string, handler: (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown> | unknown) => {
             try {
@@ -39,8 +37,8 @@ class EarlyIpcManager {
             ipcMain.handle(channel, async (event, ...args) => {
                 try {
                     return await handler(event, ...args);
-                } catch (e) {
-                    console.error(`[BOOT] Early IPC Error [${channel}]:`, e);
+                } catch (e: unknown) {
+                    appLogger.error('BOOT', `Early IPC Error [${channel}]`, e);
                     throw e;
                 }
             });
@@ -104,26 +102,100 @@ class EarlyIpcManager {
             appLogger.info('renderer', message);
         });
 
-        // Global Silent Fallback for heavy modules
-        const silentChannels = [
-            'ipc:contract:get', 'extension:get-all', 'model-registry:get-all', 'model-downloader:history', 
-            'marketplace:check-live-updates', 'db:getPrompts', 'db:getAllChats', 'db:getFolders', 
-            'auth:get-linked-accounts', 'ollama:forceHealthCheck', 'proxy:getModels', 
-            'theme:runtime:getAll', 'code-language:runtime:getAll'
-        ];
-        
-        for (const channel of silentChannels) {
-            register(channel, async () => ({ data: [], installed: [], enabled: [], domains: {}, success: true }));
-        }
+        const fallbackResultsByChannel: Record<string, unknown> = {
+            'ipc:contract:get': { version: 'boot', channels: [] },
+            'extension:get-all': [],
+            'model-registry:get-all': [],
+            'model-downloader:history': { success: true, items: [] },
+            'marketplace:check-live-updates': { success: true, data: [], installed: [], enabled: [], domains: {} },
+            'db:getPrompts': [],
+            'db:getAllChats': [],
+            'db:getWorkspaces': [],
+            'db:getFolders': [],
+            'db:getStats': { chatCount: 0, messageCount: 0, dbSize: 0 },
+            'db:getDetailedStats': null,
+            'auth:get-linked-accounts': [],
+            'auth:get-active-linked-account': null,
+            'auth:has-linked-account': false,
+            'ollama:forceHealthCheck': { success: true, data: { status: 'unknown' } },
+            'proxy:getModels': { data: [] },
+            'proxy:getQuota': { accounts: [] },
+            'proxy:getCopilotQuota': { accounts: [] },
+            'proxy:getCodexUsage': { accounts: [] },
+            'proxy:getClaudeQuota': { accounts: [] },
+            'getSettings': {},
+            'getQuota': { accounts: [] },
+            'getCopilotQuota': { accounts: [] },
+            'getCodexUsage': { accounts: [] },
+            'getClaudeQuota': { accounts: [] },
+            'theme:runtime:getAll': [],
+            'locale:runtime:getAll': [],
+            'code-language:runtime:getAll': [],
+        };
 
-        console.warn('[BOOT] EarlyIpcManager initialized.');
+        register('batch:invoke', async (_event, requests) => {
+            const startTime = Date.now();
+            const normalizedRequests = Array.isArray(requests) ? requests : [];
+            const results = normalizedRequests.map((request) => {
+                const channel = typeof request === 'object' && request !== null && 'channel' in request
+                    ? String((request as { channel?: unknown }).channel ?? '')
+                    : '';
+                const data = fallbackResultsByChannel[channel] ?? null;
+                return {
+                    channel,
+                    success: true,
+                    data,
+                };
+            });
+
+            const endTime = Date.now();
+            return {
+                results,
+                timing: {
+                    startTime,
+                    endTime,
+                    totalMs: endTime - startTime,
+                },
+            };
+        });
+
+        register('batch:invokeSequential', async (_event, requests) => {
+            const startTime = Date.now();
+            const normalizedRequests = Array.isArray(requests) ? requests : [];
+            const results = normalizedRequests.map((request) => {
+                const channel = typeof request === 'object' && request !== null && 'channel' in request
+                    ? String((request as { channel?: unknown }).channel ?? '')
+                    : '';
+                const data = fallbackResultsByChannel[channel] ?? null;
+                return {
+                    channel,
+                    success: true,
+                    data,
+                };
+            });
+
+            const endTime = Date.now();
+            return {
+                results,
+                timing: {
+                    startTime,
+                    endTime,
+                    totalMs: endTime - startTime,
+                },
+            };
+        });
+
+        register('batch:getChannels', async () => Object.keys(fallbackResultsByChannel));
+
+        for (const [channel, fallback] of Object.entries(fallbackResultsByChannel)) {
+            register(channel, async () => fallback);
+        }
     }
 
     /**
      * Cleans up all early IPC handlers to allow real services to take over.
      */
     public cleanup(): void {
-        console.warn('[BOOT] Cleaning up early IPC handlers...');
         for (const channel of this.registeredHandlers) {
             try {
                 ipcMain.removeHandler(channel);
@@ -137,8 +209,6 @@ class EarlyIpcManager {
             } catch { /* ignore */ }
         }
         this.registeredListeners.clear();
-        
-        console.warn('[BOOT] Early IPC handlers cleaned up.');
     }
 
     /**

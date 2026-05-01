@@ -230,6 +230,7 @@ describe('SettingsService - Persistence', () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
         const service = new SettingsService(mockDataService as never as never, mockAuthService as never as never);
         await service.initialize();
+        vi.clearAllMocks();
 
         vi.mocked(fs.promises.writeFile)
             .mockRejectedValueOnce(new Error('temporary write failure'))
@@ -262,11 +263,11 @@ describe('SettingsService - Persistence', () => {
         const emptyMetrics = service.getHealthMetrics();
         expect(emptyMetrics.uiState).toBe('empty');
         expect(emptyMetrics.performanceBudget.saveSettingsMs).toBe(600);
-        expect(en.serviceHealth.settings.empty).toBe(emptyMetrics.messageKey);
+        expect(en.frontend.serviceHealth.settings.empty).toBe(emptyMetrics.messageKey);
 
         await service.initialize();
         const readyMetrics = service.getHealthMetrics();
         expect(readyMetrics.uiState).toBe('ready');
-        expect(en.serviceHealth.settings.ready).toBe(readyMetrics.messageKey);
+        expect(en.frontend.serviceHealth.settings.ready).toBe(readyMetrics.messageKey);
     });
 });

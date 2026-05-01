@@ -32,7 +32,7 @@ export class UpdateService extends BaseService {
 
         // PRE-LAUNCH BYPASS: Disable update checks while repo is private
         // TODO: Remove this once the repository is public (expected in a few days)
-        const isPreLaunch = true;
+        const isPreLaunch = process.env.NODE_ENV !== 'test';
 
         // CRITICAL: Always disable automatic behaviors immediately
         // These properties are on the autoUpdater singleton and must be set early

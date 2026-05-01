@@ -289,6 +289,11 @@ export const workspaceAgentSessionResumeRequestSchema = z.tuple([
         activeSessionId: z.string().trim().min(1).nullable(),
     }),
 ]);
+export const workspaceAgentSessionDeleteRequestSchema = z.tuple([
+    z.object({
+        sessionId: z.string().trim().min(1),
+    }),
+]);
 export const workspaceAgentSessionTelemetryRequestSchema = z.tuple([
     z.object({
         sessionId: z.string().trim().min(1),
@@ -306,3 +311,6 @@ export const workspaceAgentSessionPersistenceResponseSchema =
     workspaceAgentSessionPersistenceSchema;
 export const workspaceAgentSessionStatusResponseSchema: z.ZodType<WorkspaceAgentSessionStatus> =
     z.enum(WORKSPACE_AGENT_SESSION_STATUSES);
+export const workspaceAgentSessionDeleteResponseSchema = z.object({
+    success: z.boolean(),
+});

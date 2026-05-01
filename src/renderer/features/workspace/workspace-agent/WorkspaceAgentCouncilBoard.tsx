@@ -135,7 +135,7 @@ function AgentCanvas({
         context.fillStyle = chairTextColor;
         context.font = `500 ${boardFontSize} ${boardFontFamily}`;
         context.textAlign = 'center';
-        context.fillText(chairman?.name ?? t('workspaceAgent.chairmanFallback'), centerX, centerY + 40);
+        context.fillText(chairman?.name ?? t('frontend.workspaceAgent.chairmanFallback'), centerX, centerY + 40);
         nodePositions.set(chairman?.id ?? 'chairman', { x: centerX, y: centerY });
 
         subagents.forEach((agent, index) => {
@@ -306,7 +306,7 @@ function ReviewQueueCard({
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <IconSparkles className="h-4 w-4 text-accent-foreground" />
-                    {t('workspaceAgent.reviewQueue')}
+                    {t('frontend.workspaceAgent.reviewQueue')}
                 </div>
                 <div className="mt-3 space-y-2">
                     {drafts.length > 0 ? (
@@ -314,7 +314,7 @@ function ReviewQueueCard({
                             <div key={draft.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                                 <div className="text-sm text-foreground">{draft.workspaceId}</div>
                                 <div className="mt-1 typo-caption text-muted-foreground">
-                                    {t('workspaceAgent.filesCount', { count: draft.changedFiles.length })} ·{' '}
+                                    {t('frontend.workspaceAgent.filesCount', { count: draft.changedFiles.length })} ·{' '}
                                     {draft.patchSummary || draft.baseRevision}
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -376,7 +376,7 @@ function AssistQueueCard({
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <IconArrowRight className="h-4 w-4 text-info" />
-                    {t('workspaceAgent.assistQueue')}
+                    {t('frontend.workspaceAgent.assistQueue')}
                 </div>
                 <div className="mt-3 space-y-3">
                     {helpers.length > 0 && targets.length > 0 ? (
@@ -456,7 +456,7 @@ function ActivityFeedCard({
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <IconMessages className="h-4 w-4 text-warning" />
-                    {t('workspaceAgent.activity')}
+                    {t('frontend.workspaceAgent.activity')}
                 </div>
                 <div className="mt-3 space-y-2">
                     {runtime.messages.slice(-4).map(message => (
@@ -525,7 +525,7 @@ function ActivityFeedCard({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="group">{t('agents.council')}</SelectItem>
+                                    <SelectItem value="group">{t('frontend.agents.council')}</SelectItem>
                                     {participants
                                         .filter(agent => agent.id !== messageAuthorId)
                                         .map(agent => (
@@ -578,11 +578,11 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                     <div>
                         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                             <IconUserCog className="h-4 w-4 text-info" />
-                            {runtime.chairman?.name ?? t('workspaceAgent.chairmanFallback')}
+                            {runtime.chairman?.name ?? t('frontend.workspaceAgent.chairmanFallback')}
                         </div>
                         <div className="mt-1 typo-caption text-muted-foreground">
                             {runtime.chairman?.provider ?? session.strategy} ·{' '}
-                            {runtime.chairman?.model ?? session.contextTelemetry?.model ?? t('workspaceAgent.sessionFallback')}
+                            {runtime.chairman?.model ?? session.contextTelemetry?.model ?? t('frontend.workspaceAgent.sessionFallback')}
                         </div>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -592,7 +592,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                             onClick={() => void onSwitchView('board')}
                         >
                             <IconLayoutRows className="mr-1.5 h-4 w-4" />
-                            {t('workspaceAgent.boardView')}
+                            {t('frontend.workspaceAgent.boardView')}
                         </Button>
                         <Button
                             variant={activeView === 'map' ? 'secondary' : 'ghost'}
@@ -600,7 +600,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                             onClick={() => void onSwitchView('map')}
                         >
                             <IconMap className="mr-1.5 h-4 w-4" />
-                            {t('workspaceAgent.mapView')}
+                            {t('frontend.workspaceAgent.mapView')}
                         </Button>
                     </div>
                 </div>
@@ -636,7 +636,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                                         <IconHierarchy className="h-4 w-4 text-info" />
-                                        {t('agents.taskRouting')}
+                                        {t('frontend.agents.taskRouting')}
                                     </div>
                                     {proposal.length > 0 && (
                                         <Button size="sm" variant="secondary" onClick={onApprovePlan}>
@@ -661,7 +661,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                                         ))
                                     ) : (
                                         <div className="text-sm text-muted-foreground">
-                                            {t('agents.waitingActivity')}
+                                            {t('frontend.agents.waitingActivity')}
                                         </div>
                                     )}
                                 </div>

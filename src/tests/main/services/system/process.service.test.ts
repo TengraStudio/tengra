@@ -63,6 +63,8 @@ vi.mock('util', () => ({
 }));
 
 vi.mock('fs', () => ({
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
     promises: {
         access: vi.fn().mockRejectedValue(new Error('not found')),
         readFile: vi.fn().mockResolvedValue('{}')

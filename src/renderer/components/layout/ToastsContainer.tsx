@@ -153,7 +153,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
                         <div className="flex items-center gap-2">
                             <IconHistory className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-semibold">{t('notifications.center.title')}</span>
+                            <span className="text-sm font-semibold">{t('frontend.notifications.center.title')}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <button
@@ -170,7 +170,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                     clearNotificationHistory();
                                 }}
                                 className="p-1.5 rounded hover:bg-accent/50 text-muted-foreground"
-                                title={t('notifications.center.clearHistory')}
+                                title={t('frontend.notifications.center.clearHistory')}
                             >
                                 <IconTrash className="w-4 h-4" />
                             </button>
@@ -188,7 +188,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
 
                     <div className="px-4 py-3 border-b border-border/60">
                         <div className="text-sm font-semibold text-muted-foreground mb-2">
-                            {t('notifications.center.preferences')}
+                            {t('frontend.notifications.center.preferences')}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {notificationTypes.map(type => (
@@ -210,18 +210,18 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     </div>
 
                     <div className="px-4 py-2 border-b border-border/60 text-sm text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
-                        <span>{t('notifications.center.analytics.delivered')}: {snapshot.analytics.deliveredTotal}</span>
-                        <span>{t('notifications.center.analytics.dismissed')}: {snapshot.analytics.dismissedTotal}</span>
-                        <span>{t('notifications.center.analytics.actions')}: {snapshot.analytics.actionClicksTotal}</span>
-                        <span>{t('notifications.center.analytics.suppressed')}: {snapshot.analytics.suppressedTotal}</span>
-                        <span>{t('notifications.center.analytics.scheduled')}: {snapshot.analytics.scheduledTotal}</span>
-                        <span>{t('notifications.center.analytics.pending')}: {snapshot.scheduled.length}</span>
+                        <span>{t('frontend.notifications.center.analytics.delivered')}: {snapshot.analytics.deliveredTotal}</span>
+                        <span>{t('frontend.notifications.center.analytics.dismissed')}: {snapshot.analytics.dismissedTotal}</span>
+                        <span>{t('frontend.notifications.center.analytics.actions')}: {snapshot.analytics.actionClicksTotal}</span>
+                        <span>{t('frontend.notifications.center.analytics.suppressed')}: {snapshot.analytics.suppressedTotal}</span>
+                        <span>{t('frontend.notifications.center.analytics.scheduled')}: {snapshot.analytics.scheduledTotal}</span>
+                        <span>{t('frontend.notifications.center.analytics.pending')}: {snapshot.scheduled.length}</span>
                     </div>
 
                     {snapshot.scheduled.length > 0 && (
                         <div className="px-4 py-2 border-b border-border/60">
                             <div className="text-sm font-semibold text-muted-foreground mb-1">
-                                {t('notifications.center.scheduled')}
+                                {t('frontend.notifications.center.scheduled')}
                             </div>
                             <div className="space-y-1.5 max-h-24 overflow-auto">
                                 {snapshot.scheduled.slice(0, 6).map(item => (
@@ -243,7 +243,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     <div className="max-h-80 overflow-auto px-4 py-2 space-y-2">
                         {history.length === 0 && (
                             <div className="py-6 text-center typo-caption text-muted-foreground">
-                                {t('notifications.center.noNotifications')}
+                                {t('frontend.notifications.center.noNotifications')}
                             </div>
                         )}
                         {history.map(item => (

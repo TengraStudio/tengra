@@ -1,6 +1,6 @@
 {
     "name": "tengra",
-    "version": "1.0.46",
+    "version": "1.0.57",
     "description": "Tengra - Your Personal AI Assistant",
     "main": "dist/main/main.js",
     "type": "commonjs",
@@ -28,17 +28,12 @@
         "test:e2e": "playwright test",
         "lint": "eslint . --ext .ts,.tsx",
         "lint:eslint": "eslint . --cache --cache-location node_modules/.cache/.eslintcache",
-        "lint:fix": "eslint . --ext .ts,.tsx --fix",
-        "lint:styles": "node scripts/audit-renderer-design.js && npm run lint:stylelint",
-        "lint:stylelint": "stylelint \"src/**/*.{css,scss}\"",
+        "lint:fix": "eslint . --ext .ts,.tsx --fix", 
         "type-check": "tsc --noEmit",
-        "verify": "npm run lint && npm run type-check && npm run test",
-        "format": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+        "verify": "npm run lint && npm run type-check && npm run test", 
         "themes:sync": "node scripts/sync-theme-manifests.js",
-        "postinstall": "electron-builder install-app-deps || node -e \"process.exit(0)\"",
-        "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\"",
-        "audit:deps:gate": "npm audit --audit-level=high",
-        "release": "npm run build:publish",
+        "postinstall": "electron-builder install-app-deps --arch=x64 || node -e \"process.exit(0)\"",
+        "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\"", 
         "version": "node scripts/sync-versions.js && git add src/native/Cargo.toml"
     },
     "keywords": [
@@ -178,12 +173,12 @@
         ],
         "extraResources": [
             {
-                "from": "assets/app-update.yml",
-                "to": "app-update.yml"
-            },
-            {
                 "from": "src/main/workers",
                 "to": "utility-workers"
+            },
+            {
+                "from": "src/renderer/i18n/locales",
+                "to": "locales"
             }
         ],
         "win": {
@@ -193,8 +188,11 @@
             "icon": "assets/icon.ico",
             "extraResources": [
                 {
-                    "from": "bin/win32",
-                    "to": "bin"
+                    "from": "src/native/target/release",
+                    "to": "bin",
+                    "filter": [
+                        "tengra-*.exe"
+                    ]
                 }
             ]
         },
@@ -213,8 +211,11 @@
             "gatekeeperAssess": false,
             "extraResources": [
                 {
-                    "from": "bin/darwin",
-                    "to": "bin"
+                    "from": "src/native/target/release",
+                    "to": "bin",
+                    "filter": [
+                        "tengra-*"
+                    ]
                 }
             ]
         },
@@ -246,8 +247,11 @@
             "icon": "assets/icon.png",
             "extraResources": [
                 {
-                    "from": "bin/linux",
-                    "to": "bin"
+                    "from": "src/native/target/release",
+                    "to": "bin",
+                    "filter": [
+                        "tengra-*"
+                    ]
                 }
             ]
         },

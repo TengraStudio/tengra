@@ -96,17 +96,17 @@ function formatRateLimitError(message: string, t: (key: string) => string): stri
             const errData = safeJsonParse<ChatErrorData>(jsonMatch[0], {});
             const errorMsg = errData?.error?.message ?? errData?.message ?? message;
             if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
-                return t('chat.quotaExceeded');
+                return t('frontend.chat.quotaExceeded');
             }
         }
     } catch {
         // Not JSON
     }
-    return t('chat.rateLimitExceeded');
+    return t('frontend.chat.rateLimitExceeded');
 }
 
 function handleChatError(e: CatchError, t: (key: string) => string): string {
-    if (!(e instanceof Error)) { return String(e ?? t('errors.unknown')); }
+    if (!(e instanceof Error)) { return String(e ?? t('frontend.errors.unknown')); }
     const message = e.message;
     const isRateLimit = message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota');
     return isRateLimit ? formatRateLimitError(message, t) : message;

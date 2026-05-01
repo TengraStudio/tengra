@@ -52,4 +52,12 @@ describe('useMessageContent', () => {
         expect(result.current.plan).toBeNull();
         expect(result.current.displayContent).toBe(raw);
     });
+
+    it('preserves completed plain text content without forcing structured cleanup', () => {
+        const raw = 'I will inspect the repo function: not a tool trace, just plain text.';
+        const { result } = renderHook(() => useMessageContent(raw, undefined, undefined));
+
+        expect(result.current.displayContent).toBe(raw);
+        expect(result.current.plan).toBeNull();
+    });
 });

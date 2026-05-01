@@ -10,11 +10,13 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { app } from 'electron';
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { localePackSchema } from '@shared/schemas/locale.schema';
 import { LocalePack, LocalePackManifest } from '@shared/types/locale';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 const LOCALE_FILE_SUFFIX = '.locale.json';
 
@@ -30,7 +32,48 @@ export class LocaleService extends BaseService {
 
     override async initialize(): Promise<void> {
         await fs.mkdir(this.localesDir, { recursive: true });
+        await this.syncLocalesFromSource();
         await this.loadLocales();
+    }
+
+    private async syncLocalesFromSource(): Promise<void> {
+        const appPath = app.getAppPath();
+        const possibleSourceDirs = [
+            path.join(path.dirname(appPath), 'locales'),
+            path.join(appPath, 'dist/renderer/i18n/locales'),
+            path.join(appPath, 'renderer/i18n/locales'),
+            path.join(__dirname, '../../src/renderer/i18n/locales'),
+            path.join(__dirname, '../../../src/renderer/i18n/locales'),
+        ];
+
+        for (const sourceDir of possibleSourceDirs) {
+            try {
+                const files = await fs.readdir(sourceDir);
+                for (const fileName of files) {
+                    if (!fileName.endsWith(LOCALE_FILE_SUFFIX)) {
+                        continue;
+                    }
+                    const sourcePath = path.join(sourceDir, fileName);
+                    const targetPath = path.join(this.localesDir, fileName);
+
+                    try {
+                        const [sourceBytes, targetBytes] = await Promise.all([
+                            fs.readFile(sourcePath),
+                            fs.readFile(targetPath).catch(() => null),
+                        ]);
+
+                        if (!targetBytes || !sourceBytes.equals(targetBytes)) {
+                            await fs.copyFile(sourcePath, targetPath);
+                            this.logInfo(`Synced locale ${fileName} from ${sourcePath}`);
+                        }
+                    } catch (error) {
+                        this.logWarn(`Failed to sync locale ${fileName}: ${getErrorMessage(error as Error)}`);
+                    }
+                }
+            } catch {
+                // Directory doesn't exist, skip
+            }
+        }
     }
 
     override async cleanup(): Promise<void> {

@@ -43,7 +43,7 @@ export const TodoAddForm = ({ isAdding, onAdd, t }: TodoAddFormProps) => {
                                 value={newTaskText}
                                 onChange={e => setNewTaskText(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') { void handleAdd(); } }}
-                                placeholder={t('workspaces.todoPlaceholder')}
+                                placeholder={t('frontend.workspaces.todoPlaceholder')}
                                 className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
                             />
                             <button
@@ -55,7 +55,7 @@ export const TodoAddForm = ({ isAdding, onAdd, t }: TodoAddFormProps) => {
                             </button>
                         </div>
                         <div className="text-sm text-muted-foreground mt-2 pl-1">
-                            {t('workspaces.willActOn')} <span className="font-mono text-primary/70">/TODO.md</span>
+                            {t('frontend.workspaces.willActOn')} <span className="font-mono text-primary/70">/TODO.md</span>
                         </div>
                     </div>
                 </motion.div>

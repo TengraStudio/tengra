@@ -64,7 +64,7 @@ export const ChatListItem = memo<ChatListItemProps>(({
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                     )}
                 </div>
-                <span className="truncate typo-caption flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>
+                <span className="truncate typo-caption flex-1 font-medium">{chat.title || t('frontend.sidebar.newChat')}</span>
             </button>
 
             <div className={C_CHATLISTITEM_1}>

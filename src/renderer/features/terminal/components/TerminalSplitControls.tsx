@@ -72,7 +72,7 @@ export function TerminalSplitControls({
                 type="button"
                 onClick={handleSplitUp}
                 className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded"
-                title={t('terminal.splitPresetsTitle')}
+                title={t('frontend.terminal.splitPresetsTitle')}
             >
                 <IconColumns2 className="w-3.5 h-3.5" />
             </button>
@@ -80,7 +80,7 @@ export function TerminalSplitControls({
                 type="button"
                 onClick={handleSplitDown}
                 className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded"
-                title={t('terminal.splitPresetsTitle')}
+                title={t('frontend.terminal.splitPresetsTitle')}
             >
                 <IconLayoutRows className="w-3.5 h-3.5" />
             </button>

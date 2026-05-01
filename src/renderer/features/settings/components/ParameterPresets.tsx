@@ -63,10 +63,10 @@ export function ParameterPresets({
     const [editingPreset, setEditingPreset] = useState<ParameterPreset | null>(null);
 
     const resolvePresetName = (preset: ParameterPreset): string => {
-        if (preset.id === 'creative') { return t('ssh.presets.creative'); }
-        if (preset.id === 'precise') { return t('ssh.presets.precise'); }
-        if (preset.id === 'coding') { return t('ssh.presets.coding'); }
-        if (preset.id.startsWith('custom-')) { return t('ssh.presets.custom'); }
+        if (preset.id === 'creative') { return t('frontend.ssh.presets.creative'); }
+        if (preset.id === 'precise') { return t('frontend.ssh.presets.precise'); }
+        if (preset.id === 'coding') { return t('frontend.ssh.presets.coding'); }
+        if (preset.id.startsWith('custom-')) { return t('frontend.ssh.presets.custom'); }
         return preset.name;
     };
 
@@ -75,7 +75,7 @@ export function ParameterPresets({
     const handleCreateCustom = () => {
         const newPreset: ParameterPreset = {
             id: `custom-${Date.now()}`,
-            name: t('ssh.presets.custom'),
+            name: t('frontend.ssh.presets.custom'),
             icon: 'custom',
             temperature: 0.7,
             topP: 0.9,
@@ -123,13 +123,13 @@ export function ParameterPresets({
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground">{t('ssh.presets.title')}</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t('frontend.ssh.presets.title')}</h3>
                 <button
                     onClick={handleCreateCustom}
                     className={C_PARAMETERPRESETS_1}
                 >
                     <IconPlus size={12} />
-                    {t('ssh.presets.custom')}
+                    {t('frontend.ssh.presets.custom')}
                 </button>
             </div>
 

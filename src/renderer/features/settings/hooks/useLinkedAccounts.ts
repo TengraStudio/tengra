@@ -13,13 +13,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LinkedAccountInfo } from '@/electron.d';
 import { appLogger } from '@/utils/renderer-logger';
 
+const LINKED_ACCOUNTS_CACHE_TTL_MS = 10_000;
+let linkedAccountsCache: { value: LinkedAccountInfo[]; expiresAt: number } | null = null;
+let linkedAccountsInFlight: Promise<LinkedAccountInfo[]> | null = null;
+
 const PROVIDER_ALIASES: Record<string, string[]> = {
     codex: ['codex', 'openai'],
     claude: ['claude', 'anthropic'],
     antigravity: ['antigravity', 'google', 'gemini'],
     ollama: ['ollama'],
     copilot: ['copilot', 'copilot_token'],
-    github: ['github']
+    github: ['github'],
+    opencode: ['opencode']
 };
 
 function matchesProviderAlias(accountProvider: string, requestedProvider: string): boolean {
@@ -41,6 +46,35 @@ export interface UseLinkedAccountsResult {
     linkAccount: (provider: string, tokenData: { key?: string; accessToken?: string; metadata?: Record<string, unknown> }) => Promise<void>
 }
 
+export function invalidateLinkedAccountsSnapshot(): void {
+    linkedAccountsCache = null;
+}
+
+export async function fetchLinkedAccountsSnapshot(forceRefresh = false): Promise<LinkedAccountInfo[]> {
+    const now = Date.now();
+    if (!forceRefresh && linkedAccountsCache && linkedAccountsCache.expiresAt > now) {
+        return linkedAccountsCache.value;
+    }
+
+    if (!forceRefresh && linkedAccountsInFlight) {
+        return linkedAccountsInFlight;
+    }
+
+    linkedAccountsInFlight = window.electron.getLinkedAccounts()
+        .then(accounts => {
+            linkedAccountsCache = {
+                value: accounts,
+                expiresAt: Date.now() + LINKED_ACCOUNTS_CACHE_TTL_MS,
+            };
+            return accounts;
+        })
+        .finally(() => {
+            linkedAccountsInFlight = null;
+        });
+
+    return linkedAccountsInFlight;
+}
+
 /**
  * Hook for managing linked accounts using the new multi-account API.
  * Memoized to prevent excessive re-renders.
@@ -53,7 +87,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
     const refreshAccounts = useCallback(async () => {
         try {
             setLoading(true);
-            const linkedAccounts = await window.electron.getLinkedAccounts();
+            const linkedAccounts = await fetchLinkedAccountsSnapshot(true);
             setAccounts(linkedAccounts);
         } catch (error) {
             appLogger.error('LinkedAccounts', 'Failed to fetch linked accounts', error as Error);
@@ -67,11 +101,23 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
     useEffect(() => {
         if (!initialFetchDone.current) {
             initialFetchDone.current = true;
-            void refreshAccounts();
+            const idleCallback = (window as Window & {
+                requestIdleCallback?: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number
+            }).requestIdleCallback;
+            if (idleCallback) {
+                idleCallback(() => {
+                    void refreshAccounts();
+                }, { timeout: 1500 });
+            } else {
+                window.setTimeout(() => {
+                    void refreshAccounts();
+                }, 120);
+            }
         }
 
         // Listen for account change events from main process (e.g. multi-account linking)
         const removeListener = window.electron.ipcRenderer.on('auth:account-changed', () => {
+            invalidateLinkedAccountsSnapshot();
             void refreshAccounts();
         });
 
@@ -96,6 +142,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
     const unlinkAccount = useCallback(async (accountId: string) => {
         try {
             await window.electron.unlinkAccount(accountId);
+            invalidateLinkedAccountsSnapshot();
             await refreshAccounts();
         } catch (error) {
             appLogger.error('LinkedAccounts', 'Failed to unlink account', error as Error);
@@ -105,6 +152,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
     const setActiveAccount = useCallback(async (provider: string, accountId: string) => {
         try {
             await window.electron.setActiveLinkedAccount(provider, accountId);
+            invalidateLinkedAccountsSnapshot();
             await refreshAccounts();
         } catch (error) {
             appLogger.error('LinkedAccounts', 'Failed to set active account', error as Error);
@@ -114,6 +162,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
     const linkAccount = useCallback(async (provider: string, tokenData: { key?: string; accessToken?: string; metadata?: Record<string, unknown> }) => {
         try {
             await window.electron.linkAccount(provider, tokenData);
+            invalidateLinkedAccountsSnapshot();
             await refreshAccounts();
         } catch (error) {
             appLogger.error('LinkedAccounts', 'Failed to link account', error as Error);

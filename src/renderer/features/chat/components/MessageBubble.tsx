@@ -122,7 +122,7 @@ const SingleMessageView = memo(
             images,
             attachments: message.attachments || [],
             showRawMarkdown,
-            callbacks: { onSpeak, onStop, onCodeConvert },
+            callbacks: { onSpeak, onStop, onCodeConvert, onSourceClick },
             t,
         };
 

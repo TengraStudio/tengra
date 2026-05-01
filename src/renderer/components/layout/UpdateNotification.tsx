@@ -50,34 +50,34 @@ const getStateConfigs = (
     checking: {
         icon: IconRefresh,
         iconClass: 'text-primary animate-spin',
-        title: t('updateNotification.checkingTitle'),
+        title: t('frontend.updateNotification.checkingTitle'),
     },
     available: {
         icon: IconDownload,
         iconClass: 'text-primary',
-        title: version => t('updateNotification.availableTitle', { version: version ?? '' }),
-        content: t('updateNotification.availableContent'),
+        title: version => t('frontend.updateNotification.availableTitle', { version: version ?? '' }),
+        content: t('frontend.updateNotification.availableContent'),
     },
     downloading: {
         icon: IconDownload,
         iconClass: 'text-primary animate-pulse',
-        title: t('updateNotification.downloadingTitle'),
+        title: t('frontend.updateNotification.downloadingTitle'),
     },
     downloaded: {
         icon: IconCircleCheck,
         iconClass: 'text-success',
-        title: t('updateNotification.downloadedTitle'),
-        content: t('updateNotification.downloadedContent'),
+        title: t('frontend.updateNotification.downloadedTitle'),
+        content: t('frontend.updateNotification.downloadedContent'),
     },
     error: {
         icon: IconAlertCircle,
         iconClass: 'text-destructive',
-        title: t('updateNotification.errorTitle'),
+        title: t('frontend.updateNotification.errorTitle'),
     },
     'not-available': {
         icon: IconCircleCheck,
         iconClass: 'text-muted-foreground',
-        title: t('updateNotification.uptodateTitle'),
+        title: t('frontend.updateNotification.uptodateTitle'),
     },
 });
 
@@ -243,14 +243,14 @@ const UpdateActions: React.FC<UpdateActionsProps> = ({ state, onDownload, onInst
             <ActionButton
                 onClick={onDownload}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/20 hover:brightness-110"
-                label={t('updateNotification.downloadAction')}
+                label={t('frontend.updateNotification.downloadAction')}
             />
         )}
         {state === 'downloaded' && (
             <ActionButton
                 onClick={onInstall}
                 className="bg-success text-success-foreground hover:bg-success/90 border border-success/20 hover:brightness-110"
-                label={t('updateNotification.restartAction')}
+                label={t('frontend.updateNotification.restartAction')}
             />
         )}
     </div>

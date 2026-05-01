@@ -67,72 +67,76 @@ function resolveTranslatedMessage(path: string, options?: Record<string, string 
 }
 
 const EXACT_ERROR_KEY_MAP: Record<string, string> = {
-    CHAT_ID_CREATION_FAILED: 'errors.chat.idCreationFailed',
-    SETTINGS_INVALID_RESPONSE: 'errors.settings.invalidResponse',
-    SETTINGS_INVALID_SAVE_RESPONSE: 'errors.settings.invalidSaveResponse',
-    'Failed to convert file to data URL': 'errors.attachments.dataUrlConversionFailed',
-    'Unknown file read error': 'errors.attachments.fileReadFailed',
-    'Speech recognition not supported': 'errors.voice.recognitionNotSupported',
-    'Runtime status request failed': 'errors.runtime.statusRequestFailed',
-    'Managed runtime repair failed': 'errors.runtime.repairFailed',
-    'Retry operation failed': 'errors.ssh.retryFailed',
-    'Settings operation failed': 'errors.settings.operationFailed',
-    'IPC bridge is not available': 'errors.ipc.bridgeUnavailable',
-    'useWorkspace must be used within a WorkspaceProvider': 'errors.context.useWorkspaceProvider',
-    'useWorkspaceSelection must be used within a WorkspaceProvider': 'errors.context.useWorkspaceSelectionProvider',
-    'useWorkspaceLibrary must be used within a WorkspaceProvider': 'errors.context.useWorkspaceLibraryProvider',
-    'useWorkspaceTerminal must be used within a WorkspaceProvider': 'errors.context.useWorkspaceTerminalProvider',
-    'useTheme must be used within a ThemeProvider': 'errors.context.useThemeProvider',
-    'useSettings must be used within a SettingsProvider': 'errors.context.useSettingsProvider',
-    'useLanguage must be used within a LanguageProvider': 'errors.context.useLanguageProvider',
-    'useModel must be used within a ModelProvider': 'errors.context.useModelProvider',
-    'useAuth must be used within an AuthProvider': 'errors.context.useAuthProvider',
-    'useAuthLanguage must be used within an AuthProvider': 'errors.context.useAuthLanguageProvider',
-    'useAuthSettingsUi must be used within an AuthProvider': 'errors.context.useAuthSettingsUiProvider',
-    'useChat must be used within a ChatProvider': 'errors.context.useChatProvider',
-    'useChatHeader must be used within a ChatProvider': 'errors.context.useChatHeaderProvider',
-    'useChatShell must be used within a ChatProvider': 'errors.context.useChatShellProvider',
-    'useChatLibrary must be used within a ChatProvider': 'errors.context.useChatLibraryProvider',
-    'useChatComposer must be used within a ChatProvider': 'errors.context.useChatComposerProvider',
-    'useChatWindowCommand must be used within a ChatProvider': 'errors.context.useChatWindowCommandProvider',
-    'useChatListening must be used within a ChatProvider': 'errors.context.useChatListeningProvider',
+    CHAT_ID_CREATION_FAILED: 'frontend.errors.chat.idCreationFailed',
+    SETTINGS_INVALID_RESPONSE: 'frontend.errors.settings.invalidResponse',
+    SETTINGS_INVALID_SAVE_RESPONSE: 'frontend.errors.settings.invalidSaveResponse',
+    'Failed to convert file to data URL': 'frontend.errors.attachments.dataUrlConversionFailed',
+    'Unknown file read error': 'frontend.errors.attachments.fileReadFailed',
+    'Speech recognition not supported': 'frontend.errors.voice.recognitionNotSupported',
+    'Runtime status request failed': 'frontend.errors.runtime.statusRequestFailed',
+    'Managed runtime repair failed': 'frontend.errors.runtime.repairFailed',
+    'Retry operation failed': 'frontend.errors.ssh.retryFailed',
+    'Settings operation failed': 'frontend.errors.settings.operationFailed',
+    'IPC bridge is not available': 'frontend.errors.ipc.bridgeUnavailable',
+    'useWorkspace must be used within a WorkspaceProvider': 'frontend.errors.context.useWorkspaceProvider',
+    'useWorkspaceSelection must be used within a WorkspaceProvider': 'frontend.errors.context.useWorkspaceSelectionProvider',
+    'useWorkspaceLibrary must be used within a WorkspaceProvider': 'frontend.errors.context.useWorkspaceLibraryProvider',
+    'useWorkspaceTerminal must be used within a WorkspaceProvider': 'frontend.errors.context.useWorkspaceTerminalProvider',
+    'useTheme must be used within a ThemeProvider': 'frontend.errors.context.useThemeProvider',
+    'useSettings must be used within a SettingsProvider': 'frontend.errors.context.useSettingsProvider',
+    'useLanguage must be used within a LanguageProvider': 'frontend.errors.context.useLanguageProvider',
+    'useModel must be used within a ModelProvider': 'frontend.errors.context.useModelProvider',
+    'useAuth must be used within an AuthProvider': 'frontend.errors.context.useAuthProvider',
+    'useAuthLanguage must be used within an AuthProvider': 'frontend.errors.context.useAuthLanguageProvider',
+    'useAuthSettingsUi must be used within an AuthProvider': 'frontend.errors.context.useAuthSettingsUiProvider',
+    'useChat must be used within a ChatProvider': 'frontend.errors.context.useChatProvider',
+    'useChatHeader must be used within a ChatProvider': 'frontend.errors.context.useChatHeaderProvider',
+    'useChatShell must be used within a ChatProvider': 'frontend.errors.context.useChatShellProvider',
+    'useChatLibrary must be used within a ChatProvider': 'frontend.errors.context.useChatLibraryProvider',
+    'useChatComposer must be used within a ChatProvider': 'frontend.errors.context.useChatComposerProvider',
+    'useChatWindowCommand must be used within a ChatProvider': 'frontend.errors.context.useChatWindowCommandProvider',
+    'useChatListening must be used within a ChatProvider': 'frontend.errors.context.useChatListeningProvider',
 };
 
 export function translateErrorMessage(message: string): string {
     const normalizedMessage = message.trim();
     if (normalizedMessage === '') {
-        return resolveTranslatedMessage('errors.unexpected');
+        return resolveTranslatedMessage('frontend.errors.unexpected');
     }
 
-    if (normalizedMessage.startsWith('errors.') || normalizedMessage.startsWith('common.')) {
+    if (normalizedMessage.startsWith('frontend.errors.') || normalizedMessage.startsWith('common.')) {
         return resolveTranslatedMessage(normalizedMessage);
     }
 
+    if (normalizedMessage.startsWith('errors.')) {
+        return resolveTranslatedMessage('frontend.' + normalizedMessage);
+    }
+
     if (normalizedMessage.startsWith('error.')) {
-        return resolveTranslatedMessage(normalizedMessage.replace(/^error\./, 'errors.'));
+        return resolveTranslatedMessage(normalizedMessage.replace(/^error\./, 'frontend.errors.'));
     }
 
     const timeoutMatch = /^(.*?) timed out after (\d+)ms$/i.exec(normalizedMessage);
     if (timeoutMatch) {
         const label = timeoutMatch[1]?.trim() || 'Operation';
         const timeoutMs = Number.parseInt(timeoutMatch[2] ?? '0', 10);
-        return resolveTranslatedMessage('errors.auth.operationTimeout', { label, timeoutMs });
+        return resolveTranslatedMessage('frontend.errors.auth.operationTimeout', { label, timeoutMs });
     }
 
     if (normalizedMessage.startsWith('Incompatible IPC contract:')) {
-        return resolveTranslatedMessage('errors.ipc.contractMismatch');
+        return resolveTranslatedMessage('frontend.errors.ipc.contractMismatch');
     }
 
     const ipcNegotiationMatch = /^IPC contract negotiation failed: (.+)$/.exec(normalizedMessage);
     if (ipcNegotiationMatch) {
-        return resolveTranslatedMessage('errors.ipc.negotiationFailed', {
+        return resolveTranslatedMessage('frontend.errors.ipc.negotiationFailed', {
             reason: ipcNegotiationMatch[1] ?? normalizedMessage,
         });
     }
 
     const ipcFailureMatch = /^IPC (.+) failed after (\d+) attempt\(s\): (.+)$/.exec(normalizedMessage);
     if (ipcFailureMatch) {
-        return resolveTranslatedMessage('errors.ipc.requestFailedAfterAttempts', {
+        return resolveTranslatedMessage('frontend.errors.ipc.requestFailedAfterAttempts', {
             channel: ipcFailureMatch[1] ?? 'unknown',
             attempts: ipcFailureMatch[2] ?? '0',
             reason: ipcFailureMatch[3] ?? normalizedMessage,
@@ -185,16 +189,16 @@ function mapToUserFriendlyMessage(message: string): string {
     }
 
     if (message.includes('429') || message.includes('rate limit') || message.includes('quota')) {
-        return resolveTranslatedMessage('errors.rateLimit.exceeded');
+        return resolveTranslatedMessage('frontend.errors.rateLimit.exceeded');
     }
     if (message.includes('401') || message.includes('unauthorized')) {
-        return resolveTranslatedMessage('errors.proxy.authFailed');
+        return resolveTranslatedMessage('frontend.errors.proxy.authFailed');
     }
     if (message.includes('network') || message.includes('fetch')) {
         return resolveTranslatedMessage('common.networkError');
     }
     if (message.includes('timeout')) {
-        return resolveTranslatedMessage('errors.proxy.timeout');
+        return resolveTranslatedMessage('frontend.errors.proxy.timeout');
     }
     return message;
 }

@@ -69,7 +69,7 @@ export const MermaidDiagram = memo(({ code, t }: MermaidDiagramProps) => {
         return (
             <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-border/40 animate-pulse">
                 <div className="typo-caption text-muted-foreground">
-                    {t('messageBubble.renderingDiagram')}
+                    {t('frontend.messageBubble.renderingDiagram')}
                 </div>
             </div>
         );

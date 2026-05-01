@@ -14,7 +14,10 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { FileChangeTracker } from '@main/services/data/file-change-tracker.service';
 import { FileSystemService } from '@main/services/data/filesystem.service';
+import { AuditLogService } from '@main/services/system/audit-log.service';
 import { createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { FileDiff } from '@shared/types/file-diff';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
@@ -76,6 +79,7 @@ export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,
     fileSystemService: FileSystemService,
     allowedRoots: Set<string>,
+    auditLogService?: AuditLogService,
     fileChangeTracker?: FileChangeTracker
 ): void {
     appLogger.debug('FilesIPC', 'Registering files IPC handlers');
@@ -171,7 +175,7 @@ export function registerFilesIpc(
         };
     };
 
-    const isResultSuccessful = (result: RuntimeValue): boolean => {
+    const _isResultSuccessful = (result: RuntimeValue): boolean => {
         if (typeof result !== 'object' || result === null) {
             return true;
         }
@@ -354,27 +358,30 @@ export function registerFilesIpc(
         argsSchema: z.tuple([PathSchema])
     }));
 
-    ipcMain.handle('files:writeFile', createValidatedIpcHandler<WriteFileResponse, [string, string, z.infer<typeof WriteContextSchema>]>(
+    ipcMain.handle('files:writeFile', createValidatedIpcHandler<WriteFileResponse, any>(
         'files:writeFile',
-        async (_event, filePath: string, content: string, context?: z.infer<typeof WriteContextSchema>) => {
+        async (_event, ...args: any[]) => {
+        // Validation MUST happen here to satisfy tests that expect validation errors
+        const filePath = PathSchema.parse(args[0]);
+        const content = ContentSchema.parse(args[1]);
+        const context = WriteContextSchema.parse(args[2]);
+        
         const aiSystem = context?.aiSystem;
+        let writeResult;
         if (aiSystem) {
-            const trackedResult = await fileSystemService.writeFileWithTracking(filePath, content, {
+            writeResult = await fileSystemService.writeFileWithTracking(filePath, content, {
                 aiSystem,
                 chatSessionId: context.chatSessionId,
                 changeReason: context.changeReason ?? 'AI file modification',
             });
-            if (trackedResult.success) {
-                return { success: true, uiState: 'ready' };
-            }
-            return {
-                success: false,
-                error: trackedResult.error ?? FILE_ERROR_MESSAGE.WRITE_FAILED,
-                messageKey: FILE_MESSAGE_KEY.WRITE_FAILED,
-                uiState: 'failure'
-            };
+        } else {
+            writeResult = await fileSystemService.writeFile(filePath, content);
         }
-        const writeResult = await fileSystemService.writeFile(filePath, content);
+
+        if (auditLogService) {
+            auditLogService.logFileSystemOperation('files.writeFile', writeResult.success, { targetPath: filePath });
+        }
+
         if (writeResult.success) {
             return { success: true, uiState: 'ready' };
         }
@@ -391,8 +398,7 @@ export function registerFilesIpc(
             errorCode: FILE_IPC_ERROR_CODE.OPERATION_FAILED,
             messageKey: FILE_MESSAGE_KEY.WRITE_FAILED,
             uiState: 'failure'
-        },
-        argsSchema: z.tuple([PathSchema, ContentSchema, WriteContextSchema])
+        }
     }));
 
     ipcMain.handle('files:createDirectory', createValidatedIpcHandler('files:createDirectory', async (_event, dirPath: string) => {
@@ -441,6 +447,26 @@ export function registerFilesIpc(
         argsSchema: z.tuple([DiffIdSchema])
     }));
 
+    ipcMain.handle('files:getFileDiff', createValidatedIpcHandler('files:getFileDiff', async (event, diffId: string) => {
+        validateSender(event);
+        if (!fileChangeTracker) {
+            return { success: false, error: 'File change tracker is not available' };
+        }
+        const row = await fileChangeTracker.databaseService.getFileDiff(diffId);
+        if (!row) {
+            return { success: false, error: 'Diff not found' };
+        }
+        const raw = typeof row.diff === 'string' ? row.diff : '';
+        const parsed = raw ? safeJsonParse<FileDiff | null>(raw, null) : null;
+        if (!parsed) {
+            return { success: false, error: 'Invalid diff data' };
+        }
+        return { success: true, data: parsed };
+    }, {
+        defaultValue: { success: false, error: 'Failed to get file diff' },
+        argsSchema: z.tuple([DiffIdSchema])
+    }));
+
     ipcMain.handle('files:searchFiles', createValidatedIpcHandler<SearchFilesResponse, [string, string]>('files:searchFiles', async (_event, dirPath: string, pattern: string) => {
         const result = await fileSystemService.searchFiles(dirPath, pattern);
         const results = result.data ?? [];
@@ -470,4 +496,11 @@ export function registerFilesIpc(
         argsSchema: z.tuple([PathSchema, PatternSchema, JobIdSchema])
     }));
 
+    ipcMain.handle('files:health', async (event) => {
+        validateSender(event);
+        return {
+            success: true,
+            data: _getFilesHealthSummary()
+        };
+    });
 }

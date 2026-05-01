@@ -35,6 +35,7 @@ import {
 import { AppSettings, Chat, Message } from '@/types';
 import { CatchError } from '@/types/common';
 import { appLogger } from '@/utils/renderer-logger';
+import { CachedDatabase } from '@/utils/cached-database.util';
 
 /** Maximum messages to keep in memory per chat to prevent memory leaks */
 const MAX_MESSAGES_IN_MEMORY = 100;
@@ -219,7 +220,7 @@ function useChatInitialization(loadFolders: () => Promise<void>): void {
     useEffect(() => {
         const load = async () => {
             try {
-                const allChats = await window.electron.db.getAllChats();
+                const allChats = await CachedDatabase.getAllChats();
                 const visibleChats = (allChats as Chat[]).filter(
                     chat => !isWorkspaceAgentChat(chat)
                 );
@@ -567,8 +568,8 @@ export function useChatManager(options: UseChatManagerOptions) {
                 if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) {return [att.preview];}
                 return [];
             });
-            const attachmentContext = buildAttachmentPromptContext(readyAttachments, t('chat.attachmentPrompt.label'));
-            const mergedContent = hasInputText ? `${content}${attachmentContext}` : `${attachmentContext}\n[${t('chat.attachmentPrompt.analyzeMedia')}]`.trim();
+            const attachmentContext = buildAttachmentPromptContext(readyAttachments, t('frontend.chat.attachmentPrompt.label'));
+            const mergedContent = hasInputText ? `${content}${attachmentContext}` : `${attachmentContext}\n[${t('frontend.chat.attachmentPrompt.analyzeMedia')}]`.trim();
             
             const userMessage: Message = {
                 id: generateId(),

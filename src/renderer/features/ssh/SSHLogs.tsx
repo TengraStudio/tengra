@@ -54,7 +54,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             const data = await window.electron.ssh.readLogFile(connectionId, path, 100);
             setContent(data);
         } catch {
-            setContent(t('ssh.logReadFailed'));
+            setContent(t('frontend.ssh.logReadFailed'));
         } finally {
             setLoading(false);
         }
@@ -67,13 +67,13 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             {/* Sidebar list */}
             <div className="w-1/3 border-r border-border bg-muted/20 flex flex-col">
                 <div className="p-3 border-b border-border font-medium text-sm flex justify-between items-center">
-                    <span>{t('ssh.logFiles')}</span>
+                    <span>{t('frontend.ssh.logFiles')}</span>
                     <button onClick={() => void loadFiles()} className="typo-caption opacity-70 hover:opacity-100">{t('common.refresh')}</button>
                 </div>
                 <div className="overflow-y-auto flex-1">
                     {logFiles.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                            {t('ssh.noLogFiles')}
+                            {t('frontend.ssh.noLogFiles')}
                         </div>
                     ) : (
                         logFiles.map(file => (
@@ -97,8 +97,8 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             {/* Viewer */}
             <div className="flex-1 flex flex-col bg-background text-foreground">
                 <div className="p-2 bg-muted/30 border-b border-border typo-caption font-mono text-muted-foreground flex justify-between">
-                    <span>{selectedLog ?? t('ssh.selectLogFile')}</span>
-                    <span>{loading ? t('ssh.reading') : t('ssh.lastLines', { count: 100 })}</span>
+                    <span>{selectedLog ?? t('frontend.ssh.selectLogFile')}</span>
+                    <span>{loading ? t('frontend.ssh.reading') : t('frontend.ssh.lastLines', { count: 100 })}</span>
                 </div>
                 <pre className="flex-1 overflow-auto p-4 font-mono typo-caption leading-relaxed whitespace-pre-wrap">
                     {content}

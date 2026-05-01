@@ -109,9 +109,27 @@ export class LocalImageProviders {
     /** Edit an image using the configured provider. */
     async editImage(options: ImageEditOptions): Promise<string> {
         const provider = (this.deps.settingsService.getSettings().images?.provider ?? 'antigravity') as ImageProvider;
+        return this.editImageWithProvider(provider, options);
+    }
 
+    /** Edit an image with an explicit local/remote provider. */
+    async editImageWithProvider(provider: ImageProvider, options: ImageEditOptions): Promise<string> {
         if (provider === 'sd-webui') {
             return this.editWithSDWebUI(options);
+        }
+
+        // If the user supplied a mask (inpaint/outpaint), prefer SD-WebUI even if it's not the
+        // currently selected provider, because most other providers won't apply masks here and
+        // will effectively re-generate a new image.
+        if ((options.mode === 'inpaint' || options.mode === 'outpaint') && options.maskImage) {
+            try {
+                return await this.editWithSDWebUI(options);
+            } catch (error) {
+                appLogger.warn(
+                    'LocalImageProviders',
+                    `SD-WebUI masked edit fallback failed, continuing with provider=${provider}: ${getErrorMessage(error as Error)}`
+                );
+            }
         }
 
         const modePrefix = options.mode === 'style-transfer'

@@ -46,10 +46,10 @@ export const ThoughtSection = memo(
     }: ThoughtSectionProps) => {
         const [isThoughtExpanded, setIsThoughtExpanded] = useState(initiallyExpanded);
         const baseTitle = typeof segmentIndex === 'number'
-            ? t('workspaceAgent.thoughtStep', { index: segmentIndex + 1 })
-            : t('messageBubble.showThought');
+            ? t('frontend.workspaceAgent.thoughtStep', { index: segmentIndex + 1 })
+            : t('frontend.messageBubble.showThought');
         const title = typeof thoughtDurationMs === 'number' && Number.isFinite(thoughtDurationMs)
-            ? `${baseTitle} • ${(thoughtDurationMs / 1000).toFixed(1)}${t('messageBubble.secondsShort')}`
+            ? `${baseTitle} • ${(thoughtDurationMs / 1000).toFixed(1)}${t('frontend.messageBubble.secondsShort')}`
             : baseTitle;
 
         // Auto-expand if the prop changes to true (e.g. during streaming)

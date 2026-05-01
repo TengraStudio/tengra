@@ -96,18 +96,16 @@ export function useWorkspaceShortcuts({
                 setShowShortcutHelp(prev => !prev);
                 return;
             }
-            if (key === 'k') {
+            if (key === 'p' || key === 'k') {
                 event.preventDefault();
                 setShowQuickSwitch(true);
                 setQuickSwitchQuery('');
                 setQuickSwitchIndex(0);
                 return;
             }
-            if (key === 'p') {
+            if (key === 's') {
                 event.preventDefault();
-                setShowQuickSwitch(true);
-                setQuickSwitchQuery('');
-                setQuickSwitchIndex(0);
+                void wm.saveActiveTab();
                 return;
             }
             if (key === 'w' && wm.activeTab) {

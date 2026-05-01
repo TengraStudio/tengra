@@ -124,10 +124,10 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-foreground">
-                            {t('workspaces.modelGovernance')}
+                            {t('frontend.workspaces.modelGovernance')}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground/70">
-                            {t('workspaces.modelGovernanceDesc')}
+                            {t('frontend.workspaces.modelGovernanceDesc')}
                         </p>
                     </div>
                 </div>
@@ -155,7 +155,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                         </div>
                         <div>
                             <div className="typo-body font-medium text-foreground">
-                                {t('workspaces.governanceMode')}
+                                {t('frontend.workspaces.governanceMode')}
                             </div>
                             <div className="mt-0.5 typo-body text-muted-foreground/70">
                                 {isAllowlistMode ? 'Allowlist' : 'Blocklist'}
@@ -171,7 +171,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     <div className="flex-1 min-w-0">
                         <Select value={selectedModel} onValueChange={setSelectedModel}>
                             <SelectTrigger className="h-11 rounded-xl border-border/30 bg-background typo-caption font-medium">
-                                <SelectValue placeholder={t('workspaces.selectModelPlaceholder')} />
+                                <SelectValue placeholder={t('frontend.workspaces.selectModelPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-80 overflow-y-auto rounded-xl border-border/30 bg-popover">
                                 {availableForSelect.map(id => (
@@ -191,7 +191,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             className={C_MODELGOVERNANCEPANEL_1}
                         >
                             <IconShieldCheck className="w-3.5 h-3.5 mr-2" />
-                            {t('workspaces.addToAllowlist')}
+                            {t('frontend.workspaces.addToAllowlist')}
                         </Button>
                         <Button
                             variant="outline"
@@ -201,7 +201,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             className={C_MODELGOVERNANCEPANEL_2}
                         >
                             <IconShieldExclamation className="w-3.5 h-3.5 mr-2" />
-                            {t('workspaces.addToBlocklist')}
+                            {t('frontend.workspaces.addToBlocklist')}
                         </Button>
                     </div>
                 </div>
@@ -212,7 +212,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     <div className="flex items-center gap-3 px-1">
                         <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
                         <div className="typo-body font-medium text-success">
-                            {t('workspaces.allowedModels')}
+                            {t('frontend.workspaces.allowedModels')}
                         </div>
                     </div>
                     <div className="space-y-3 min-h-120 max-h-400 overflow-y-auto pr-3 custom-scrollbar">
@@ -220,7 +220,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             <div className={C_MODELGOVERNANCEPANEL_3}>
                                 <IconShieldCheck className="w-6 h-6 mb-3 text-muted-foreground" />
                                 <p className="px-6 typo-body font-medium text-muted-foreground">
-                                    {t('workspaces.noAllowedModels')}
+                                    {t('frontend.workspaces.noAllowedModels')}
                                 </p>
                             </div>
                         ) : (
@@ -253,7 +253,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     <div className="flex items-center gap-3 px-1">
                         <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
                         <div className="typo-body font-medium text-destructive">
-                            {t('workspaces.blockedModels')}
+                            {t('frontend.workspaces.blockedModels')}
                         </div>
                     </div>
                     <div className="space-y-3 min-h-120 max-h-400 overflow-y-auto pr-3 custom-scrollbar">
@@ -261,7 +261,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             <div className={C_MODELGOVERNANCEPANEL_5}>
                                 <IconShieldExclamation className="w-6 h-6 mb-3 text-muted-foreground" />
                                 <p className="px-6 typo-body font-medium text-muted-foreground">
-                                    {t('workspaces.noBlockedModels')}
+                                    {t('frontend.workspaces.noBlockedModels')}
                                 </p>
                             </div>
                         ) : (

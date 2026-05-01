@@ -19,6 +19,7 @@ vi.mock('@/features/chat/components/message/AssistantLogo', () => ({
 
 vi.mock('@/features/chat/components/message/MarkdownContent', () => ({
     MessageBubbleContent: () => null,
+    MarkdownContent: () => null,
 }));
 
 vi.mock('@/features/chat/components/message/MessageActions', () => ({

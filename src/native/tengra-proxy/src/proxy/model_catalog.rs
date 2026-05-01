@@ -176,9 +176,9 @@ fn get_catalog() -> &'static Vec<ModelInfo> {
                 id: "gpt-5.5",
                 provider: "codex",
                 owned_by: "openai",
-                created: 1_767_225_600,//will be updated
-                context_length: 1_050_000,//will be updated
-                max_completion_tokens: 128_000,//will be updated
+                created: 1_767_225_600,         //will be updated
+                context_length: 1_050_000,      //will be updated
+                max_completion_tokens: 128_000, //will be updated
                 thinking_levels: &["minimal", "low", "medium", "high"],
             },
             ModelInfo {
@@ -207,42 +207,6 @@ fn get_catalog() -> &'static Vec<ModelInfo> {
                 context_length: 400_000,
                 max_completion_tokens: 128_000,
                 thinking_levels: &["low", "medium", "high", "xhigh"],
-            },
-            ModelInfo {
-                id: "gpt-5.2-codex",
-                provider: "codex",
-                owned_by: "openai",
-                created: 1_757_894_400,
-                context_length: 400_000,
-                max_completion_tokens: 128_000,
-                thinking_levels: &["low", "medium", "high", "xhigh"],
-            },
-            ModelInfo {
-                id: "gpt-5.1-codex-max",
-                provider: "codex",
-                owned_by: "openai",
-                created: 1_757_894_400,
-                context_length: 400_000,
-                max_completion_tokens: 128_000,
-                thinking_levels: &["low", "medium", "high", "xhigh"],
-            },
-            ModelInfo {
-                id: "gpt-5.2",
-                provider: "codex",
-                owned_by: "openai",
-                created: 1_757_894_400,
-                context_length: 400_000,
-                max_completion_tokens: 128_000,
-                thinking_levels: &["low", "medium", "high", "xhigh"],
-            },
-            ModelInfo {
-                id: "gpt-5.1-codex-mini",
-                provider: "codex",
-                owned_by: "openai",
-                created: 1_757_894_400,
-                context_length: 400_000,
-                max_completion_tokens: 128_000,
-                thinking_levels: &["medium", "high"],
             },
             // Copilot
             ModelInfo {

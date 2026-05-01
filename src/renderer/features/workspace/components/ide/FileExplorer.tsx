@@ -337,7 +337,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
     if (loading) {
         return (
             <div className="p-4 typo-caption text-muted-foreground">
-                {t('workspaceDashboard.loadingFiles')}
+                {t('frontend.workspaceDashboard.loadingFiles')}
             </div>
         );
     }
@@ -354,7 +354,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
             ))}
             {rootNodes.length === 0 && (
                 <div className="p-4 typo-caption text-muted-foreground text-center">
-                    {t('workspaceDashboard.emptyDir')}
+                    {t('frontend.workspaceDashboard.emptyDir')}
                 </div>
             )}
         </div>

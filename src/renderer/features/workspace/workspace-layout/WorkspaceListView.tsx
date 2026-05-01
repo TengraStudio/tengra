@@ -42,13 +42,13 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
             <div className="grid grid-cols-todo gap-3 px-4 py-3 bg-muted/20 typo-caption font-semibold text-muted-foreground">
                 <div />
                 <button onClick={() => toggleSort('title')} className="flex items-center gap-1 text-left hover:text-foreground transition-colors">
-                    {t('workspaces.tableName')} <IconArrowsSort className="w-3 h-3" />
+                    {t('frontend.workspaces.tableName')} <IconArrowsSort className="w-3 h-3" />
                 </button>
-                <div>{t('workspaces.tablePath')}</div>
+                <div>{t('frontend.workspaces.tablePath')}</div>
                 <button onClick={() => toggleSort('updatedAt')} className="flex items-center gap-1 text-left hover:text-foreground transition-colors">
-                    {t('workspaces.tableUpdated')} <IconArrowsSort className="w-3 h-3" />
+                    {t('frontend.workspaces.tableUpdated')} <IconArrowsSort className="w-3 h-3" />
                 </button>
-                <div className="text-right">{t('workspaces.tableActions')}</div>
+                <div className="text-right">{t('frontend.workspaces.tableActions')}</div>
             </div>
             <Virtuoso
                 className="h-520"
@@ -68,10 +68,10 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
                                 void handleSelectWorkspace(workspace);
                             }}
                             className="text-left min-w-0"
-                            title={workspace.description || t('workspaces.noDescription')}
+                            title={workspace.description || t('frontend.workspaces.noDescription')}
                         >
                             <div className="font-medium truncate">{workspace.title}</div>
-                            <div className="typo-caption text-muted-foreground truncate">{workspace.description || t('workspaces.noDescription')}</div>
+                            <div className="typo-caption text-muted-foreground truncate">{workspace.description || t('frontend.workspaces.noDescription')}</div>
                         </button>
                         <div className="typo-caption text-muted-foreground truncate font-mono">{workspace.path}</div>
                         <div className="typo-caption text-muted-foreground">
@@ -83,7 +83,7 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
                                     void handleSelectWorkspace(workspace);
                                 }}
                                 className="p-2 rounded-md hover:bg-muted/30"
-                                title={t('workspace.openTitle')}
+                                title={t('frontend.workspace.openTitle')}
                             >
                                 <IconFolderOpen className="w-4 h-4" />
                             </button>
@@ -96,7 +96,7 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
                                 title={
                                      workspace.status === 'archived'
                                         ? t('common.unarchive')
-                                        : t('workspaces.archiveWorkspace')
+                                        : t('frontend.workspaces.archiveWorkspace')
                                  }
                             >
                                 <IconArchive className="w-4 h-4" />
@@ -111,8 +111,8 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
             {workspaces.length === 0 && (
                 <div className="py-12 text-center border-t border-border/20">
                     <IconDeviceDesktop className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">{t('workspaces.noWorkspaces')}</p>
-                    <p className="typo-caption text-muted-foreground/50 mt-1">{t('workspaces.startNewWorkspace')}</p>
+                    <p className="text-muted-foreground font-medium">{t('frontend.workspaces.noWorkspaces')}</p>
+                    <p className="typo-caption text-muted-foreground/50 mt-1">{t('frontend.workspaces.startNewWorkspace')}</p>
                 </div>
             )}
         </div>

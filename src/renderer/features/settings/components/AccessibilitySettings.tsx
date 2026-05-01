@@ -104,10 +104,10 @@ export const AccessibilitySettings: React.FC = () => {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-foreground">
-                            {t('settings.accessibility.title')}
+                            {t('frontend.settings.accessibility.title')}
                         </h2>
                         <p className="typo-body text-muted-foreground font-bold opacity-70">
-                            {t('settings.accessibility.description')}
+                            {t('frontend.settings.accessibility.description')}
                         </p>
                     </div>
                 </div>
@@ -126,32 +126,32 @@ export const AccessibilitySettings: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SettingRow
                     icon={<IconContrast />}
-                    label={t('settings.accessibility.highContrast')}
-                    description={t('settings.accessibility.highContrastDesc')}
+                    label={t('frontend.settings.accessibility.highContrast')}
+                    description={t('frontend.settings.accessibility.highContrastDesc')}
                     checked={settings.highContrast}
                     onChange={toggleHighContrast}
                 />
 
                 <SettingRow
                     icon={<IconEye />}
-                    label={t('settings.accessibility.reducedMotion')}
-                    description={t('settings.accessibility.reducedMotionDesc')}
+                    label={t('frontend.settings.accessibility.reducedMotion')}
+                    description={t('frontend.settings.accessibility.reducedMotionDesc')}
                     checked={settings.reducedMotion}
                     onChange={() => updateSettings({ reducedMotion: !settings.reducedMotion })}
                 />
 
                 <SettingRow
                     icon={<IconFocus />}
-                    label={t('settings.accessibility.enhancedFocus')}
-                    description={t('settings.accessibility.enhancedFocusDesc')}
+                    label={t('frontend.settings.accessibility.enhancedFocus')}
+                    description={t('frontend.settings.accessibility.enhancedFocusDesc')}
                     checked={settings.enhancedFocusIndicators}
                     onChange={toggleEnhancedFocus}
                 />
 
                 <SettingRow
                     icon={<IconVolume />}
-                    label={t('settings.accessibility.screenReader')}
-                    description={t('settings.accessibility.screenReaderDesc')}
+                    label={t('frontend.settings.accessibility.screenReader')}
+                    description={t('frontend.settings.accessibility.screenReaderDesc')}
                     checked={settings.screenReaderAnnouncements}
                     onChange={checked => updateSettings({ screenReaderAnnouncements: checked })}
                 />
@@ -166,11 +166,11 @@ export const AccessibilitySettings: React.FC = () => {
                             <IconShield className="w-4 h-4" />
                         </div>
                         <h4 className="typo-body font-bold text-foreground">
-                            {t('settings.accessibility.systemPrefs')}
+                            {t('frontend.settings.accessibility.systemPrefs')}
                         </h4>
                     </div>
                     <p className="typo-body text-muted-foreground font-medium leading-relaxed relative z-10 opacity-80">
-                        {t('settings.accessibility.systemPrefsDesc')}
+                        {t('frontend.settings.accessibility.systemPrefsDesc')}
                     </p>
                 </div>
 
@@ -181,30 +181,30 @@ export const AccessibilitySettings: React.FC = () => {
                             <IconCommand className="w-4 h-4" />
                         </div>
                         <h4 className="typo-body font-bold text-foreground">
-                            {t('settings.accessibility.shortcuts')}
+                            {t('frontend.settings.accessibility.shortcuts')}
                         </h4>
                     </div>
                     <div className="space-y-3 px-1">
                         {[
                             {
-                                key: t('settings.accessibility.shortcutTab'),
-                                action: t('settings.accessibility.tabNav'),
+                                key: t('frontend.settings.accessibility.shortcutTab'),
+                                action: t('frontend.settings.accessibility.tabNav'),
                             },
                             {
-                                key: t('settings.accessibility.shortcutShiftTab'),
-                                action: t('settings.accessibility.tabNavBack'),
+                                key: t('frontend.settings.accessibility.shortcutShiftTab'),
+                                action: t('frontend.settings.accessibility.tabNavBack'),
                             },
                             {
-                                key: t('settings.accessibility.shortcutEnterSpace'),
-                                action: t('settings.accessibility.activate'),
+                                key: t('frontend.settings.accessibility.shortcutEnterSpace'),
+                                action: t('frontend.settings.accessibility.activate'),
                             },
                             {
-                                key: t('settings.accessibility.shortcutEscape'),
-                                action: t('settings.accessibility.escape'),
+                                key: t('frontend.settings.accessibility.shortcutEscape'),
+                                action: t('frontend.settings.accessibility.escape'),
                             },
                             {
-                                key: t('settings.accessibility.shortcutArrowKeys'),
-                                action: t('settings.accessibility.arrowNav'),
+                                key: t('frontend.settings.accessibility.shortcutArrowKeys'),
+                                action: t('frontend.settings.accessibility.arrowNav'),
                             },
                         ].map(({ key, action }, i) => (
                             <div

@@ -58,10 +58,11 @@ export function buildOpenAIBody(
         temperature?: number;
         systemMode?: SystemMode;
         reasoningEffort?: string;
+        metadata?: Record<string, RuntimeValue>;
     },
     normalizeModelName: (model: string, provider?: string) => string
 ): Record<string, RuntimeValue> {
-    const { model, tools, provider, stream = false, n = 1, temperature, systemMode, reasoningEffort } = options;
+    const { model, tools, provider, stream = false, n = 1, temperature, systemMode, reasoningEffort, metadata } = options;
     const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
     const finalModel = normalizeModelName(model, provider);
 
@@ -74,6 +75,7 @@ export function buildOpenAIBody(
     applyReasoningEffort(body, finalModel, systemMode, reasoningEffort);
     applyStreamOptions(body, stream, provider);
     applyOptionalOpenAIParams(body, n, provider, temperature);
+    if (metadata) { body.metadata = metadata; }
     applyTools(body, tools);
 
     return body;

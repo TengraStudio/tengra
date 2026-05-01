@@ -142,7 +142,7 @@ export function SettingsPage({
         };
 
         if (!validateSettingsPayload(resetPayload)) {
-            setStatusMessage('errors.unexpected');
+            setStatusMessage('frontend.errors.unexpected');
             recordSettingsPageHealthEvent({
                 channel: 'settings.factoryReset',
                 status: 'validation-failure',
@@ -161,7 +161,7 @@ export function SettingsPage({
             });
             window.location.reload();
         } catch {
-            setStatusMessage('errors.unexpected');
+            setStatusMessage('frontend.errors.unexpected');
             recordSettingsPageHealthEvent({
                 channel: 'settings.factoryReset',
                 status: 'failure',
@@ -227,8 +227,8 @@ export function SettingsPage({
                         {searchQuery && (
                             <div className="settings-shell-note mb-4 px-3 py-2 text-sm font-medium text-primary/70">
                                 {filteredTabs.length > 0
-                                    ? t('settings.searchResults', { count: filteredTabs.length })
-                                    : t('settings.noResults')}
+                                    ? t('frontend.settings.searchResults', { count: filteredTabs.length })
+                                    : t('frontend.settings.noResults')}
                             </div>
                         )}
 
@@ -286,7 +286,7 @@ export function SettingsPage({
                                 </div>
                             )) : (
                                 <div className="rounded-xl border border-dashed border-border/50 bg-muted/5 px-4 py-8 text-center text-sm text-muted-foreground">
-                                    {t('settings.noResults')}
+                                    {t('frontend.settings.noResults')}
                                 </div>
                             )}
                         </div>
@@ -299,10 +299,10 @@ export function SettingsPage({
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="space-y-2">
                                     <h2 className="text-3xl font-bold text-foreground">
-                                        {activeNavigationItem?.label ?? t('settings.title')}
+                                        {activeNavigationItem?.label ?? t('frontend.settings.title')}
                                     </h2>
                                     <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground/70">
-                                        {t('settings.subtitle')}
+                                        {t('frontend.settings.subtitle')}
                                     </p>
                                 </div>
                             </div>
@@ -333,11 +333,11 @@ export function SettingsPage({
                                 </div>
                             ) : settingsUiState === 'failure' ? (
                                 <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-6 text-sm text-destructive">
-                                    {t('errors.unexpected')} ({lastErrorCode ?? settingsPageErrorCodes.saveFailed})
+                                    {t('frontend.errors.unexpected')} ({lastErrorCode ?? settingsPageErrorCodes.saveFailed})
                                 </div>
                             ) : settings === null || ((searchQuery && !isActiveTabVisible) || hasInvalidSearchQuery) ? (
                                 <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 p-8">
-                                    <p className="text-sm text-muted-foreground">{t('settings.noResults')}</p>
+                                    <p className="text-sm text-muted-foreground">{t('frontend.settings.noResults')}</p>
                                 </div>
                             ) : (
                                 <div className="settings-section h-full overflow-y-auto pr-2">
@@ -360,8 +360,8 @@ export function SettingsPage({
                 isOpen={showResetConfirm}
                 onClose={() => setShowResetConfirm(false)}
                 onConfirm={() => { void handleFactoryReset(); }}
-                title={t('settings.factoryReset')}
-                message={t('settings.factoryResetConfirm')}
+                title={t('frontend.settings.factoryReset')}
+                message={t('frontend.settings.factoryResetConfirm')}
                 confirmLabel={t('common.reset')}
                 variant="danger"
             />

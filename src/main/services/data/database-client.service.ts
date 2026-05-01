@@ -181,8 +181,7 @@ export class DatabaseClientService extends BaseService {
                 throw new Error('Failed to discover or start db-service');
             }
 
-            // Wait for health check
-            await this.waitForHealth();
+            // discoverOrStartService validates health before returning.
 
             // Listen for service restarts
             this.processManager.on(`${SERVICE_NAME}:ready`, (newPort: number) => {
@@ -216,7 +215,7 @@ export class DatabaseClientService extends BaseService {
             this.logInfo(`Port ${this.servicePort} is occupied. Checking health...`);
             try {
                 const health = await this.getHealth();
-                if (health.success && health.data?.status === 'healthy') {
+                if (this.isCompatibleHealthyResponse(health)) {
                     this.logInfo('Existing db-service is healthy.');
                     return this.servicePort;
                 }
@@ -228,11 +227,8 @@ export class DatabaseClientService extends BaseService {
         }
 
         // Start new service
-        this.logInfo(`Ensuring port ${this.servicePort} and service processes are free...`);
-        await Promise.all([
-            this.processManager.killProcessByName('tengra-db-service'),
-            this.processManager.killProcessOnPort(this.servicePort)
-        ]);
+        this.logInfo(`Ensuring port ${this.servicePort} is free...`);
+        await this.processManager.killProcessOnPort(this.servicePort);
 
         this.logInfo(`Starting db-service on fixed port ${this.servicePort}...`);
         const dbDir = this.dataService.getPath('db');
@@ -245,6 +241,19 @@ export class DatabaseClientService extends BaseService {
             persistent: true,
         });
 
+        // Wait for port to open before health check to avoid ECONNREFUSED logs
+        let portOpen = false;
+        for (let i = 0; i < 10; i++) {
+            portOpen = await this.isPortOpen(this.servicePort);
+            if (portOpen) break;
+            await delay(200);
+        }
+
+        if (!portOpen) {
+            this.logError(`Port ${this.servicePort} never opened after starting db-service`);
+            return null;
+        }
+
         // Wait for health check (max 10s)
         try {
             await this.waitForHealth();
@@ -253,6 +262,23 @@ export class DatabaseClientService extends BaseService {
             this.logError('Timed out waiting for db-service to become healthy on port 42000');
             return null;
         }
+    }
+
+    private isCompatibleHealthyResponse(response: DbApiResponse<DbHealthResponse>): boolean {
+        if (!response.success || response.data?.status !== 'healthy') {
+            return false;
+        }
+
+        const runningVersion = response.data.version?.trim();
+        const expectedVersion = app.getVersion?.().trim();
+        if (runningVersion && expectedVersion && runningVersion !== expectedVersion) {
+            this.logWarn(
+                `Existing db-service version ${runningVersion} does not match app ${expectedVersion}; restarting.`
+            );
+            return false;
+        }
+
+        return true;
     }
 
     /**

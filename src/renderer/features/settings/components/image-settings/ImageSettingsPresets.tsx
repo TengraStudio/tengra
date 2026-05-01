@@ -67,10 +67,10 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/presets:text-primary transition-colors">
-                            {t('settings.images.presetsTitle')}
+                            {t('frontend.settings.images.presetsTitle')}
                         </h3>
                         <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
-                            {presetEntries.length} {t('settings.images.savedPresets')}
+                            {presetEntries.length} {t('frontend.settings.images.savedPresets')}
                         </p>
                     </div>
                 </div>
@@ -83,7 +83,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                         <Input
                             value={presetName}
                             onChange={event => setPresetName(event.target.value)}
-                            placeholder={t('settings.images.presetName')}
+                            placeholder={t('frontend.settings.images.presetName')}
                             className={C_IMAGESETTINGSPRESETS_3}
                         />
                     </div>
@@ -92,7 +92,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                         <Input
                             value={presetPromptPrefix}
                             onChange={event => setPresetPromptPrefix(event.target.value)}
-                            placeholder={t('settings.images.promptPrefix')}
+                            placeholder={t('frontend.settings.images.promptPrefix')}
                             className={C_IMAGESETTINGSPRESETS_4}
                         />
                     </div>
@@ -102,7 +102,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     className={C_IMAGESETTINGSPRESETS_5}
                 >
                     <IconPlus className="w-4 h-4" />
-                    {t('settings.images.savePreset')}
+                    {t('frontend.settings.images.savePreset')}
                 </Button>
             </div>
 
@@ -110,7 +110,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                 {presetEntries.length === 0 ? (
                     <div className={C_IMAGESETTINGSPRESETS_6}>
                         <p className="typo-body font-bold text-muted-foreground px-6">
-                            {t('settings.images.noPresets')}
+                            {t('frontend.settings.images.noPresets')}
                         </p>
                     </div>
                 ) : (
@@ -153,7 +153,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                 <textarea
                     value={presetShareCode}
                     onChange={event => setPresetShareCode(event.target.value)}
-                    placeholder={t('settings.images.presetShareCodePlaceholder')}
+                    placeholder={t('frontend.settings.images.presetShareCodePlaceholder')}
                     className={C_IMAGESETTINGSPRESETS_9}
                 />
                 <Button
@@ -161,7 +161,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     className={C_IMAGESETTINGSPRESETS_10}
                 >
                     <IconDownload className="w-3.5 h-3.5" />
-                    {t('settings.images.importPresetShare')}
+                    {t('frontend.settings.images.importPresetShare')}
                 </Button>
             </div>
 

@@ -69,6 +69,7 @@ export async function persistToolExecutionMetadata(options: {
     reasoning?: string;
     images?: string[];
     sources?: string[];
+    onMessageUpdate?: (updates: Partial<Message>) => void;
 }): Promise<void> {
     const {
         chatId,
@@ -84,6 +85,7 @@ export async function persistToolExecutionMetadata(options: {
         reasoning,
         images,
         sources,
+        onMessageUpdate,
     } = options;
     if (toolCalls.length === 0) {
         return;
@@ -131,6 +133,7 @@ export async function persistToolExecutionMetadata(options: {
             content: content ?? existing?.content ?? '',
         })),
     }));
+    onMessageUpdate?.(updates);
 
     await persistAssistantMessage(assistantId, chatId, updates);
 }
@@ -166,16 +169,16 @@ export async function completeDirectImageMessage(options: {
     );
 
     if (!toolResult || typeof toolResult !== 'object') {
-        throw new Error(t('chat.error'));
+        throw new Error(t('frontend.chat.error'));
     }
 
     if (!toolResult.success) {
-        throw new Error(toolResult.error ?? t('chat.error'));
+        throw new Error(toolResult.error ?? t('frontend.chat.error'));
     }
 
     const images = readToolResultImages(toolResult);
     if (images.length === 0) {
-        throw new Error(t('chat.imageGenerationNoImages'));
+        throw new Error(t('frontend.chat.imageGenerationNoImages'));
     }
 
     const responseTime = Math.round(performance.now() - startedAt);

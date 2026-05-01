@@ -93,6 +93,7 @@ import { NetworkService } from '@main/services/system/network.service';
 import { PowerManagerService } from '@main/services/system/power-manager.service';
 import { ProcessService } from '@main/services/system/process.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { AuditLogService } from '@main/services/system/audit-log.service';
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { RuntimeHealthService } from '@main/services/system/runtime-health.service';
 import { RuntimeManifestService } from '@main/services/system/runtime-manifest.service';
@@ -114,6 +115,7 @@ import { TerminalSmartService } from '@main/services/workspace/terminal-smart.se
 import type { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { 
     initDeferredServices, 
+    markDeferredStartupServices,
     registerServiceGroups,
     startCriticalHealthChecks,
 } from '@main/startup/service-lifecycle';
@@ -201,6 +203,7 @@ export interface Services {
     updateService: UpdateService;
     localeService: LocaleService;
     codeLanguageService: CodeLanguageService;
+    auditLogService: AuditLogService;
 
     healthCheckService: HealthCheckService;
     fileManagementService: FileManagementService;
@@ -315,6 +318,9 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
         registerLazyProxies,
     });
 
+    // Keep heavy services off the first interactive path; they are initialized after load.
+    markDeferredStartupServices(container);
+
     // Start critical services in parallel using the updated Container.init()
     await container.init();
     
@@ -352,6 +358,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 
     container.register('networkService', () => new NetworkService());
     container.register('eventBusService', () => new EventBusService());
+    container.register('auditLogService', () => new AuditLogService());
     // Runtime services are now part of the minimal set
     container.register('utilityProcessService', () => new UtilityProcessService());
 
@@ -607,18 +614,20 @@ function registerLLMServices() {
                 configService: args[1] as ConfigService,
                 keyRotationService: args[2] as KeyRotationService,
                 settingsService: args[3] as SettingsService,
-                proxyService: args[4] as ProxyService,
-                tokenService: args[5] as TokenService,
-                huggingFaceService: args[6] as HuggingFaceService,
-                fallbackService: args[7] as ModelFallbackService,
-                cacheService: args[8] as ResponseCacheService,
-                llamaService: args[9] as LlamaService
+                authService: args[4] as AuthService,
+                proxyService: args[5] as ProxyService,
+                tokenService: args[6] as TokenService,
+                huggingFaceService: args[7] as HuggingFaceService,
+                fallbackService: args[8] as ModelFallbackService,
+                cacheService: args[9] as ResponseCacheService,
+                llamaService: args[10] as LlamaService
             }),
         [
             'httpService',
             'configService',
             'keyRotationService',
             'settingsService',
+            'authService',
             'proxyService',
             'tokenService',
             'huggingFaceService',
@@ -1074,6 +1083,7 @@ function buildServicesMap(
         utilityProcessService: container.resolve<UtilityProcessService>('utilityProcessService'),
         cacheService: container.resolve<CacheService>('cacheService'),
         codeLanguageService: container.resolve<CodeLanguageService>('codeLanguageService'),
+        auditLogService: container.resolve<AuditLogService>('auditLogService'),
         embeddingService: container.resolve<EmbeddingService>('embeddingService'),
         dockerService: createLazyServiceDependency<DockerService>('dockerService'),
 

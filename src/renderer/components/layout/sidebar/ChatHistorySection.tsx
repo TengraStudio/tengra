@@ -92,7 +92,7 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
                 <div className="flex items-center gap-2 mb-2 px-1">
                     <IconHistory className="w-3.5 h-3.5 text-muted-foreground/60" />
                     <span className="text-sm font-bold text-muted-foreground/60">
-                        {t('sidebar.history')}
+                        {t('frontend.sidebar.history')}
                     </span>
                     {chats.length > 0 && (
                         <span className="ml-auto text-sm text-muted-foreground/40">
@@ -123,7 +123,7 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
                             }
                         }}
                         className="w-full bg-muted/20 border border-primary/30 typo-caption rounded-md px-2 py-1 outline-none"
-                        placeholder={t('sidebar.newFolderPlaceholder')}
+                        placeholder={t('frontend.sidebar.newFolderPlaceholder')}
                     />
                 </div>
             )}
@@ -151,10 +151,10 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
 
 const groupChatsByDate = (chatsToGroup: Chat[], t: (key: string) => string) => {
     const groups: Record<string, Chat[]> = {
-        [t('dateGroups.today')]: [],
-        [t('dateGroups.yesterday')]: [],
-        [t('dateGroups.lastWeek')]: [],
-        [t('dateGroups.older')]: [],
+        [t('frontend.dateGroups.today')]: [],
+        [t('frontend.dateGroups.yesterday')]: [],
+        [t('frontend.dateGroups.lastWeek')]: [],
+        [t('frontend.dateGroups.older')]: [],
     };
 
     const now = new Date();
@@ -164,13 +164,13 @@ const groupChatsByDate = (chatsToGroup: Chat[], t: (key: string) => string) => {
     chatsToGroup.forEach(chat => {
         const date = new Date(chat.createdAt).getTime();
         if (date >= today) {
-            groups[t('dateGroups.today')].push(chat);
+            groups[t('frontend.dateGroups.today')].push(chat);
         } else if (date >= yesterday) {
-            groups[t('dateGroups.yesterday')].push(chat);
+            groups[t('frontend.dateGroups.yesterday')].push(chat);
         } else if (date >= today - 7 * 86400000) {
-            groups[t('dateGroups.lastWeek')].push(chat);
+            groups[t('frontend.dateGroups.lastWeek')].push(chat);
         } else {
-            groups[t('dateGroups.older')].push(chat);
+            groups[t('frontend.dateGroups.older')].push(chat);
         }
     });
 
@@ -229,7 +229,7 @@ const ChatListContent: React.FC<{
                         <div className="mb-4 space-y-1">
                             <div className="px-2 text-sm font-bold text-muted-foreground/30 flex items-center gap-2">
                                 <IconPin className="w-3 h-3" />
-                                <span>{t('sidebar.pinned')}</span>
+                                <span>{t('frontend.sidebar.pinned')}</span>
                             </div>
                             {pinnedChats.map(chat => (
                                 <ChatListItem

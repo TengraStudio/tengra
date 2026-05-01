@@ -56,13 +56,17 @@ export function registerServiceGroups(registrations: ServiceGroupRegistrations):
 
 export async function initializeContainerSafely(container: ContainerLike): Promise<void> {
     // Mark non-critical services for deferred initialization
-    container.markDeferred(DEFERRED_SERVICE_NAMES);
+    markDeferredStartupServices(container);
 
     try {
         await container.init();
     } catch (error) {
         appLogger.error('Startup', `Container initialization failed partially: ${error}`);
     }
+}
+
+export function markDeferredStartupServices(container: ContainerLike): void {
+    container.markDeferred(DEFERRED_SERVICE_NAMES);
 }
 
 /**
@@ -83,6 +87,8 @@ export async function initDeferredServices(container: ContainerLike): Promise<vo
 const DEFERRED_SERVICE_NAMES: string[] = [
     // Heavy Workspace Services
     'terminalService',
+    'terminalProfileService',
+    'terminalSmartService',
     'gitService',
     'lspService',
     'dockerService',
@@ -96,6 +102,7 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'copilotService',
     'proxyService',
     'proxyProcessManager',
+    'proxyCore',
     'backgroundModelResolver',
 
     // Analysis & monitoring
@@ -121,12 +128,19 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'modelCollaborationService',
     'inlineSuggestionService',
     'promptTemplatesService',
+    'modelRegistryDeps',
     'modelRegistryService',
+    'modelSelectionService',
     
     // Agent services
     'agentService',
+    'councilCapabilityService',
+    'sessionModuleRegistryService',
+    'chatSessionRegistryService',
+    'sessionDirectoryService',
     
     // Workspace & external
+    'mcpDeps',
     'marketplaceService',
     'mcpPluginService',
     'socialMediaService',

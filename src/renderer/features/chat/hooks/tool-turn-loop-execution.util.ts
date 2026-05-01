@@ -17,7 +17,7 @@ import {
     isLowSignalProgressContent,
 } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import type { Dispatch, SetStateAction } from 'react';
+import type { SetStateAction } from 'react';
 
 import { compactToolCallsForDisplay } from '@/features/chat/components/message/tool-call-display.util';
 import { chatStream } from '@/lib/chat-stream';
@@ -30,7 +30,7 @@ import {
     updateChatInStore, 
     updateMessageInStore 
 } from '@/store/chat.store';
-import { Chat, Message, ToolCall, ToolDefinition } from '@/types';
+import { Message, ToolCall, ToolDefinition } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import {
@@ -107,7 +107,7 @@ function buildInFlightToolProgressMessage(
     if (uniqueNames.length === 0) {
         return '';
     }
-    const translatedPrefix = t('tools.usingTool');
+    const translatedPrefix = t('frontend.tools.usingTool');
     const prefix = translatedPrefix && translatedPrefix !== 'tools.usingTool'
         ? translatedPrefix
         : 'Using tool';
@@ -237,12 +237,19 @@ function updateInFlightToolProgress(params: {
     assistantId: string;
     toolCallsHistory: ToolCall[];
     toolEvidenceState: ReturnType<typeof createToolEvidenceState>;
+    onStreamingUpdate?: (update: Partial<Message>) => void;
 }) {
-    const { chatId, assistantId, toolCallsHistory, toolEvidenceState } = params;
+    const { chatId, assistantId, toolCallsHistory, toolEvidenceState, onStreamingUpdate } = params;
     const stored = buildStoredToolResults(toolCallsHistory, toolEvidenceState.toolMessages);
+    const updatedMsgPart = { toolCalls: compactToolCallsForDisplay(toolCallsHistory) ?? [], toolResults: stored };
+
+    if (onStreamingUpdate) {
+        onStreamingUpdate(updatedMsgPart);
+    }
+
     updateChatInStore(chatId, {
-        messages: (getChatSnapshot().chats.find(c => c.id === chatId)?.messages || []).map((m: Message) => 
-            m.id === assistantId ? { ...m, toolCalls: compactToolCallsForDisplay(toolCallsHistory) ?? m.toolCalls, toolResults: stored } : m
+        messages: (getChatSnapshot().chats.find(c => c.id === chatId)?.messages || []).map((m: Message) =>
+            m.id === assistantId ? { ...m, ...updatedMsgPart } : m
         ),
     });
 }
@@ -255,17 +262,18 @@ function summarizeIteration(params: {
     toolCallsHistory: ToolCall[];
     activeWorkspacePath: string | undefined;
     t: (key: string, options?: Record<string, unknown>) => string;
+    onStreamingUpdate?: (update: Partial<Message>) => void;
 }) {
-    const { toolEvidenceState, validExecutableToolCalls, chatId, assistantId, toolCallsHistory, activeWorkspacePath, t } = params;
+    const { toolEvidenceState, validExecutableToolCalls, chatId, assistantId, toolCallsHistory, activeWorkspacePath, t, onStreamingUpdate } = params;
     rememberToolCalls(toolEvidenceState, validExecutableToolCalls);
     updateInFlightToolProgress({
-        chatId, assistantId, toolCallsHistory, toolEvidenceState,
+        chatId, assistantId, toolCallsHistory, toolEvidenceState, onStreamingUpdate
     });
     return executeBatchToolCalls({
         toolCalls: validExecutableToolCalls, workspacePath: activeWorkspacePath, t, chatId,
         accumulatedMessages: toolEvidenceState.toolMessages, executeToolCall: (tc, wp, tr, cid) => executeToolCall(tc, wp, tr, readToolResultImages, cid),
         onToolProgress: () => updateInFlightToolProgress({
-            chatId, assistantId, toolCallsHistory, toolEvidenceState,
+            chatId, assistantId, toolCallsHistory, toolEvidenceState, onStreamingUpdate
         }),
     });
 }
@@ -287,6 +295,7 @@ interface ExecuteToolTurnLoopParams {
     systemMode: 'thinking' | 'agent' | 'fast';
     intentClassification: AiIntentClassification;
     confirmAntigravityCreditUsage?: (model: string, provider: string) => Promise<boolean>;
+    onStreamingUpdate?: (update: Partial<Message>) => void;
 }
 
 interface ModelTurnResult {
@@ -320,6 +329,7 @@ async function performModelTurn(params: {
     activeWorkspacePath?: string;
     fullOptions: Record<string, RendererDataValue>;
     iteration: number;
+    onStreamingUpdate?: (update: Partial<Message>) => void;
 }): Promise<ModelTurnResult> {
     const {
         currentMessages, activeModel, tools, toolsAllowed, selectedProvider,
@@ -355,7 +365,7 @@ async function performModelTurn(params: {
                 setStreamingState(chatId, updater[chatId] as StreamingState);
             }
         },
-        setChats: setChats as Dispatch<SetStateAction<Chat[]>>,
+        setChats,
         streamStartTime,
         activeModel,
         selectedProvider,
@@ -367,6 +377,7 @@ async function performModelTurn(params: {
         initialReasonings: [...reasonings],
         initialContent: accumulatedContent,
         initialToolCalls: [...toolCallsHistory],
+        onMessageUpdate: params.onStreamingUpdate,
     });
 
     const streamDuration = Math.round(performance.now() - streamStartTime);
@@ -456,7 +467,7 @@ async function handleTurnConclusion(params: {
     } = loopParams;
 
     if (
-        shouldRecoverFromLowSignalFinalContent(assistantContent, toolEvidenceState.toolMessages)
+        shouldRecoverFromLowSignalFinalContent(assistantContent, toolEvidenceState.toolMessages, turnResult.finalReasoning)
         && lowSignalRecoveryCount < 1
     ) {
         const deterministicFallback = buildDeterministicAnswerFromEvidence(
@@ -491,7 +502,7 @@ async function handleTurnConclusion(params: {
     }
 
     if (
-        shouldRecoverFromLowSignalFinalContent(assistantContent, toolEvidenceState.toolMessages)
+        shouldRecoverFromLowSignalFinalContent(assistantContent, toolEvidenceState.toolMessages, turnResult.finalReasoning)
         && lowSignalRecoveryCount >= 1
     ) {
         appLogger.warn('useChatGenerator', `[${traceId}] Low-signal recovery limit reached, forcing finalize`);
@@ -504,6 +515,7 @@ async function handleTurnConclusion(params: {
         model: activeModel, intentClassification, language, reasonings,
         content: finalContent,
         reasoning: turnResult.finalReasoning,
+        onMessageUpdate: loopParams.onStreamingUpdate,
     });
     return { shouldBreak: true, lowSignalRecoveryCount, noProgressToolTurnCount, wasSafetyBreak: false };
 }
@@ -541,6 +553,82 @@ function processTurnToolCalls(params: {
     return { toolSignature, lastToolSignature, repeatedToolSignatureCount, recentToolSignatures };
 }
 
+interface ProcessInvalidToolArgumentsParams {
+    executableToolCalls: ToolCall[];
+    tools: ToolDefinition[];
+    toolEvidenceState: ReturnType<typeof createToolEvidenceState>;
+    assistantId: string;
+    chatId: string;
+    selectedProvider: string;
+    activeModel: string;
+    turnDisplayContent: string;
+    turnToolCalls: ToolCall[];
+    reasonings: string[];
+    noProgressToolTurnCount: number;
+    malformedToolCallCount: number;
+    currentMessages: Message[];
+    lastAssistantMessage: Message | null;
+    onStreamingUpdate?: (update: Partial<Message>) => void;
+}
+
+function processInvalidToolArguments(params: ProcessInvalidToolArgumentsParams) {
+    const {
+        executableToolCalls, tools, toolEvidenceState,
+        assistantId, chatId, selectedProvider, activeModel,
+        turnDisplayContent, turnToolCalls, reasonings,
+        noProgressToolTurnCount: initialNoProgressCount,
+        malformedToolCallCount: initialMalformedCount,
+        currentMessages: initialMessages,
+        lastAssistantMessage
+    } = params;
+
+    let noProgressToolTurnCount = initialNoProgressCount;
+    let malformedToolCallCount = initialMalformedCount;
+    let currentMessages = initialMessages;
+    let wasSafetyBreak = false;
+    let shouldContinue = false;
+
+    const invalidToolResults = executableToolCalls
+        .map(tc => {
+            const missing = findMissingRequiredArgument(tc, tools);
+            return missing ? buildInvalidToolResultMessage(tc, missing) : null;
+        })
+        .filter((m): m is Message => m !== null);
+
+    const validExecutableToolCalls = executableToolCalls.filter(tc => !invalidToolResults.some(m => m.toolCallId === tc.id));
+
+    if (invalidToolResults.length > 0) {
+        appendToolMessages(toolEvidenceState, invalidToolResults);
+        noProgressToolTurnCount++;
+        malformedToolCallCount += invalidToolResults.length;
+
+        if (malformedToolCallCount >= 3) {
+            wasSafetyBreak = true;
+        } else {
+            currentMessages = [
+                ...buildModelConversation(initialMessages, lastAssistantMessage ?? buildAssistantMessage({
+                    id: assistantId, content: turnDisplayContent, provider: selectedProvider,
+                    model: activeModel, turnToolCalls, reasonings,
+                }), invalidToolResults),
+                { id: generateId(), role: 'system', content: 'Missing required arguments. Fix and retry.', timestamp: new Date() },
+            ];
+
+            if (validExecutableToolCalls.length === 0) {
+                shouldContinue = true;
+            }
+        }
+    }
+
+    return {
+        validExecutableToolCalls,
+        noProgressToolTurnCount,
+        malformedToolCallCount,
+        currentMessages,
+        wasSafetyBreak,
+        shouldContinue
+    };
+}
+
 export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Promise<string> {
     const {
         initialMessages, chatId, assistantId, activeModel, selectedProvider,
@@ -571,13 +659,14 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
     let lastToolFamily = '';
     let consecutiveSameFamilyTurns = 0;
     const traceId = `${chatId.slice(0, 8)}:${assistantId.slice(0, 8)}`;
+    const modelContext = { assistantId, chatId, selectedProvider, activeModel, intentClassification, t, language, reasonings, assistantId_str: assistantId };
 
     while (toolIterations < toolLoopBudget.maxModelTurns) {
         if (currentMessages.length === 0) {
             break;
         }
         const toolsAllowed = executedToolTurnCount < toolLoopBudget.maxExecutedToolTurns;
-        
+
         if (confirmAntigravityCreditUsage && !(await confirmAntigravityCreditUsage(activeModel, selectedProvider))) {
             wasSafetyBreak = true;
             break;
@@ -586,6 +675,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         const turnResult = await performModelTurn({
             ...params, currentMessages, toolsAllowed, reasonings, accumulatedContent,
             toolCallsHistory, traceId, iteration: toolIterations + 1,
+            onStreamingUpdate: params.onStreamingUpdate,
         });
 
         const { turnToolCalls, turnDisplayContent } = turnResult;
@@ -617,38 +707,30 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 assistantId, chatId, provider: selectedProvider,
                 model: activeModel, callMap: toolEvidenceState.toolCallMap,
                 messages: toolEvidenceState.toolMessages, intentClassification, t, language, reasonings,
+                onMessageUpdate: params.onStreamingUpdate,
             });
             break;
         }
 
-        const invalidToolResults = executableToolCalls
-            .map(tc => {
-                const missing = findMissingRequiredArgument(tc, tools);
-                return missing ? buildInvalidToolResultMessage(tc, missing) : null;
-            })
-            .filter((m): m is Message => m !== null);
-        const validExecutableToolCalls = executableToolCalls.filter(tc => !invalidToolResults.some(m => m.toolCallId === tc.id));
+        const validationResult = processInvalidToolArguments({
+            executableToolCalls, tools, toolEvidenceState,
+            assistantId, chatId, selectedProvider, activeModel,
+            turnDisplayContent, turnToolCalls, reasonings,
+            noProgressToolTurnCount, malformedToolCallCount,
+            currentMessages, lastAssistantMessage,
+            onStreamingUpdate: params.onStreamingUpdate,
+        });
 
-        if (invalidToolResults.length > 0) {
-            appendToolMessages(toolEvidenceState, invalidToolResults);
-            lastToolResults = invalidToolResults;
-            noProgressToolTurnCount++;
-            malformedToolCallCount += invalidToolResults.length;
-            if (malformedToolCallCount >= 3) {
-                wasSafetyBreak = true;
-                break;
-            }
-            currentMessages = [
-                ...buildModelConversation(currentMessages, lastAssistantMessage ?? buildAssistantMessage({
-                    id: assistantId, content: turnDisplayContent, provider: selectedProvider,
-                    model: activeModel, turnToolCalls, reasonings,
-                }), invalidToolResults),
-                { id: generateId(), role: 'system', content: 'Missing required arguments. Fix and retry.', timestamp: new Date() },
-            ];
+        ({ noProgressToolTurnCount, malformedToolCallCount, currentMessages, wasSafetyBreak } = validationResult);
+        const { validExecutableToolCalls } = validationResult;
+
+        if (validationResult.shouldContinue) {
             toolIterations++;
-            if (validExecutableToolCalls.length === 0) {
-                continue;
-            }
+            continue;
+        }
+
+        if (wasSafetyBreak) {
+            break;
         }
 
         const sigInfo = processTurnToolCalls({
@@ -687,7 +769,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             rememberToolCalls(toolEvidenceState, validExecutableToolCalls);
             lastToolResults = repeatedToolResults;
             updateInFlightToolProgress({
-                chatId, assistantId, toolCallsHistory, toolEvidenceState,
+                chatId, assistantId, toolCallsHistory, toolEvidenceState, onStreamingUpdate: params.onStreamingUpdate
             });
 
             const hasSuccessfulEvidence = hasSuccessfulToolEvidence(toolEvidenceState.toolMessages);
@@ -723,6 +805,11 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                     messages: deduplicateMessages([...visibleChats.messages, finalAssistantMessage])
                 });
             }
+            params.onStreamingUpdate?.({
+                content: finalAssistantMessage.content,
+                reasonings: finalAssistantMessage.reasonings,
+                toolCalls: finalAssistantMessage.toolCalls,
+            });
             currentMessages = [
                 ...buildModelConversation(currentMessages, assistantMsg, repeatedToolResults),
                 {
@@ -770,7 +857,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
 
         const { toolResults, generatedImages } = await summarizeIteration({
             toolEvidenceState, validExecutableToolCalls, chatId, assistantId, 
-            toolCallsHistory, activeWorkspacePath, t,
+            toolCallsHistory, activeWorkspacePath, t, onStreamingUpdate: params.onStreamingUpdate
         });
         lastToolResults = toolResults;
         executedToolTurnCount++;
@@ -799,7 +886,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 result: turnResult, assistantId, chatId, images: generatedImages, calls: executableToolCalls,
                 results: toolResults, provider: selectedProvider, model: activeModel,
                 callMap: toolEvidenceState.toolCallMap, messages: toolEvidenceState.toolMessages,
-                intentClassification, language,
+                intentClassification, language, onMessageUpdate: params.onStreamingUpdate,
             });
             break;
         }
@@ -831,7 +918,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             currentMessages, activeModel, selectedProvider, fullOptions, activeWorkspacePath, systemMode,
             intentClassification, chatId, workspaceId, currentAssistantId: assistantId,
             accumulatedToolCallMap: toolEvidenceState.toolCallMap, accumulatedToolMessages: toolEvidenceState.toolMessages,
-            evidenceRecords: toolEvidenceState.evidenceRecords, t, language,
+            evidenceRecords: toolEvidenceState.evidenceRecords, t, language, onMessageUpdate: params.onStreamingUpdate,
         }, { lowSignalContentThreshold: TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD });
     }
     return assistantId;

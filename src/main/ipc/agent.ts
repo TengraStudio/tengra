@@ -145,6 +145,14 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
     /**
      * Get the built-in and user-defined templates library
      */
+    ipcMain.handle('agent:get-templates-library', createValidatedIpcHandler('agent:get-templates-library', async (event): Promise<z.infer<typeof AgentDefinitionSchema>[]> => {
+        validateSender(event);
+        return await agentService.getAgentTemplatesLibrary();
+    }, {
+        defaultValue: [],
+        responseSchema: z.array(AgentDefinitionSchema),
+        wrapResponse: true
+    }));
 
     /**
      * Validate an agent template before creation

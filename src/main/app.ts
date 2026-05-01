@@ -44,6 +44,9 @@ const GLOBAL_STATE = {
     latestResult: null as RuntimeBootstrapExecutionResult | null
 };
 
+export const isIpcRegistered = () => GLOBAL_STATE.ipcRegistered;
+export const isSystemReady = () => GLOBAL_STATE.isReady;
+
 // Handle unhandled rejections and exceptions globally
 process.on('unhandledRejection', (reason, promise) => {
     appLogger.error('Main', 'Unhandled Promise Rejection', {
@@ -76,6 +79,12 @@ type CertificateErrorDetails = [
 function recordStartupPhase(services: Services, event: StartupMetricEvent): void {
     services?.performanceService?.recordStartupEvent(event);
 }
+
+type WindowLifecycleFlags = {
+    readyToShow: boolean;
+    didFinishLoad: boolean;
+    didFailLoad: boolean;
+};
 
 async function initializeDeferredCoreFeatures(services: Services): Promise<void> {
     const startupTasks = [
@@ -126,25 +135,23 @@ app.on('certificate-error', (event: ElectronEvent, _webContents: WebContents, ur
     handleCertificateError(event, url, callback);
 });
 
-app.commandLine.appendSwitch('js-flags', isDev ? '--max-old-space-size=4096' : '--max-old-space-size=2048');
+app.commandLine.appendSwitch(
+    'js-flags',
+    isDev
+        ? '--max-old-space-size=1536 --max-semi-space-size=16'
+        : '--max-old-space-size=768 --max-semi-space-size=8'
+);
 app.commandLine.appendSwitch('disable-site-isolation-trials');
-app.commandLine.appendSwitch('disable-background-timer-throttling', 'false');
-app.commandLine.appendSwitch('disable-renderer-backgrounding', 'false');
+app.commandLine.appendSwitch('renderer-process-limit', isDev ? '6' : '3');
 if (!isDev) {
-    app.commandLine.appendSwitch('enable-low-end-device-mode');
     app.commandLine.appendSwitch('process-per-site');
 }
 
 // Graphics: Fix for EGL/OpenGL initialization errors on Windows
-if (process.platform === 'win32') {
+if (process.platform === 'win32' && process.env.TENGRA_SAFE_GPU_MODE === 'true') {
     app.commandLine.appendSwitch('use-gl', 'angle');
     app.commandLine.appendSwitch('use-angle', 'd3d11');
-    app.commandLine.appendSwitch('ignore-gpu-blocklist');
-    app.commandLine.appendSwitch('disable-gpu-driver-bug-workarounds');
-    app.commandLine.appendSwitch('disable-gpu-sandbox');
     app.commandLine.appendSwitch('disable-features', 'Vulkan');
-    app.commandLine.appendSwitch('disable-es3-gl-context');
-    app.commandLine.appendSwitch('disable-gpu-memory-buffer-video-frames');
 }
 
 // Performance: Hardware acceleration selection
@@ -199,12 +206,12 @@ app.whenReady().then(async () => {
         const windows = BrowserWindow.getAllWindows();
         for (const win of windows) {
             if (!win.isDestroyed() && win.webContents) {
-                // Throttle frame rate to 10fps to save CPU/GPU
-                win.webContents.setFrameRate(10);
+                win.webContents.setFrameRate(5);
+                win.webContents.setBackgroundThrottling(true);
 
                 // Forces memory cleanup if usage is significant
                 const memory = process.memoryUsage();
-                if (memory.heapUsed > 400 * 1024 * 1024) {
+                if (memory.heapUsed > 256 * 1024 * 1024) {
                     // Try to trigger V8 to be more aggressive
                     win.webContents.invalidate();
                 }
@@ -216,8 +223,8 @@ app.whenReady().then(async () => {
         const windows = BrowserWindow.getAllWindows();
         for (const win of windows) {
             if (!win.isDestroyed() && win.webContents) {
-                // Restore full performance (60fps+)
                 win.webContents.setFrameRate(60);
+                win.webContents.setBackgroundThrottling(false);
             }
         }
     });
@@ -244,48 +251,105 @@ app.whenReady().then(async () => {
     // Register Protocols
     registerProtocols(allowedFileRoots);
     let backgroundInitPromise: Promise<unknown> | null = null;
-
-
-    // 3. Create Window IMMEDIATELY (with loading screen)
-    createWindow(settingsService);
     const ipcModulePromise = import('@main/startup/ipc');
+    let services: Services | null = null;
+    const windowLifecycleFlags: WindowLifecycleFlags = {
+        readyToShow: false,
+        didFinishLoad: false,
+        didFailLoad: false,
+    };
+    let deferredTasksStarted = false;
+    let postInteractiveTasksStarted = false;
 
-    const mainWindow = getMainWindow();
-    if (mainWindow) {
-        if (shouldShowSplash) {
-            const onReadyToShow = () => {
-                appLogger.info('Main', 'MainWindow ready-to-show, closing splash');
-                closeSplashWindow();
-                const win = getMainWindow();
-                if (win) {
-                    win.off('ready-to-show', onReadyToShow);
-                }
-            };
-            mainWindow.once('ready-to-show', onReadyToShow);
-
-            mainWindow.webContents.once('did-fail-load', () => {
-                appLogger.warn('Main', 'MainWindow failed to load, closing splash');
-                closeSplashWindow();
-            });
-        }
-    }
-
-    // Safety: Ensure splash closes even if ready-to-show never fires
-    setTimeout(() => {
-        if (shouldShowSplashWindow()) {
-            appLogger.warn('Main', 'Ready-to-show timeout reached, forcing splash close');
-            closeSplashWindow();
-            const win = getMainWindow();
-            if (win && !win.isVisible()) {
-                win.show();
+    const runDeferredStartupTasks = () => {
+        if (deferredTasksStarted) { return; }
+        deferredTasksStarted = true;
+        void Promise.resolve(backgroundInitPromise).then(async () => {
+            if (!services) {
+                return;
             }
-        }
-    }, 7000); // 7s safety margin
+            recordStartupPhase(services, 'deferredStartTime');
+            await initializeDeferredCoreFeatures(services);
+            const { registerDeferredIpcHandlers, registerPostStartupIpcHandlers } = await ipcModulePromise;
+            registerPostStartupIpcHandlers(services, getMainWindow);
+            await registerDeferredIpcHandlers(services, getMainWindow);
+
+            // Initialize deferred (non-critical) services (now includes runtime bootstrap)
+            await startDeferredServices();
+            recordStartupPhase(services, 'deferredServicesReadyTime');
+
+            if (runtimeStartupDecisions.embeddedProxy.shouldStart) {
+                void services.proxyService
+                    .startEmbeddedProxy()
+                    .catch((e: unknown) => appLogger.error('Main', `Proxy Init Failed: ${getErrorMessage(e)}`));
+            }
+
+            await services.localAIService.maybeStartOllama().catch((error: unknown) => {
+                appLogger.warn('Main', `Headless Ollama auto-start failed: ${getErrorMessage(error)}`);
+            });
+            const { startOllama } = await import('@main/startup/ollama');
+            void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
+
+            const openedMainWindow = getMainWindow();
+            if (openedMainWindow) {
+                services.updateService.init(openedMainWindow);
+            }
+        }).catch(error => {
+            appLogger.error('Main', 'Deferred startup tasks failed', error as Error);
+        });
+    };
+
+    const runPostInteractiveTasks = () => {
+        if (postInteractiveTasksStarted) { return; }
+        postInteractiveTasksStarted = true;
+        void Promise.resolve(ipcModulePromise).then(({ registerPostInteractiveIpcHandlers }) => {
+            if (!services) {
+                return;
+            }
+            registerPostInteractiveIpcHandlers(services, getMainWindow);
+        }).catch(error => {
+            appLogger.error('Main', 'Post-interactive startup tasks failed', error as Error);
+        });
+    };
+
+    const closeSplashOnce = (() => {
+        let splashClosed = false;
+        return (reason: 'ready-to-show' | 'did-finish-load' | 'did-fail-load') => {
+            if (!shouldShowSplash || splashClosed) {
+                return;
+            }
+            splashClosed = true;
+            appLogger.info('Main', `Closing splash after ${reason}`);
+            closeSplashWindow();
+        };
+    })();
+
+    const attachEarlyWindowLifecycle = (win: BrowserWindow) => {
+        win.once('ready-to-show', () => {
+            windowLifecycleFlags.readyToShow = true;
+            closeSplashOnce('ready-to-show');
+        });
+
+        win.webContents.once('did-finish-load', () => {
+            windowLifecycleFlags.didFinishLoad = true;
+            closeSplashOnce('did-finish-load');
+        });
+
+        win.webContents.once('did-fail-load', () => {
+            windowLifecycleFlags.didFailLoad = true;
+            appLogger.warn('Main', 'MainWindow failed to load, closing splash');
+            closeSplashOnce('did-fail-load');
+        });
+    };
+
+    // Create the window as early as possible and let minimal IPC handle boot-time requests.
+    const earlyWindow = createWindow(settingsService);
+    attachEarlyWindowLifecycle(earlyWindow);
 
 
     // 3. Complete full service initialization
     // PERF-010: Add a safety timeout to ensure we don't hang forever if a service init fails
-    const services = await Promise.race([
+    services = await Promise.race([
         createServices(allowedFileRoots),
         new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Startup Timeout: Services failed to initialize within 60s')), 60000)
@@ -306,12 +370,45 @@ app.whenReady().then(async () => {
         closeSplashWindow();
     } else {
         recordStartupPhase(services, 'coreServicesReadyTime');
-        recordStartupPhase(services, 'windowCreatedTime');
     }
 
     // 3. Parallel Background Initialization
     const runtimeBootstrapResult = services?.runtimeBootstrapService?.getLatestExecutionResult();
     const runtimeStartupDecisions = getRuntimeStartupDecisions(runtimeBootstrapResult);
+
+    // 4. Setup Window Event Hooks (supports windows created before full service init)
+    const setupWindowHooks = (win: BrowserWindow) => {
+        appLogger.debug('Main', 'Attaching startup hooks to main window');
+
+        win.once('ready-to-show', () => {
+            windowLifecycleFlags.readyToShow = true;
+            if (services) {
+                recordStartupPhase(services, 'readyTime');
+            }
+            if (process.env.TENGRA_BENCHMARK) {
+                appLogger.info('Benchmark', 'BENCHMARK_READY');
+                setTimeout(() => app.exit(0), 100);
+            }
+            setTimeout(runDeferredStartupTasks, 0);
+            setTimeout(runPostInteractiveTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
+        });
+
+        win.webContents.once('did-finish-load', () => {
+            windowLifecycleFlags.didFinishLoad = true;
+            services?.performanceService?.recordStartupEvent('loadTime');
+            runDeferredStartupTasks();
+            setTimeout(runPostInteractiveTasks, 0);
+        });
+
+        if (windowLifecycleFlags.readyToShow && services) {
+            recordStartupPhase(services, 'readyTime');
+        }
+        if (windowLifecycleFlags.didFinishLoad) {
+            services?.performanceService?.recordStartupEvent('loadTime');
+            runDeferredStartupTasks();
+            setTimeout(runPostInteractiveTasks, 0);
+        }
+    };
 
     // 4. Register IPC Handlers EARLY to prevent renderer hangs
     // We don't wait for the full database health check here
@@ -389,11 +486,14 @@ app.whenReady().then(async () => {
             EarlyIpc.setReady(true);
             appLogger.info('Main', 'System is fully ready. GLOBAL_STATE.isReady set to true.');
 
-            // Start proxy in background if permitted
-            if (runtimeStartupDecisions.embeddedProxy.shouldStart) {
-                void services.proxyService
-                    .startEmbeddedProxy()
-                    .catch((e: unknown) => appLogger.error('Main', `Proxy Init Failed: ${getErrorMessage(e)}`));
+            const mainWindow = getMainWindow() ?? createWindow(settingsService);
+            if (mainWindow) {
+                // Attach the lifecycle hooks (metrics, deferred tasks)
+                if (typeof setupWindowHooks === 'function') {
+                    setupWindowHooks(mainWindow);
+                }
+
+                recordStartupPhase(services, 'windowCreatedTime');
             }
         } catch (error) {
             appLogger.error('Main', 'Failed to register IPC handlers', error as Error);
@@ -438,74 +538,15 @@ app.whenReady().then(async () => {
         registerLifecycleHandlers(services.settingsService);
     }
 
-    let deferredTasksStarted = false;
-    let postInteractiveTasksStarted = false;
-
-    const runDeferredStartupTasks = () => {
-        if (deferredTasksStarted) { return; }
-        deferredTasksStarted = true;
-        void Promise.resolve(backgroundInitPromise).then(async () => {
-            if (!services) {
-                return;
-            }
-            recordStartupPhase(services, 'deferredStartTime');
-            await initializeDeferredCoreFeatures(services);
-            const { registerDeferredIpcHandlers, registerPostStartupIpcHandlers } = await ipcModulePromise;
-            registerPostStartupIpcHandlers(services, getMainWindow);
-            await registerDeferredIpcHandlers(services, getMainWindow);
-
-            // Initialize deferred (non-critical) services (now includes runtime bootstrap)
-            await services.mcpPluginService.initialize();
-            await startDeferredServices();
-            recordStartupPhase(services, 'deferredServicesReadyTime');
-
-            await services.localAIService.maybeStartOllama().catch((error: unknown) => {
-                appLogger.warn('Main', `Headless Ollama auto-start failed: ${getErrorMessage(error)}`);
-            });
-            const { startOllama } = await import('@main/startup/ollama');
-            void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
-
-            const openedMainWindow = getMainWindow();
-            if (openedMainWindow) {
-                services.updateService.init(openedMainWindow);
-            }
-        }).catch(error => {
-            appLogger.error('Main', 'Deferred startup tasks failed', error as Error);
-        });
-    };
-
-    const runPostInteractiveTasks = () => {
-        if (postInteractiveTasksStarted) { return; }
-        postInteractiveTasksStarted = true;
-        void Promise.resolve(ipcModulePromise).then(({ registerPostInteractiveIpcHandlers }) => {
-            if (!services) {
-                return;
-            }
-            registerPostInteractiveIpcHandlers(services, getMainWindow);
-        }).catch(error => {
-            appLogger.error('Main', 'Post-interactive startup tasks failed', error as Error);
-        });
-    };
-
-    const win = getMainWindow();
-    if (win) {
-        win.once('ready-to-show', () => {
-            if (services) {
-                recordStartupPhase(services, 'readyTime');
-            }
-            if (process.env.TENGRA_BENCHMARK) {
-                appLogger.info('Benchmark', 'BENCHMARK_READY');
-                setTimeout(() => app.exit(0), 100);
-            }
-            setTimeout(runDeferredStartupTasks, 0);
-            setTimeout(runPostInteractiveTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
-        });
-
-        win.webContents.once('did-finish-load', () => {
-            services?.performanceService?.recordStartupEvent('loadTime');
-            runDeferredStartupTasks();
-            setTimeout(runPostInteractiveTasks, 0);
-        });
+    // If window already exists (e.g. created during registerIpcTask), hook it now
+    const currentWin = getMainWindow();
+    if (currentWin) {
+        setupWindowHooks(currentWin);
+    } else {
+        // Wait for it to be created (we could use a Proxy or EventBus, but checking in a loop or after create is easier)
+        // Actually, the best place to hook is inside registerIpcTask right after createWindow(settingsService)
+        // I'll add a callback to createWindow or similar.
+        // For now, let's just make sure runDeferredStartupTasks still runs if window fails.
     }
 
 

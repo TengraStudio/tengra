@@ -291,8 +291,12 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
             if (action.type === 'open_file') {
                 openWorkspaceFile(action.path, action.line, action.readOnly);
             } else if (action.type === 'open_diff') {
-                wm.setDashboardTab('git');
-                window.dispatchEvent(new CustomEvent('tengra:workspace-git-open-diff', { detail: { path: action.path } }));
+                if (action.diffId) {
+                    void wm.openDiff(action.diffId);
+                } else {
+                    wm.setDashboardTab('git');
+                    window.dispatchEvent(new CustomEvent('tengra:workspace-git-open-diff', { detail: { path: action.path } }));
+                }
             }
         };
 
@@ -354,6 +358,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                         }}
                         activeTab={wm.activeTab}
                         updateTabContent={wm.updateTabContent}
+                        revertTab={wm.revertTab}
                         saveActiveTab={wm.saveActiveTab}
                         workspace={workspace}
                         handleUpdateWorkspace={handleUpdateWorkspace}

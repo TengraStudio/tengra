@@ -46,11 +46,11 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                 <img
                     src={logo}
                     className="h-7 w-7 min-w-7 object-contain"
-                    alt={t('app.name')}
+                    alt={t('frontend.app.name')}
                 />
                 {!isCollapsed && (
                     <span className="text-sm font-semibold text-foreground/90">
-                        {t('app.name')}
+                        {t('frontend.app.name')}
                     </span>
                 )}
             </div>

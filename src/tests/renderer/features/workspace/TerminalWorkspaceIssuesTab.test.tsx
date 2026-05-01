@@ -70,11 +70,11 @@ describe('TerminalWorkspaceIssuesTab', () => {
         );
 
         await waitFor(() => {
-            expect(screen.getByText('terminal.workspaceIssuesLanguageServer (1)')).toBeInTheDocument();
+            expect(screen.getByText('frontend.terminal.workspaceIssuesLanguageServer (1)')).toBeInTheDocument();
         });
 
-        expect(screen.getByText('terminal.workspaceIssuesTerminal (1)')).toBeInTheDocument();
-        expect(screen.getByText('terminal.workspaceIssuesAnnotations (1)')).toBeInTheDocument();
+        expect(screen.getByText('frontend.terminal.workspaceIssuesTerminal (1)')).toBeInTheDocument();
+        expect(screen.getByText('frontend.terminal.workspaceIssuesAnnotations (1)')).toBeInTheDocument();
         expect(screen.getByText('Type error')).toBeInTheDocument();
         expect(screen.getByText('// TODO: tighten validation')).toBeInTheDocument();
     });

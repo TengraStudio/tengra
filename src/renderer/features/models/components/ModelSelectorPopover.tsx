@@ -102,7 +102,7 @@ const ModelSelectorQuotaBanner: React.FC<{
             const percent = limit > 0 ? Math.round((remaining / limit) * 100) : 0;
 
             const isSeatBased = !!activeCopilotQuota.seat_breakdown;
-            const labelText = isSeatBased ? t('statistics.seatsStatus') : '';
+            const labelText = isSeatBased ? t('frontend.statistics.seatsStatus') : '';
 
             result.push({
                 label: labelText,
@@ -115,14 +115,14 @@ const ModelSelectorQuotaBanner: React.FC<{
             const usage = activeCodexUsage.usage;
             if (typeof usage.dailyUsedPercent === 'number') {
                 result.push({
-                    label: t('statistics.dailyStatus'),
+                    label: t('frontend.statistics.dailyStatus'),
                     percent: Math.max(0, Math.min(100, 100 - usage.dailyUsedPercent)),
                     sublabel: '24h window'
                 });
             }
             if (typeof usage.weeklyUsedPercent === 'number') {
                 result.push({
-                    label: t('statistics.weeklyStatus'),
+                    label: t('frontend.statistics.weeklyStatus'),
                     percent: Math.max(0, Math.min(100, 100 - usage.weeklyUsedPercent)),
                     sublabel: '7d window'
                 });
@@ -131,7 +131,7 @@ const ModelSelectorQuotaBanner: React.FC<{
 
         if (isClaude && activeClaudeQuota?.fiveHour) {
             result.push({
-                label: t('statistics.usageStatus'),
+                label: t('frontend.statistics.usageStatus'),
                 percent: 100 - activeClaudeQuota.fiveHour.utilization,
                 sublabel: '5h window'
             });
@@ -159,7 +159,7 @@ const ModelSelectorQuotaBanner: React.FC<{
         <div className="mx-2 mb-4 mt-1 rounded-xl border border-primary/10 bg-primary/02 px-4 py-2.5 shadow-primary-medium backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-2">
                 <IconBrain className="w-3 h-3 text-primary/50" />
-                <span className="typo-overline font-bold text-primary/40 uppercase ">{t('statistics.quotaStatus')}</span>
+                <span className="typo-overline font-bold text-primary/40 uppercase ">{t('frontend.statistics.quotaStatus')}</span>
             </div>
             <div className="space-y-3">
                 {effectiveItems.map((item, idx) => (
@@ -222,6 +222,7 @@ interface ModelSelectorPopoverProps {
     t: (key: string) => string;
     chatMode?: SelectorChatMode;
     onChatModeChange?: (mode: SelectorChatMode) => void;
+    showChatModeControls?: boolean;
     thinkingLevel?: ThinkingLevel;
     onThinkingLevelChange?: (modelId: string, level: string) => void;
 
@@ -261,40 +262,40 @@ const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps
         <div className="space-y-4">
             <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground/90">
-                    {t('workspaceAgent.permissions.commands')}
+                    {t('frontend.workspaceAgent.permissions.commands')}
                 </label>
                 <Select
                     value={permissionPolicy.commandPolicy}
                     onValueChange={value => updatePermissionPolicy('commandPolicy', value)}
                 >
                     <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
-                        <SelectValue placeholder={t('workspaceAgent.permissions.policy.blocked')} />
+                        <SelectValue placeholder={t('frontend.workspaceAgent.permissions.policy.blocked')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="blocked">{t('workspaceAgent.permissions.policy.blocked')}</SelectItem>
-                        <SelectItem value="ask-every-time">{t('workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
-                        <SelectItem value="allowlist">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
-                        <SelectItem value="full-access">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                        <SelectItem value="blocked">{t('frontend.workspaceAgent.permissions.policy.blocked')}</SelectItem>
+                        <SelectItem value="ask-every-time">{t('frontend.workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
+                        <SelectItem value="allowlist">{t('frontend.workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                        <SelectItem value="full-access">{t('frontend.workspaceAgent.permissions.policy.full-access')}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
 
             <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground/90">
-                    {t('workspaceAgent.permissions.files')}
+                    {t('frontend.workspaceAgent.permissions.files')}
                 </label>
                 <Select
                     value={permissionPolicy.pathPolicy}
                     onValueChange={value => updatePermissionPolicy('pathPolicy', value)}
                 >
                     <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
-                        <SelectValue placeholder={t('workspaceAgent.permissions.policy.workspace-root-only')} />
+                        <SelectValue placeholder={t('frontend.workspaceAgent.permissions.policy.workspace-root-only')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="workspace-root-only">{t('workspaceAgent.permissions.policy.workspace-root-only')}</SelectItem>
-                        <SelectItem value="allowlist">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
-                        <SelectItem value="restricted-off-dangerous">{t('workspaceAgent.permissions.policy.restricted-off-dangerous')}</SelectItem>
-                        <SelectItem value="full-access">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                        <SelectItem value="workspace-root-only">{t('frontend.workspaceAgent.permissions.policy.workspace-root-only')}</SelectItem>
+                        <SelectItem value="allowlist">{t('frontend.workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                        <SelectItem value="restricted-off-dangerous">{t('frontend.workspaceAgent.permissions.policy.restricted-off-dangerous')}</SelectItem>
+                        <SelectItem value="full-access">{t('frontend.workspaceAgent.permissions.policy.full-access')}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -325,6 +326,7 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
     t,
     chatMode = 'instant',
     onChatModeChange,
+    showChatModeControls = true,
     thinkingLevel = 'low',
     onThinkingLevelChange,
 
@@ -515,7 +517,7 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
                             <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                             <Input
                                 ref={searchInputRef}
-                                placeholder={t('modelSelector.searchPlaceholder')}
+                                placeholder={t('frontend.modelSelector.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 className="bg-muted/30 pl-9 border-none h-9 text-sm focus-visible:ring-1 focus-visible:ring-primary/30"
@@ -637,91 +639,92 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
                         )}
                     </div>
                     {/* Advanced Logic & Safety Configuration Footer */}
-                    <div className="px-4 py-4 border-t border-border/20 bg-background/95 backdrop-blur-xl shrink-0">
-                        <div className="flex items-center justify-center gap-6">
-                            {/* Mode Selection */}
-                            <div className="space-y-1.5 flex flex-col items-center">
-                                <Label className="typo-overline font-semibold uppercase text-muted-foreground/50 px-0.5">
-                                    {t('workspaceAgent.permissions.mode')}
-                                </Label>
-                                <Select
-                                    value={chatMode}
-                                    onValueChange={(value) => onChatModeChange?.(value as SelectorChatMode)}
-                                >
-                                    <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
-                                        <SelectValue className="text-sm" placeholder="Mode" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
-                                        {(['instant', 'thinking', 'agent'] as SelectorChatMode[]).map(mode => (
-                                            <SelectItem
-                                                key={mode}
-                                                value={mode}
-                                                className="text-sm font-medium py-2.5 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
-                                            >
-                                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {permissionPolicy && (
-                                <>
-                                    {/* Shell Protection */}
-                                    <div className="space-y-1.5">
-                                        <Label className="typo-overline font-semibold uppercase text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
-                                            <IconBolt className="w-3 h-3 opacity-40 shrink-0" />
-                                            <span className="truncate">{t('workspaceAgent.permissions.shell')}</span>
-                                        </Label>
-                                        <Select
-                                            value={permissionPolicy.commandPolicy}
-                                            onValueChange={value => {
-                                                if (isCommandPolicy(value) && _onUpdatePermissionPolicy) {
-                                                    _onUpdatePermissionPolicy({ ...permissionPolicy, commandPolicy: value });
-                                                }
-                                            }}
-                                        >
-                                            <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
-                                                <SelectValue className="text-sm" placeholder="Shell" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
-                                                <SelectItem value="blocked" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.blocked')}</SelectItem>
-                                                <SelectItem value="ask-every-time" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
-                                                <SelectItem value="allowlist" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
-                                                <SelectItem value="full-access" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Filesystem Protection */}
+                    {((showChatModeControls && onChatModeChange) || permissionPolicy) && (
+                        <div className="px-4 py-4 border-t border-border/20 bg-background/95 backdrop-blur-xl shrink-0">
+                            <div className="flex items-center justify-center gap-6">
+                                {showChatModeControls && onChatModeChange && (
                                     <div className="space-y-1.5 flex flex-col items-center">
-                                        <Label className="typo-overline font-semibold uppercase text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
-                                            <IconBrain className="w-3 h-3 opacity-40 shrink-0" />
-                                            <span className="truncate">{t('workspaceAgent.permissions.filesystem')}</span>
+                                        <Label className="typo-overline font-semibold uppercase text-muted-foreground/50 px-0.5">
+                                            {t('frontend.workspaceAgent.permissions.mode')}
                                         </Label>
                                         <Select
-                                            value={permissionPolicy.pathPolicy}
-                                            onValueChange={value => {
-                                                if (isPathPolicy(value) && _onUpdatePermissionPolicy) {
-                                                    _onUpdatePermissionPolicy({ ...permissionPolicy, pathPolicy: value });
-                                                }
-                                            }}
+                                            value={chatMode}
+                                            onValueChange={(value) => onChatModeChange(value as SelectorChatMode)}
                                         >
                                             <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
-                                                <SelectValue className="text-sm" placeholder="Files" />
+                                                <SelectValue className="text-sm" placeholder="Mode" />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
-                                                <SelectItem value="workspace-root-only" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.workspace-root-only')}</SelectItem>
-                                                <SelectItem value="allowlist" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
-                                                <SelectItem value="restricted-off-dangerous" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.restricted-off-dangerous')}</SelectItem>
-                                                <SelectItem value="full-access" className="text-sm font-medium py-2.5">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                                                {(['instant', 'thinking', 'agent'] as SelectorChatMode[]).map(mode => (
+                                                    <SelectItem
+                                                        key={mode}
+                                                        value={mode}
+                                                        className="text-sm font-medium py-2.5 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
+                                                    >
+                                                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                </>
-                            )}
+                                )}
+
+                                {permissionPolicy && (
+                                    <>
+                                        <div className="space-y-1.5">
+                                            <Label className="typo-overline font-semibold uppercase text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                                <IconBolt className="w-3 h-3 opacity-40 shrink-0" />
+                                                <span className="truncate">{t('frontend.workspaceAgent.permissions.shell')}</span>
+                                            </Label>
+                                            <Select
+                                                value={permissionPolicy.commandPolicy}
+                                                onValueChange={value => {
+                                                    if (isCommandPolicy(value) && _onUpdatePermissionPolicy) {
+                                                        _onUpdatePermissionPolicy({ ...permissionPolicy, commandPolicy: value });
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                                    <SelectValue className="text-sm" placeholder="Shell" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
+                                                    <SelectItem value="blocked" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.blocked')}</SelectItem>
+                                                    <SelectItem value="ask-every-time" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
+                                                    <SelectItem value="allowlist" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                                                    <SelectItem value="full-access" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-1.5 flex flex-col items-center">
+                                            <Label className="typo-overline font-semibold uppercase text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                                <IconBrain className="w-3 h-3 opacity-40 shrink-0" />
+                                                <span className="truncate">{t('frontend.workspaceAgent.permissions.filesystem')}</span>
+                                            </Label>
+                                            <Select
+                                                value={permissionPolicy.pathPolicy}
+                                                onValueChange={value => {
+                                                    if (isPathPolicy(value) && _onUpdatePermissionPolicy) {
+                                                        _onUpdatePermissionPolicy({ ...permissionPolicy, pathPolicy: value });
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                                    <SelectValue className="text-sm" placeholder="Files" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
+                                                    <SelectItem value="workspace-root-only" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.workspace-root-only')}</SelectItem>
+                                                    <SelectItem value="allowlist" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                                                    <SelectItem value="restricted-off-dangerous" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.restricted-off-dangerous')}</SelectItem>
+                                                    <SelectItem value="full-access" className="text-sm font-medium py-2.5">{t('frontend.workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
 

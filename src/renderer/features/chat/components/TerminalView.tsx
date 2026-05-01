@@ -110,7 +110,7 @@ function TerminalTextOutput({
                     {stdout}
                 </pre>
             )}
-            {!hasOutput && !isExecuting && <div className="text-muted-foreground">{t('tools.noOutput')}</div>}
+            {!hasOutput && !isExecuting && <div className="text-muted-foreground">{t('frontend.tools.noOutput')}</div>}
         </div>
     );
 }
@@ -150,20 +150,20 @@ export const TerminalView = React.memo(({
     const statusType = getStatusType(isExecuting, hasError);
 
     const summaryText = useMemo(() => {
-        const cmd = command.trim().length > 0 ? command.trim() : t('tools.commandUnknown');
+        const cmd = command.trim().length > 0 ? command.trim() : t('frontend.tools.commandUnknown');
         if (statusType === 'running') {
-            return t('tools.runningCommand', { command: cmd });
+            return t('frontend.tools.runningCommand', { command: cmd });
         }
         if (statusType === 'error') {
-            return t('tools.failedCommand', { command: cmd });
+            return t('frontend.tools.failedCommand', { command: cmd });
         }
-        return t('tools.ranCommand', { command: cmd });
+        return t('frontend.tools.ranCommand', { command: cmd });
     }, [command, statusType, t]);
 
     const previewText = useMemo(() => {
         const parts = [error, stderr, stdout].filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
         if (parts.length === 0) {
-            return isExecuting ? t('tools.executingCommand') : t('tools.noOutput');
+            return isExecuting ? t('frontend.tools.executingCommand') : t('frontend.tools.noOutput');
         }
         const firstLine = parts[0].trim().split(/\r?\n/)[0];
         return firstLine.length > 160 ? `${firstLine.slice(0, 160)}...` : firstLine;
@@ -185,7 +185,7 @@ export const TerminalView = React.memo(({
                     'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
                     expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
                 )}
-                aria-label={expanded ? t('chat.collapse') : t('chat.expand')}
+                aria-label={expanded ? t('frontend.chat.collapse') : t('frontend.chat.expand')}
             >
                 <div className="flex min-w-0 items-center gap-2">
                     <span className={cn('h-2 w-2 rounded-full', statusDotClass)} />
@@ -207,7 +207,7 @@ export const TerminalView = React.memo(({
                 <div className="px-3 pb-2 pt-2">
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 truncate font-mono text-sm text-muted-foreground/80">
-                            {command || t('tools.commandUnknown')}
+                            {command || t('frontend.tools.commandUnknown')}
                             {typeof exitCode === 'number' && <span className="ml-2">{`(exit ${exitCode})`}</span>}
                         </div>
                         {hasOutput && (
@@ -219,7 +219,7 @@ export const TerminalView = React.memo(({
                                     setShowFullOutput(prev => !prev);
                                 }}
                             >
-                                {showFullOutput ? t('tools.showLess') : t('tools.showMore')}
+                                {showFullOutput ? t('frontend.tools.showLess') : t('frontend.tools.showMore')}
                             </button>
                         )}
                     </div>
@@ -227,7 +227,7 @@ export const TerminalView = React.memo(({
                     {isExecuting && (
                         <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                             <IconLoader2 className="h-3 w-3 animate-spin" />
-                            <span>{t('tools.executingCommand')}</span>
+                            <span>{t('frontend.tools.executingCommand')}</span>
                             <button
                                 type="button"
                                 className="ml-auto text-sm text-destructive hover:underline"
@@ -240,9 +240,9 @@ export const TerminalView = React.memo(({
                                         }
                                     })();
                                 }}
-                                title={t('tools.forceStop')}
+                                title={t('frontend.tools.forceStop')}
                             >
-                                {t('tools.stop')}
+                                {t('frontend.tools.stop')}
                             </button>
                         </div>
                     )}

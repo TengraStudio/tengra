@@ -144,7 +144,7 @@ const HFFileCard: React.FC<{
             {isDownloading && progress.total > 0 && (
                 <div className="space-y-1">
                     <div className="flex justify-between text-sm font-bold text-primary">
-                        <span>{t('modelExplorer.downloading')}</span>
+                        <span>{t('frontend.modelExplorer.downloading')}</span>
                         <span>{Math.round((progress.received / progress.total) * 100)}%</span>
                     </div>
                     <div className="h-2 w-full bg-muted/50 rounded-full overflow-hidden">
@@ -157,14 +157,14 @@ const HFFileCard: React.FC<{
                 <div className="text-sm px-3 py-2 rounded-lg border bg-primary/10 text-primary border-primary/20">
                     {isQueued && (queuePosition ? `${t('common.pending')} #${queuePosition}` : t('common.pending'))}
                     {isStarting && `${t('common.processing')}...`}
-                    {isInstalling && `${t('workspaceAgent.toolSummary.editing')}...`}
-                    {isPaused && t('workspaceAgent.statePanel.status.paused')}
+                    {isInstalling && `${t('frontend.workspaceAgent.toolSummary.editing')}...`}
+                    {isPaused && t('frontend.workspaceAgent.statePanel.status.paused')}
                 </div>
             )}
 
             {isDownloaded && (
                 <div className="text-sm px-3 py-2 rounded-lg border bg-success/10 text-success border-success/20">
-                    {t('modelExplorer.installed')}
+                    {t('frontend.modelExplorer.installed')}
                 </div>
             )}
 
@@ -174,7 +174,7 @@ const HFFileCard: React.FC<{
                     disabled={isDownloaded || showActiveTask}
                     className="py-2 rounded-lg bg-foreground text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <span className="inline-flex items-center gap-2"><IconDownload className="w-3 h-3" /> {t('modelExplorer.downloadPackage')}</span>
+                    <span className="inline-flex items-center gap-2"><IconDownload className="w-3 h-3" /> {t('frontend.modelExplorer.downloadPackage')}</span>
                 </button>
                 {showActiveTask && (isPaused ? (
                     <button onClick={onResume} className="py-2 rounded-lg border border-border/40 text-sm font-bold">{t('common.resume')}</button>
@@ -370,17 +370,17 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             </div>
 
             <div className={cn("space-y-3 px-6 py-6 border-b border-border/50 bg-muted/30")}>
-                <div className="text-sm text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
+                <div className="text-sm text-muted-foreground">{isHF ? t('frontend.modelExplorer.sourceHuggingFace') : t('frontend.modelExplorer.ollamaLibrary')}</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedModel.description || t('modelExplorer.defaultDescription')}
+                    {selectedModel.description || t('frontend.modelExplorer.defaultDescription')}
                 </p>
                 <div className="grid grid-cols-2 gap-3 typo-caption">
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">{t('modelExplorer.provider')}</div>
+                        <div className="text-muted-foreground">{t('frontend.modelExplorer.provider')}</div>
                         <div className="font-bold">{selectedModel.provider}</div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">{t('modelExplorer.updated')}</div>
+                        <div className="text-muted-foreground">{t('frontend.modelExplorer.updated')}</div>
                         <div className="font-bold">
                             {isHF
                                 ? (hfModel?.lastModified?.split('T')[0] ?? t('common.notAvailable'))
@@ -388,7 +388,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                         </div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">{t('modelExplorer.popularity')}</div>
+                        <div className="text-muted-foreground">{t('frontend.modelExplorer.popularity')}</div>
                         <div className="font-bold">
                             {isHF
                                 ? (hfModel?.downloads ?? 0).toLocaleString()
@@ -396,7 +396,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                         </div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">{t('modelExplorer.diskRam')}</div>
+                        <div className="text-muted-foreground">{t('frontend.modelExplorer.diskRam')}</div>
                         <div className="font-bold">
                             {hfModel?.totalSize
                                 ? hfModel.totalSize
@@ -427,7 +427,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
 
                         <div className="space-y-3">
                             <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                                <IconServer className="w-4 h-4" /> {t('modelExplorer.pullVersion')}
+                                <IconServer className="w-4 h-4" /> {t('frontend.modelExplorer.pullVersion')}
                             </h3>
 
                             {loadingFiles ? (
@@ -438,7 +438,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                 <>
                                     {hfShardGroups.length > 0 && (
                                         <div className={cn("p-3", UI_PRIMITIVES.DETAILS_CARD)}>
-                                            <div className="text-sm font-bold text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
+                                            <div className="text-sm font-bold text-muted-foreground">{t('frontend.modelExplorer.shardedModelSets')}</div>
                                             {hfShardGroups.map((group) => {
                                                 const downloadedCount = group.files.filter((f) => downloadedFilePaths[f.path]).length;
                                                 const progressPct = Math.round((downloadedCount / group.totalParts) * 100);
@@ -456,7 +456,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                             disabled={downloadedCount >= group.totalParts}
                                                             className={cn('w-full py-2 rounded-lg text-sm font-bold ', downloadedCount >= group.totalParts ? 'bg-success/15 text-success border border-success/30' : 'bg-foreground text-background')}
                                                         >
-                                                            {downloadedCount >= group.totalParts ? t('modelExplorer.fullSetDownloaded') : t('modelExplorer.downloadMissingParts')}
+                                                            {downloadedCount >= group.totalParts ? t('frontend.modelExplorer.fullSetDownloaded') : t('frontend.modelExplorer.downloadMissingParts')}
                                                         </button>
                                                     </div>
                                                 );
@@ -487,7 +487,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
 
                                     {files.length === 0 && (
                                         <div className="text-center typo-caption text-muted-foreground/50 py-10 border-2 border-dashed border-border/20 rounded-2xl">
-                                            {t('modelExplorer.noCompatible')}
+                                            {t('frontend.modelExplorer.noCompatible')}
                                         </div>
                                     )}
                                 </>
@@ -505,7 +505,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
 
                         <div className="space-y-3">
                             <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                                <IconServer className="w-4 h-4" /> {t('modelExplorer.availableVersions')}
+                                <IconServer className="w-4 h-4" /> {t('frontend.modelExplorer.availableVersions')}
                             </h3>
 
                             <div className="rounded-xl border border-border/40 overflow-hidden">
@@ -514,10 +514,10 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                         <tr className="text-left">
                                             <th className="px-3 py-2">{t('common.version')}</th>
                                             <th className="px-3 py-2">{t('common.size')}</th>
-                                            <th className="px-3 py-2">{t('modelExplorer.context')}</th>
+                                            <th className="px-3 py-2">{t('frontend.modelExplorer.context')}</th>
                                             <th className="px-3 py-2">{t('common.type')}</th>
-                                            <th className="px-3 py-2">{t('modelExplorer.digest')}</th>
-                                            <th className="px-3 py-2">{t('modelExplorer.action')}</th>
+                                            <th className="px-3 py-2">{t('frontend.modelExplorer.digest')}</th>
+                                            <th className="px-3 py-2">{t('frontend.modelExplorer.action')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -555,7 +555,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                                 disabled={!!pullingOllama}
                                                                 className="px-2 py-1 rounded-md bg-foreground text-background font-bold disabled:opacity-50"
                                                             >
-                                                                {isPulling ? `${t('modelExplorer.pulling')}...` : t('modelExplorer.pullVersion')}
+                                                                {isPulling ? `${t('frontend.modelExplorer.pulling')}...` : t('frontend.modelExplorer.pullVersion')}
                                                             </button>
                                                         )}
                                                     </td>

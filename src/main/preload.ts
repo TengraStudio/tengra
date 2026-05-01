@@ -31,6 +31,7 @@ import { createFilesBridge } from './preload/domains/files.preload';
 import { createGalleryBridge } from './preload/domains/gallery.preload';
 import { createGitBridge } from './preload/domains/git.preload';
 import { createHuggingFaceBridge } from './preload/domains/huggingface.preload';
+import { createImageStudioBridge } from './preload/domains/image-studio.preload';
 import { createIpcContractBridge } from './preload/domains/ipc-contract.preload';
 import { createLazyServicesBridge } from './preload/domains/lazy-services.preload';
 import { createLinkedAccountsBridge } from './preload/domains/linked-accounts.preload';
@@ -229,6 +230,7 @@ const api = {
     userCollaboration: createLiveCollaborationBridge(ipcRenderer),
     settings: settingsBridge,
     huggingface: createHuggingFaceBridge(ipcRenderer),
+    imageStudio: createImageStudioBridge(ipcRenderer),
     export: createExportBridge(ipcRenderer),
     log: createLogBridge(ipcRenderer),
     security: createSecurityBridge(ipcRenderer),

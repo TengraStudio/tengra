@@ -91,8 +91,8 @@ export const EnhanceButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
                     ? 'bg-warning/10 text-warning'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             )}
-            title={ctrl.t('input.enhancePrompt')}
-            aria-label={ctrl.t('input.enhancePrompt')}
+            title={ctrl.t('frontend.input.enhancePrompt')}
+            aria-label={ctrl.t('frontend.input.enhancePrompt')}
         >
             <IconSparkles size={16} className={cn(isEnhancing && 'animate-spin')} aria-hidden="true" />
         </Button>
@@ -162,13 +162,13 @@ export const VoiceButton = memo(({ ctrl }: { ctrl: ControllerType }) => (
         )}
         title={
             ctrl.isListening
-                ? ctrl.t('input.stopListening')
-                : ctrl.t('input.startListening')
+                ? ctrl.t('frontend.input.stopListening')
+                : ctrl.t('frontend.input.startListening')
         }
         aria-label={
             ctrl.isListening
-                ? ctrl.t('input.stopListening')
-                : ctrl.t('input.startListening')
+                ? ctrl.t('frontend.input.stopListening')
+                : ctrl.t('frontend.input.startListening')
         }
         aria-pressed={ctrl.isListening}
     >
@@ -191,8 +191,8 @@ export const AttachButton = memo(({ onClick, ctrl }: { onClick: () => void; ctrl
         size="icon"
         onClick={onClick}
         className="h-8 w-8 rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title={ctrl.t('input.attachFile')}
-        aria-label={ctrl.t('input.attachFile')}
+        title={ctrl.t('frontend.input.attachFile')}
+        aria-label={ctrl.t('frontend.input.attachFile')}
     >
         <IconPaperclip size={16} aria-hidden="true" />
     </Button>
@@ -230,7 +230,7 @@ ComposerStateBadges.displayName = 'ComposerStateBadges';
  */
 export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
     <div className={C_CHATINPUTACTIONS_1}>
-        <span className="typo-body text-muted-foreground font-medium">{ctrl.t('input.imageCountLabel')}</span>
+        <span className="typo-body text-muted-foreground font-medium">{ctrl.t('frontend.input.imageCountLabel')}</span>
         <input
             type="number"
             min={1}
@@ -245,7 +245,7 @@ export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
                 ctrl.setImageRequestCount(Math.max(1, Math.min(5, nextValue)));
             }}
             className={C_CHATINPUTACTIONS_2}
-            aria-label={ctrl.t('input.imageCountLabel')}
+            aria-label={ctrl.t('frontend.input.imageCountLabel')}
         />
     </div>
 ));

@@ -54,7 +54,7 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
 
     return (
         <nav
-            aria-label={t('workspaceDashboard.editor.breadcrumbNav')}
+            aria-label={t('frontend.workspaceDashboard.editor.breadcrumbNav')}
             className={C_EDITORBREADCRUMB_1}
         >
             {segments.map((segment, index) => {

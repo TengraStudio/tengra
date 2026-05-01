@@ -36,14 +36,14 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
             </div>
             <div>
                 <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-semibold text-foreground tracking-tight">
-                        {t('workspaces.workspaceSettings')}
+                    <h2 className="text-sm font-semibold text-foreground ">
+                        {t('frontend.workspaces.workspaceSettings')}
                     </h2>
                     {isDirty && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary" title={t('workspaces.unsavedChanges')} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" title={t('frontend.workspaces.unsavedChanges')} />
                     )}
                 </div>
-                <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-wider">{workspaceTitle}</p>
+                <p className="text-sm text-muted-foreground/40 font-medium uppercase ">{workspaceTitle}</p>
             </div>
         </div>
 
@@ -53,7 +53,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
                 size="sm"
                 onClick={onReset}
                 disabled={!isDirty}
-                className="h-8 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
+                className="h-8 text-sm font-medium text-muted-foreground/60 hover:text-foreground"
             >
                 <IconRotate className="w-3.5 h-3.5 mr-1.5" />
                 {t('common.reset')}
@@ -62,7 +62,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
                 size="sm"
                 onClick={onSave}
                 disabled={!isDirty}
-                className="h-8 px-4 text-[11px] font-semibold transition-all hover:bg-primary/90"
+                className="h-8 px-4 text-sm font-semibold transition-all hover:bg-primary/90"
             >
                 <IconDeviceFloppy className="w-3.5 h-3.5 mr-1.5" />
                 {t('common.save')}

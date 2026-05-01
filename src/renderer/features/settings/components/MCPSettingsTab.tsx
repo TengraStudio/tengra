@@ -53,11 +53,11 @@ export const MCPSettingsTab = () => {
         <div className="h-full flex flex-col">
             {/* Header */}
             <div className="px-6 py-4 border-b border-border/40">
-                <h1 className="text-xl font-bold">{t('settings.mcp.title')}</h1>
-                <p className="text-sm text-muted-foreground">{t('settings.mcp.subtitle')}</p>
+                <h1 className="text-xl font-bold">{t('frontend.settings.mcp.title')}</h1>
+                <p className="text-sm text-muted-foreground">{t('frontend.settings.mcp.subtitle')}</p>
                 <p className={cn('mt-2 text-sm', statusTone)}>
-                    {t('settings.mcp.healthSummary', {
-                        title: t('settings.mcp.title'),
+                    {t('frontend.settings.mcp.healthSummary', {
+                        title: t('frontend.settings.mcp.title'),
                         state: healthSummary.uiState,
                         loading: t('common.loading'),
                         avg: healthSummary.avgDurationMs,

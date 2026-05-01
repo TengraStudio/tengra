@@ -14,4 +14,3 @@ pub mod model_service;
 pub mod server;
 pub mod skills;
 pub mod types;
- 

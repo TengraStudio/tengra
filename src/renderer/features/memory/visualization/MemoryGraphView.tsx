@@ -194,7 +194,7 @@ export const MemoryGraphView: React.FC = () => {
                     id: `e-${memory.id}-${relatedId}`,
                     source: memory.id,
                     target: relatedId,
-                    label: t('memory.graphEdgeRelated'),
+                    label: t('frontend.memory.graphEdgeRelated'),
                     animated: true,
                     style: { stroke: neutralEdgeColor },
                     labelStyle: { fill: mutedLabelColor, fontSize: 8 },
@@ -209,7 +209,7 @@ export const MemoryGraphView: React.FC = () => {
                     id: `c-${memory.id}-${contradictId}`,
                     source: memory.id,
                     target: contradictId,
-                    label: t('memory.graphEdgeContradicts'),
+                    label: t('frontend.memory.graphEdgeContradicts'),
                     style: { stroke: destructiveColor, strokeWidth: 2 },
                     labelStyle: { fill: destructiveColor, fontSize: 8 },
                     markerEnd: { type: MarkerType.ArrowClosed, color: destructiveColor },
@@ -228,7 +228,7 @@ export const MemoryGraphView: React.FC = () => {
                     <div className="flex flex-col items-center gap-4">
                         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                         <span className="text-sm font-medium text-muted-foreground animate-pulse">
-                            {t('memory.graphLoading')}
+                            {t('frontend.memory.graphLoading')}
                         </span>
                     </div>
                 </div>
@@ -265,9 +265,9 @@ export const MemoryGraphView: React.FC = () => {
                                 <IconNetwork className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-sm font-bold">{t('memory.graphView')}</h2>
+                                <h2 className="text-sm font-bold">{t('frontend.memory.graphView')}</h2>
                                 <p className="typo-caption text-muted-foreground">
-                                    {t('memory.graphStats', { nodes: nodes.length, edges: edges.length })}
+                                    {t('frontend.memory.graphStats', { nodes: nodes.length, edges: edges.length })}
                                 </p>
                             </div>
                         </div>
@@ -278,7 +278,7 @@ export const MemoryGraphView: React.FC = () => {
                             <button
                                 onClick={() => void loadData()}
                                 className={C_MEMORYGRAPHVIEW_1}
-                                title={t('memory.refreshTitle')}
+                                title={t('frontend.memory.refreshTitle')}
                             >
                                 <IconRotate className="w-4 h-4" />
                             </button>
@@ -290,7 +290,7 @@ export const MemoryGraphView: React.FC = () => {
                             <Input
                                 value={searchQuery}
                                 onChange={event => setSearchQuery(event.target.value)}
-                                placeholder={t('memory.searchPlaceholder')}
+                                placeholder={t('frontend.memory.searchPlaceholder')}
                                 className="h-8 bg-transparent"
                             />
                             <Select
@@ -300,10 +300,10 @@ export const MemoryGraphView: React.FC = () => {
                                 )}
                             >
                                 <SelectTrigger className="h-8 w-36 bg-transparent">
-                                    <SelectValue placeholder={t('memory.allCategories')} />
+                                    <SelectValue placeholder={t('frontend.memory.allCategories')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">{t('memory.allCategories')}</SelectItem>
+                                    <SelectItem value="all">{t('frontend.memory.allCategories')}</SelectItem>
                                     {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
                                         <SelectItem key={category} value={category}>
                                             {t(config.labelKey)}
@@ -319,7 +319,7 @@ export const MemoryGraphView: React.FC = () => {
             {!loading && nodes.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
                     <p className="rounded-lg border border-border/40 bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                        {t('memory.emptyState')}
+                        {t('frontend.memory.emptyState')}
                     </p>
                 </div>
             )}

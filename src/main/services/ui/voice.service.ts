@@ -215,7 +215,6 @@ export class VoiceService extends BaseService {
 
     override async initialize(): Promise<void> {
         this.logInfo('Initializing Voice Service...');
-        this.setupIpcHandlers();
         this.logInfo('Voice Service initialized successfully');
     }
 
@@ -279,7 +278,7 @@ export class VoiceService extends BaseService {
     }
 
     /** Remove IPC handlers */
-    private removeIpcHandlers(): void {
+    public removeIpcHandlers(): void {
         ipcMain.removeHandler('voice:get-settings');
         ipcMain.removeHandler('voice:update-settings');
         ipcMain.removeHandler('voice:get-commands');
@@ -645,7 +644,11 @@ export class VoiceService extends BaseService {
 
     // IPC Handlers (delegate to public methods)
 
-    private async handleGetSettings(): Promise<VoiceResponse> {
+    public async health(): Promise<VoiceResponse> {
+        return await this.handleHealth();
+    }
+
+    public async handleGetSettings(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:get-settings',
             async () => ({ ...this.getSettings(), uiState: 'ready' }),
@@ -653,8 +656,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleUpdateSettings(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleUpdateSettings(
+        _event: Electron.IpcMainInvokeEvent | {},
         settings: Partial<VoiceSettings>
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -668,7 +671,7 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleGetCommands(): Promise<VoiceResponse> {
+    public async handleGetCommands(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:get-commands',
             async () => {
@@ -682,8 +685,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleAddCommand(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleAddCommand(
+        _event: Electron.IpcMainInvokeEvent | {},
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -697,8 +700,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleRemoveCommand(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleRemoveCommand(
+        _event: Electron.IpcMainInvokeEvent | {},
         commandId: string
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -716,8 +719,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleUpdateCommand(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleUpdateCommand(
+        _event: Electron.IpcMainInvokeEvent | {},
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -735,8 +738,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleProcessTranscript(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleProcessTranscript(
+        _event: Electron.IpcMainInvokeEvent | {},
         transcript: string
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -766,8 +769,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleExecuteCommand(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleExecuteCommand(
+        _event: Electron.IpcMainInvokeEvent | {},
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -786,7 +789,7 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleGetVoices(): Promise<VoiceResponse> {
+    public async handleGetVoices(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:get-voices',
             async () => {
@@ -800,8 +803,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleSynthesize(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleSynthesize(
+        _event: Electron.IpcMainInvokeEvent | {},
         options: VoiceSynthesisOptions
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -819,7 +822,7 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleStopSpeaking(): Promise<VoiceResponse> {
+    public async handleStopSpeaking(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:stop-speaking',
             async () => ({ ...this.stopSpeaking(), uiState: 'ready' }),
@@ -827,8 +830,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleSetListening(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleSetListening(
+        _event: Electron.IpcMainInvokeEvent | {},
         listening: boolean
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -846,8 +849,8 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleSendEvent(
-        _event: Electron.IpcMainInvokeEvent,
+    public async handleSendEvent(
+        _event: Electron.IpcMainInvokeEvent | {},
         eventType: VoiceEventType,
         data: RuntimeValue
     ): Promise<VoiceResponse> {
@@ -864,7 +867,7 @@ export class VoiceService extends BaseService {
         );
     }
 
-    private async handleHealth(): Promise<VoiceResponse> {
+    public async handleHealth(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:health',
             async () => ({

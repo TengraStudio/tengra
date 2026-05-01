@@ -89,7 +89,7 @@ export const MessageActions = memo(
         <div
             className={C_MESSAGEACTIONS_1}
             role="toolbar"
-            aria-label={t('messageBubble.actions')}
+            aria-label={t('frontend.messageBubble.actions')}
             aria-orientation="vertical"
             onKeyDown={handleToolbarArrowNavigation}
         >
@@ -98,8 +98,8 @@ export const MessageActions = memo(
                     type="button"
                     onClick={onStop}
                     className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-primary transition-all border border-border/50 backdrop-blur-sm"
-                    title={t('messageBubble.stop')}
-                    aria-label={t('messageBubble.stop')}
+                    title={t('frontend.messageBubble.stop')}
+                    aria-label={t('frontend.messageBubble.stop')}
                 >
                     <IconVolumeOff className="w-3.5 h-3.5" />
                 </button>
@@ -108,8 +108,8 @@ export const MessageActions = memo(
                     type="button"
                     onClick={() => onSpeak?.(displayContent)}
                     className={C_MESSAGEACTIONS_2}
-                    title={t('messageBubble.speakAloud')}
-                    aria-label={t('messageBubble.speakAloud')}
+                    title={t('frontend.messageBubble.speakAloud')}
+                    aria-label={t('frontend.messageBubble.speakAloud')}
                 >
                     <IconVolume className="w-3.5 h-3.5" />
                 </button>
@@ -125,8 +125,8 @@ export const MessageActions = memo(
                     type="button"
                     onClick={onRegenerate}
                     className={C_MESSAGEACTIONS_3}
-                    title={t('messageBubble.regenerate')}
-                    aria-label={t('messageBubble.regenerate')}
+                    title={t('frontend.messageBubble.regenerate')}
+                    aria-label={t('frontend.messageBubble.regenerate')}
                 >
                     <IconRotate className="w-3.5 h-3.5" />
                 </button>
@@ -135,8 +135,8 @@ export const MessageActions = memo(
                 <button
                     type="button"
                     className={C_MESSAGEACTIONS_4}
-                    title={t('messageBubble.react')}
-                    aria-label={t('messageBubble.react')}
+                    title={t('frontend.messageBubble.react')}
+                    aria-label={t('frontend.messageBubble.react')}
                     aria-haspopup="true"
                 >
                     <IconMoodSmile className="w-3.5 h-3.5" />
@@ -144,7 +144,7 @@ export const MessageActions = memo(
                 <div
                     className={C_MESSAGEACTIONS_5}
                     role="group"
-                    aria-label={t('messageBubble.emojiReactions')}
+                    aria-label={t('frontend.messageBubble.emojiReactions')}
                 >
                     {['👍', '👎', '❤️', '🎉', '🚀'].map(emoji => (
                         <button

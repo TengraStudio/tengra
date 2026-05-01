@@ -287,7 +287,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     const handleRunComparison = useCallback(async () => {
         if (selectedCompareIds.length < 2) {
-            setActionMessage(t('settings.images.compareSelectionHint'));
+            setActionMessage(t('frontend.settings.images.compareSelectionHint'));
             return;
         }
         try {
@@ -302,7 +302,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     const handleExportComparison = useCallback(async () => {
         if (selectedCompareIds.length < 2) {
-            setActionMessage(t('settings.images.compareSelectionHint'));
+            setActionMessage(t('frontend.settings.images.compareSelectionHint'));
             return;
         }
         try {
@@ -320,7 +320,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     const handleShareComparison = useCallback(async () => {
         if (selectedCompareIds.length < 2) {
-            setActionMessage(t('settings.images.compareSelectionHint'));
+            setActionMessage(t('frontend.settings.images.compareSelectionHint'));
             return;
         }
         try {

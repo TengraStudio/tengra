@@ -53,13 +53,13 @@ export function summarizePasteText(
     const preview = text.slice(0, 500);
 
     return [
-        t('terminal.pasteTestResults'),
-        t('terminal.pasteTestLineCount', { count: lineCount }),
-        t('terminal.pasteTestCharacterCount', { count: charCount }),
-        t('terminal.pasteTestSpecialCharacters', {
+        t('frontend.terminal.pasteTestResults'),
+        t('frontend.terminal.pasteTestLineCount', { count: lineCount }),
+        t('frontend.terminal.pasteTestCharacterCount', { count: charCount }),
+        t('frontend.terminal.pasteTestSpecialCharacters', {
             value: hasSpecialChars ? t('common.yes') : t('common.no')
         }),
-        t('terminal.pasteTestAnsiCodes', { value: hasAnsi ? t('common.yes') : t('common.no') }),
+        t('frontend.terminal.pasteTestAnsiCodes', { value: hasAnsi ? t('common.yes') : t('common.no') }),
         '',
         t('common.preview') + ':',
         preview + (text.length > 500 ? t('common.ellipsis') : ''),

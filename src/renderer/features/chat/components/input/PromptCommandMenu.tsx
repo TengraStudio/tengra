@@ -39,7 +39,7 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
                 exit={{ opacity: 0, y: 10, scale: 0.98 }}
                 className={C_PROMPTCOMMANDMENU_1}
                 role="listbox"
-                aria-label={t('input.promptSuggestions')}
+                aria-label={t('frontend.input.promptSuggestions')}
                 id="chat-prompt-command-listbox"
             >
                 <div
@@ -47,7 +47,7 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
                     role="heading"
                     aria-level={3}
                 >
-                    {t('input.prompts')}
+                    {t('frontend.input.prompts')}
                 </div>
                 {prompts.map((prompt, i) => (
                     <button
@@ -59,7 +59,7 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
                                 ? 'bg-primary/10 text-primary'
                                 : 'text-foreground hover:bg-accent/40'
                         )}
-                        aria-label={t('input.usePrompt', { title: prompt.title })}
+                        aria-label={t('frontend.input.usePrompt', { title: prompt.title })}
                         aria-selected={i === selectedIndex}
                         role="option"
                     >

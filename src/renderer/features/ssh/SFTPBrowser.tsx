@@ -87,32 +87,32 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
 
     const getReconnectStateLabel = useCallback((state: ReconnectDiagnostics['state']): string => {
         if (state === 'connected') {
-            return t('ssh.reconnectStateConnected');
+            return t('frontend.ssh.reconnectStateConnected');
         }
         if (state === 'reconnecting') {
-            return t('ssh.reconnectStateReconnecting');
+            return t('frontend.ssh.reconnectStateReconnecting');
         }
-        return t('ssh.reconnectStateFailed');
+        return t('frontend.ssh.reconnectStateFailed');
     }, [t]);
 
     const getTransferDirectionLabel = useCallback((direction: TransferItem['direction']): string => {
         if (direction === 'upload') {
-            return t('ssh.transferDirectionUpload');
+            return t('frontend.ssh.transferDirectionUpload');
         }
-        return t('ssh.transferDirectionDownload');
+        return t('frontend.ssh.transferDirectionDownload');
     }, [t]);
 
     const getTransferStatusLabel = useCallback((status: TransferItem['status']): string => {
         if (status === 'queued') {
-            return t('ssh.transferStatusQueued');
+            return t('frontend.ssh.transferStatusQueued');
         }
         if (status === 'running') {
-            return t('ssh.transferStatusRunning');
+            return t('frontend.ssh.transferStatusRunning');
         }
         if (status === 'done') {
-            return t('ssh.transferStatusDone');
+            return t('frontend.ssh.transferStatusDone');
         }
-        return t('ssh.transferStatusFailed');
+        return t('frontend.ssh.transferStatusFailed');
     }, [t]);
 
     const loadFiles = useCallback(async (path: string, options?: { forceRefresh?: boolean }) => {
@@ -137,7 +137,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                     }
                 }));
             } else {
-                setError(result.error ?? t('ssh.unknownError'));
+                setError(result.error ?? t('frontend.ssh.unknownError'));
             }
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
@@ -180,7 +180,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
     };
 
     const handleDelete = async (item: SSHFile): Promise<void> => {
-        appLogger.warn('SFTPBrowser', t('ssh.confirmDeleteFile', { name: item.name }));
+        appLogger.warn('SFTPBrowser', t('frontend.ssh.confirmDeleteFile', { name: item.name }));
 
         const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
         const result = item.isDirectory
@@ -191,13 +191,13 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             clearDirectoryCache(currentPath);
             void loadFiles(currentPath);
         } else {
-            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
+            appLogger.warn('SFTPBrowser', t('frontend.ssh.connectionError', { error: result.error ?? t('frontend.ssh.unknownError') }));
         }
     };
 
     const handleMkdir = async () => {
-        const name = t('ssh.defaultNewFolderName');
-        appLogger.warn('SFTPBrowser', t('ssh.newFolderName'));
+        const name = t('frontend.ssh.defaultNewFolderName');
+        appLogger.warn('SFTPBrowser', t('frontend.ssh.newFolderName'));
 
         const path = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
         const result = await window.electron.ssh.mkdir(connectionId, path);
@@ -205,13 +205,13 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             clearDirectoryCache(currentPath);
             void loadFiles(currentPath);
         } else {
-            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
+            appLogger.warn('SFTPBrowser', t('frontend.ssh.connectionError', { error: result.error ?? t('frontend.ssh.unknownError') }));
         }
     };
 
     const handleRename = async (item: SSHFile) => {
         const newName = item.name; // Replaced prompt with original name
-        appLogger.warn('SFTPBrowser', t('ssh.newName'));
+        appLogger.warn('SFTPBrowser', t('frontend.ssh.newName'));
 
         const oldPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
         const newPath = currentPath === '/' ? `/${newName}` : `${currentPath}/${newName}`;
@@ -221,7 +221,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             clearDirectoryCache(currentPath);
             void loadFiles(currentPath);
         } else {
-            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
+            appLogger.warn('SFTPBrowser', t('frontend.ssh.connectionError', { error: result.error ?? t('frontend.ssh.unknownError') }));
         }
     };
 
@@ -240,7 +240,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             status: 'queued',
         };
         setTransferItems(previous => [...previous, queued]);
-        setEditorStatus(t('ssh.downloadTriggered', { name: item.name }));
+        setEditorStatus(t('frontend.ssh.downloadTriggered', { name: item.name }));
     };
 
     const handleUpload = async () => {
@@ -254,7 +254,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         const baseRemotePath = currentPath === '/' ? `/${filename}` : `${currentPath}/${filename}`;
         const hasConflict = files.some(file => !file.isDirectory && file.name === filename);
         if (hasConflict && conflictPolicy === 'skip') {
-            setEditorStatus(t('ssh.uploadSkippedConflict'));
+            setEditorStatus(t('frontend.ssh.uploadSkippedConflict'));
             return;
         }
         const remotePath = hasConflict && conflictPolicy === 'rename'
@@ -285,12 +285,12 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         setLatencyMs(Date.now() - startedAt);
         if (!result.success) {
             enqueueSave(remotePath, content);
-            setEditorStatus(t('ssh.editorQueuedSave'));
+            setEditorStatus(t('frontend.ssh.editorQueuedSave'));
             setIsSaving(false);
             return false;
         }
         setSavedContent(content);
-        setEditorStatus(t('ssh.editorSaved'));
+        setEditorStatus(t('frontend.ssh.editorSaved'));
         setIsSaving(false);
         return true;
     }, [connectionId, enqueueSave, t]);
@@ -301,7 +301,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         }
         const isConnected = await window.electron.ssh.isConnected(connectionId);
         if (!isConnected) {
-            setEditorStatus(t('ssh.editorQueuedDisconnected', { count: saveQueue.length }));
+            setEditorStatus(t('frontend.ssh.editorQueuedDisconnected', { count: saveQueue.length }));
             return;
         }
         const queueCopy = [...saveQueue];
@@ -328,7 +328,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         if (!result.success) {
             setTransferItems(previous =>
                 previous.map(item =>
-                    item.id === next.id ? { ...item, status: 'failed', error: result.error ?? t('ssh.unknownError') } : item
+                    item.id === next.id ? { ...item, status: 'failed', error: result.error ?? t('frontend.ssh.unknownError') } : item
                 )
             );
             return;
@@ -350,14 +350,14 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         const readResult = await window.electron.ssh.readFile(connectionId, remotePath);
         setLatencyMs(Date.now() - startedAt);
         if (!readResult.success) {
-            setEditorStatus(t('ssh.editorOpenFailed'));
+            setEditorStatus(t('frontend.ssh.editorOpenFailed'));
             return;
         }
         const content = readResult.content ?? '';
         setSelectedFilePath(remotePath);
         setEditorContent(content);
         setSavedContent(content);
-        setEditorStatus(t('ssh.editorOpened'));
+        setEditorStatus(t('frontend.ssh.editorOpened'));
     }, [connectionId, t]);
 
     useEffect(() => {
@@ -418,7 +418,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                     setReconnectDiagnostics(previous => ({
                         ...previous,
                         state: 'failed',
-                        lastError: reconnectResult.error ?? t('ssh.unknownError'),
+                        lastError: reconnectResult.error ?? t('frontend.ssh.unknownError'),
                     }));
                 } catch (error) {
                     setReconnectDiagnostics(previous => ({
@@ -441,7 +441,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                 try {
                     const result = await window.electron.ssh.listDir(connectionId, currentPath) as ServiceResponse<SSHFile[]>;
                     if (!result.success) {
-                        throw new Error(result.error ?? t('ssh.unknownError'));
+                        throw new Error(result.error ?? t('frontend.ssh.unknownError'));
                     }
                     const nextFiles = result.data ?? [];
                     const signature = nextFiles
@@ -461,7 +461,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                     }
                     watcherTimerRef.current = setTimeout(() => {
                         refreshDirectory(true);
-                        setEditorStatus(t('ssh.refresh'));
+                        setEditorStatus(t('frontend.ssh.refresh'));
                     }, Math.max(350, Math.floor(dynamicDebounceMs / 2)));
                     setWatcherUnavailable(false);
                 } catch {
@@ -481,18 +481,18 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         <div className="sftp-browser flex-1 flex bg-background text-foreground/90">
             <div className="flex-1 flex flex-col">
             <div className="browser-toolbar p-2 border-b border-border/50 flex gap-2 items-center bg-muted/20">
-                <button onClick={handleBack} disabled={currentPath === '/'} className="px-2 py-1">← {t('ssh.back')}</button>
+                <button onClick={handleBack} disabled={currentPath === '/'} className="px-2 py-1">← {t('frontend.ssh.back')}</button>
                 <div className="flex-1 truncate typo-body">
                     {currentPath}
                 </div>
-                <button onClick={() => void handleMkdir()} className="px-2 py-1">+ {t('ssh.newFolder')}</button>
+                <button onClick={() => void handleMkdir()} className="px-2 py-1">+ {t('frontend.ssh.newFolder')}</button>
                 <button
                     onClick={() => {
                         refreshDirectory(true);
                     }}
                     className="px-2 py-1"
                 >
-                    ↻ {t('ssh.refresh')}
+                    ↻ {t('frontend.ssh.refresh')}
                 </button>
                 <label className="typo-caption flex items-center gap-1">
                     <input
@@ -500,24 +500,24 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                         checked={watcherEnabled}
                         onChange={event => setWatcherEnabled(event.target.checked)}
                     />
-                    {t('ssh.watch')}
+                    {t('frontend.ssh.watch')}
                 </label>
             </div>
             {(watcherUnavailable || reconnectDiagnostics.state !== 'connected') && (
                 <div className="px-2 py-1 typo-caption border-b border-border/40 bg-muted/20">
                     <div>
-                        {t('ssh.reconnectStatus', {
+                        {t('frontend.ssh.reconnectStatus', {
                             state: getReconnectStateLabel(reconnectDiagnostics.state),
                             attempts: reconnectDiagnostics.attempts
                         })}
                         {reconnectDiagnostics.lastReconnectAt
-                            ? ` ${t('ssh.reconnectLast', { time: new Date(reconnectDiagnostics.lastReconnectAt).toLocaleTimeString() })}`
+                            ? ` ${t('frontend.ssh.reconnectLast', { time: new Date(reconnectDiagnostics.lastReconnectAt).toLocaleTimeString() })}`
                             : ''}
                     </div>
                     {reconnectDiagnostics.lastError && <div className="text-destructive">{reconnectDiagnostics.lastError}</div>}
                     {watcherUnavailable && (
                         <button className="secondary-btn typo-caption mt-1" onClick={() => refreshDirectory(true)}>
-                            {t('ssh.refresh')}
+                            {t('frontend.ssh.refresh')}
                         </button>
                     )}
                 </div>
@@ -525,25 +525,25 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
 
             {loading ? (
                 <div className="flex items-center justify-center h-48 text-muted-foreground">
-                    {t('ssh.loading')}
+                    {t('frontend.ssh.loading')}
                 </div>
             ) : error ? (
                 <div className="flex items-center justify-center h-48 text-destructive">
-                    {t('ssh.connectionError', { error })}
+                    {t('frontend.ssh.connectionError', { error })}
                 </div>
             ) : files.length === 0 ? (
                 <div className="flex items-center justify-center h-48 text-muted-foreground">
-                    {t('ssh.noFiles')}
+                    {t('frontend.ssh.noFiles')}
                 </div>
             ) : (
                 <div className="file-list flex-1 overflow-y-auto">
                     <table className="w-full border-collapse text-left text-sm">
                         <thead className="sticky top-0 bg-muted/50 backdrop-blur-sm shadow-sm">
                             <tr>
-                                <th className="p-2">{t('ssh.fileName')}</th>
-                                <th className="p-2">{t('ssh.fileSize')}</th>
-                                <th className="p-2">{t('ssh.fileDate')}</th>
-                                <th className="p-2">{t('ssh.fileActions')}</th>
+                                <th className="p-2">{t('frontend.ssh.fileName')}</th>
+                                <th className="p-2">{t('frontend.ssh.fileSize')}</th>
+                                <th className="p-2">{t('frontend.ssh.fileDate')}</th>
+                                <th className="p-2">{t('frontend.ssh.fileActions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -564,7 +564,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                                     </td>
                                     <td className="p-2">
                                         {!file.isDirectory && file.size
-                                            ? t('ssh.fileSizeKilobytes', { size: (file.size / 1024).toFixed(1) })
+                                            ? t('frontend.ssh.fileSizeKilobytes', { size: (file.size / 1024).toFixed(1) })
                                             : t('common.notAvailable')}
                                     </td>
                                     <td className="p-2 text-sm opacity-60">
@@ -583,9 +583,9 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             )}
             </div>
             <div className="w-96 border-l border-border/40 p-3 space-y-2 bg-muted/10">
-                <div className="typo-caption font-semibold">{t('ssh.remoteEditor')}</div>
+                <div className="typo-caption font-semibold">{t('frontend.ssh.remoteEditor')}</div>
                 <div className="typo-caption text-muted-foreground">
-                    {t('ssh.editorLatency', { latency: latencyMs, debounce: dynamicDebounceMs })}
+                    {t('frontend.ssh.editorLatency', { latency: latencyMs, debounce: dynamicDebounceMs })}
                 </div>
                 {selectedFilePath ? (
                     <>
@@ -596,27 +596,27 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                             className="w-full h-80 typo-caption p-2 rounded border border-border/40 bg-background"
                         />
                         <div className="typo-caption text-muted-foreground">
-                            {isSaving ? t('ssh.editorSaving') : editorStatus}
+                            {isSaving ? t('frontend.ssh.editorSaving') : editorStatus}
                         </div>
                         {saveQueue.length > 0 && (
                             <div className="typo-caption text-warning">
-                                {t('ssh.editorQueuedCount', { count: saveQueue.length })}
+                                {t('frontend.ssh.editorQueuedCount', { count: saveQueue.length })}
                             </div>
                         )}
                         <button className="secondary-btn typo-caption" onClick={() => { void flushQueuedSaves(); }}>
-                            {t('ssh.editorFlushQueue')}
+                            {t('frontend.ssh.editorFlushQueue')}
                         </button>
                     </>
                 ) : (
-                    <div className="typo-caption text-muted-foreground">{t('ssh.editorSelectFile')}</div>
+                    <div className="typo-caption text-muted-foreground">{t('frontend.ssh.editorSelectFile')}</div>
                 )}
                 <div className="border-t border-border/40 pt-2 space-y-2">
-                    <div className="typo-caption font-semibold">{t('ssh.transfers')}</div>
+                    <div className="typo-caption font-semibold">{t('frontend.ssh.transfers')}</div>
                     <div className="flex gap-1">
                         <input
                             value={uploadLocalPath}
                             onChange={event => setUploadLocalPath(event.target.value)}
-                            placeholder={t('placeholder.sftpLocalPath')}
+                            placeholder={t('frontend.placeholder.sftpLocalPath')}
                             className="w-full px-1 py-1 border border-border/40 rounded bg-background typo-caption"
                         />
                         <button className="secondary-btn typo-caption" onClick={() => { void handleUpload(); }}>
@@ -628,9 +628,9 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                         onChange={event => setConflictPolicy(event.target.value as 'overwrite' | 'rename' | 'skip')}
                         className="w-full px-1 py-1 border border-border/40 rounded bg-background typo-caption"
                     >
-                        <option value="overwrite">{t('ssh.conflictOverwrite')}</option>
-                        <option value="rename">{t('ssh.conflictRename')}</option>
-                        <option value="skip">{t('ssh.conflictSkip')}</option>
+                        <option value="overwrite">{t('frontend.ssh.conflictOverwrite')}</option>
+                        <option value="rename">{t('frontend.ssh.conflictRename')}</option>
+                        <option value="skip">{t('frontend.ssh.conflictSkip')}</option>
                     </select>
                     <div className="max-h-28 overflow-auto space-y-1">
                         {transferItems.map(item => (
@@ -640,7 +640,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                                 {item.error && <div className="text-destructive">{item.error}</div>}
                                 {item.status === 'failed' && (
                                     <button className="secondary-btn typo-caption mt-1" onClick={() => retryTransfer(item.id)}>
-                                        {t('ssh.retryResume')}
+                                        {t('frontend.ssh.retryResume')}
                                     </button>
                                 )}
                             </div>

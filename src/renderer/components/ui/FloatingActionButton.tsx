@@ -163,7 +163,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                     "relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
                     isOpen && "rotate-90 bg-destructive shadow-destructive/20"
                 )}
-                aria-label={isOpen ? t('fab.closeMenu') : t('fab.openMenu')}
+                aria-label={isOpen ? t('frontend.fab.closeMenu') : t('frontend.fab.openMenu')}
                 aria-expanded={isOpen}
             >
                 {isOpen ? closeIcon : mainIcon}

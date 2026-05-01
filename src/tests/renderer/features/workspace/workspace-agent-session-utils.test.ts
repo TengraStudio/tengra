@@ -8,58 +8,127 @@
  * (at your option) any later version.
  */
 
-import type { Chat } from '@shared/types/chat';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import type { Chat } from '@/types';
 import {
-    buildSessionSummary,
-    mergeWorkspaceChats,
+    dedupeChatMessages,
+    loadWorkspaceSessionsForWorkspace,
 } from '@/features/workspace/utils/workspace-agent-session-utils';
 
-function createChat(
-    overrides?: Partial<Chat>
-): Chat {
+const mockListByWorkspace = vi.fn();
+const mockGetAllChats = vi.fn();
+
+Object.defineProperty(window, 'electron', {
+    value: {
+        session: {
+            workspaceAgent: {
+                listByWorkspace: mockListByWorkspace,
+            },
+        },
+        db: {
+            getAllChats: mockGetAllChats,
+        },
+    },
+    configurable: true,
+    writable: true,
+});
+
+function createChat(id: string, workspaceId = 'workspace-1'): Chat {
     return {
-        id: overrides?.id ?? 'chat-1',
-        title: overrides?.title ?? 'Workspace Session',
-        model: overrides?.model ?? 'sonnet',
-        backend: overrides?.backend ?? 'claude',
-        messages: overrides?.messages ?? [],
-        createdAt: overrides?.createdAt ?? new Date(100),
-        updatedAt: overrides?.updatedAt ?? new Date(200),
-        workspaceId: overrides?.workspaceId ?? 'workspace-1',
-        metadata: overrides?.metadata ?? {},
-        isGenerating: overrides?.isGenerating,
-        isPinned: overrides?.isPinned,
-        isArchived: overrides?.isArchived,
-        isFavorite: overrides?.isFavorite,
-        folderId: overrides?.folderId,
+        id,
+        title: `Chat ${id}`,
+        model: 'gpt-4o',
+        backend: 'opencode',
+        messages: [],
+        createdAt: new Date('2026-04-30T10:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T10:00:00.000Z'),
+        workspaceId,
+        metadata: {},
     };
 }
 
-describe('workspace-agent-session-utils', () => {
-    it('builds summaries when chat timestamps arrive as numbers', () => {
-        const hydratedChat = createChat();
-        Reflect.set(hydratedChat, 'createdAt', 101);
-        Reflect.set(hydratedChat, 'updatedAt', 202);
-
-        const summary = buildSessionSummary(hydratedChat);
-
-        expect(summary.createdAt).toBe(101);
-        expect(summary.updatedAt).toBe(202);
+describe('loadWorkspaceSessionsForWorkspace', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockListByWorkspace.mockResolvedValue({
+            sessions: [],
+            persistence: {
+                activeSessionId: 'old-session',
+                recentSessionIds: ['old-session'],
+                composerDraft: '',
+                updatedAt: Date.now(),
+            },
+        });
+        mockGetAllChats.mockResolvedValue([createChat('old-session')]);
     });
 
-    it('sorts workspace chats when updatedAt is serialized', () => {
-        const olderChat = createChat({ id: 'chat-1', updatedAt: new Date(100) });
-        const newerHydratedChat = createChat({ id: 'chat-2', updatedAt: new Date(300) });
-        Reflect.set(newerHydratedChat, 'updatedAt', 300);
+    it('does not auto-restore the persisted active session when nothing is currently selected', async () => {
+        const setCurrentSessionId = vi.fn();
 
-        const mergedChats = mergeWorkspaceChats(
-            [olderChat, newerHydratedChat],
-            'workspace-1',
-            []
-        );
+        await loadWorkspaceSessionsForWorkspace({
+            workspaceId: 'workspace-1',
+            chatsRef: { current: [] },
+            setChats: vi.fn(),
+            setSessions: vi.fn(),
+            setCurrentSessionId,
+            setComposerValue: vi.fn(),
+        });
 
-        expect(mergedChats.map(chat => chat.id)).toEqual(['chat-2', 'chat-1']);
+        const updater = setCurrentSessionId.mock.calls[0][0] as (prev: string | null) => string | null;
+        expect(updater(null)).toBeNull();
+    });
+
+    it('preserves the current session when it already exists in this mount', async () => {
+        const setCurrentSessionId = vi.fn();
+
+        await loadWorkspaceSessionsForWorkspace({
+            workspaceId: 'workspace-1',
+            chatsRef: { current: [createChat('old-session')] },
+            setChats: vi.fn(),
+            setSessions: vi.fn(),
+            setCurrentSessionId,
+            setComposerValue: vi.fn(),
+        });
+
+        const updater = setCurrentSessionId.mock.calls[0][0] as (prev: string | null) => string | null;
+        expect(updater('old-session')).toBe('old-session');
+    });
+});
+
+describe('dedupeChatMessages', () => {
+    it('removes duplicate messages by id and adjacent repeated content', () => {
+        const messages: Chat['messages'] = [
+            {
+                id: 'user-1',
+                role: 'user',
+                content: 'Hello',
+                timestamp: new Date('2026-04-30T10:00:00.000Z'),
+            },
+            {
+                id: 'user-1',
+                role: 'user',
+                content: 'Hello',
+                timestamp: new Date('2026-04-30T10:00:01.000Z'),
+            },
+            {
+                id: 'assistant-1',
+                role: 'assistant',
+                content: 'Working on it',
+                timestamp: new Date('2026-04-30T10:00:02.000Z'),
+            },
+            {
+                id: 'assistant-2',
+                role: 'assistant',
+                content: 'Working on it',
+                timestamp: new Date('2026-04-30T10:00:03.000Z'),
+            },
+        ];
+
+        expect(dedupeChatMessages(messages)).toHaveLength(2);
+        expect(dedupeChatMessages(messages).map(message => message.id)).toEqual([
+            'user-1',
+            'assistant-1',
+        ]);
     });
 });

@@ -53,6 +53,7 @@ export interface WorkspaceBridge {
     clearActive: (rootPath?: string) => Promise<{ rootPath: string | null }>;
     getEnv: (rootPath: string) => Promise<Record<string, string>>;
     saveEnv: (rootPath: string, vars: Record<string, string>) => Promise<{ success: boolean }>;
+    getFileDiff: (diffId: string) => Promise<{ oldValue: string; newValue: string }>;
     onFileChange: (
         callback: (event: string, path: string, rootPath: string) => void
     ) => () => void;
@@ -142,6 +143,7 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
         clearActive: rootPath => ipc.invoke('workspace:clearActive', rootPath).then(unwrapWorkspaceResponse),
         getEnv: rootPath => ipc.invoke('workspace:getEnv', rootPath).then(unwrapWorkspaceResponse),
         saveEnv: (rootPath, vars) => ipc.invoke('workspace:saveEnv', rootPath, vars).then(unwrapWorkspaceResponse),
+        getFileDiff: diffId => ipc.invoke('workspace:getFileDiff', diffId).then(unwrapWorkspaceResponse),
         onFileChange: callback => {
             const listener = (_event: IpcRendererEvent, data: { event: string; path: string; rootPath: string }[] | { event: string; path: string; rootPath: string }) => {
                 const items = Array.isArray(data) ? data : [data];

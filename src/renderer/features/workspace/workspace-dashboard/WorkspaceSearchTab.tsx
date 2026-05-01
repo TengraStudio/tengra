@@ -106,7 +106,7 @@ export const WorkspaceSearchTab = ({
                         <IconSearch className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder={t('workspaceDashboard.searchInWorkspace')}
+                            placeholder={t('frontend.workspaceDashboard.searchInWorkspace')}
                             className="min-w-0 flex-1 bg-transparent typo-caption text-foreground outline-none placeholder:text-muted-foreground/60"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
@@ -126,9 +126,9 @@ export const WorkspaceSearchTab = ({
                     </div>
                     {/* Toggle buttons (decorative — VS Code-style) */}
                     <div className="flex items-center gap-0.5">
-                        <SearchToggleButton icon={<IconAB className="h-4 w-4" />} title={t('workspaceDashboard.searchMatchCaseTitle')} />
-                        <SearchToggleButton icon={<IconBlockquote className="h-4 w-4" />} title={t('workspaceDashboard.searchMatchWholeWordTitle')} />
-                        <SearchToggleButton icon={<IconRegex className="h-4 w-4" />} title={t('workspaceDashboard.searchUseRegexTitle')} />
+                        <SearchToggleButton icon={<IconAB className="h-4 w-4" />} title={t('frontend.workspaceDashboard.searchMatchCaseTitle')} />
+                        <SearchToggleButton icon={<IconBlockquote className="h-4 w-4" />} title={t('frontend.workspaceDashboard.searchMatchWholeWordTitle')} />
+                        <SearchToggleButton icon={<IconRegex className="h-4 w-4" />} title={t('frontend.workspaceDashboard.searchUseRegexTitle')} />
                     </div>
                 </div>
 
@@ -142,18 +142,18 @@ export const WorkspaceSearchTab = ({
                         ? <IconChevronDown className="h-3 w-3" />
                         : <IconChevronRight className="h-3 w-3" />
                     }
-                    {t('workspaceDashboard.files')}
+                    {t('frontend.workspaceDashboard.files')}
                 </button>
 
                 {filtersExpanded && (
                     <div className="flex flex-col gap-1 pl-4">
                         <FilterInput
-                            placeholder={t('workspaceDashboard.searchIncludePatternPlaceholder')}
+                            placeholder={t('frontend.workspaceDashboard.searchIncludePatternPlaceholder')}
                             value={includeGlob}
                             onChange={setIncludeGlob}
                         />
                         <FilterInput
-                            placeholder={t('workspaceDashboard.searchExcludePatternPlaceholder')}
+                            placeholder={t('frontend.workspaceDashboard.searchExcludePatternPlaceholder')}
                             value={excludeGlob}
                             onChange={setExcludeGlob}
                         />
@@ -170,7 +170,7 @@ export const WorkspaceSearchTab = ({
                         </span>
                     ) : (
                         <span className="text-sm text-muted-foreground">
-                            {filteredResults.length} {t('semanticSearch.results').toLowerCase()} — {groupedFileCount} {t('workspaceDashboard.files').toLowerCase()}
+                            {filteredResults.length} {t('frontend.semanticSearch.results').toLowerCase()} — {groupedFileCount} {t('frontend.workspaceDashboard.files').toLowerCase()}
                         </span>
                     )}
                 </div>
@@ -182,7 +182,7 @@ export const WorkspaceSearchTab = ({
                     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                         <IconSearch className="mb-3 h-8 w-8 text-muted-foreground/30" />
                         <p className="typo-caption text-muted-foreground/60">
-                            {t('workspaceDashboard.searchInWorkspace')}
+                            {t('frontend.workspaceDashboard.searchInWorkspace')}
                         </p>
                     </div>
                 ) : (

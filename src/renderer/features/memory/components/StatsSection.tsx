@@ -23,32 +23,32 @@ export const StatsSection = ({ stats }: { stats: MemoryStatistics | null }) => {
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatCard
-                label={t('memory.stats.pending')}
+                label={t('frontend.memory.stats.pending')}
                 value={stats.pendingValidation}
                 icon={IconClock}
                 color="text-warning"
                 highlight={stats.pendingValidation > 0}
             />
             <StatCard
-                label={t('memory.stats.confirmed')}
+                label={t('frontend.memory.stats.confirmed')}
                 value={stats.byStatus.confirmed}
                 icon={IconCircleCheck}
                 color="text-success"
             />
             <StatCard
-                label={t('memory.stats.archived')}
+                label={t('frontend.memory.stats.archived')}
                 value={stats.byStatus.archived}
                 icon={IconArchive}
                 color="text-muted-foreground"
             />
             <StatCard
-                label={t('memory.stats.avgConfidence')}
+                label={t('frontend.memory.stats.avgConfidence')}
                 value={`${(stats.averageConfidence * 100).toFixed(0)}%`}
                 icon={IconGauge}
                 color="text-primary"
             />
             <StatCard
-                label={t('memory.stats.contradictions')}
+                label={t('frontend.memory.stats.contradictions')}
                 value={stats.contradictions}
                 icon={IconX}
                 color="text-warning"

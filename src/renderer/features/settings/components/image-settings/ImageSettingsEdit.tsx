@@ -70,10 +70,10 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/edit:text-primary transition-colors">
-                            {t('settings.images.editTitle')}
+                            {t('frontend.settings.images.editTitle')}
                         </h3>
                         <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
-                            {t('settings.images.batchProcessing')}
+                            {t('frontend.settings.images.batchProcessing')}
                         </p>
                     </div>
                 </div>
@@ -85,7 +85,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                     <textarea
                         value={batchPrompts}
                         onChange={event => setBatchPrompts(event.target.value)}
-                        placeholder={t('settings.images.batchPrompts')}
+                        placeholder={t('frontend.settings.images.batchPrompts')}
                         className={C_IMAGESETTINGSEDIT_3}
                     />
                     <Button
@@ -93,7 +93,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                         className={C_IMAGESETTINGSEDIT_4}
                     >
                         <IconPlayerPlay className="w-4 h-4" />
-                        {t('settings.images.batchRun')}
+                        {t('frontend.settings.images.batchRun')}
                     </Button>
                 </div>
 
@@ -109,7 +109,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                             <Input
                                 value={editSource}
                                 onChange={event => setEditSource(event.target.value)}
-                                placeholder={t('settings.images.editSource')}
+                                placeholder={t('frontend.settings.images.editSource')}
                                 className={C_IMAGESETTINGSEDIT_5}
                             />
                         </div>
@@ -118,7 +118,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                             <Input
                                 value={editPrompt}
                                 onChange={event => setEditPrompt(event.target.value)}
-                                placeholder={t('settings.images.editPrompt')}
+                                placeholder={t('frontend.settings.images.editPrompt')}
                                 className={C_IMAGESETTINGSEDIT_6}
                             />
                         </div>
@@ -132,9 +132,9 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                    <SelectItem value="balanced" className="typo-body font-bold">{t('settings.images.editPresetBalanced')}</SelectItem>
-                                    <SelectItem value="detail" className="typo-body font-bold text-primary">{t('settings.images.editPresetDetail')}</SelectItem>
-                                    <SelectItem value="stylize" className="typo-body font-bold text-success">{t('settings.images.editPresetStylize')}</SelectItem>
+                                    <SelectItem value="balanced" className="typo-body font-bold">{t('frontend.settings.images.editPresetBalanced')}</SelectItem>
+                                    <SelectItem value="detail" className="typo-body font-bold text-primary">{t('frontend.settings.images.editPresetDetail')}</SelectItem>
+                                    <SelectItem value="stylize" className="typo-body font-bold text-success">{t('frontend.settings.images.editPresetStylize')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -148,10 +148,10 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                    <SelectItem value="img2img" className="typo-body font-bold text-primary">{t('settings.images.editModeImg2Img')}</SelectItem>
-                                    <SelectItem value="inpaint" className="typo-body font-bold">{t('settings.images.editModeInpaint')}</SelectItem>
-                                    <SelectItem value="outpaint" className="typo-body font-bold">{t('settings.images.editModeOutpaint')}</SelectItem>
-                                    <SelectItem value="style-transfer" className="typo-body font-bold text-success">{t('settings.images.editModeStyleTransfer')}</SelectItem>
+                                    <SelectItem value="img2img" className="typo-body font-bold text-primary">{t('frontend.settings.images.editModeImg2Img')}</SelectItem>
+                                    <SelectItem value="inpaint" className="typo-body font-bold">{t('frontend.settings.images.editModeInpaint')}</SelectItem>
+                                    <SelectItem value="outpaint" className="typo-body font-bold">{t('frontend.settings.images.editModeOutpaint')}</SelectItem>
+                                    <SelectItem value="style-transfer" className="typo-body font-bold text-success">{t('frontend.settings.images.editModeStyleTransfer')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -186,7 +186,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                         className={C_IMAGESETTINGSEDIT_8}
                     >
                         <IconBolt className="w-5 h-5" />
-                        {t('settings.images.editRun')}
+                        {t('frontend.settings.images.editRun')}
                     </Button>
                 </div>
             </div>

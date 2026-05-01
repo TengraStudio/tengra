@@ -32,13 +32,13 @@ const ModalWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
     showFooter?: boolean
   };
   const [isOpen, setIsOpen] = useState(false);
-  const resolvedTitle = title ? t(title) : t('showcase.modal.fallback.title');
-  const resolvedContent = content ? t(content) : t('showcase.modal.fallback.content');
+  const resolvedTitle = title ? t(title) : t('frontend.showcase.modal.fallback.title');
+  const resolvedContent = content ? t(content) : t('frontend.showcase.modal.fallback.content');
 
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
-        {t('showcase.modal.actions.openWithTitle', { title: resolvedTitle })}
+        {t('frontend.showcase.modal.actions.openWithTitle', { title: resolvedTitle })}
       </Button>
       <Modal
         isOpen={isOpen}
@@ -47,8 +47,8 @@ const ModalWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
         size={size}
         footer={showFooter ? (
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setIsOpen(false)}>{t('showcase.modal.actions.cancel')}</Button>
-            <Button onClick={() => setIsOpen(false)}>{t('showcase.modal.actions.confirm')}</Button>
+            <Button variant="ghost" onClick={() => setIsOpen(false)}>{t('frontend.showcase.modal.actions.cancel')}</Button>
+            <Button onClick={() => setIsOpen(false)}>{t('frontend.showcase.modal.actions.confirm')}</Button>
           </div>
         ) : undefined}
       >
@@ -68,22 +68,22 @@ const ConfirmWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
   const [isOpen, setIsOpen] = useState(false);
   const resolvedVariant = variant ?? 'danger';
   const variantLabelByType: Record<'danger' | 'warning' | 'info', string> = {
-    danger: t('showcase.variants.danger'),
-    warning: t('showcase.variants.warning'),
-    info: t('showcase.variants.info'),
+    danger: t('frontend.showcase.variants.danger'),
+    warning: t('frontend.showcase.variants.warning'),
+    info: t('frontend.showcase.variants.info'),
   };
 
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
-        {t('showcase.modal.confirm.actions.openVariant', { variant: variantLabelByType[resolvedVariant] })}
+        {t('frontend.showcase.modal.confirm.actions.openVariant', { variant: variantLabelByType[resolvedVariant] })}
       </Button>
       <ConfirmationModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         onConfirm={() => setIsOpen(false)}
-        title={title ? t(title) : t('showcase.modal.confirm.fallback.title')}
-        message={message ? t(message) : t('showcase.modal.confirm.fallback.message')}
+        title={title ? t(title) : t('frontend.showcase.modal.confirm.fallback.title')}
+        message={message ? t(message) : t('frontend.showcase.modal.confirm.fallback.message')}
         variant={variant}
       />
     </>
@@ -97,22 +97,22 @@ const FormModalWrapper: React.FC<Record<string, RendererDataValue>> = () => {
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
-        {t('showcase.modal.form.actions.open')}
+        {t('frontend.showcase.modal.form.actions.open')}
       </Button>
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('showcase.modal.form.title')} size="md" footer={
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('frontend.showcase.modal.form.title')} size="md" footer={
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setIsOpen(false)}>{t('showcase.modal.actions.cancel')}</Button>
-          <Button onClick={() => setIsOpen(false)}>{t('showcase.modal.form.actions.create')}</Button>
+          <Button variant="ghost" onClick={() => setIsOpen(false)}>{t('frontend.showcase.modal.actions.cancel')}</Button>
+          <Button onClick={() => setIsOpen(false)}>{t('frontend.showcase.modal.form.actions.create')}</Button>
         </div>
       }>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name-input">{t('showcase.modal.form.labels.name')}</Label>
-            <Input id="name-input" placeholder={t('showcase.modal.form.placeholders.name')} />
+            <Label htmlFor="name-input">{t('frontend.showcase.modal.form.labels.name')}</Label>
+            <Input id="name-input" placeholder={t('frontend.showcase.modal.form.placeholders.name')} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="desc-input">{t('showcase.modal.form.labels.description')}</Label>
-            <Input id="desc-input" placeholder={t('showcase.modal.form.placeholders.description')} />
+            <Label htmlFor="desc-input">{t('frontend.showcase.modal.form.labels.description')}</Label>
+            <Input id="desc-input" placeholder={t('frontend.showcase.modal.form.placeholders.description')} />
           </div>
         </div>
       </Modal>

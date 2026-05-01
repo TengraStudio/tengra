@@ -144,7 +144,7 @@ export function TerminalAppearanceModals({
                     className="w-300 p-2 bg-popover border border-border rounded-lg space-y-2"
                 >
                     <div className="typo-overline text-muted-foreground">
-                        {t('terminal.theme')}
+                        {t('frontend.terminal.theme')}
                     </div>
                     <div className="max-h-28 overflow-y-auto space-y-1">
                         {themePresets.map(preset => (
@@ -172,13 +172,13 @@ export function TerminalAppearanceModals({
                             lineHeight: terminalAppearance.lineHeight,
                         }}
                     >
-                        <div>{t('terminal.previewCommand')}</div>
-                        <div style={{ color: resolvedTerminalAppearance.theme.green }}>{t('terminal.previewSuccess')}</div>
-                        <div style={{ color: resolvedTerminalAppearance.theme.red }}>{t('terminal.previewError')}</div>
-                        <div style={{ color: resolvedTerminalAppearance.theme.yellow }}>{t('terminal.previewWarning')}</div>
+                        <div>{t('frontend.terminal.previewCommand')}</div>
+                        <div style={{ color: resolvedTerminalAppearance.theme.green }}>{t('frontend.terminal.previewSuccess')}</div>
+                        <div style={{ color: resolvedTerminalAppearance.theme.red }}>{t('frontend.terminal.previewError')}</div>
+                        <div style={{ color: resolvedTerminalAppearance.theme.yellow }}>{t('frontend.terminal.previewWarning')}</div>
                     </div>
                     <div className="typo-overline text-muted-foreground">
-                        {t('terminal.font')}
+                        {t('frontend.terminal.font')}
                     </div>
                     <div className="space-y-1">
                         {fontPresets.map(fontPreset => (
@@ -197,7 +197,7 @@ export function TerminalAppearanceModals({
                         ))}
                     </div>
                     <label className="flex items-center justify-between gap-3 typo-caption">
-                        <span>{t('terminal.fontLigatures')}</span>
+                        <span>{t('frontend.terminal.fontLigatures')}</span>
                         <input
                             type="checkbox"
                             checked={terminalAppearance.ligatures}
@@ -209,7 +209,7 @@ export function TerminalAppearanceModals({
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
                         <div className="typo-overline text-muted-foreground">
-                            {t('terminal.cursorStyle')}
+                            {t('frontend.terminal.cursorStyle')}
                         </div>
                         <div className="grid grid-cols-3 gap-1">
                             {cursorStyles.map(cursorStyle => (
@@ -231,7 +231,7 @@ export function TerminalAppearanceModals({
                         </div>
                     </div>
                     <label className="flex items-center justify-between gap-3 typo-caption">
-                        <span>{t('terminal.cursorBlink')}</span>
+                        <span>{t('frontend.terminal.cursorBlink')}</span>
                         <input
                             type="checkbox"
                             checked={terminalAppearance.cursorBlink}
@@ -243,7 +243,7 @@ export function TerminalAppearanceModals({
                     </label>
                     <label className="flex items-center gap-2 typo-caption">
                         <span className="w-20 shrink-0 text-muted-foreground">
-                            {t('terminal.fontSize')}
+                            {t('frontend.terminal.fontSize')}
                         </span>
                         <input
                             type="range"
@@ -262,7 +262,7 @@ export function TerminalAppearanceModals({
                     </label>
                     <label className="flex items-center gap-2 typo-caption">
                         <span className="w-20 shrink-0 text-muted-foreground">
-                            {t('terminal.lineHeight')}
+                            {t('frontend.terminal.lineHeight')}
                         </span>
                         <input
                             type="range"
@@ -292,7 +292,7 @@ export function TerminalAppearanceModals({
                     />
                     <label className="flex items-center gap-2 typo-caption">
                         <span className="w-20 shrink-0 text-muted-foreground">
-                            {t('terminal.transparency')}
+                            {t('frontend.terminal.transparency')}
                         </span>
                         <input
                             type="range"
@@ -307,7 +307,7 @@ export function TerminalAppearanceModals({
                         />
                     </label>
                     <label className="flex items-center gap-2 typo-caption">
-                        <span className="w-20 shrink-0 text-muted-foreground">{t('terminal.blur')}</span>
+                        <span className="w-20 shrink-0 text-muted-foreground">{t('frontend.terminal.blur')}</span>
                         <input
                             type="range"
                             min={0}
@@ -322,7 +322,7 @@ export function TerminalAppearanceModals({
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
                         <div className="typo-overline text-muted-foreground">
-                            {t('terminal.customTheme')}
+                            {t('frontend.terminal.customTheme')}
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                             <label className="flex items-center gap-1.5 typo-overline">
@@ -339,7 +339,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">{t('terminal.colorBackground')}</span>
+                                <span className="text-muted-foreground">{t('frontend.terminal.colorBackground')}</span>
                             </label>
                             <label className="flex items-center gap-1.5 typo-overline">
                                 <input
@@ -355,7 +355,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">{t('terminal.colorForeground')}</span>
+                                <span className="text-muted-foreground">{t('frontend.terminal.colorForeground')}</span>
                             </label>
                             <label className="flex items-center gap-1.5 typo-overline">
                                 <input
@@ -371,7 +371,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">{t('terminal.colorCursor')}</span>
+                                <span className="text-muted-foreground">{t('frontend.terminal.colorCursor')}</span>
                             </label>
                             <label className="flex items-center gap-1.5 typo-overline">
                                 <input
@@ -387,7 +387,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">{t('terminal.colorSelection')}</span>
+                                <span className="text-muted-foreground">{t('frontend.terminal.colorSelection')}</span>
                             </label>
                         </div>
                         {terminalAppearance.customTheme && (
@@ -397,7 +397,7 @@ export function TerminalAppearanceModals({
                                 }}
                                 className={C_TERMINALAPPEARANCEMODALS_2}
                             >
-                                {t('terminal.resetToDefault')}
+                                {t('frontend.terminal.resetToDefault')}
                             </button>
                         )}
                     </div>
@@ -406,13 +406,13 @@ export function TerminalAppearanceModals({
                             onClick={exportAppearancePreferences}
                             className="px-2 py-1 rounded border border-border typo-caption hover:bg-accent/50 transition-colors"
                         >
-                            {t('terminal.exportTheme')}
+                            {t('frontend.terminal.exportTheme')}
                         </button>
                         <button
                             onClick={openAppearanceImportDialog}
                             className="px-2 py-1 rounded border border-border typo-caption hover:bg-accent/50 transition-colors"
                         >
-                            {t('terminal.importTheme')}
+                            {t('frontend.terminal.importTheme')}
                         </button>
                     </div>
                 </PopoverContent>

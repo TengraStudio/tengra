@@ -133,8 +133,8 @@ export function useTerminalSplitActions({
             return;
         }
         const name = promptDialog(
-            t('terminal.splitPresetNamePrompt'),
-            t('terminal.splitPresetDefaultName', { index: splitPresets.length + 1 })
+            t('frontend.terminal.splitPresetNamePrompt'),
+            t('frontend.terminal.splitPresetDefaultName', { index: splitPresets.length + 1 })
         )?.trim();
         if (!name) {
             return;
@@ -149,7 +149,7 @@ export function useTerminalSplitActions({
             if (!target) {
                 return prev;
             }
-            const nextName = promptDialog(t('terminal.renamePresetPrompt'), target.name)?.trim();
+            const nextName = promptDialog(t('frontend.terminal.renamePresetPrompt'), target.name)?.trim();
             if (!nextName || nextName === target.name) {
                 return prev;
             }

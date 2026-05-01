@@ -31,7 +31,7 @@ interface CommandStripProps {
     status?: 'ready' | 'busy' | 'error';
     activeFilePath?: string;
     activeFileContent?: string;
-    activeFileType?: 'code' | 'image';
+    activeFileType?: 'code' | 'image' | 'diff';
     runningTaskCount?: number;
     onRunWorkspace?: () => void;
     onBranchSelect?: (branch: string) => void | Promise<void>;
@@ -119,7 +119,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     const { t } = useTranslation(language);
     const [isBranchPopoverOpen, setIsBranchPopoverOpen] = React.useState(false);
     const hasBranchSelector = Boolean(onBranchSelect);
-    const shouldShowFileMeta = Boolean(activeFilePath) && activeFileType === 'code';
+    const shouldShowFileMeta = Boolean(activeFilePath) && activeFileType !== 'image';
     const detectedEncoding = React.useMemo(
         () => detectEncoding(activeFileContent),
         [activeFileContent]
@@ -148,7 +148,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                         <PopoverTrigger asChild>
                             <button
                                 className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors disabled:opacity-60"
-                                title={t('workspace.currentBranch')}
+                                title={t('frontend.workspace.currentBranch')}
                                 disabled={isBranchLoading}
                                 onMouseDown={e => {
                                     e.stopPropagation();
@@ -177,18 +177,18 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                         >
                             {isBranchLoading ? (
                                 <div className="px-3 py-2 typo-caption text-muted-foreground">
-                                    {t('workspace.loadingBranches')}
+                                    {t('frontend.workspace.loadingBranches')}
                                 </div>
                             ) : branches.length === 0 ? (
                                 <div className="px-3 py-2 typo-caption text-muted-foreground">
-                                    {t('workspace.noBranchesFound')}
+                                    {t('frontend.workspace.noBranchesFound')}
                                 </div>
                             ) : (
                                 <>
                                     {isBranchSwitching && (
                                         <div className="px-3 py-2 typo-overline text-primary flex items-center gap-2">
                                             <IconLoader2 className="w-3 h-3 animate-spin" />
-                                            {t('workspace.switchingBranch')}
+                                            {t('frontend.workspace.switchingBranch')}
                                         </div>
                                     )}
                                     {branches.map(branch => (
@@ -217,7 +217,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                 ) : (
                     <div
                         className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors"
-                        title={t('workspace.currentBranch')}
+                        title={t('frontend.workspace.currentBranch')}
                     >
                         <IconGitBranch className="w-3 h-3" />
                         <span>{branchName}</span>
@@ -231,12 +231,12 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                     <>
                         <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
                             <span>
-                                {t('workspace.encoding')}: {resolveWorkspaceLabel(detectedEncoding)}
+                                {t('frontend.workspace.encoding')}: {resolveWorkspaceLabel(detectedEncoding)}
                             </span>
                         </div>
                         <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
                             <span>
-                                {t('workspace.language')}: {resolveWorkspaceLabel(detectedLanguageName)}
+                                {t('frontend.workspace.language')}: {resolveWorkspaceLabel(detectedLanguageName)}
                             </span>
                         </div>
                         <div className="w-px h-3 bg-muted/60" />

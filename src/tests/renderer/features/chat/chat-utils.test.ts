@@ -714,4 +714,60 @@ describe('extractReasoning', () => {
         expect(result.finalContent).toHaveLength(200500);
         expect(result.finalContent).not.toContain('response exceeded Tengra safety limit');
     });
+
+    it('emits message updates even when the chat is not in the shared store', async () => {
+        const { processChatStream } = await import('@/features/chat/hooks/process-stream');
+        Object.defineProperty(window, 'electron', {
+            configurable: true,
+            writable: true,
+            value: {
+                db: {
+                    updateMessage: vi.fn().mockResolvedValue({ success: true }),
+                },
+            },
+        });
+        const setStreamingStates = vi.fn();
+        const setChats = vi.fn();
+        const onMessageUpdate = vi.fn();
+
+        const stream = (async function* () {
+            yield { type: 'content', content: 'Sel' };
+            await new Promise(resolve => setTimeout(resolve, 60));
+            yield { type: 'content', content: 'am' };
+        })();
+
+        await processChatStream({
+            stream,
+            chatId: 'workspace-chat-1',
+            assistantId: 'workspace-assistant-1',
+            intentClassification: {
+                intent: 'single_lookup',
+                confidence: 'high',
+                systemMode: 'agent',
+                requiresTooling: false,
+                preferredMaxModelTurns: 2,
+                preferredMaxToolTurns: 0,
+            },
+            setStreamingStates,
+            setChats,
+            streamStartTime: performance.now(),
+            activeModel: 'model-a',
+            selectedProvider: 'codex',
+            t: (key: string) => key,
+            autoReadEnabled: false,
+            handleSpeak: vi.fn(),
+            onMessageUpdate,
+        });
+
+        expect(setChats).toHaveBeenCalled();
+        expect(onMessageUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'workspace-assistant-1',
+                role: 'assistant',
+                content: 'Selam',
+                provider: 'codex',
+                model: 'model-a',
+            })
+        );
+    });
 });

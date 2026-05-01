@@ -218,12 +218,12 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                     </div>
                     <div>
                         <h2 className="text-2xl font-semibold text-foreground">
-                            {subTab === 'installed' ? t('workspaces.myModels') : t('modelsPage.downloadHistory')}
+                            {subTab === 'installed' ? t('frontend.workspaces.myModels') : t('frontend.modelsPage.downloadHistory')}
                         </h2>
                         <div className="mt-1 text-sm text-muted-foreground/70">
                             {subTab === 'installed'
-                                ? `${availableModels.length} ${t('modelsPage.modelsCount')}`
-                                : `${downloadHistory.length} ${t('modelsPage.historyItems')}`
+                                ? `${availableModels.length} ${t('frontend.modelsPage.modelsCount')}`
+                                : `${downloadHistory.length} ${t('frontend.modelsPage.historyItems')}`
                             }
                         </div>
                     </div>
@@ -252,7 +252,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                         )}
                     >
                         <IconHistory className="h-4 w-4" />
-                        {t('modelsPage.history')}
+                        {t('frontend.modelsPage.history')}
                     </button>
                 </div>
 
@@ -269,7 +269,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                     className={C_MODELSTAB_1}
                 >
                     <IconRefresh className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" />
-                    {t('modelsPage.refresh')}
+                    {t('frontend.modelsPage.refresh')}
                 </Button>
             </div>
 
@@ -311,8 +311,8 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                 isOpen={isConfirmDeleteOpen}
                 onClose={() => setIsConfirmDeleteOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title={t('modelsPage.confirmDeleteTitle') || 'Delete Model'}
-                message={t('modelsPage.confirmDelete')}
+                title={t('frontend.modelsPage.confirmDeleteTitle')}
+                message={t('frontend.modelsPage.confirmDelete')}
                 variant="danger"
             />
         </div>

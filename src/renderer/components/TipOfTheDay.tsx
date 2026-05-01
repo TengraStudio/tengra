@@ -24,11 +24,11 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
     const [tipIndex, setTipIndex] = useState(0);
 
     const TIPS = [
-        t('tips.tip1'),
-        t('tips.tip2'),
-        t('tips.tip3'),
-        t('tips.tip4'),
-        t('tips.tip5')
+        t('frontend.tips.tip1'),
+        t('frontend.tips.tip2'),
+        t('frontend.tips.tip3'),
+        t('frontend.tips.tip4'),
+        t('frontend.tips.tip5')
     ];
 
     useEffect(() => {
@@ -57,7 +57,7 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
                         <IconBulb className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
-                        <h4 className="text-sm font-bold text-foreground mb-1">{t('tips.title')}</h4>
+                        <h4 className="text-sm font-bold text-foreground mb-1">{t('frontend.tips.title')}</h4>
                         <p className="typo-caption text-muted-foreground leading-relaxed">{TIPS[tipIndex]}</p>
                     </div>
                     <button

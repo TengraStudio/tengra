@@ -25,6 +25,8 @@ vi.mock('fs/promises', () => ({
 }));
 
 vi.mock('fs', () => ({
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
     constants: {
         F_OK: 0,
         X_OK: 1,

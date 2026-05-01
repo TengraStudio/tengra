@@ -10,7 +10,7 @@
 
 import type { WorkspaceAgentSessionModes, WorkspaceAgentSessionSummary } from '@shared/types/workspace-agent-session';
 import type { Dispatch, SetStateAction } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 import type { Chat, Message } from '@/types';
 
@@ -48,20 +48,28 @@ export function useWorkspaceAgentSessionMessaging({
     refreshTelemetry,
     updateChatCollection,
 }: UseWorkspaceAgentSessionMessagingOptions) {
-    const handleSend = useCallback(async () => {
-        await sendWorkspaceAgentMessage({
-            composerValue,
-            resolveTargetSession,
-            generateResponse,
-            isLoading,
-            loadWorkspaceSessions,
-            refreshCouncilState,
-            refreshTelemetry,
-            selectedModel,
-            selectedProvider,
-            updateChatCollection,
-            setComposerValue,
-        });
+    const isSendingRef = useRef(false);
+
+    const handleSend = useCallback(async (contentOverride?: string) => {
+        if (isSendingRef.current) { return; }
+        isSendingRef.current = true;
+        try {
+            await sendWorkspaceAgentMessage({
+                composerValue: contentOverride ?? composerValue,
+                resolveTargetSession,
+                generateResponse,
+                isLoading,
+                loadWorkspaceSessions,
+                refreshCouncilState,
+                refreshTelemetry,
+                selectedModel,
+                selectedProvider,
+                updateChatCollection,
+                setComposerValue,
+            });
+        } finally {
+            isSendingRef.current = false;
+        }
     }, [
         composerValue,
         generateResponse,

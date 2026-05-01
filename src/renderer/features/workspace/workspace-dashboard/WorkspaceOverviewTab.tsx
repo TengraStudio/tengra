@@ -113,7 +113,7 @@ export const WorkspaceOverviewTab = ({
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 px-1">
                             <IconFolder className="w-4 h-4 text-primary/40" />
-                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                            <h3 className="text-sm font-bold text-muted-foreground/40 ">
                                 largest directories
                             </h3>
                         </div>
@@ -122,13 +122,13 @@ export const WorkspaceOverviewTab = ({
                                 <div key={dir.path} className="flex items-center justify-between gap-4 p-3 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
                                     <div className="min-w-0 flex items-center gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary/60 transition-colors" />
-                                        <span className="truncate font-mono text-[11px] text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">
+                                        <span className="truncate font-mono text-sm text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">
                                             {dir.path}
                                         </span>
                                     </div>
                                     <div className="shrink-0 flex items-center gap-4">
-                                        <span className="text-[10px] text-muted-foreground/30">{dir.fileCount} files</span>
-                                        <span className="text-[11px] font-bold text-primary/60">{formatBytes(dir.size)}</span>
+                                        <span className="text-sm text-muted-foreground/30">{dir.fileCount} files</span>
+                                        <span className="text-sm font-bold text-primary/60">{formatBytes(dir.size)}</span>
                                     </div>
                                 </div>
                             ))}
@@ -139,7 +139,7 @@ export const WorkspaceOverviewTab = ({
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 px-1">
                             <IconFiles className="w-4 h-4 text-success/40" />
-                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                            <h3 className="text-sm font-bold text-muted-foreground/40 ">
                                 most complex files
                             </h3>
                         </div>
@@ -148,18 +148,18 @@ export const WorkspaceOverviewTab = ({
                                 <div key={file.path} className="flex items-center justify-between gap-4 p-3 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
                                     <div className="min-w-0 flex items-center gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-success/20 group-hover:bg-success/60 transition-colors" />
-                                        <span className="truncate font-mono text-[11px] text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">
+                                        <span className="truncate font-mono text-sm text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">
                                             {file.path}
                                         </span>
                                     </div>
                                     <div className="shrink-0">
-                                        <span className="text-[11px] font-bold text-success/60">{file.loc.toLocaleString()} lines</span>
+                                        <span className="text-sm font-bold text-success/60">{file.loc.toLocaleString()} lines</span>
                                     </div>
                                 </div>
                             ))}
                             {topFilesByLoc.length === 0 && (
                                 <div className="p-8 text-center border border-dashed border-border/10 rounded-2xl">
-                                    <span className="text-xs text-muted-foreground/20 italic">No file data available</span>
+                                    <span className="text-sm text-muted-foreground/20 italic">No file data available</span>
                                 </div>
                             )}
                         </div>
@@ -172,21 +172,21 @@ export const WorkspaceOverviewTab = ({
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 px-1">
                             <div className="w-1 h-1 rounded-full bg-primary/40" />
-                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                            <h3 className="text-sm font-bold text-muted-foreground/40 ">
                                 technology stack
                             </h3>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <span className="px-4 py-1.5 rounded-xl border border-primary/10 bg-primary/5 text-[11px] font-bold text-primary">
+                            <span className="px-4 py-1.5 rounded-xl border border-primary/10 bg-primary/5 text-sm font-bold text-primary">
                                 {analysis.type}
                             </span>
                             {analysis.monorepo && (
-                                <span className="px-4 py-1.5 rounded-xl border border-border/5 bg-muted/5 text-[11px] font-bold text-muted-foreground/60">
+                                <span className="px-4 py-1.5 rounded-xl border border-border/5 bg-muted/5 text-sm font-bold text-muted-foreground/60">
                                     {analysis.monorepo.type}
                                 </span>
                             )}
                             {analysis.frameworks.map((fw: string) => (
-                                <span key={fw} className="px-4 py-1.5 bg-muted/5 border border-border/5 rounded-xl text-[11px] text-muted-foreground/50 font-semibold hover:bg-muted/10 transition-colors">
+                                <span key={fw} className="px-4 py-1.5 bg-muted/5 border border-border/5 rounded-xl text-sm text-muted-foreground/50 font-semibold hover:bg-muted/10 transition-colors">
                                     {fw}
                                 </span>
                             ))}
@@ -197,7 +197,7 @@ export const WorkspaceOverviewTab = ({
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 px-1">
                             <div className="w-1 h-1 rounded-full bg-success/40" />
-                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                            <h3 className="text-sm font-bold text-muted-foreground/40 ">
                                 language distribution
                             </h3>
                         </div>
@@ -209,16 +209,16 @@ export const WorkspaceOverviewTab = ({
                                     const percentage = totalLanguageWeight > 0 ? ((count as number) / totalLanguageWeight) * 100 : 0;
                                     return (
                                         <div key={lang} className="group space-y-2">
-                                            <div className="flex justify-between text-[11px] font-bold tracking-tight px-0.5">
+                                            <div className="flex justify-between text-sm font-bold  px-0.5">
                                                 <span className="text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">{lang}</span>
                                                 <span className="text-muted-foreground/30 tabular-nums">
                                                     {formatLanguagePercentage(count as number, totalLanguageWeight)}
                                                 </span>
                                             </div>
                                             <div className="h-1 w-full bg-muted/5 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-success/20 rounded-full group-hover:bg-success/40 transition-all duration-700 ease-out" 
-                                                    style={{ width: `${percentage}%` }} 
+                                                <div
+                                                    className="h-full bg-success/20 rounded-full group-hover:bg-success/40 transition-all duration-700 ease-out"
+                                                    style={{ width: `${percentage}%` }}
                                                 />
                                             </div>
                                         </div>

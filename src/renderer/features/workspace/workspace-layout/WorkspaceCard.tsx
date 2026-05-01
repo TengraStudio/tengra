@@ -142,7 +142,7 @@ const WorkspaceCardMenu: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
                     <span>
                         {workspace.status === 'archived'
                             ? t('common.unarchive')
-                            : t('workspaces.archiveWorkspace')}
+                            : t('frontend.workspaces.archiveWorkspace')}
                     </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -159,10 +159,10 @@ const WorkspaceCardMenu: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
 
 const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) => (
     <div className="flex-1 min-w-0 space-y-1">
-        <h3 className="text-base font-semibold text-foreground truncate tracking-tight">
+        <h3 className="text-base font-semibold text-foreground truncate ">
             {workspace.title}
         </h3>
-        <p className="text-[10px] text-muted-foreground/30 whitespace-pre font-medium bg-muted/10 px-1.5 py-0.5 rounded transition-colors group-hover:bg-muted/20 group-hover:text-muted-foreground/50 truncate">
+        <p className="text-sm text-muted-foreground/30 whitespace-pre font-medium bg-muted/10 px-1.5 py-0.5 rounded transition-colors group-hover:bg-muted/20 group-hover:text-muted-foreground/50 truncate">
             {workspace.path}
         </p>
     </div>
@@ -171,16 +171,16 @@ const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
 const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
     const { t } = useWorkspaceCardSurfaceContext();
     const statusTranslationKey: Record<Workspace['status'], string> = {
-        active: 'workspaces.statusActive',
-        archived: 'workspaces.statusArchived',
-        draft: 'workspaces.statusDraft'
+        active: 'frontend.workspaces.statusActive',
+        archived: 'frontend.workspaces.statusArchived',
+        draft: 'frontend.workspaces.statusDraft'
     };
 
     // Default workspaces don't need an 'Active' badge as it's clear they are current
     const showStatus = workspace.status !== 'active';
 
     return (
-        <div className="pt-3 border-t border-border/5 mt-auto flex items-center justify-between text-[10px] font-medium text-muted-foreground/30">
+        <div className="pt-3 border-t border-border/5 mt-auto flex items-center justify-between text-sm font-medium text-muted-foreground/30">
             <span className="flex items-center gap-1.5">
                 <IconCalendar className="w-3 h-3" />
                 {new Date(workspace.createdAt).toLocaleDateString()}

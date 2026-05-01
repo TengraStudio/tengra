@@ -65,9 +65,9 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
         return (
             <div className={C_DOWNLOADHISTORYLIST_1}>
                 <IconHistory className="w-12 h-12 text-muted-foreground/20 mb-4" />
-                <h3 className="text-sm font-semibold text-foreground/70">{t('modelsPage.noDownloadHistory')}</h3>
+                <h3 className="text-sm font-semibold text-foreground/70">{t('frontend.modelsPage.noDownloadHistory')}</h3>
                 <p className="typo-caption text-muted-foreground/50 mt-1 max-w-240">
-                    {t('modelsPage.noDownloadHistoryDescription')}
+                    {t('frontend.modelsPage.noDownloadHistoryDescription')}
                 </p>
             </div>
         );
@@ -81,9 +81,9 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                         <IconHistory className="w-5 h-5" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold text-foreground">{t('modelsPage.downloadHistory')}</h3>
+                        <h3 className="text-sm font-bold text-foreground">{t('frontend.modelsPage.downloadHistory')}</h3>
                         <p className="typo-body text-muted-foreground/60 font-medium">
-                            {history.length} {t('modelsPage.historyItems')}
+                            {history.length} {t('frontend.modelsPage.historyItems')}
                         </p>
                     </div>
                 </div>

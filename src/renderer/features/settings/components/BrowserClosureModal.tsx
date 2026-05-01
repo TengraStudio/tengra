@@ -44,7 +44,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
                     <div className="flex items-center gap-2 text-warning">
                         <IconAlertTriangle className="h-5 w-5" />
                         <h3 className="font-bold text-foreground">
-                            {t('settings.browserClosure.title')}
+                            {t('frontend.settings.browserClosure.title')}
                         </h3>
                     </div>
                     <button
@@ -58,19 +58,19 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
                 {/* Content */}
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        {t('settings.browserClosure.description', { provider: providerName })}
+                        {t('frontend.settings.browserClosure.description', { provider: providerName })}
                     </p>
                     <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
                         <p className="typo-caption font-medium text-warning">
-                            {t('settings.browserClosure.warningPrefix')}{' '}
+                            {t('frontend.settings.browserClosure.warningPrefix')}{' '}
                             <span className="underline decoration-2 underline-offset-2">
-                                {t('settings.browserClosure.warningEmphasis')}
+                                {t('frontend.settings.browserClosure.warningEmphasis')}
                             </span>{' '}
-                            {t('settings.browserClosure.warningSuffix')}
+                            {t('frontend.settings.browserClosure.warningSuffix')}
                         </p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        {t('settings.browserClosure.saveWork')}
+                        {t('frontend.settings.browserClosure.saveWork')}
                     </p>
                 </div>
 
@@ -89,7 +89,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
                         }}
                         className={C_BROWSERCLOSUREMODAL_2}
                     >
-                        {t('settings.browserClosure.confirm')}
+                        {t('frontend.settings.browserClosure.confirm')}
                     </button>
                 </div>
             </div>

@@ -92,7 +92,7 @@ function useSpeechDevices(t: (key: string) => string) {
                 .filter(d => d.kind === 'audioinput' && d.deviceId)
                 .map(d => ({
                     value: d.deviceId,
-                    label: d.label || `${t('speech.microphone')} ${d.deviceId.slice(0, 5)}`,
+                    label: d.label || `${t('frontend.speech.microphone')} ${d.deviceId.slice(0, 5)}`,
                 })),
         [devices, t]
     );
@@ -103,7 +103,7 @@ function useSpeechDevices(t: (key: string) => string) {
                 .filter(d => d.kind === 'audiooutput' && d.deviceId)
                 .map(d => ({
                     value: d.deviceId,
-                    label: d.label || `${t('speech.speaker')} ${d.deviceId.slice(0, 5)}`,
+                    label: d.label || `${t('frontend.speech.speaker')} ${d.deviceId.slice(0, 5)}`,
                 })),
         [devices, t]
     );
@@ -128,17 +128,17 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
         <div className="px-1">
             <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
                 <IconMusic className="w-3 h-3 text-primary/60" />
-                {t('speech.voiceSelection')}
+                {t('frontend.speech.voiceSelection')}
             </label>
             <Select
                 value={settings?.speech?.voiceURI ?? ''}
                 onValueChange={val => updateSpeech({ voiceURI: val })}
             >
                 <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
-                    <SelectValue placeholder={t('speech.systemDefault')} />
+                    <SelectValue placeholder={t('frontend.speech.systemDefault')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-300">
-                    <SelectItem value="system-default" className="typo-body font-bold">{t('speech.systemDefault')}</SelectItem>
+                    <SelectItem value="system-default" className="typo-body font-bold">{t('frontend.speech.systemDefault')}</SelectItem>
                     {voices.map(v => (
                         <SelectItem key={v.voiceURI} value={v.voiceURI} className="typo-body font-bold">
                             {v.name} ({v.lang})
@@ -151,7 +151,7 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
             <div className="flex justify-between items-center mb-4">
                 <label className="typo-body font-bold text-foreground flex items-center gap-2">
                     <IconBolt className="w-3 h-3 text-primary/60" />
-                    {t('speech.speed')}
+                    {t('frontend.speech.speed')}
                 </label>
                 <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary tabular-nums">
                     {settings?.speech?.rate ?? 1}x
@@ -167,9 +167,9 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
                     className="w-full"
                 />
                 <div className="flex justify-between mt-3 typo-body font-bold text-muted-foreground/30">
-                    <span>{t('speech.rateHalf')}</span>
-                    <span>{t('speech.rateNormal')}</span>
-                    <span>{t('speech.rateDouble')}</span>
+                    <span>{t('frontend.speech.rateHalf')}</span>
+                    <span>{t('frontend.speech.rateNormal')}</span>
+                    <span>{t('frontend.speech.rateDouble')}</span>
                 </div>
             </div>
         </div>
@@ -195,17 +195,17 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
         <div className="px-1">
             <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
                 <IconMicrophone className="w-3 h-3 text-primary/60" />
-                {t('speech.microphone')}
+                {t('frontend.speech.microphone')}
             </label>
             <Select
                 value={settings?.speech?.audioInputDeviceId ?? 'default'}
                 onValueChange={val => updateSpeech({ audioInputDeviceId: val })}
             >
                 <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
-                    <SelectValue placeholder={t('speech.systemDefault')} />
+                    <SelectValue placeholder={t('frontend.speech.systemDefault')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                    <SelectItem value="default" className="typo-body font-bold">{t('speech.systemDefault')}</SelectItem>
+                    <SelectItem value="default" className="typo-body font-bold">{t('frontend.speech.systemDefault')}</SelectItem>
                     {inputDevices.map(opt => (
                         <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
                             {opt.label}
@@ -217,17 +217,17 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
         <div className="px-1">
             <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
                 <IconHeadphones className="w-3 h-3 text-primary/60" />
-                {t('speech.speakerSelection')}
+                {t('frontend.speech.speakerSelection')}
             </label>
             <Select
                 value={settings?.speech?.audioOutputDeviceId ?? 'default'}
                 onValueChange={val => updateSpeech({ audioOutputDeviceId: val })}
             >
                 <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
-                    <SelectValue placeholder={t('speech.systemDefault')} />
+                    <SelectValue placeholder={t('frontend.speech.systemDefault')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                    <SelectItem value="default" className="typo-body font-bold">{t('speech.systemDefault')}</SelectItem>
+                    <SelectItem value="default" className="typo-body font-bold">{t('frontend.speech.systemDefault')}</SelectItem>
                     {outputDevices.map(opt => (
                         <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
                             {opt.label}
@@ -247,7 +247,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
     const { voices, inputDevices, outputDevices } = useSpeechDevices(t);
 
     const handleTest = useCallback(() => {
-        const utterance = new SpeechSynthesisUtterance(t('speech.previewText'));
+        const utterance = new SpeechSynthesisUtterance(t('frontend.speech.previewText'));
         const voice = voices.find(v => v.voiceURI === settings?.speech?.voiceURI);
         if (voice) {
             utterance.voice = voice;
@@ -266,18 +266,18 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-foreground leading-none">
-                            {t('speech.title')}
+                            {t('frontend.speech.title')}
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
                             <p className="typo-body font-bold text-muted-foreground opacity-50">
-                                {t('speech.sonicInterface')}
+                                {t('frontend.speech.sonicInterface')}
                             </p>
                         </div>
                     </div>
                 </div>
                 <p className="typo-caption text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
-                    {t('speech.subtitle')}
+                    {t('frontend.speech.subtitle')}
                 </p>
             </div>
 
@@ -285,7 +285,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
             <div className={C_SPEECHTAB_2}>
                 <div className="flex items-center gap-3 px-1 relative z-10">
                     <IconRadio className="w-4 h-4 text-primary" />
-                    <h4 className="typo-body font-bold text-muted-foreground/40">{t('speech.synthesizerMatrix')}</h4>
+                    <h4 className="typo-body font-bold text-muted-foreground/40">{t('frontend.speech.synthesizerMatrix')}</h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
@@ -314,9 +314,9 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                                         <IconVolume className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <p className="typo-body font-bold text-muted-foreground/40 mb-2">{t('speech.auralPreview')}</p>
+                                        <p className="typo-body font-bold text-muted-foreground/40 mb-2">{t('frontend.speech.auralPreview')}</p>
                                         <p className="typo-caption leading-relaxed text-foreground font-medium opacity-80">
-                                            "{t('speech.previewText')}"
+                                            "{t('frontend.speech.previewText')}"
                                         </p>
                                     </div>
                                 </div>
@@ -329,7 +329,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                             className={C_SPEECHTAB_5}
                         >
                             <IconPlayerPlay className="w-3.5 h-3.5 mr-3 group-hover:scale-125 transition-transform" />
-                            {t('speech.test')}
+                            {t('frontend.speech.test')}
                         </Button>
                     </div>
                 </div>

@@ -37,7 +37,8 @@ export function sanitizePrompt(content: string): string {
 }
 
 /**
- * Validates prompt against common injection patterns and size limits
+ * Validates prompt against size limits only.
+ * Safety patterns have been disabled per user request.
  */
 export function validatePromptSafety(content: string): { safe: boolean; reason?: string } {
     if (!content) {
@@ -48,37 +49,5 @@ export function validatePromptSafety(content: string): { safe: boolean; reason?:
         return { safe: false, reason: `Prompt exceeds maximum length of ${MAX_PROMPT_LENGTH} characters` };
     }
 
-    const DANGEROUS_PATTERNS = [
-        // Basic XSS
-        /<script\b[^>]*>([\s\S]*?)<\/script>/gim,
-        /javascript:/gim,
-        /vbscript:/gim,
-        /onload=/gim,
-        /onerror=/gim,
-
-        // Prompt Injection attempts
-        /ignore (previous )?instructions/gim,
-        /you are now (an? )?[\w\s]{1,50}/gim,
-        /\bSYSTEM:\s*/gi,
-        /\bASSISTANT:\s*/gi,
-        /\bHUMAN:\s*/gi,
-
-        // Basic PII patterns
-        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Emails
-        /\b(?:\d[ -]*?){13,16}\b/g, // Potential Credit Cards
-
-        // Shell injection patterns
-        /;\s*(?:rm|sudo|ls|cat|cp|mv|chmod|chown)\s+/gi,
-        /\$\([\w\s-]+\)/gi,
-        /`[\w\s-]+`/gi
-    ];
-
-    for (const pattern of DANGEROUS_PATTERNS) {
-        if (pattern.test(content)) {
-            return { safe: false, reason: 'Potential injection or sensitive data pattern detected' };
-        }
-    }
-
     return { safe: true };
 }
-

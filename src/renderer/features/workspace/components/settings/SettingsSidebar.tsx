@@ -26,7 +26,7 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
     <button
         onClick={onClick}
         className={cn(
-            'flex items-center gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-200',
+            'flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
             active
                 ? 'bg-primary/10 text-primary border border-primary/10'
                 : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground'
@@ -48,45 +48,45 @@ export const SettingsSidebar: React.FC<{
     t: (key: string) => string;
 }> = ({ activeSection, setActiveSection, t }) => (
     <div className="w-56 border-r border-border/5 flex flex-col p-2 gap-1 shrink-0 bg-muted/5">
-        <div className="px-3 py-2 text-[10px] font-semibold text-muted-foreground/30 uppercase tracking-wider mb-1">
-            {t('workspaces.workspaceSettings')}
+        <div className="px-3 py-2 text-sm font-semibold text-muted-foreground/30 uppercase  mb-1">
+            {t('frontend.workspaces.workspaceSettings')}
         </div>
-        
+
         <NavButton
             active={activeSection === 'general'}
             onClick={() => setActiveSection('general')}
             icon={IconInfoCircle}
-            label={t('workspaces.navigation.general')}
+            label={t('frontend.workspaces.navigation.general')}
         />
         <NavButton
             active={activeSection === 'workspace'}
             onClick={() => setActiveSection('workspace')}
             icon={IconFolderOpen}
-            label={t('workspaces.navigation.workspace')}
+            label={t('frontend.workspaces.navigation.workspace')}
         />
         <NavButton
             active={activeSection === 'intelligence'}
             onClick={() => setActiveSection('intelligence')}
             icon={IconBrain}
-            label={t('workspaces.navigation.intelligence')}
+            label={t('frontend.workspaces.navigation.intelligence')}
         />
         <NavButton
             active={activeSection === 'council'}
             onClick={() => setActiveSection('council')}
             icon={IconRobot}
-            label={t('workspaces.navigation.council')}
+            label={t('frontend.workspaces.navigation.council')}
         />
         <NavButton
             active={activeSection === 'git'}
             onClick={() => setActiveSection('git')}
             icon={IconGitBranch}
-            label={t('workspaces.navigation.git')}
+            label={t('frontend.workspaces.navigation.git')}
         />
         <NavButton
             active={activeSection === 'pipelines'}
             onClick={() => setActiveSection('pipelines')}
             icon={IconTerminal}
-            label={t('workspaces.navigation.pipelines') || 'Pipelines'}
+            label={t('frontend.workspaces.navigation.pipelines')}
         />
     </div>
 );

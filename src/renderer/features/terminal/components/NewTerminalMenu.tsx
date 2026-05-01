@@ -55,7 +55,7 @@ export const NewTerminalMenu: React.FC<NewTerminalMenuProps> = ({
                 ))
             ) : (
                 <div className="px-3 py-2 typo-caption text-muted-foreground">
-                    {t('terminal.noShellsFound')}
+                    {t('frontend.terminal.noShellsFound')}
                 </div>
             )}
         </motion.div>

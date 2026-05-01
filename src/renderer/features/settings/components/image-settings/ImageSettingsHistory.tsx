@@ -89,10 +89,10 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/history:text-primary transition-colors">
-                            {t('settings.images.historyTitle')}
+                            {t('frontend.settings.images.historyTitle')}
                         </h3>
                         <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
-                            {historyEntries.length} {t('settings.images.historyEntries')}
+                            {historyEntries.length} {t('frontend.settings.images.historyEntries')}
                         </p>
                     </div>
                 </div>
@@ -103,7 +103,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     className={COMPONENT_CLASSES.buttonExport}
                 >
                     <IconDownload className="w-3.5 h-3.5" />
-                    {t('settings.images.exportHistory')}
+                    {t('frontend.settings.images.exportHistory')}
                 </Button>
             </div>
 
@@ -112,7 +112,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                 <Input
                     value={historySearchQuery}
                     onChange={event => setHistorySearchQuery(event.target.value)}
-                    placeholder={t('settings.images.searchHistory')}
+                    placeholder={t('frontend.settings.images.searchHistory')}
                     className={COMPONENT_CLASSES.searchBase}
                 />
             </div>
@@ -121,7 +121,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                 <div className={COMPONENT_CLASSES.emptyState}>
                     <IconHistory className="w-8 h-8 mb-4 text-muted-foreground" />
                     <p className="typo-body font-bold text-muted-foreground px-6">
-                        {t('settings.images.noHistory')}
+                        {t('frontend.settings.images.noHistory')}
                     </p>
                 </div>
             ) : (
@@ -152,7 +152,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                     className={COMPONENT_CLASSES.buttonRegenerate}
                                 >
                                     <IconRefresh className="w-3 h-3 mr-2" />
-                                    {t('settings.images.regenerate')}
+                                    {t('frontend.settings.images.regenerate')}
                                 </Button>
                             </div>
                             <div className="flex items-center gap-3 pt-2 border-t border-border/10">
@@ -185,7 +185,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     className={COMPONENT_CLASSES.buttonRunCompare}
                 >
                     <IconBolt className="w-4 h-4" />
-                    {t('settings.images.compareRun')}
+                    {t('frontend.settings.images.compareRun')}
                 </Button>
                 <div className="flex items-center gap-2">
                     <Button
@@ -194,7 +194,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         onClick={() => setSelectedCompareIds([])}
                         className={COMPONENT_CLASSES.buttonUtil}
                     >
-                        {t('settings.images.compareClear')}
+                        {t('frontend.settings.images.compareClear')}
                     </Button>
                     <Button
                         variant="outline"
@@ -202,7 +202,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         onClick={() => { void handleExportComparison(); }}
                         className={C_IMAGESETTINGSHISTORY_3}
                     >
-                        {t('settings.images.compareExport')}
+                        {t('frontend.settings.images.compareExport')}
                     </Button>
                     <Button
                         variant="outline"
@@ -210,7 +210,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         onClick={() => { void handleShareComparison(); }}
                         className={C_IMAGESETTINGSHISTORY_4}
                     >
-                        {t('settings.images.compareShare')}
+                        {t('frontend.settings.images.compareShare')}
                     </Button>
                 </div>
             </div>
@@ -220,20 +220,20 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover/analytics:rotate-12 transition-transform">
                         <IconSparkles className="w-4 h-4" />
                     </div>
-                    <div className="typo-body font-bold text-foreground">{t('settings.images.analyticsTitle')}</div>
+                    <div className="typo-body font-bold text-foreground">{t('frontend.settings.images.analyticsTitle')}</div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div className="space-y-1">
-                        <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.analyticsTotal')}</div>
+                        <div className="typo-body font-bold text-muted-foreground/40">{t('frontend.settings.images.analyticsTotal')}</div>
                         <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">{imageAnalytics.totalGenerated}</div>
                     </div>
                     <div className="space-y-1">
-                        <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageSteps')}</div>
+                        <div className="typo-body font-bold text-muted-foreground/40">{t('frontend.settings.images.analyticsAverageSteps')}</div>
                         <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">{imageAnalytics.averageSteps}</div>
                     </div>
                     {typeof imageAnalytics.averageDurationMs === 'number' && (
                         <div className="space-y-1">
-                            <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageDuration')}</div>
+                            <div className="typo-body font-bold text-muted-foreground/40">{t('frontend.settings.images.analyticsAverageDuration')}</div>
                             <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">
                                 {Math.round(imageAnalytics.averageDurationMs / 1000)}<span className="typo-caption ml-1">s</span>
                             </div>
@@ -250,7 +250,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                 <IconBolt className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="typo-body font-bold text-foreground">{t('settings.images.compareTitle')}</div>
+                                <div className="typo-body font-bold text-foreground">{t('frontend.settings.images.compareTitle')}</div>
                                 <div className="typo-body font-bold text-primary">{comparisonResult.ids.length} Models Analyzed</div>
                             </div>
                         </div>

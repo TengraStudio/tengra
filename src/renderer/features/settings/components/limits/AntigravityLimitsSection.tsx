@@ -36,10 +36,10 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
                 </div>
                 <div>
                     <h3 className="text-sm font-bold text-foreground">
-                        {t('settings.usageLimits.antigravity.title')}
+                        {t('frontend.settings.usageLimits.antigravity.title')}
                     </h3>
                     <p className="typo-caption text-muted-foreground mt-0.5">
-                        {t('settings.usageLimits.antigravity.description')}
+                        {t('frontend.settings.usageLimits.antigravity.description')}
                     </p>
                 </div>
             </div>
@@ -68,7 +68,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
                                 </div>
                                 <div className="flex items-center gap-3 px-2 py-1 rounded-full bg-background/50 border border-border/50">
                                     <span className="typo-body font-bold text-muted-foreground/80">
-                                        {t('settings.usageLimits.enable')}
+                                        {t('frontend.settings.usageLimits.enable')}
                                     </span>
                                     <Switch
                                         checked={modelLimit.enabled}
@@ -84,7 +84,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
                             {modelLimit.enabled && (
                                 <div className="mt-4 pt-4 border-t border-border/40 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <label className="text-sm font-bold text-muted-foreground/70 ml-1">
-                                        {t('settings.usageLimits.maxPercentQuota')}
+                                        {t('frontend.settings.usageLimits.maxPercentQuota')}
                                     </label>
                                     <div className="relative group">
                                         <Input
@@ -101,7 +101,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
                                                 )
                                             }
                                             className="bg-background/50 border-border/50 h-10 font-mono text-sm pr-10 focus:ring-primary/20"
-                                            placeholder={t('settings.usageLimits.maxPercentPlaceholder')}
+                                            placeholder={t('frontend.settings.usageLimits.maxPercentPlaceholder')}
                                         />
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold typo-caption">
                                             %
@@ -115,7 +115,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
 
                 {antigravityModels.length === 0 && (
                     <div className="py-12 text-center opacity-30 text-sm">
-                        {t('settings.usageLimits.noAntigravityModels')}
+                        {t('frontend.settings.usageLimits.noAntigravityModels')}
                     </div>
                 )}
             </div>

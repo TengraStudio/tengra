@@ -41,17 +41,17 @@ const ActivityBarContext = createContext<ActivityBarContextType | null>(null);
 export const useActivityBar = () => {
     const { t } = useTranslation();
     const context = useContext(ActivityBarContext);
-    if (!context) { throw new Error(t('errors.context.useActivityBarProvider')); }
+    if (!context) { throw new Error(t('frontend.errors.context.useActivityBarProvider')); }
     return context;
 };
 
 const getDefaultActivities = (t: (key: string) => string): ActivityItem[] => [
-    { id: 'chat', icon: <IconMessage className="w-5 h-5" />, label: t('activityBar.chat') },
-    { id: 'explorer', icon: <IconFolderOpen className="w-5 h-5" />, label: t('activityBar.explorer') },
-    { id: 'search', icon: <IconSearch className="w-5 h-5" />, label: t('activityBar.search') },
-    { id: 'git', icon: <IconGitBranch className="w-5 h-5" />, label: t('activityBar.sourceControl') },
-    { id: 'debug', icon: <IconBug className="w-5 h-5" />, label: t('activityBar.debug') },
-    { id: 'extensions', icon: <IconPuzzle className="w-5 h-5" />, label: t('activityBar.extensions') }
+    { id: 'chat', icon: <IconMessage className="w-5 h-5" />, label: t('frontend.activityBar.chat') },
+    { id: 'explorer', icon: <IconFolderOpen className="w-5 h-5" />, label: t('frontend.activityBar.explorer') },
+    { id: 'search', icon: <IconSearch className="w-5 h-5" />, label: t('frontend.activityBar.search') },
+    { id: 'git', icon: <IconGitBranch className="w-5 h-5" />, label: t('frontend.activityBar.sourceControl') },
+    { id: 'debug', icon: <IconBug className="w-5 h-5" />, label: t('frontend.activityBar.debug') },
+    { id: 'extensions', icon: <IconPuzzle className="w-5 h-5" />, label: t('frontend.activityBar.extensions') }
 ];
 
 // Activity Button Component
@@ -132,7 +132,7 @@ export const ActivityBar: React.FC<{
             () => (
                 bottomItems && bottomItems.length > 0
                     ? bottomItems
-                    : [{ id: 'settings', icon: <IconSettings className="w-5 h-5" />, label: t('activityBar.settings') }]
+                    : [{ id: 'settings', icon: <IconSettings className="w-5 h-5" />, label: t('frontend.activityBar.settings') }]
             ),
             [bottomItems, t]
         );
@@ -214,7 +214,7 @@ export const ActivityBarLayout: React.FC<{
                             <button
                                 onClick={() => setCollapsed(true)}
                                 className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted"
-                                aria-label={t('aria.collapseSidebar')}
+                                aria-label={t('frontend.aria.collapseSidebar')}
                             >
                                 <IconChevronLeft className="h-4 w-4" />
                             </button>
@@ -231,7 +231,7 @@ export const ActivityBarLayout: React.FC<{
                     <button
                         onClick={() => setCollapsed(false)}
                         className="flex h-full w-6 items-center justify-center border-r border-border/30 bg-transparent text-muted-foreground transition-colors hover:bg-muted/50"
-                        aria-label={t('aria.expandSidebar')}
+                        aria-label={t('frontend.aria.expandSidebar')}
                     >
                         <IconChevronRight className="h-4 w-4" />
                     </button>

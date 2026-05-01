@@ -87,7 +87,7 @@ export function VoiceControl({
             }
             // Provide audio feedback
             if (settings.audioFeedback) {
-                speak({ text: t('voice.feedback.navigating', { target: event.detail }) });
+                speak({ text: t('frontend.voice.feedback.navigating', { target: event.detail }) });
             }
         };
 
@@ -122,7 +122,7 @@ export function VoiceControl({
         return (
             <div className={cn('voice-control voice-control--unsupported', className)}>
                 <span className="voice-control__message">
-                    {t('voice.notSupported')}
+                    {t('frontend.voice.notSupported')}
                 </span>
             </div>
         );
@@ -137,11 +137,11 @@ export function VoiceControl({
     };
 
     const getStatusText = (): string => {
-        if (session.error) {return t('voice.status.error');}
-        if (session.isSpeaking) {return t('voice.status.speaking');}
-        if (session.isProcessing) {return t('voice.status.processing');}
-        if (session.isListening) {return t('voice.status.listening');}
-        return t('voice.status.idle');
+        if (session.error) {return t('frontend.voice.status.error');}
+        if (session.isSpeaking) {return t('frontend.voice.status.speaking');}
+        if (session.isProcessing) {return t('frontend.voice.status.processing');}
+        if (session.isListening) {return t('frontend.voice.status.listening');}
+        return t('frontend.voice.status.idle');
     };
 
     if (compact) {
@@ -149,8 +149,8 @@ export function VoiceControl({
             <button
                 className={cn('voice-control voice-control--compact', className)}
                 onClick={toggleListening}
-                title={session.isListening ? t('voice.stopListening') : t('voice.startListening')}
-                aria-label={session.isListening ? t('voice.stopListening') : t('voice.startListening')}
+                title={session.isListening ? t('frontend.voice.stopListening') : t('frontend.voice.startListening')}
+                aria-label={session.isListening ? t('frontend.voice.stopListening') : t('frontend.voice.startListening')}
                 aria-pressed={session.isListening}
             >
                 <span className={cn('voice-control__icon', STATUS_CLASSES.icon[getStatusColor()])}>
@@ -175,7 +175,7 @@ export function VoiceControl({
                         {session.isListening ? '🎤' : '🎙️'}
                     </span>
                     <span className="voice-control__label">
-                        {session.isListening ? t('voice.stop') : t('voice.start')}
+                        {session.isListening ? t('frontend.voice.stop') : t('frontend.voice.start')}
                     </span>
                 </button>
 
@@ -183,7 +183,7 @@ export function VoiceControl({
                     className="voice-control__help-button"
                     onClick={() => setShowHelp(!showHelp)}
                     aria-expanded={showHelp}
-                    aria-label={t('voice.showCommands')}
+                    aria-label={t('frontend.voice.showCommands')}
                 >
                     ?
                 </button>
@@ -199,7 +199,7 @@ export function VoiceControl({
             {showVisualFeedback && session.lastTranscript && (
                 <div className="voice-control__transcript">
                     <span className="voice-control__transcript-label">
-                        {t('voice.lastHeard')}:
+                        {t('frontend.voice.lastHeard')}:
                     </span>
                     <span className="voice-control__transcript-text">
                         {session.lastTranscript}
@@ -244,7 +244,7 @@ function VoiceCommandsHelp({ onClose }: { onClose: () => void }) {
     return (
         <div className="voice-help">
             <div className="voice-help__header">
-                <h3>{t('voice.commands.title')}</h3>
+                <h3>{t('frontend.voice.commands.title')}</h3>
                 <button onClick={onClose} aria-label={t('common.close')}>
                     ✕
                 </button>
@@ -265,7 +265,7 @@ function VoiceCommandsHelp({ onClose }: { onClose: () => void }) {
                                     </span>
                                     {cmd.aliases.length > 0 && (
                                         <span className="voice-help__aliases">
-                                            {t('voice.commands.aliases')}: {cmd.aliases.join(', ')}
+                                            {t('frontend.voice.commands.aliases')}: {cmd.aliases.join(', ')}
                                         </span>
                                     )}
                                 </li>

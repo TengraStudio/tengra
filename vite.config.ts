@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { resolve } from 'path';
 
-import react from '@vitejs/plugin-react';
+import react from '@vitejs/plugin-react-oxc';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
 import electron from 'vite-plugin-electron';
@@ -12,16 +12,14 @@ export default defineConfig(({ mode }) => {
     const isDev = nodeEnv === 'development';
     const shouldAnalyzeBundle = process.env.TENGRA_ANALYZE_BUNDLE === 'true';
     const shouldReportCompressedSize = process.env.TENGRA_REPORT_COMPRESSED_SIZE === 'true';
+    const shouldUsePollingWatcher = process.env.TENGRA_VITE_USE_POLLING === 'true';
 
     const buildTarget = process.env.TENGRA_BUILD_TARGET ?? 'all';
     const isMainOnly = buildTarget === 'main';
     const isRendererOnly = buildTarget === 'renderer';
 
     const plugins = [
-        react({
-            jsxRuntime: 'automatic',
-            jsxImportSource: 'react'
-        }),
+        react(),
     ];
 
     const pkg = JSON.parse(fs.readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
@@ -66,9 +64,10 @@ export default defineConfig(({ mode }) => {
                         emptyOutDir: true,
                         lib: {
                             entry: 'src/main/main.ts',
-                            formats: ['cjs']
+                            formats: ['cjs'],
+                            fileName: () => 'main.js'
                         },
-                        minify: isDev ? false : 'esbuild',
+                        minify: isDev ? false : 'oxc',
                         sourcemap: isDev,
                         rolldownOptions: {
                             external,
@@ -76,7 +75,8 @@ export default defineConfig(({ mode }) => {
                                 moduleSideEffects: false
                             },
                             output: {
-                                codeSplitting: false
+                                codeSplitting: false,
+                                entryFileNames: 'main.js'
                             }
                         }
                     }
@@ -103,11 +103,12 @@ export default defineConfig(({ mode }) => {
                     emptyOutDir: true,
                     lib: {
                         entry: 'src/main/preload.ts',
-                        formats: ['cjs']
+                        formats: ['cjs'],
+                        fileName: () => 'preload.js'
                     },
-                    minify: isDev ? false : 'esbuild',
+                    minify: isDev ? false : 'oxc',
                     sourcemap: isDev,
-                    rollupOptions: {
+                    rolldownOptions: {
                         external: ['electron'],
                         treeshake: !isDev,
                         output: {
@@ -161,8 +162,8 @@ export default defineConfig(({ mode }) => {
         },
         server: {
             watch: {
-                usePolling: true,
-                interval: 1000,
+                usePolling: shouldUsePollingWatcher,
+                interval: shouldUsePollingWatcher ? 1000 : undefined,
                 ignored: (p: string) => {
                     const normalized = p.replace(/\\/g, '/');
                     return (
@@ -188,12 +189,19 @@ export default defineConfig(({ mode }) => {
         },
         build: isMainOnly ? {
             outDir: 'dist/main',
-            emptyOutDir: false,
+            emptyOutDir: true,
             lib: {
                 entry: 'src/main/main.ts',
-                formats: ['cjs']
+                formats: ['cjs'],
+                fileName: 'main'
             },
-            rolldownOptions: { external }
+            rolldownOptions: { 
+                external,
+                output: {
+                    codeSplitting: false,
+                    entryFileNames: 'main.js'
+                }
+            }
         } : {
             outDir: 'dist/renderer',
             emptyOutDir: true,
@@ -239,7 +247,7 @@ export default defineConfig(({ mode }) => {
                 }
             },
             chunkSizeWarningLimit: 5000,
-            minify: isDev ? false : (process.env.TENGRA_BUILD_FAST === 'true' ? false : 'esbuild'),
+            minify: isDev ? false : (process.env.TENGRA_BUILD_FAST === 'true' ? false : 'oxc'),
             commonjsOptions: {
                 include: [/node_modules/],
                 transformMixedEsModules: true,
@@ -310,7 +318,6 @@ export default defineConfig(({ mode }) => {
             // Exclude large deps that don't need pre-bundling
             exclude: ['@lancedb/lancedb', 'apache-arrow'],
             rolldownOptions: {
-                target: 'esnext',
                 jsx: 'automatic',
                 jsxImportSource: 'react'
             }

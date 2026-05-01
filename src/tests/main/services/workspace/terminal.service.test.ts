@@ -116,8 +116,14 @@ vi.mock('@main/services/terminal/backends/node-pty.backend', () => ({
 vi.mock('@main/services/terminal/backends/ghostty.backend', () => ({
     GhosttyBackend: class {
         id = 'ghostty';
-        async isAvailable() { return false; }
-        async create() { throw new Error('Unavailable backend'); }
+        async isAvailable() { return true; }
+        async create() {
+            return {
+                write: vi.fn(),
+                resize: vi.fn(),
+                kill: vi.fn(),
+            };
+        }
     }
 }));
 vi.mock('@main/services/terminal/backends/alacritty.backend', () => ({
@@ -154,7 +160,7 @@ describe('TerminalService', () => {
         vi.clearAllMocks();
         fileStore.clear();
         existingPaths.clear();
-        existingPaths.add(normalizePath(path.join(USER_DATA_PATH, 'terminal-logs')));
+        existingPaths.add(normalizePath(path.join(USER_DATA_PATH, 'data/terminal/logs')));
     });
 
     it('creates, writes, resizes, and kills terminal sessions', async () => {
@@ -187,7 +193,7 @@ describe('TerminalService', () => {
 
         await serviceBeforeRestart.cleanup();
 
-        const snapshotPath = normalizePath(path.join(USER_DATA_PATH, 'terminal-sessions.json'));
+        const snapshotPath = normalizePath(path.join(USER_DATA_PATH, 'data/terminal/sessions.json'));
         expect(fileStore.get(snapshotPath)).toContain('persist-1');
 
         const serviceAfterRestart = new TerminalService();

@@ -389,6 +389,8 @@ export interface ElectronAPI {
         accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
     }>;
     getClaudeQuota: () => Promise<{ accounts: Array<ClaudeQuota> }>;
+    forceRefreshQuota: () => Promise<boolean>;
+
     checkUsageLimit: (
         provider: string,
         model: string
@@ -623,6 +625,7 @@ export interface ElectronAPI {
     modelDownloader: ElectronApiModelsMemoryDomain['modelDownloader'];
     llama: ElectronApiModelsMemoryDomain['llama'];
     sdCpp: ElectronApiModelsMemoryDomain['sdCpp'];
+    imageStudio: ElectronApiModelsMemoryDomain['imageStudio'];
     clipboard: ElectronApiWorkspaceSystemDomain['clipboard'];
     db: ElectronApiIntegrationsDomain['db'];
     terminal: ElectronApiIntegrationsDomain['terminal'];

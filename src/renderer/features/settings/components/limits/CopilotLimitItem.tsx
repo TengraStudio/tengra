@@ -50,7 +50,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                     </div>
                     <div>
                         <div className="text-sm font-bold text-foreground">
-                            {t('settings.usageLimits.limitLabel', { period: periodLabel })}
+                            {t('frontend.settings.usageLimits.limitLabel', { period: periodLabel })}
                         </div>
                         <div className="text-sm text-muted-foreground mt-0.5 font-medium opacity-60">
                             {period} interval
@@ -59,7 +59,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                 </div>
                 <div className="flex items-center gap-3 px-2 py-1 rounded-full bg-background/50 border border-border/50">
                     <span className="typo-body font-bold text-muted-foreground/80">
-                        {t('settings.usageLimits.enable')}
+                        {t('frontend.settings.usageLimits.enable')}
                     </span>
                     <Switch
                         checked={periodLimit.enabled}
@@ -73,7 +73,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                 <div className="space-y-4 mt-4 pt-4 border-t border-border/40 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-muted-foreground/70 ml-1">
-                            {t('settings.usageLimits.typeLabel')}
+                            {t('frontend.settings.usageLimits.typeLabel')}
                         </label>
                         <div className="flex gap-2 p-1 rounded-lg bg-muted/30 border border-border/20 w-fit">
                             <Button
@@ -88,7 +88,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                 )}
                             >
                                 <IconHash className="w-3 h-3 mr-1.5" />
-                                {t('settings.usageLimits.types.requests')}
+                                {t('frontend.settings.usageLimits.types.requests')}
                             </Button>
                             <Button
                                 variant={periodLimit.type === 'percentage' ? 'default' : 'ghost'}
@@ -102,7 +102,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                 )}
                             >
                                 <IconPercentage className="w-3 h-3 mr-1.5" />
-                                {t('settings.usageLimits.types.percentage')}
+                                {t('frontend.settings.usageLimits.types.percentage')}
                             </Button>
                         </div>
                     </div>
@@ -110,8 +110,8 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-muted-foreground/70 ml-1">
                             {periodLimit.type === 'requests'
-                                ? t('settings.usageLimits.maxRequests')
-                                : t('settings.usageLimits.maxPercentage')}
+                                ? t('frontend.settings.usageLimits.maxRequests')
+                                : t('frontend.settings.usageLimits.maxPercentage')}
                         </label>
                         <div className="relative">
                             <Input
@@ -129,8 +129,8 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                 className="bg-background/50 border-border/50 h-10 font-mono text-sm pr-10 focus:ring-primary/20"
                                 placeholder={
                                     periodLimit.type === 'requests'
-                                        ? t('settings.usageLimits.maxRequestsPlaceholder')
-                                        : t('settings.usageLimits.maxPercentagePlaceholder')
+                                        ? t('frontend.settings.usageLimits.maxRequestsPlaceholder')
+                                        : t('frontend.settings.usageLimits.maxPercentagePlaceholder')
                                 }
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold typo-caption">
@@ -140,7 +140,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                         {periodLimit.type === 'percentage' && (
                             <div className="typo-body text-muted-foreground/70 mt-1.5 px-1 font-medium bg-muted/30 py-1.5 rounded-md border border-border/20">
                                 ✨{' '}
-                                {t('settings.usageLimits.percentHint', {
+                                {t('frontend.settings.usageLimits.percentHint', {
                                     count: Math.round(copilotRemaining * (periodLimit.value / 100)),
                                     percentage: periodLimit.value,
                                     remaining: copilotRemaining,

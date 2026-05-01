@@ -82,10 +82,10 @@ export const WorkspaceListPage: React.FC<WorkspaceListPageProps> = ({
         <div className="h-full flex flex-col bg-background p-8 overflow-y-auto">
             <div className="max-w-5xl mx-auto w-full space-y-8">
                 <WorkspaceHeader
-                    title={t('sidebar.workspaces')}
-                    subtitle={t('workspaces.subtitle')}
-                    newWorkspaceLabel={t('workspaces.createNew')}
-                    searchPlaceholder={t('workspaces.searchPlaceholder')}
+                    title={t('frontend.sidebar.workspaces')}
+                    subtitle={t('frontend.workspaces.subtitle')}
+                    newWorkspaceLabel={t('frontend.workspaces.createNew')}
+                    searchPlaceholder={t('frontend.workspaces.searchPlaceholder')}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     onNewWorkspace={() => setShowWizard(true)}

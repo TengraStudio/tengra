@@ -95,7 +95,7 @@ const ModelItem: React.FC<ModelItemProps> = ({ model, onRemove, disabled, t }) =
     <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
         <span className="flex-1 text-sm">{model.provider}/{model.model}</span>
         <Button variant="ghost" size="sm" onClick={onRemove} disabled={disabled}>
-            {t('chat.collaboration.remove')}
+            {t('frontend.chat.collaboration.remove')}
         </Button>
     </div>
 );
@@ -124,13 +124,13 @@ const FinalResult: React.FC<FinalResultProps> = ({ results, t }) => {
 
     return (
         <div className="space-y-2">
-            <label className="text-sm font-medium">{t('chat.collaboration.finalResult')}</label>
+            <label className="text-sm font-medium">{t('frontend.chat.collaboration.finalResult')}</label>
             <Card className="p-4 bg-primary/5">
                 {results.consensus && (
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <IconCircleCheck className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-medium">{t('chat.collaboration.consensus')}</span>
+                            <span className="text-sm font-medium">{t('frontend.chat.collaboration.consensus')}</span>
                         </div>
                         <p className="text-sm">{results.consensus}</p>
                     </div>
@@ -139,11 +139,11 @@ const FinalResult: React.FC<FinalResultProps> = ({ results, t }) => {
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <IconCircleCheck className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-medium">{t('chat.collaboration.bestResponse')}</span>
+                            <span className="text-sm font-medium">{t('frontend.chat.collaboration.bestResponse')}</span>
                         </div>
                         <p className="text-sm mb-2">{results.bestResponse.content}</p>
                         <p className="typo-caption text-muted-foreground">
-                            {t('chat.collaboration.from', { provider: results.bestResponse.provider, model: results.bestResponse.model })}
+                            {t('frontend.chat.collaboration.from', { provider: results.bestResponse.provider, model: results.bestResponse.model })}
                         </p>
                     </div>
                 )}
@@ -167,9 +167,9 @@ interface PresenceCardProps {
 const PresenceCard = React.memo<PresenceCardProps>(({ presence, allowGuests, onToggleGuests, t }) => (
     <Card className="p-3 space-y-2">
         <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{t('chat.collaboration.presence')}</span>
+            <span className="text-sm font-medium">{t('frontend.chat.collaboration.presence')}</span>
             <Button variant={allowGuests ? 'secondary' : 'outline'} size="sm" onClick={onToggleGuests}>
-                {allowGuests ? t('chat.collaboration.guestsAllowed') : t('chat.collaboration.guestsBlocked')}
+                {allowGuests ? t('frontend.chat.collaboration.guestsAllowed') : t('frontend.chat.collaboration.guestsBlocked')}
             </Button>
         </div>
         {presence.map((participant) => (
@@ -195,12 +195,12 @@ const SharedMemoryCard = React.memo<SharedMemoryCardProps>(({
     sharedMemoryNote, sharedMemory, onNoteChange, onAddMemory, t
 }) => (
     <Card className="p-3 space-y-2">
-        <label className="text-sm font-medium">{t('chat.collaboration.sharedMemory')}</label>
+        <label className="text-sm font-medium">{t('frontend.chat.collaboration.sharedMemory')}</label>
         <div className="flex gap-2">
             <Input
                 value={sharedMemoryNote}
                 onChange={(event) => { onNoteChange(event.target.value); }}
-                placeholder={t('chat.collaboration.memoryPlaceholder')}
+                placeholder={t('frontend.chat.collaboration.memoryPlaceholder')}
             />
             <Button size="sm" onClick={() => { onAddMemory(sharedMemoryNote); }}>{t('common.add')}</Button>
         </div>
@@ -221,9 +221,9 @@ interface CursorMarkersCardProps {
 const CursorMarkersCard = React.memo<CursorMarkersCardProps>(({ cursorMarkers, onAddMarker, t }) => (
     <Card className="p-3 space-y-2">
         <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">{t('chat.collaboration.cursorMarkers')}</label>
+            <label className="text-sm font-medium">{t('frontend.chat.collaboration.cursorMarkers')}</label>
             <Button size="sm" variant="outline" onClick={onAddMarker}>
-                {t('chat.collaboration.addMarker')}
+                {t('frontend.chat.collaboration.addMarker')}
             </Button>
         </div>
         {cursorMarkers.map((marker) => (
@@ -245,9 +245,9 @@ interface AnnotationsCardProps {
 const AnnotationsCard = React.memo<AnnotationsCardProps>(({ annotations, onAnnotate, t }) => (
     <Card className="p-3 space-y-2">
         <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">{t('chat.collaboration.changeAnnotations')}</label>
+            <label className="text-sm font-medium">{t('frontend.chat.collaboration.changeAnnotations')}</label>
             <Button size="sm" variant="outline" onClick={onAnnotate}>
-                {t('chat.collaboration.annotate')}
+                {t('frontend.chat.collaboration.annotate')}
             </Button>
         </div>
         {annotations.map((annotation) => (
@@ -279,11 +279,11 @@ const SessionRecordingCard = React.memo<SessionRecordingCardProps>(({
                 variant={sessionRecording ? 'destructive' : 'outline'}
                 onClick={onToggleRecording}
             >
-                {sessionRecording ? t('chat.collaboration.stopRecording') : t('chat.collaboration.startRecording')}
+                {sessionRecording ? t('frontend.chat.collaboration.stopRecording') : t('frontend.chat.collaboration.startRecording')}
             </Button>
             <Button size="sm" variant="outline" onClick={onGenerateLink}>
                 <IconCopy className="w-3 h-3 mr-1" />
-                {t('chat.collaboration.generateShareLink')}
+                {t('frontend.chat.collaboration.generateShareLink')}
             </Button>
         </div>
         {shareLink && <Input value={shareLink} readOnly />}
@@ -347,9 +347,9 @@ function useCollaborationState(
     const [sharedMemoryNote, setSharedMemoryNote] = useState('');
     const [sharedMemory, setSharedMemory] = useState<string[]>([]);
     const [presence, setPresence] = useState<PresenceParticipant[]>([
-        { id: 'owner', name: t('chat.collaboration.ownerDisplayName'), role: 'owner', isOnline: true },
-        { id: 'guest', name: t('chat.collaboration.guestReviewerName'), role: 'guest', isOnline: true },
-        { id: 'ai', name: t('chat.collaboration.aiPartnerName'), role: 'ai', isOnline: true }
+        { id: 'owner', name: t('frontend.chat.collaboration.ownerDisplayName'), role: 'owner', isOnline: true },
+        { id: 'guest', name: t('frontend.chat.collaboration.guestReviewerName'), role: 'guest', isOnline: true },
+        { id: 'ai', name: t('frontend.chat.collaboration.aiPartnerName'), role: 'ai', isOnline: true }
     ]);
     const [cursorMarkers, setCursorMarkers] = useState<CursorMarker[]>([]);
     const [annotations, setAnnotations] = useState<ChangeAnnotation[]>([]);
@@ -399,10 +399,10 @@ function useCollaborationState(
     const addAnnotation = useCallback((note: string): void => {
         const entry: ChangeAnnotation = {
             id: `${Date.now()}-${Math.round(Math.random() * 1000)}`,
-            author: t('chat.collaboration.ownerDisplayName'), note, timestamp: Date.now()
+            author: t('frontend.chat.collaboration.ownerDisplayName'), note, timestamp: Date.now()
         };
         setAnnotations((cur) => [entry, ...cur].slice(0, 10));
-        appendRecordingEvent(`${t('chat.collaboration.annotationRecorded')}: ${note}`);
+        appendRecordingEvent(`${t('frontend.chat.collaboration.annotationRecorded')}: ${note}`);
     }, [appendRecordingEvent, t]);
 
     const addCursorMarker = useCallback((user: string, target: string): void => {
@@ -411,7 +411,7 @@ function useCollaborationState(
             user, target, highlightedAt: Date.now()
         };
         setCursorMarkers((cur) => [marker, ...cur].slice(0, 10));
-        appendRecordingEvent(`${t('chat.collaboration.cursorMarked')}: ${user}`);
+        appendRecordingEvent(`${t('frontend.chat.collaboration.cursorMarked')}: ${user}`);
     }, [appendRecordingEvent, t]);
 
     const handleAddMemory = useCallback((note: string): void => {
@@ -419,12 +419,12 @@ function useCollaborationState(
         if (!trimmed) { return; }
         setSharedMemory((cur) => [trimmed, ...cur].slice(0, 10));
         setSharedMemoryNote('');
-        appendRecordingEvent(`${t('chat.collaboration.memoryUpdated')}: ${trimmed}`);
+        appendRecordingEvent(`${t('frontend.chat.collaboration.memoryUpdated')}: ${trimmed}`);
     }, [appendRecordingEvent, t]);
 
     const handleRun = useCallback(async () => {
         if (selectedModels.length === 0) {
-            setError(t('chat.collaboration.selectModelError'));
+            setError(t('frontend.chat.collaboration.selectModelError'));
             return;
         }
         setIsRunning(true);
@@ -435,12 +435,12 @@ function useCollaborationState(
                 messages, models: selectedModels, strategy
             });
             setResults(result);
-            addAnnotation(t('chat.collaboration.responseSynchronized'));
-            addCursorMarker(t('chat.collaboration.aiPartnerName'), t('chat.collaboration.latestResponse'));
-            appendRecordingEvent(t('chat.collaboration.collaborationRunFinished'));
+            addAnnotation(t('frontend.chat.collaboration.responseSynchronized'));
+            addCursorMarker(t('frontend.chat.collaboration.aiPartnerName'), t('frontend.chat.collaboration.latestResponse'));
+            appendRecordingEvent(t('frontend.chat.collaboration.collaborationRunFinished'));
             if (result.response) { onResult?.(result.response); }
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('chat.collaboration.runFailed'));
+            setError(err instanceof Error ? err.message : t('frontend.chat.collaboration.runFailed'));
         } finally {
             setIsRunning(false);
         }
@@ -452,7 +452,7 @@ function useCollaborationState(
 
     const handleToggleGuests = useCallback(() => {
         setAllowGuests((cur) => !cur);
-        appendRecordingEvent(t('chat.collaboration.guestPolicyChanged'));
+        appendRecordingEvent(t('frontend.chat.collaboration.guestPolicyChanged'));
     }, [appendRecordingEvent, t]);
 
     const handleNoteChange = useCallback((value: string) => {
@@ -460,16 +460,16 @@ function useCollaborationState(
     }, []);
 
     const handleAddCursorMarkerClick = useCallback(() => {
-        addCursorMarker(t('chat.collaboration.guestReviewerName'), t('chat.collaboration.promptArea'));
+        addCursorMarker(t('frontend.chat.collaboration.guestReviewerName'), t('frontend.chat.collaboration.promptArea'));
     }, [addCursorMarker, t]);
 
     const handleAnnotateClick = useCallback(() => {
-        addAnnotation(t('chat.collaboration.annotationTemplate'));
+        addAnnotation(t('frontend.chat.collaboration.annotationTemplate'));
     }, [addAnnotation, t]);
 
     const handleToggleRecording = useCallback(() => {
         setSessionRecording((cur) => !cur);
-        appendRecordingEvent(t('chat.collaboration.recordingToggled'));
+        appendRecordingEvent(t('frontend.chat.collaboration.recordingToggled'));
     }, [appendRecordingEvent, t]);
 
     const handleGenerateLink = useCallback(() => {
@@ -477,13 +477,13 @@ function useCollaborationState(
             const link = `tengra://share/${sessionId}?guest=${allowGuestsRef.current ? '1' : '0'}`;
             setShareLink(link);
             await navigator.clipboard.writeText(link).catch(() => { /* clipboard unavailable */ });
-            appendRecordingEvent(t('chat.collaboration.linkGenerated'));
+            appendRecordingEvent(t('frontend.chat.collaboration.linkGenerated'));
         })();
     }, [sessionId, appendRecordingEvent, t]);
 
     const handleContextChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setSharedContext(event.target.value);
-        appendRecordingEvent(t('chat.collaboration.contextUpdated'));
+        appendRecordingEvent(t('frontend.chat.collaboration.contextUpdated'));
     }, [appendRecordingEvent, t]);
 
     const handleDismissError = useCallback(() => { setError(null); }, []);
@@ -515,25 +515,25 @@ export function MultiModelCollaboration({
             <Card className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <IconSparkles className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-semibold">{s.t('chat.collaboration.title')}</h3>
+                    <h3 className="text-lg font-semibold">{s.t('frontend.chat.collaboration.title')}</h3>
                 </div>
 
                 {availableModels.length === 0 && (
                     <div className="p-4 bg-muted/50 border border-muted rounded-md text-center space-y-2">
                         <IconAlertTriangle className="w-6 h-6 text-warning mx-auto" />
-                        <p className="text-sm text-muted-foreground">{s.t('chat.collaboration.noModelsAvailable')}</p>
+                        <p className="text-sm text-muted-foreground">{s.t('frontend.chat.collaboration.noModelsAvailable')}</p>
                     </div>
                 )}
 
                 {availableModels.length > 0 && s.selectedModels.length === 0 && !s.isRunning && !s.results && (
                     <div className="p-4 bg-muted/50 border border-dashed border-muted-foreground/25 rounded-md text-center space-y-1">
-                        <p className="text-sm font-medium">{s.t('chat.collaboration.emptyStateTitle')}</p>
-                        <p className="typo-caption text-muted-foreground">{s.t('chat.collaboration.emptyStateDescription')}</p>
+                        <p className="text-sm font-medium">{s.t('frontend.chat.collaboration.emptyStateTitle')}</p>
+                        <p className="typo-caption text-muted-foreground">{s.t('frontend.chat.collaboration.emptyStateDescription')}</p>
                     </div>
                 )}
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">{s.t('chat.collaboration.selectedModels')}</label>
+                    <label className="text-sm font-medium">{s.t('frontend.chat.collaboration.selectedModels')}</label>
                     {s.selectedModels.map((model, index) => (
                         <ModelItem
                             key={index}
@@ -544,29 +544,29 @@ export function MultiModelCollaboration({
                         />
                     ))}
                     <Button variant="outline" size="sm" onClick={s.handleAddModel} disabled={s.isRunning || availableModels.length === 0}>
-                        {s.t('chat.collaboration.addModel')}
+                        {s.t('frontend.chat.collaboration.addModel')}
                     </Button>
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">{s.t('chat.collaboration.strategy')}</label>
+                    <label className="text-sm font-medium">{s.t('frontend.chat.collaboration.strategy')}</label>
                     <Select value={s.strategy} onValueChange={(v) => s.setStrategy(v as Strategy)} disabled={s.isRunning}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="consensus">{s.t('chat.collaboration.strategyConsensus')}</SelectItem>
-                            <SelectItem value="vote">{s.t('chat.collaboration.strategyVote')}</SelectItem>
-                            <SelectItem value="best-of-n">{s.t('chat.collaboration.strategyBestOfN')}</SelectItem>
-                            <SelectItem value="chain-of-thought">{s.t('chat.collaboration.strategyChain')}</SelectItem>
+                            <SelectItem value="consensus">{s.t('frontend.chat.collaboration.strategyConsensus')}</SelectItem>
+                            <SelectItem value="vote">{s.t('frontend.chat.collaboration.strategyVote')}</SelectItem>
+                            <SelectItem value="best-of-n">{s.t('frontend.chat.collaboration.strategyBestOfN')}</SelectItem>
+                            <SelectItem value="chain-of-thought">{s.t('frontend.chat.collaboration.strategyChain')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">{s.t('chat.collaboration.sharedContext')}</label>
+                    <label className="text-sm font-medium">{s.t('frontend.chat.collaboration.sharedContext')}</label>
                     <Textarea
                         value={s.sharedContext}
                         onChange={s.handleContextChange}
-                        placeholder={s.t('chat.collaboration.sharedContextPlaceholder')}
+                        placeholder={s.t('frontend.chat.collaboration.sharedContextPlaceholder')}
                         disabled={s.isRunning}
                     />
                 </div>
@@ -595,9 +595,9 @@ export function MultiModelCollaboration({
 
                 <Button onClick={s.handleRunClick} disabled={s.isRunning || s.selectedModels.length === 0} className="w-full">
                     {s.isRunning ? (
-                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" />{s.t('chat.collaboration.running')}</>
+                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" />{s.t('frontend.chat.collaboration.running')}</>
                     ) : (
-                        <><IconSparkles className="w-4 h-4 mr-2" />{s.t('chat.collaboration.run')}</>
+                        <><IconSparkles className="w-4 h-4 mr-2" />{s.t('frontend.chat.collaboration.run')}</>
                     )}
                 </Button>
 
@@ -609,10 +609,10 @@ export function MultiModelCollaboration({
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={s.handleRunClick} disabled={s.isRunning || s.selectedModels.length === 0}>
-                                <IconRefresh className="w-3 h-3 mr-1" />{s.t('chat.collaboration.retry')}
+                                <IconRefresh className="w-3 h-3 mr-1" />{s.t('frontend.chat.collaboration.retry')}
                             </Button>
                             <Button variant="ghost" size="sm" onClick={s.handleDismissError}>
-                                {s.t('chat.collaboration.dismiss')}
+                                {s.t('frontend.chat.collaboration.dismiss')}
                             </Button>
                         </div>
                     </div>
@@ -620,9 +620,9 @@ export function MultiModelCollaboration({
 
                 {s.results && (
                     <div className="space-y-4 mt-4 pt-4 border-t">
-                        <h4 className="font-semibold">{s.t('chat.collaboration.results')}</h4>
+                        <h4 className="font-semibold">{s.t('frontend.chat.collaboration.results')}</h4>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">{s.t('chat.collaboration.individualResponses')}</label>
+                            <label className="text-sm font-medium">{s.t('frontend.chat.collaboration.individualResponses')}</label>
                             {s.results.responses.map((response, index: number) => (
                                 <ResponseCard key={index} response={response} />
                             ))}

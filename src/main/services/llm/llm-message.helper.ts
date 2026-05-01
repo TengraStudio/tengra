@@ -11,7 +11,7 @@
 import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, ContentPart } from '@main/types/llm.types';
-import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
+import { sanitizePrompt } from '@main/utils/prompt-sanitizer.util';
 import { buildLocaleReinforcementInstruction } from '@shared/instructions';
 import { Message, MessageContentPart } from '@shared/types/chat';
 import { ValidationError } from '@shared/utils/error.util';
@@ -41,17 +41,13 @@ export function validateMessagesInput(messages: Array<Message | ChatMessage>): v
 }
 
 /**
- * Sanitizes user input messages to prevent injection/XSS.
+ * Sanitizes user input messages.
+ * Safety checks have been removed per user request.
  */
 export function sanitizeMessages(messages: Array<Message | ChatMessage>): Array<Message | ChatMessage> {
     return messages.map(msg => {
         if (msg.role === 'user') {
             const checkContent = (content: string) => {
-                const validation = validatePromptSafety(content);
-                if (!validation.safe) {
-                    appLogger.warn('LLMService', `Prompt safety check failed: ${validation.reason}`);
-                    throw new ValidationError(validation.reason ?? 'Unsafe content detected', { field: 'prompt' });
-                }
                 return sanitizePrompt(content);
             };
 

@@ -28,10 +28,10 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
         <div className="flex flex-col gap-1.5">
             <h2 className="text-2xl font-bold flex items-center gap-2">
                 <IconDatabase className="w-6 h-6 text-primary" />
-                {t('workspaces.advancedEngine')}
+                {t('frontend.workspaces.advancedEngine')}
             </h2>
             <p className="text-muted-foreground">
-                {t('workspaces.advancedEngineDesc')}
+                {t('frontend.workspaces.advancedEngineDesc')}
             </p>
         </div>
 
@@ -39,16 +39,16 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
                     <IconFileSearch className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-base font-semibold">{t('workspaces.indexingControl')}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('frontend.workspaces.indexingControl')}</CardTitle>
                 </div>
-                <CardDescription>{t('workspaces.indexingControlDesc')}</CardDescription>
+                <CardDescription>{t('frontend.workspaces.indexingControlDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
                 <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
                     <div className="space-y-1">
-                        <Label className="text-sm font-semibold">{t('workspaces.semanticIndexing')}</Label>
+                        <Label className="text-sm font-semibold">{t('frontend.workspaces.semanticIndexing')}</Label>
                         <p className="text-sm text-muted-foreground">
-                            {t('workspaces.semanticIndexingDesc')}
+                            {t('frontend.workspaces.semanticIndexingDesc')}
                         </p>
                     </div>
                     <Switch
@@ -61,7 +61,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium">{t('workspaces.maxFileSize')}</Label>
+                        <Label className="text-sm font-medium">{t('frontend.workspaces.maxFileSize')}</Label>
                         <Input
                             type="number"
                             value={formData.indexingMaxFileSize}
@@ -72,7 +72,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium">{t('workspaces.maxConcurrency')}</Label>
+                        <Label className="text-sm font-medium">{t('frontend.workspaces.maxConcurrency')}</Label>
                         <Input
                             type="number"
                             min={1}
@@ -92,13 +92,13 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
                     <IconEyeOff className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-base font-semibold">{t('workspaces.exclusionPatterns')}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('frontend.workspaces.exclusionPatterns')}</CardTitle>
                 </div>
-                <CardDescription>{t('workspaces.exclusionPatternsDesc')}</CardDescription>
+                <CardDescription>{t('frontend.workspaces.exclusionPatternsDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
                 <Textarea
-                    placeholder={t('workspaces.exclusionPatternsPlaceholder')}
+                    placeholder={t('frontend.workspaces.exclusionPatternsPlaceholder')}
                     value={formData.indexingExclude}
                     className="min-h-24 bg-background/50 font-mono text-sm"
                     onChange={e =>
@@ -112,15 +112,15 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
                     <IconBolt className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-base font-semibold">{t('workspaces.dynamicFeatures')}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('frontend.workspaces.dynamicFeatures')}</CardTitle>
                 </div>
-                <CardDescription>{t('workspaces.dynamicFeaturesDesc')}</CardDescription>
+                <CardDescription>{t('frontend.workspaces.dynamicFeaturesDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
                 <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
                     <div className="space-y-1">
-                        <Label className="text-sm font-semibold">{t('workspaces.fileWatcher')}</Label>
-                        <p className="text-sm text-muted-foreground">{t('workspaces.fileWatcherDesc')}</p>
+                        <Label className="text-sm font-semibold">{t('frontend.workspaces.fileWatcher')}</Label>
+                        <p className="text-sm text-muted-foreground">{t('frontend.workspaces.fileWatcherDesc')}</p>
                     </div>
                     <Switch
                         checked={formData.fileWatchEnabled}
@@ -132,8 +132,8 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
 
                 <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
                     <div className="space-y-1">
-                        <Label className="text-sm font-semibold">{t('workspaces.autoSaveLabel')}</Label>
-                        <p className="text-sm text-muted-foreground">{t('workspaces.autoSaveDesc')}</p>
+                        <Label className="text-sm font-semibold">{t('frontend.workspaces.autoSaveLabel')}</Label>
+                        <p className="text-sm text-muted-foreground">{t('frontend.workspaces.autoSaveDesc')}</p>
                     </div>
                     <Switch
                         checked={formData.autoSave}

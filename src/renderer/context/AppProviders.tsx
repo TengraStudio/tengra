@@ -81,8 +81,8 @@ class ProviderBoundary extends Component<ProviderBoundaryProps, ProviderBoundary
 
 function LocalizedRuntimeProviders({ children }: { children: ReactNode }) {
     const { t } = useTranslation();
-    const errorTitle = t('appProviders.startupProviderCrash');
-    const providerFailedPrefix = t('appProviders.providerFailedPrefix');
+    const errorTitle = t('frontend.appProviders.startupProviderCrash');
+    const providerFailedPrefix = t('frontend.appProviders.providerFailedPrefix');
 
     return (
         <RuntimeBootstrapBoundary>

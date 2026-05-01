@@ -26,6 +26,8 @@ const translations: Partial<Record<BuiltInLanguage, TranslationKeys>> = {
 };
 const DEFAULT_LANGUAGE = 'en';
 const DEFAULT_TRANSLATION_FALLBACK_KEY = 'common.notAvailable';
+const TRANSLATION_ROOT_PREFIX = 'translations.';
+type TranslationScope = 'frontend' | 'backend' | 'common';
 
 const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => {
     const parts = path.split('.');
@@ -40,6 +42,25 @@ const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => 
     }
 
     return current;
+};
+
+const hasScopePrefix = (path: string): boolean => {
+    return path.startsWith('frontend.') || path.startsWith('backend.') || path.startsWith('common.');
+};
+
+const normalizeTranslationPath = (path: string): string => {
+    if (path.startsWith(TRANSLATION_ROOT_PREFIX)) {
+        return path.slice(TRANSLATION_ROOT_PREFIX.length);
+    }
+    return path;
+};
+
+const resolveScopedPath = (
+    _translationRoot: JsonValue,
+    path: string,
+    _scope: TranslationScope
+): string => {
+    return normalizeTranslationPath(path);
 };
 
 
@@ -60,12 +81,14 @@ const selectTranslationText = (
     locale: string,
     translationRoot: JsonValue,
     path: string,
+    scope: TranslationScope,
     options?: Record<string, unknown>
 ): string => {
-    let translationValue = getTranslationNode(translationRoot, path);
+    const scopedPath = resolveScopedPath(translationRoot, path, scope);
+    let translationValue = getTranslationNode(translationRoot, scopedPath);
 
     if (options && typeof options.count === 'number') {
-        const pluralKey = `${path}_${new Intl.PluralRules(locale).select(options.count)}`;
+        const pluralKey = `${scopedPath}_${new Intl.PluralRules(locale).select(options.count)}`;
         const pluralValue = getTranslationNode(translationRoot, pluralKey);
         if (typeof pluralValue === 'string') {
             translationValue = pluralValue;
@@ -183,7 +206,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             ?? translations.en) as JsonValue;
 
         return (path: string, options?: Record<string, unknown>): string => {
-            return selectTranslationText(language, activeTranslations, path, options);
+            return selectTranslationText(language, activeTranslations, path, 'frontend', options);
         };
     }, [language, localeRegistryVersion]);
 
@@ -240,7 +263,7 @@ export function useTranslation(lang?: Language) {
             ?? translations[resolvedLanguage as BuiltInLanguage]
             ?? translations.en) as JsonValue;
         const get = (path: string, options?: Record<string, unknown>): string => {
-            return selectTranslationText(resolvedLanguage, activeTranslations, path, options);
+            return selectTranslationText(resolvedLanguage, activeTranslations, path, 'frontend', options);
         };
         return {
             t: get,

@@ -90,6 +90,9 @@ export interface SessionWorkspaceAgentApi {
         sessionId: string;
         archived: boolean;
     }) => Promise<WorkspaceAgentSession>;
+    delete: (payload: {
+        sessionId: string;
+    }) => Promise<{ success: boolean }>;
     resumeBackgroundState: (payload: {
         workspaceId: string;
         activeSessionId: string | null;

@@ -82,8 +82,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                                 ? 'bg-primary/10 text-primary'
                                 : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                         )}
-                        title={t('nav.settings')}
-                        aria-label={t('nav.settings')}
+                        title={t('frontend.nav.settings')}
+                        aria-label={t('frontend.nav.settings')}
                     >
                         <SettingsIcon className="h-4 w-4" />
                         {updateCount > 0 && (

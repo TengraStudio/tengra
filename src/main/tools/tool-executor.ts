@@ -1147,6 +1147,70 @@ export class ToolExecutor {
         await new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    private async observeTerminalSession(
+        sessionId: string,
+        options?: {
+            pattern?: string;
+            timeoutMs?: number;
+            idleMs?: number;
+            tailBytes?: number;
+        }
+    ): Promise<{
+        output: string;
+        fullOutput: string;
+        totalBytes: number;
+        truncated: boolean;
+        matched: boolean;
+        idle: boolean;
+        timedOut: boolean;
+        elapsedMs: number;
+    }> {
+        const pattern = options?.pattern;
+        const requestedTimeout = typeof options?.timeoutMs === 'number' && Number.isFinite(options.timeoutMs)
+            ? Math.floor(options.timeoutMs)
+            : 30000;
+        const timeoutMs = Math.max(250, Math.min(requestedTimeout, ToolExecutor.MAX_TERMINAL_WAIT_MS));
+        const requestedIdle = typeof options?.idleMs === 'number' && Number.isFinite(options.idleMs)
+            ? Math.floor(options.idleMs)
+            : 1000;
+        const idleMs = Math.max(250, Math.min(requestedIdle, 10000));
+        const tailBytes = typeof options?.tailBytes === 'number' && Number.isFinite(options.tailBytes)
+            ? Math.floor(options.tailBytes)
+            : 20000;
+
+        const startedAt = Date.now();
+        const maxPolls = Math.ceil(timeoutMs / ToolExecutor.TERMINAL_POLL_INTERVAL_MS);
+        let lastOutput = await this.options.terminal.getSessionBuffer(sessionId);
+        let lastChangeAt = Date.now();
+        let matched = pattern ? lastOutput.includes(pattern) : false;
+        let idle = false;
+
+        for (let poll = 0; poll < maxPolls && !matched && !idle; poll += 1) {
+            await this.wait(ToolExecutor.TERMINAL_POLL_INTERVAL_MS);
+            const nextOutput = await this.options.terminal.getSessionBuffer(sessionId);
+            if (nextOutput !== lastOutput) {
+                lastOutput = nextOutput;
+                lastChangeAt = Date.now();
+            }
+            matched = pattern ? nextOutput.includes(pattern) : false;
+            idle = Date.now() - lastChangeAt >= idleMs;
+        }
+
+        const elapsedMs = Date.now() - startedAt;
+        const timedOut = elapsedMs >= timeoutMs && !matched && !idle;
+        const tail = this.tailTerminalOutput(lastOutput, Math.max(1, Math.min(tailBytes, ToolExecutor.MAX_TERMINAL_READ_BYTES)));
+        return {
+            output: tail.output,
+            fullOutput: lastOutput,
+            totalBytes: tail.bytes,
+            truncated: tail.truncated,
+            matched,
+            idle,
+            timedOut,
+            elapsedMs,
+        };
+    }
+
     private async handleTerminalSessionStart(args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
         const sessionId = typeof args['sessionId'] === 'string' && args['sessionId'].trim().length > 0
             ? args['sessionId'].trim()
@@ -1213,9 +1277,51 @@ export class ToolExecutor {
 
         const submit = args['submit'] !== false;
         const payload = submit && !input.endsWith('\r') && !input.endsWith('\n') ? `${input}\r` : input;
+        const preWriteOutput = await this.options.terminal.getSessionBuffer(sessionId);
         const written = this.options.terminal.write(sessionId, payload);
         if (!written) {
             return { success: false, error: `Terminal session '${sessionId}' was not found`, errorType: 'notFound' };
+        }
+
+        const shouldWaitForCompletion =
+            inputKind === 'command'
+            && submit
+            && args['waitForCompletion'] !== false;
+
+        if (shouldWaitForCompletion) {
+            const observed = await this.observeTerminalSession(sessionId, {
+                timeoutMs: typeof args['timeoutMs'] === 'number' ? args['timeoutMs'] : 30000,
+                idleMs: typeof args['idleMs'] === 'number' ? args['idleMs'] : 1200,
+                tailBytes: typeof args['tailBytes'] === 'number' ? args['tailBytes'] : 20000,
+            });
+            const outputDelta = observed.fullOutput.startsWith(preWriteOutput)
+                ? observed.fullOutput.slice(preWriteOutput.length)
+                : observed.output;
+            const commandComplete = observed.idle || observed.matched;
+
+            return {
+                success: true,
+                result: {
+                    success: true,
+                    resultKind: 'terminal_write',
+                    sessionId,
+                    inputKind,
+                    submitted: submit,
+                    bytesWritten: Buffer.byteLength(payload, 'utf-8'),
+                    waitedForCompletion: true,
+                    complete: commandComplete,
+                    idle: observed.idle,
+                    matched: observed.matched,
+                    timedOut: observed.timedOut,
+                    elapsedMs: observed.elapsedMs,
+                    output: outputDelta,
+                    totalBytes: observed.totalBytes,
+                    truncated: observed.truncated,
+                    displaySummary: commandComplete
+                        ? `Command finished in terminal session ${sessionId}`
+                        : `Command is still running in terminal session ${sessionId}`,
+                },
+            };
         }
 
         return {
@@ -1227,6 +1333,7 @@ export class ToolExecutor {
                 inputKind,
                 submitted: submit,
                 bytesWritten: Buffer.byteLength(payload, 'utf-8'),
+                waitedForCompletion: false,
                 complete: true,
                 displaySummary: `Wrote ${inputKind} input to terminal session ${sessionId}`,
             },
@@ -1264,54 +1371,30 @@ export class ToolExecutor {
             return { success: false, error: `Terminal session '${sessionId}' was not found`, errorType: 'notFound' };
         }
 
-        const pattern = typeof args['pattern'] === 'string' && args['pattern'].length > 0 ? args['pattern'] : undefined;
-        const requestedTimeout = typeof args['timeoutMs'] === 'number' && Number.isFinite(args['timeoutMs'])
-            ? Math.floor(args['timeoutMs'])
-            : 30000;
-        const timeoutMs = Math.max(250, Math.min(requestedTimeout, ToolExecutor.MAX_TERMINAL_WAIT_MS));
-        const requestedIdle = typeof args['idleMs'] === 'number' && Number.isFinite(args['idleMs'])
-            ? Math.floor(args['idleMs'])
-            : 1000;
-        const idleMs = Math.max(250, Math.min(requestedIdle, 10000));
-        const startedAt = Date.now();
-        const maxPolls = Math.ceil(timeoutMs / ToolExecutor.TERMINAL_POLL_INTERVAL_MS);
-        let lastOutput = await this.options.terminal.getSessionBuffer(sessionId);
-        let lastChangeAt = Date.now();
-        let matched = pattern ? lastOutput.includes(pattern) : false;
-        let idle = false;
-
-        for (let poll = 0; poll < maxPolls && !matched && !idle; poll += 1) {
-            await this.wait(ToolExecutor.TERMINAL_POLL_INTERVAL_MS);
-            const nextOutput = await this.options.terminal.getSessionBuffer(sessionId);
-            if (nextOutput !== lastOutput) {
-                lastOutput = nextOutput;
-                lastChangeAt = Date.now();
-            }
-            matched = pattern ? nextOutput.includes(pattern) : false;
-            idle = Date.now() - lastChangeAt >= idleMs;
-        }
-
-        const elapsedMs = Date.now() - startedAt;
-        const timedOut = elapsedMs >= timeoutMs && !matched && !idle;
-        const tail = this.tailTerminalOutput(lastOutput, this.getTailBytes(args, 20000));
+        const observed = await this.observeTerminalSession(sessionId, {
+            pattern: typeof args['pattern'] === 'string' && args['pattern'].length > 0 ? args['pattern'] : undefined,
+            timeoutMs: typeof args['timeoutMs'] === 'number' ? args['timeoutMs'] : 30000,
+            idleMs: typeof args['idleMs'] === 'number' ? args['idleMs'] : 1000,
+            tailBytes: this.getTailBytes(args, 20000),
+        });
         return {
             success: true,
             result: {
                 success: true,
                 resultKind: 'terminal_wait',
                 sessionId,
-                pattern: pattern ?? null,
-                matched,
-                idle,
-                timedOut,
-                elapsedMs,
-                output: tail.output,
-                totalBytes: tail.bytes,
-                truncated: tail.truncated,
-                complete: matched || idle,
-                displaySummary: matched
+                pattern: (typeof args['pattern'] === 'string' && args['pattern'].length > 0) ? args['pattern'] : null,
+                matched: observed.matched,
+                idle: observed.idle,
+                timedOut: observed.timedOut,
+                elapsedMs: observed.elapsedMs,
+                output: observed.output,
+                totalBytes: observed.totalBytes,
+                truncated: observed.truncated,
+                complete: observed.matched || observed.idle,
+                displaySummary: observed.matched
                     ? `Terminal session ${sessionId} matched the requested pattern`
-                    : idle
+                    : observed.idle
                       ? `Terminal session ${sessionId} became idle`
                       : `Terminal session ${sessionId} wait timed out`,
             },

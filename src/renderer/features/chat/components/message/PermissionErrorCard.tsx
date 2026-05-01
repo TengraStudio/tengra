@@ -44,17 +44,17 @@ export const PermissionErrorCard = memo(({ t }: PermissionErrorCardProps) => {
                     </div>
                     <div className="flex flex-col">
                         <h3 className="typo-overline font-bold text-foreground">
-                            {t('workspaceAgent.permissions.error')}
+                            {t('frontend.workspaceAgent.permissions.error')}
                         </h3>
                         <p className="typo-overline font-medium text-muted-foreground/70">
-                            {t('workspaceAgent.permissions.securityBlock')}
+                            {t('frontend.workspaceAgent.permissions.securityBlock')}
                         </p>
                     </div>
                 </div>
 
                 <div className="rounded-2xl border border-destructive/10 bg-background/40 p-4">
                     <p className="typo-overline leading-relaxed text-muted-foreground/80">
-                        {t('workspaceAgent.permissions.description')}
+                        {t('frontend.workspaceAgent.permissions.description')}
                     </p>
                 </div>
 
@@ -64,10 +64,10 @@ export const PermissionErrorCard = memo(({ t }: PermissionErrorCardProps) => {
                         onClick={handleConfigure}
                         className={C_PERMISSIONERRORCARD_4}
                     >
-                        {t('workspaceAgent.permissions.configure')}
+                        {t('frontend.workspaceAgent.permissions.configure')}
                     </button>
                     <div className="typo-overline font-bold text-muted-foreground/40 uppercase">
-                        {t('workspaceAgent.permissions.requiresApproval')}
+                        {t('frontend.workspaceAgent.permissions.requiresApproval')}
                     </div>
                 </div>
             </div>

@@ -91,7 +91,6 @@ export class EventBusService extends BaseService {
         }
 
         this.bus.emit(event, payload);
-        this.logDebug(`Custom event emitted: ${event} [${eventId}]`);
     }
 
     /**

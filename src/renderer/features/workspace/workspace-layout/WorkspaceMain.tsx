@@ -43,7 +43,8 @@ interface WorkspaceMainProps {
     copyTabRelativePath: (id: string) => Promise<void>;
     revealTabInExplorer: (id: string) => Promise<void>;
     activeTab: EditorTab | null;
-    updateTabContent: (content: string) => void;
+    updateTabContent: (tabId: string, content: string) => void;
+    revertTab: (tabId: string) => void;
     saveActiveTab: (options?: { silent?: boolean }) => Promise<void>;
     workspace: Workspace;
     handleUpdateWorkspace: (updates: Partial<Workspace>) => Promise<void>;
@@ -73,6 +74,7 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
     revealTabInExplorer,
     activeTab,
     updateTabContent,
+    revertTab,
     saveActiveTab,
     workspace,
     handleUpdateWorkspace,
@@ -138,7 +140,8 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
                         closeAllTabs={closeAllTabs}
                         closeTabsToRight={closeTabsToRight}
                         closeOtherTabs={closeOtherTabs}
-                        copyTabAbsolutePath={copyTabAbsolutePath}
+                        revertTab={revertTab}
+                copyTabAbsolutePath={copyTabAbsolutePath}
                         copyTabRelativePath={copyTabRelativePath}
                         revealTabInExplorer={revealTabInExplorer}
                         workspacePath={workspace.path}
@@ -157,7 +160,7 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
                 >
                     <LazyWorkspaceEditor
                         activeTab={activeTab}
-                        updateTabContent={updateTabContent}
+                        updateTabContent={(content) => activeTab && updateTabContent(activeTab.id, content)}
                         saveActiveTab={saveActiveTab}
                         autoSaveEnabled={Boolean(workspace.advancedOptions?.autoSave)}
                         workspaceKey={workspace.id}

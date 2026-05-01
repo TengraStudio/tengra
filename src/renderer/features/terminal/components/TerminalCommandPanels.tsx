@@ -61,7 +61,7 @@ export function TerminalCommandPanels({
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
                             <IconHistory className="w-3.5 h-3.5 text-muted-foreground" />
-                            {t('terminal.commandHistory')}
+                            {t('frontend.terminal.commandHistory')}
                         </div>
                         <div className="flex items-center gap-1">
                             <button
@@ -70,7 +70,7 @@ export function TerminalCommandPanels({
                                 }}
                                 className="h-6 px-2 typo-overline rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
                             >
-                                {t('terminal.clearHistory')}
+                                {t('frontend.terminal.clearHistory')}
                             </button>
                             <button
                                 onClick={closeCommandHistory}
@@ -86,7 +86,7 @@ export function TerminalCommandPanels({
                         onChange={event => {
                             setCommandHistoryQuery(event.target.value);
                         }}
-                        placeholder={t('terminal.historySearchPlaceholder')}
+                        placeholder={t('frontend.terminal.historySearchPlaceholder')}
                         className="w-full h-7 px-2 rounded border border-border bg-background/60 typo-caption outline-none mb-2"
                     />
                     <div className="max-h-56 overflow-y-auto custom-scrollbar">
@@ -97,7 +97,7 @@ export function TerminalCommandPanels({
                         )}
                         {!isCommandHistoryLoading && commandHistoryItems.length === 0 && (
                             <div className="px-2 py-2 typo-caption text-muted-foreground">
-                                {t('terminal.noHistory')}
+                                {t('frontend.terminal.noHistory')}
                             </div>
                         )}
                         {!isCommandHistoryLoading &&
@@ -127,7 +127,7 @@ export function TerminalCommandPanels({
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
                             <IconTerminal className="w-3.5 h-3.5 text-muted-foreground" />
-                            {t('terminal.taskRunner')}
+                            {t('frontend.terminal.taskRunner')}
                         </div>
                         <button
                             onClick={closeTaskRunner}
@@ -142,7 +142,7 @@ export function TerminalCommandPanels({
                         onChange={event => {
                             setTaskRunnerQuery(event.target.value);
                         }}
-                        placeholder={t('terminal.tasksSearchPlaceholder')}
+                        placeholder={t('frontend.terminal.tasksSearchPlaceholder')}
                         className="w-full h-7 px-2 rounded border border-border bg-background/60 typo-caption outline-none mb-2"
                     />
                     <div className="max-h-56 overflow-y-auto custom-scrollbar">
@@ -153,7 +153,7 @@ export function TerminalCommandPanels({
                         )}
                         {!isTaskRunnerLoading && taskRunnerItems.length === 0 && (
                             <div className="px-2 py-2 typo-caption text-muted-foreground">
-                                {t('terminal.noTasksFound')}
+                                {t('frontend.terminal.noTasksFound')}
                             </div>
                         )}
                         {!isTaskRunnerLoading &&

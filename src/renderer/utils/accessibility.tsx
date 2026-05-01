@@ -480,7 +480,7 @@ export function useAccessibility(): AccessibilityContextValue {
     const { t } = useTranslation();
     const context = useContext(AccessibilityContext);
     if (!context) {
-        throw new Error(t('errors.context.useAccessibilityProvider'));
+        throw new Error(t('frontend.errors.context.useAccessibilityProvider'));
     }
     return context;
 }
@@ -511,7 +511,7 @@ export const SkipLink: React.FC<{ targetId: string; label?: string }> = ({
     label,
 }) => {
     const { t } = useTranslation();
-    const resolvedLabel = label ?? t('settings.accessibility.skipToMainContent');
+    const resolvedLabel = label ?? t('frontend.settings.accessibility.skipToMainContent');
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();

@@ -11,12 +11,9 @@
 import * as React from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { MemoizedAppHeader as AppHeader } from '@/components/layout/AppHeader';
-import { AppModals } from '@/components/layout/AppModals';
 import { LayoutManager } from '@/components/layout/LayoutManager';
 import { OfflineBanner } from '@/components/layout/OfflineBanner';
 import { SessionLockOverlay } from '@/components/layout/SessionLockOverlay';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { ToastsContainer } from '@/components/layout/ToastsContainer';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@/components/shared/ErrorFallback';
@@ -42,13 +39,19 @@ import { useLanguage, useTranslation } from '@/i18n';
 import { useBreakpoint } from '@/lib/responsive';
 import { useMarketplaceStore } from '@/store/marketplace.store';
 import { trackResponsiveBreakpoint } from '@/store/responsive-analytics.store';
-import { ViewManager } from '@/views/ViewManager';
 
 
 // Lazy load heavy layout components
+const AppHeader = lazy(() => import('@/components/layout/AppHeader').then(m => ({ default: m.MemoizedAppHeader })));
+const AppModals = lazy(() => import('@/components/layout/AppModals').then(m => ({ default: m.AppModals })));
+const Sidebar = lazy(() => import('@/components/layout/Sidebar').then(m => ({ default: m.Sidebar })));
 const UpdateNotification = lazy(() => import('@/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
 const VoiceOverlay = lazy(() => import('@/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
 const DetachedTerminalWindow = lazy(() => import('@/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
+const ViewManager = lazy(() => import('@/views/ViewManager').then(m => ({ default: m.ViewManager })));
+
+const shellFallback = <div className="h-full w-full bg-background" />;
+const layoutSectionFallback = <div className="h-full min-h-0 flex-1 bg-background" />;
 
 
 function useDeferredNonCriticalUi(): boolean {
@@ -73,11 +76,11 @@ function useDeferredNonCriticalUi(): boolean {
             if (requestIdle) {
                 requestIdle(() => {
                     setReady();
-                }, { timeout: 500 });
+                }, { timeout: 2_000 });
             } else {
                 timeoutId = window.setTimeout(() => {
                     setReady();
-                }, 120);
+                }, 1_500);
             }
         });
 
@@ -98,33 +101,33 @@ const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
         id: 'code',
         icon: 'Code',
         iconColor: 'text-primary',
-        title: t('templates.code.title'),
-        description: t('templates.code.description'),
-        prompt: t('templates.code.prompt'),
+        title: t('frontend.templates.code.title'),
+        description: t('frontend.templates.code.description'),
+        prompt: t('frontend.templates.code.prompt'),
     },
     {
         id: 'analyze',
         icon: 'FileSearch',
         iconColor: 'text-success',
-        title: t('templates.analyze.title'),
-        description: t('templates.analyze.description'),
-        prompt: t('templates.analyze.prompt'),
+        title: t('frontend.templates.analyze.title'),
+        description: t('frontend.templates.analyze.description'),
+        prompt: t('frontend.templates.analyze.prompt'),
     },
     {
         id: 'creative',
         icon: 'Sparkles',
         iconColor: 'text-purple',
-        title: t('templates.creative.title'),
-        description: t('templates.creative.description'),
-        prompt: t('templates.creative.prompt'),
+        title: t('frontend.templates.creative.title'),
+        description: t('frontend.templates.creative.description'),
+        prompt: t('frontend.templates.creative.prompt'),
     },
     {
         id: 'debug',
         icon: 'Bug',
         iconColor: 'text-destructive',
-        title: t('templates.debug.title'),
-        description: t('templates.debug.description'),
-        prompt: t('templates.debug.prompt'),
+        title: t('frontend.templates.debug.title'),
+        description: t('frontend.templates.debug.description'),
+        prompt: t('frontend.templates.debug.prompt'),
     },
 ];
 
@@ -137,13 +140,15 @@ const SidebarConnector: React.FC<{
     toggleSidebar: () => void;
 }> = ({ currentView, isCollapsed, onChangeView, toggleSidebar }) => {
     return (
-        <Sidebar
-            currentView={currentView}
-            onChangeView={onChangeView}
-            isCollapsed={isCollapsed}
-            toggleSidebar={toggleSidebar}
-            onSearch={() => { }}
-        />
+        <Suspense fallback={layoutSectionFallback}>
+            <Sidebar
+                currentView={currentView}
+                onChangeView={onChangeView}
+                isCollapsed={isCollapsed}
+                toggleSidebar={toggleSidebar}
+                onSearch={() => { }}
+            />
+        </Suspense>
     );
 };
 
@@ -178,26 +183,28 @@ const AppModalsConnector: React.FC<{
         const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
 
         return (
-            <AppModals
-                isAuthModalOpen={isAuthModalOpen}
-                setIsAuthModalOpen={setIsAuthModalOpen}
-                t={t}
-                handleAntigravityLogout={handleAntigravityLogout}
-                setSettingsCategory={setSettingsCategory}
-                setCurrentView={setCurrentView}
-                showShortcuts={showShortcuts}
-                setShowShortcuts={setShowShortcuts}
-                isAudioOverlayOpen={isAudioOverlayOpen}
-                setIsAudioOverlayOpen={setIsAudioOverlayOpen}
-                isListening={isListening}
-                startListening={startListening}
-                stopListening={stopListening}
-                isSpeaking={isSpeaking}
-                handleStopSpeak={handleStopSpeak}
-                language={language}
-                showSSHManager={showSSHManager}
-                setShowSSHManager={setShowSSHManager}
-            />
+            <Suspense fallback={null}>
+                <AppModals
+                    isAuthModalOpen={isAuthModalOpen}
+                    setIsAuthModalOpen={setIsAuthModalOpen}
+                    t={t}
+                    handleAntigravityLogout={handleAntigravityLogout}
+                    setSettingsCategory={setSettingsCategory}
+                    setCurrentView={setCurrentView}
+                    showShortcuts={showShortcuts}
+                    setShowShortcuts={setShowShortcuts}
+                    isAudioOverlayOpen={isAudioOverlayOpen}
+                    setIsAudioOverlayOpen={setIsAudioOverlayOpen}
+                    isListening={isListening}
+                    startListening={startListening}
+                    stopListening={stopListening}
+                    isSpeaking={isSpeaking}
+                    handleStopSpeak={handleStopSpeak}
+                    language={language}
+                    showSSHManager={showSSHManager}
+                    setShowSSHManager={setShowSSHManager}
+                />
+            </Suspense>
         );
     };
 
@@ -345,7 +352,11 @@ const SelectionPersistenceConnector: React.FC = () => {
 
 export default function App() {
     if (isDetachedTerminalWindow) {
-        return <DetachedTerminalWindow />;
+        return (
+            <Suspense fallback={shellFallback}>
+                <DetachedTerminalWindow />
+            </Suspense>
+        );
     }
 
     return <MainApp />;
@@ -355,7 +366,7 @@ function MainApp() {
     const sessionTimeout = useSessionTimeout();
     const { language } = useLanguage();
     const { t } = useTranslation();
-    const { setSettingsCategory } = useAuthSettingsUi();
+    const { isAuthModalOpen, setSettingsCategory } = useAuthSettingsUi();
     const appState = useAppState();
     const {
         currentView,
@@ -376,6 +387,12 @@ function MainApp() {
 
     const nonCriticalUiReady = useDeferredNonCriticalUi();
     useAppInitialization();
+    const shouldRenderAppModals =
+        nonCriticalUiReady ||
+        isAuthModalOpen ||
+        appState.showShortcuts ||
+        appState.isAudioOverlayOpen ||
+        appState.showSSHManager;
 
 
 
@@ -452,12 +469,14 @@ function MainApp() {
                             }
                             mainContent={
                                 <>
-                                    <AppHeader
-                                        currentView={appState.currentView}
-                                        onOpenSettings={() => { openSettings(); }}
-                                    />
+                                    <Suspense fallback={null}>
+                                        <AppHeader
+                                            currentView={appState.currentView}
+                                            onOpenSettings={() => { openSettings(); }}
+                                        />
+                                    </Suspense>
                                     <ErrorFallback
-                                        error={error || new Error(t('errors.unexpected'))}
+                                        error={error || new Error(t('frontend.errors.unexpected'))}
                                         resetErrorBoundary={() => {
                                             resetErrorBoundary();
                                             window.location.reload();
@@ -473,17 +492,19 @@ function MainApp() {
             <div className="app-container h-screen w-full overflow-hidden">
                 <OfflineBanner />
 
-                <AppModalsConnector
-                    t={t}
-                    setCurrentView={setCurrentView}
-                    showShortcuts={appState.showShortcuts}
-                    setShowShortcuts={appState.setShowShortcuts}
-                    isAudioOverlayOpen={appState.isAudioOverlayOpen}
-                    setIsAudioOverlayOpen={appState.setIsAudioOverlayOpen}
-                    language={language}
-                    showSSHManager={appState.showSSHManager}
-                    setShowSSHManager={appState.setShowSSHManager}
-                />
+                {shouldRenderAppModals && (
+                    <AppModalsConnector
+                        t={t}
+                        setCurrentView={setCurrentView}
+                        showShortcuts={appState.showShortcuts}
+                        setShowShortcuts={appState.setShowShortcuts}
+                        isAudioOverlayOpen={appState.isAudioOverlayOpen}
+                        setIsAudioOverlayOpen={appState.setIsAudioOverlayOpen}
+                        language={language}
+                        showSSHManager={appState.showSSHManager}
+                        setShowSSHManager={appState.setShowSSHManager}
+                    />
+                )}
                 <WindowAppCommandConnector
                     setShowSSHManager={appState.setShowSSHManager}
                 />
@@ -521,29 +542,33 @@ function MainApp() {
                                 toggleSidebar={handleToggleSidebar}
                             />
                         }
-                        mainContent={
-                            <>
-                                <AppHeader
-                                    currentView={appState.currentView}
-                                    onOpenSettings={() => { openSettings(); }}
-                                />
-                                <ViewManager
-                                    currentView={currentView}
-                                    templates={chatTemplates}
-                                    messagesEndRef={appState.messagesEndRef}
-                                    fileInputRef={appState.fileInputRef}
-                                    textareaRef={appState.textareaRef}
-                                    onScrollToBottom={handleScrollToBottom}
-                                    showScrollButton={appState.showScrollButton}
-                                    setShowScrollButton={appState.setShowScrollButton}
-                                    showFileMenu={appState.showFileMenu}
-                                    setShowFileMenu={appState.setShowFileMenu}
-                                    settingsSearchQuery={settingsSearchQuery}
-                                />
-                                <div id="modal-root" />
-                            </>
-                        }
-                    />
+                            mainContent={
+                                <>
+                                    <Suspense fallback={null}>
+                                        <AppHeader
+                                            currentView={appState.currentView}
+                                            onOpenSettings={() => { openSettings(); }}
+                                        />
+                                    </Suspense>
+                                    <Suspense fallback={layoutSectionFallback}>
+                                        <ViewManager
+                                            currentView={currentView}
+                                            templates={chatTemplates}
+                                            messagesEndRef={appState.messagesEndRef}
+                                            fileInputRef={appState.fileInputRef}
+                                            textareaRef={appState.textareaRef}
+                                            onScrollToBottom={handleScrollToBottom}
+                                            showScrollButton={appState.showScrollButton}
+                                            setShowScrollButton={appState.setShowScrollButton}
+                                            showFileMenu={appState.showFileMenu}
+                                            setShowFileMenu={appState.setShowFileMenu}
+                                            settingsSearchQuery={settingsSearchQuery}
+                                        />
+                                    </Suspense>
+                                    <div id="modal-root" />
+                                </>
+                            }
+                        />
                 </div>
                 <SessionLockOverlay
                     isOpen={sessionTimeout.isEnabled && sessionTimeout.isLocked}

@@ -84,6 +84,7 @@ export interface MarketplaceServiceDependencies {
 }
 
 export class MarketplaceService extends BaseService {
+    private static readonly REGISTRY_CACHE_TTL_MS = 5 * 60 * 1000;
     private readonly REGISTRY_URL = 'https://raw.githubusercontent.com/TengraStudio/tengra-market/main/registry.json';
     private readonly MARKET_BASE_URL = 'https://raw.githubusercontent.com/TengraStudio/tengra-market/main';
     private readonly MODEL_SOURCES: RemoteModelSourceConfig[] = [
@@ -101,6 +102,9 @@ export class MarketplaceService extends BaseService {
     private readonly USER_EXTENSIONS_PATH = path.join(app.getPath('userData'), 'extensions');
     private readonly USER_CODE_LANGUAGES_PATH = path.join(app.getPath('userData'), 'runtime', 'code-languages');
     private readonly liveUpdates = new Set<string>();
+    private cachedRegistry: MarketplaceRegistry | null = null;
+    private cachedRegistryAt = 0;
+    private registryFetchPromise: Promise<MarketplaceRegistry> | null = null;
 
     private readonly localeService?: LocaleService;
     private readonly modelDownloaderService?: ModelDownloaderService;
@@ -140,10 +144,32 @@ export class MarketplaceService extends BaseService {
         await fs.ensureDir(this.USER_CODE_LANGUAGES_PATH);
     }
 
+    private invalidateRegistryCache(): void {
+        this.cachedRegistryAt = 0;
+        this.cachedRegistry = null;
+    }
+
     /**
      * GitHub'dan merkezi registry dosyasını çeker.
      */
     async fetchRegistry(): Promise<MarketplaceRegistry> {
+        const cacheAgeMs = Date.now() - this.cachedRegistryAt;
+        if (this.cachedRegistry && cacheAgeMs < MarketplaceService.REGISTRY_CACHE_TTL_MS) {
+            return this.cachedRegistry;
+        }
+
+        if (this.registryFetchPromise) {
+            return await this.registryFetchPromise;
+        }
+
+        this.registryFetchPromise = this.fetchRegistryInternal().finally(() => {
+            this.registryFetchPromise = null;
+        });
+
+        return await this.registryFetchPromise;
+    }
+
+    private async fetchRegistryInternal(): Promise<MarketplaceRegistry> {
         try {
             this.logInfo('Fetching marketplace registry from GitHub...');
             const [response, mergedModels] = await Promise.all([
@@ -151,11 +177,14 @@ export class MarketplaceService extends BaseService {
                 this.fetchMergedModels(),
             ]);
             const baseRegistry = this.normalizeRegistryBeforeValidation(response.data);
-            const registry = marketplaceRegistrySchema.parse({
+            const normalizedRegistry = marketplaceRegistrySchema.parse({
                 ...baseRegistry,
                 models: mergedModels,
             } satisfies MarketplaceRegistry);
-            return await this.applyInstalledState(registry);
+            const availabilityFilteredRegistry = await this.filterUnavailableLanguagePacks(normalizedRegistry);
+            this.cachedRegistry = await this.applyInstalledState(availabilityFilteredRegistry);
+            this.cachedRegistryAt = Date.now();
+            return this.cachedRegistry;
         } catch (error) {
             this.logError('Failed to fetch registry', error as Error);
             throw new Error('Marketplace registry could not be loaded.');
@@ -372,6 +401,7 @@ export class MarketplaceService extends BaseService {
                     provider: modelPayload.provider,
                     queuedDownloads: queued.queuedDownloads,
                 });
+                this.invalidateRegistryCache();
 
                 return {
                     success: true,
@@ -412,6 +442,7 @@ export class MarketplaceService extends BaseService {
                 }
 
                 this.liveUpdates.delete(item.id);
+                this.invalidateRegistryCache();
                 this.logInfo(`${item.itemType} installed successfully at: ${extensionPath}`);
                 return { success: true, path: extensionPath };
             }
@@ -422,6 +453,7 @@ export class MarketplaceService extends BaseService {
                 const filePath = path.join(targetPath, fileName);
                 await fs.writeJson(filePath, { ...mcpPayload, ...mcpConfig }, { spaces: 2 });
 
+                this.invalidateRegistryCache();
                 this.logInfo(`${item.itemType} installed successfully at: ${filePath}`);
                 return { success: true, path: filePath, mcpConfig };
             }
@@ -429,6 +461,7 @@ export class MarketplaceService extends BaseService {
             const filePath = path.join(targetPath, fileName);
             await fs.writeJson(filePath, payload, { spaces: 2 });
 
+            this.invalidateRegistryCache();
             this.logInfo(`${item.itemType} installed successfully at: ${filePath}`);
             return { success: true, path: filePath };
         } catch (error) {
@@ -461,6 +494,7 @@ export class MarketplaceService extends BaseService {
                     if (await fs.pathExists(mcpPath)) {
                         await fs.remove(mcpPath);
                     }
+                    this.invalidateRegistryCache();
                     return { success: true };
                 }
 
@@ -469,6 +503,7 @@ export class MarketplaceService extends BaseService {
                     if (await fs.pathExists(themePath)) {
                         await fs.remove(themePath);
                     }
+                    this.invalidateRegistryCache();
                     return { success: true };
                 }
 
@@ -478,6 +513,7 @@ export class MarketplaceService extends BaseService {
                     if (await fs.pathExists(promptPath)) {
                         await fs.remove(promptPath);
                     }
+                    this.invalidateRegistryCache();
                     return { success: true };
                 }
 
@@ -1286,6 +1322,49 @@ export class MarketplaceService extends BaseService {
             return { code: 'NO_SPACE', message: 'Insufficient disk space for installation.' };
         }
         return { code: 'INSTALL_FAILED', message: 'Marketplace installation failed.' };
+    }
+
+    private async filterUnavailableLanguagePacks(registry: MarketplaceRegistry): Promise<MarketplaceRegistry> {
+        const languages = registry.languages ?? [];
+        if (languages.length === 0) {
+            return registry;
+        }
+
+        const checks = await Promise.all(languages.map(async language => ({
+            language,
+            available: await this.isMarketplaceSourceAvailable(language.downloadUrl),
+        })));
+
+        const availableLanguages = checks
+            .filter(check => check.available)
+            .map(check => check.language);
+
+        for (const check of checks) {
+            if (!check.available) {
+                appLogger.warn(
+                    'MarketplaceService',
+                    `Skipping unavailable language pack from registry: ${check.language.id}`,
+                    { downloadUrl: check.language.downloadUrl }
+                );
+            }
+        }
+
+        return {
+            ...registry,
+            languages: availableLanguages,
+        };
+    }
+
+    private async isMarketplaceSourceAvailable(downloadUrl: string): Promise<boolean> {
+        try {
+            await axios.head(downloadUrl, { timeout: 4000 });
+            return true;
+        } catch (error) {
+            if (axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 410)) {
+                return false;
+            }
+            return true;
+        }
     }
 
     private async applyInstalledState(registry: MarketplaceRegistry): Promise<MarketplaceRegistry> {

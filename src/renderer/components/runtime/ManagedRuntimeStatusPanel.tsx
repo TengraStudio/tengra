@@ -66,15 +66,15 @@ function resolveExecutionStatusLabel(
     t: (key: string) => string
 ): string {
     if (executionStatus === 'ready' || executionStatus === 'installed') {
-        return t('runtime.status.ready');
+        return t('frontend.runtime.status.ready');
     }
     if (executionStatus === 'install-required') {
-        return t('runtime.status.notConfigured');
+        return t('frontend.runtime.status.notConfigured');
     }
     if (executionStatus === 'failed') {
-        return t('runtime.status.failed');
+        return t('frontend.runtime.status.failed');
     }
-    return t('runtime.status.notConfigured');
+    return t('frontend.runtime.status.notConfigured');
 }
 
 function resolveTone(
@@ -159,8 +159,8 @@ export function ManagedRuntimeStatusPanel({
             : ''
     );
 
-    const title = t('runtime.managementTitle');
-    const subtitle = t('runtime.statusTitle');
+    const title = t('frontend.runtime.managementTitle');
+    const subtitle = t('frontend.runtime.statusTitle');
 
     const handleOpenInstallUrl = (installUrl: string) => {
         window.electron.openExternal(installUrl);
@@ -206,7 +206,7 @@ export function ManagedRuntimeStatusPanel({
                             className={C_MANAGEDRUNTIMESTATUSPANEL_2}
                         >
                             <IconDownload className={cn('h-3.5 w-3.5', isRepairing && 'animate-bounce')} />
-                            {t('runtime.repairAction')}
+                            {t('frontend.runtime.repairAction')}
                         </button>
                     </div>
                 </div>
@@ -259,7 +259,7 @@ export function ManagedRuntimeStatusPanel({
                                             className={C_MANAGEDRUNTIMESTATUSPANEL_3}
                                         >
                                             <IconDownload className="h-3.5 w-3.5" />
-                                            {t('runtime.installAction')}
+                                            {t('frontend.runtime.installAction')}
                                         </button>
                                     )}
                                     {entry.canStart && (
@@ -271,7 +271,7 @@ export function ManagedRuntimeStatusPanel({
                                             className={C_MANAGEDRUNTIMESTATUSPANEL_4}
                                         >
                                             <IconPlayerPlay className="h-3.5 w-3.5" />
-                                            {t('runtime.startAction')}
+                                            {t('frontend.runtime.startAction')}
                                         </button>
                                     )}
                                 </div>
@@ -281,7 +281,7 @@ export function ManagedRuntimeStatusPanel({
 
                     {!isLoading && entries.length === 0 && (
                         <div className="rounded-lg border border-success/20 bg-success/5 px-4 py-3 text-sm text-success">
-                            {t('runtime.status.ready')}
+                            {t('frontend.runtime.status.ready')}
                         </div>
                     )}
                 </div>

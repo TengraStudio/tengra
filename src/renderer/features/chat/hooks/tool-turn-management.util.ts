@@ -49,6 +49,7 @@ export interface FinalizeTurnParams {
     reasoning?: string;
     images?: string[];
     sources?: string[];
+    onMessageUpdate?: (updates: Partial<Message>) => void;
 }
 
 export interface StreamResultLike {
@@ -95,6 +96,7 @@ export interface LoopSafetyParams {
     evidenceRecords: AiEvidenceRecord[];
     t: (key: string, options?: Record<string, unknown>) => string;
     language?: string;
+    onMessageUpdate?: (updates: Partial<Message>) => void;
 }
 
 function isTurkishLanguage(language?: string): boolean {
@@ -224,13 +226,14 @@ export async function finalizeToolTurn(params: FinalizeTurnParams): Promise<void
         reasoning: params.reasoning,
         images: params.images,
         sources: params.sources,
+        onMessageUpdate: params.onMessageUpdate,
     });
 }
 
 export async function handleMalformedToolCalls(params: MalformedToolCallParams): Promise<void> {
     const assistantContent = getMessageStringContent(params.result.finalContent);
     if (assistantContent.length === 0) {
-        throw new Error(params.t('chat.error'));
+        throw new Error(params.t('frontend.chat.error'));
     }
 
     const updates = {
@@ -244,6 +247,7 @@ export async function handleMalformedToolCalls(params: MalformedToolCallParams):
         }),
         reasonings: params.result.reasonings || (params.result.finalReasoning ? [params.result.finalReasoning] : undefined),
     };
+    params.onMessageUpdate?.(updates);
 
     updateChatInStore(params.chatId, {
         isGenerating: false,
@@ -290,6 +294,7 @@ export async function finalizeWithImages(params: ImageFinalizeParams): Promise<v
         }),
         reasonings: params.result.reasonings || (params.result.finalReasoning ? [params.result.finalReasoning] : undefined),
     };
+    params.onMessageUpdate?.(updates);
 
     updateChatInStore(params.chatId, {
         isGenerating: false,
@@ -463,7 +468,7 @@ export async function finalizeLoopForcefully(
         ?? toolErrorFallbackContent
         ?? secondaryDeterministicFallbackContent
         ?? evidenceFallbackContent
-        ?? params.t('chat.toolLoop.limitReachedPreserved');
+        ?? params.t('frontend.chat.toolLoop.limitReachedPreserved');
 
     const assistantReasonings = params.assistantMsg.reasonings || (params.assistantMsg.reasoning ? [params.assistantMsg.reasoning] : undefined);
     const metadata = buildAssistantPresentationMetadata({
@@ -480,7 +485,10 @@ export async function finalizeLoopForcefully(
         content: resolvedFallbackContent,
         reasonings: assistantReasonings,
         metadata,
+        toolCalls,
+        toolResults: storedToolResults,
     };
+    params.onMessageUpdate?.(updates);
 
     updateChatInStore(params.chatId, {
         isGenerating: false,

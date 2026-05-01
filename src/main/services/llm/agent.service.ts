@@ -75,24 +75,28 @@ export class AgentService extends BaseService {
         const toolsJson = JSON.stringify(agent.tools);
         const db = this.dbService.getDatabase();
 
-        // Check for existing by name
-        const existing = await db.prepare('SELECT id FROM agents WHERE name = $1').get(agent.name) as { id: string } | undefined;
+        const statement = await db.prepare(`
+            INSERT INTO agents (id, name, system_prompt, tools, parent_model, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT(name) DO UPDATE SET
+                system_prompt = excluded.system_prompt,
+                tools = excluded.tools,
+                parent_model = excluded.parent_model,
+                updated_at = excluded.updated_at
+        `);
+        await statement.run(
+            id,
+            agent.name,
+            agent.systemPrompt,
+            toolsJson,
+            agent.parentModel ?? 'gpt-4o',
+            now,
+            now
+        );
 
-        if (existing) {
-            // Update
-            await db.prepare(`
-                UPDATE agents
-                SET system_prompt = $1, tools = $2, parent_model = $3, updated_at = $4
-                WHERE name = $5
-             `).run(agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, agent.name);
-            return existing.id;
-        } else {
-            await db.prepare(`
-                INSERT INTO agents (id, name, system_prompt, tools, parent_model, created_at, updated_at) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-             `).run(id, agent.name, agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, now);
-            return id;
-        }
+        const lookupStatement = await db.prepare('SELECT id FROM agents WHERE name = $1');
+        const row = await lookupStatement.get(agent.name) as { id: string } | undefined;
+        return row?.id ?? id;
     }
 
     async createAgent(agent: AgentDefinition, options: AgentCreateOptions = {}): Promise<{ success: boolean; id?: string; workspacePath?: string; error?: string }> {
@@ -222,7 +226,8 @@ export class AgentService extends BaseService {
 
             const archivedId = await this.archiveAgent(agent);
             const db = this.dbService.getDatabase();
-            await db.prepare('DELETE FROM agents WHERE id = $1 OR name = $1').run(agentId);
+            const statement = await db.prepare('DELETE FROM agents WHERE id = $1 OR name = $1');
+            await statement.run(agentId);
 
             if (options.softDelete !== false) {
                 const recoveryToken = `recover_${agent.id}_${Date.now()}`;
@@ -238,7 +243,8 @@ export class AgentService extends BaseService {
 
     async recoverAgentFromArchive(archiveId: string): Promise<{ success: boolean; id?: string; error?: string }> {
         const db = this.dbService.getDatabase();
-        const archive = await db.prepare('SELECT * FROM agent_archives WHERE id = $1').get(archiveId) as AgentArchiveRow | undefined;
+        const statement = await db.prepare('SELECT * FROM agent_archives WHERE id = $1');
+        const archive = await statement.get(archiveId) as AgentArchiveRow | undefined;
         if (!archive) {
             return { success: false, error: 'Archive not found' };
         }
@@ -253,9 +259,13 @@ export class AgentService extends BaseService {
 
     async getAgent(idOrName: string): Promise<AgentDefinition | null> {
         const db = this.dbService.getDatabase();
-        let result = await db.prepare('SELECT * FROM agents WHERE id = $1').get(idOrName) as AgentRow | undefined;
+        const byIdStatement = await db.prepare('SELECT * FROM agents WHERE id = $1');
+        let result = await byIdStatement.get(idOrName) as AgentRow | undefined;
 
-        result ??= (await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName)) as AgentRow | undefined;
+        if (!result) {
+            const byNameStatement = await db.prepare('SELECT * FROM agents WHERE name = $1');
+            result = await byNameStatement.get(idOrName) as AgentRow | undefined;
+        }
 
         if (!result) { return null; }
 
@@ -271,7 +281,8 @@ export class AgentService extends BaseService {
 
     async getAllAgents(): Promise<AgentDefinition[]> {
         const db = this.dbService.getDatabase();
-        const results = await db.prepare('SELECT * FROM agents ORDER BY name').all<AgentRow>();
+        const statement = await db.prepare('SELECT * FROM agents ORDER BY name');
+        const results = await statement.all<AgentRow>();
         return results.map(result => ({
             id: result.id,
             name: result.name,
@@ -343,10 +354,11 @@ export class AgentService extends BaseService {
     private async archiveAgent(agent: AgentDefinition): Promise<string> {
         const db = this.dbService.getDatabase();
         const id = randomUUID();
-        await db.prepare(`
+        const statement = await db.prepare(`
             INSERT INTO agent_archives (id, original_id, payload, deleted_at)
             VALUES ($1, $2, $3, $4)
-        `).run(id, agent.id ?? agent.name, JSON.stringify(agent), Date.now());
+        `);
+        await statement.run(id, agent.id ?? agent.name, JSON.stringify(agent), Date.now());
         return id;
     }
 }

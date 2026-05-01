@@ -26,6 +26,8 @@ export interface ProxyBridge {
         accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
     }>;
     getClaudeQuota: () => Promise<{ accounts: Array<import('@shared/types/quota').ClaudeQuota> }>;
+    forceRefreshQuota: () => Promise<boolean>;
+
     antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
     ollamaLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
     ollamaSignout: (accountId?: string) => Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }>;
@@ -75,6 +77,8 @@ export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
         getCopilotQuota: () => ipc.invoke('proxy:getCopilotQuota'),
         getCodexUsage: () => ipc.invoke('proxy:getCodexUsage'),
         getClaudeQuota: () => ipc.invoke('proxy:getClaudeQuota'),
+        forceRefreshQuota: () => ipc.invoke('proxy:forceRefreshQuota'),
+
         antigravityLogin: accountId => ipc.invoke('proxy:antigravityLogin', accountId),
         ollamaLogin: accountId => ipc.invoke('proxy:ollamaLogin', accountId),
         ollamaSignout: accountId => ipc.invoke('proxy:ollamaSignout', accountId),

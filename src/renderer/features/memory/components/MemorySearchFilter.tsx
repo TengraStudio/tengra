@@ -108,7 +108,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                         <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                         <Input
                             list="memory-search-suggestions"
-                            placeholder={t('memory.searchPlaceholder')}
+                            placeholder={t('frontend.memory.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => onSearchChange(e.target.value)}
                             onBlur={rememberSearch}
@@ -127,10 +127,10 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                     <IconFilter className="w-4 h-4 text-muted-foreground" />
                     <Select value={categoryFilter} onValueChange={(v) => onCategoryChange(v as MemoryCategory | 'all')}>
                         <SelectTrigger className="w-44 bg-muted/30 border-border/40">
-                            <SelectValue placeholder={t('memory.allCategories')} />
+                            <SelectValue placeholder={t('frontend.memory.allCategories')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">{t('memory.allCategories')}</SelectItem>
+                            <SelectItem value="all">{t('frontend.memory.allCategories')}</SelectItem>
                             {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
                                 <SelectItem key={key} value={key}>
                                     <span className="flex items-center gap-2">

@@ -31,8 +31,8 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({
     return (
         <div className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
             <div className="mb-2 flex items-center justify-between typo-caption text-muted-foreground">
-                <span>{t('codeSandbox.output')}</span>
-                <span>{t('codeSandbox.executionTime', { ms: durationMs })}</span>
+                <span>{t('frontend.codeSandbox.output')}</span>
+                <span>{t('frontend.codeSandbox.executionTime', { ms: durationMs })}</span>
             </div>
 
             {stdout && (
@@ -44,7 +44,7 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({
             {stderr && (
                 <div className="mt-2">
                     <span className="typo-caption font-semibold text-destructive">
-                        {t('codeSandbox.stderr')}
+                        {t('frontend.codeSandbox.stderr')}
                     </span>
                     <pre className="whitespace-pre-wrap break-words font-mono text-sm text-destructive">
                         {stderr}
@@ -54,7 +54,7 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({
 
             {!stdout && !stderr && (
                 <p className="text-sm text-muted-foreground">
-                    {success ? t('codeSandbox.noOutput') : t('codeSandbox.error')}
+                    {success ? t('frontend.codeSandbox.noOutput') : t('frontend.codeSandbox.error')}
                 </p>
             )}
         </div>

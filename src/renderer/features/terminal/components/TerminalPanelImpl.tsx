@@ -122,8 +122,8 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 terminalAppearance={core.terminalAppearance}
                 resolvedTerminalAppearance={core.preferences.resolvedTerminalAppearance}
                 setTerminalInstance={core.setTerminalInstance}
-                emptyTitle={core.t('terminal.noActiveSessions')}
-                emptyActionLabel={core.t('terminal.startNewSession')}
+                emptyTitle={core.t('frontend.terminal.noActiveSessions')}
+                emptyActionLabel={core.t('frontend.terminal.startNewSession')}
                 createDefaultTerminal={core.tabActions.createDefaultTerminal}
                 renderTabContent={tab =>
                     tab.id === TERMINAL_WORKSPACE_ISSUES_TAB_ID ? (

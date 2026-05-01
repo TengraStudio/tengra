@@ -114,7 +114,7 @@ export const WorkspaceDashboard = ({
         return (
             <div className="flex items-center justify-center p-12 text-muted-foreground">
                 <IconRefresh className="w-6 h-6 animate-spin mr-2" />
-                {t('workspaceDashboard.analyzing')}
+                {t('frontend.workspaceDashboard.analyzing')}
             </div>
         );
     }
@@ -122,7 +122,7 @@ export const WorkspaceDashboard = ({
     if (state.activeTab === 'overview' && !analysis) {
         return (
             <div className="p-8 text-center text-muted-foreground">
-                {t('workspaceDashboard.noWorkspace')}
+                {t('frontend.workspaceDashboard.noWorkspace')}
             </div>
         );
     }

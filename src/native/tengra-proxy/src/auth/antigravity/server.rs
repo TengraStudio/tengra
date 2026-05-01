@@ -22,7 +22,6 @@ pub async fn start_callback_server(port: u16, tx: mpsc::Sender<AuthQuery>) -> an
         .with_state(tx);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    eprintln!("[LOG] Antigravity callback server listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

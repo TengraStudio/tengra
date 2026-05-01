@@ -58,6 +58,7 @@ pub async fn handle_completions(
                 .get("max_completion_tokens")
                 .and_then(|v| v.as_u64())
                 .map(|v| v as u32),
+            n: payload.get("n").and_then(|v| v.as_u64()).map(|v| v as u32),
             top_p: payload
                 .get("top_p")
                 .and_then(|v| v.as_f64())

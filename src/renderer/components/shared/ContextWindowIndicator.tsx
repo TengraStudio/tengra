@@ -50,7 +50,7 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
             <div className="flex items-center justify-between text-sm font-medium text-muted-foreground ">
                 <span className="font-semibold text-foreground/80 truncate pr-2" title={modelName}>{modelName}</span>
                 <span className="whitespace-nowrap tabular-nums text-foreground/70">
-                    {t('contextWindow.usage', {
+                    {t('frontend.contextWindow.usage', {
                         used: formatNumber(usedTokens),
                         max: formatNumber(maxTokens),
                         percentage: roundedPercentage,

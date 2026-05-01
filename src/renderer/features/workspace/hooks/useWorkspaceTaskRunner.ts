@@ -118,7 +118,7 @@ export function useWorkspaceTaskRunner({
                 startTime: task.startTime ?? Date.now(),
             })));
         }).catch(() => {
-            notify?.('error', t('errors.unexpected'));
+            notify?.('error', t('frontend.errors.unexpected'));
         });
 
         void window.electron.process.scanScripts(workspace.path).then(nextScripts => {
@@ -126,7 +126,7 @@ export function useWorkspaceTaskRunner({
                 setScripts(nextScripts);
             }
         }).catch(() => {
-            notify?.('error', t('errors.unexpected'));
+            notify?.('error', t('frontend.errors.unexpected'));
         });
 
         const unsubscribeData = window.electron.process.onData(({ id, data }) => {
@@ -178,13 +178,13 @@ export function useWorkspaceTaskRunner({
 
     const runDefaultTask = React.useCallback(async () => {
         if (!workspace.path || !defaultCommand) {
-            notify?.('error', t('workspace.errors.explorer.validationError'));
+            notify?.('error', t('frontend.workspace.errors.explorer.validationError'));
             return false;
         }
 
         const { command, args } = splitCommand(defaultCommand);
         if (!command) {
-            notify?.('error', t('workspace.errors.explorer.validationError'));
+            notify?.('error', t('frontend.workspace.errors.explorer.validationError'));
             return false;
         }
 
@@ -199,7 +199,7 @@ export function useWorkspaceTaskRunner({
             }));
             return true;
         } catch {
-            notify?.('error', t('errors.unexpected'));
+            notify?.('error', t('frontend.errors.unexpected'));
             return false;
         }
     }, [defaultCommand, notify, t, workspace.path]);
@@ -208,7 +208,7 @@ export function useWorkspaceTaskRunner({
         try {
             const killed = await window.electron.process.kill(id);
             if (!killed) {
-                notify?.('info', t('errors.unexpected'));
+                notify?.('info', t('frontend.errors.unexpected'));
                 return;
             }
             setTasks(previousTasks => previousTasks.map(task => (
@@ -220,7 +220,7 @@ export function useWorkspaceTaskRunner({
                     : task
             )));
         } catch {
-            notify?.('error', t('errors.unexpected'));
+            notify?.('error', t('frontend.errors.unexpected'));
         }
     }, [notify, t]);
 

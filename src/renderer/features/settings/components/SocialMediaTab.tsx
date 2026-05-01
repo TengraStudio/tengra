@@ -108,22 +108,22 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
     return (
         <div className="mx-auto flex max-w-5xl flex-col gap-8 pb-10">
             <header className="flex flex-col gap-1 px-1">
-                <h2 className="text-2xl font-semibold ">{t('settings.tabs.socialMedia')}</h2>
+                <h2 className="text-2xl font-semibold ">{t('frontend.settings.tabs.socialMedia')}</h2>
                 <p className="text-sm text-muted-foreground">
-                    {t('settings.socialMedia.headerDescription')}
+                    {t('frontend.settings.socialMedia.headerDescription')}
                 </p>
             </header>
 
             {/* Telegram Section */}
             <SettingsPanel
-                title={t('settings.socialMedia.telegram.title')}
-                description={t('settings.socialMedia.telegram.description')}
+                title={t('frontend.settings.socialMedia.telegram.title')}
+                description={t('frontend.settings.socialMedia.telegram.description')}
                 icon={IconSend}
             >
                 <div className="space-y-6">
                     <SettingsToggleRow
-                        title={t('settings.socialMedia.telegram.enableTitle')}
-                        description={t('settings.socialMedia.telegram.enableDescription')}
+                        title={t('frontend.settings.socialMedia.telegram.enableTitle')}
+                        description={t('frontend.settings.socialMedia.telegram.enableDescription')}
                         control={(
                             <Switch
                                 checked={telegramConfig.enabled}
@@ -134,8 +134,8 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                     />
 
                     <SettingsToggleRow
-                        title={t('settings.socialMedia.notifications.enableTitle')}
-                        description={t('settings.socialMedia.notifications.enableDescription')}
+                        title={t('frontend.settings.socialMedia.notifications.enableTitle')}
+                        description={t('frontend.settings.socialMedia.notifications.enableDescription')}
                         control={(
                             <Switch
                                 checked={telegramConfig.notifications !== false}
@@ -147,8 +147,8 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
 
                     <div className="grid gap-6 md:grid-cols-2">
                         <SettingsField
-                            label={t('settings.socialMedia.botTokenLabel')}
-                            description={t('settings.socialMedia.telegram.botTokenDescription')}
+                            label={t('frontend.settings.socialMedia.botTokenLabel')}
+                            description={t('frontend.settings.socialMedia.telegram.botTokenDescription')}
                         >
                             <Input
                                 type="password"
@@ -156,20 +156,20 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 onChange={e => setTelegramToken(e.target.value)}
                                 onBlur={() => handleTelegramUpdate({ token: telegramToken })}
                                 className={SettingsInputClassName}
-                                placeholder={t('settings.socialMedia.telegram.botTokenPlaceholder')}
+                                placeholder={t('frontend.settings.socialMedia.telegram.botTokenPlaceholder')}
                             />
                         </SettingsField>
 
                         <SettingsField
-                            label={t('settings.socialMedia.allowedUserIdsLabel')}
-                            description={t('settings.socialMedia.telegram.allowedUserIdsDescription')}
+                            label={t('frontend.settings.socialMedia.allowedUserIdsLabel')}
+                            description={t('frontend.settings.socialMedia.telegram.allowedUserIdsDescription')}
                         >
                             <Input
                                 type="text"
                                 value={telegramConfig.allowedUserIds.join(', ')}
                                 onChange={e => handleTelegramUpdate({ allowedUserIds: normalizeIds(e.target.value) })}
                                 className={SettingsInputClassName}
-                                placeholder={t('settings.socialMedia.telegram.allowedUserIdsPlaceholder')}
+                                placeholder={t('frontend.settings.socialMedia.telegram.allowedUserIdsPlaceholder')}
                             />
                         </SettingsField>
                     </div>
@@ -177,7 +177,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                     {!telegramConfig.token && telegramConfig.enabled && (
                         <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 p-3 typo-caption text-amber-500 border border-amber-500/20">
                             <IconAlertCircle className="h-4 w-4 shrink-0" />
-                            <span>{t('settings.socialMedia.telegram.missingTokenWarning')}</span>
+                            <span>{t('frontend.settings.socialMedia.telegram.missingTokenWarning')}</span>
                         </div>
                     )}
                 </div>
@@ -185,14 +185,14 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
 
             {/* Discord Section */}
             <SettingsPanel
-                title={t('settings.socialMedia.discord.title')}
-                description={t('settings.socialMedia.discord.description')}
+                title={t('frontend.settings.socialMedia.discord.title')}
+                description={t('frontend.settings.socialMedia.discord.description')}
                 icon={IconMessage}
             >
                 <div className="space-y-6">
                     <SettingsToggleRow
-                        title={t('settings.socialMedia.discord.enableTitle')}
-                        description={t('settings.socialMedia.discord.enableDescription')}
+                        title={t('frontend.settings.socialMedia.discord.enableTitle')}
+                        description={t('frontend.settings.socialMedia.discord.enableDescription')}
                         control={(
                             <Switch
                                 checked={discordConfig.enabled}
@@ -203,8 +203,8 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                     />
 
                     <SettingsToggleRow
-                        title={t('settings.socialMedia.notifications.enableTitle')}
-                        description={t('settings.socialMedia.notifications.enableDescription')}
+                        title={t('frontend.settings.socialMedia.notifications.enableTitle')}
+                        description={t('frontend.settings.socialMedia.notifications.enableDescription')}
                         control={(
                             <Switch
                                 checked={discordConfig.notifications !== false}
@@ -216,8 +216,8 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
 
                     <div className="grid gap-6 md:grid-cols-2">
                         <SettingsField
-                            label={t('settings.socialMedia.botTokenLabel')}
-                            description={t('settings.socialMedia.discord.botTokenDescription')}
+                            label={t('frontend.settings.socialMedia.botTokenLabel')}
+                            description={t('frontend.settings.socialMedia.discord.botTokenDescription')}
                         >
                             <Input
                                 type="password"
@@ -225,20 +225,20 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 onChange={e => setDiscordToken(e.target.value)}
                                 onBlur={() => handleDiscordUpdate({ token: discordToken })}
                                 className={SettingsInputClassName}
-                                placeholder={t('settings.socialMedia.discord.botTokenPlaceholder')}
+                                placeholder={t('frontend.settings.socialMedia.discord.botTokenPlaceholder')}
                             />
                         </SettingsField>
 
                         <SettingsField
-                            label={t('settings.socialMedia.allowedUserIdsLabel')}
-                            description={t('settings.socialMedia.discord.allowedUserIdsDescription')}
+                            label={t('frontend.settings.socialMedia.allowedUserIdsLabel')}
+                            description={t('frontend.settings.socialMedia.discord.allowedUserIdsDescription')}
                         >
                             <Input
                                 type="text"
                                 value={discordConfig.allowedUserIds.join(', ')}
                                 onChange={e => handleDiscordUpdate({ allowedUserIds: normalizeIds(e.target.value) })}
                                 className={SettingsInputClassName}
-                                placeholder={t('settings.socialMedia.discord.allowedUserIdsPlaceholder')}
+                                placeholder={t('frontend.settings.socialMedia.discord.allowedUserIdsPlaceholder')}
                             />
                         </SettingsField>
                     </div>
@@ -249,17 +249,17 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
             <div className="flex items-start gap-3 rounded-2xl bg-primary/5 p-4 border border-primary/10">
                 <IconShield className="mt-0.5 h-5 w-5 text-primary" />
                 <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-primary">{t('settings.socialMedia.security.title')}</h4>
+                    <h4 className="text-sm font-medium text-primary">{t('frontend.settings.socialMedia.security.title')}</h4>
                     <p className="typo-caption text-muted-foreground leading-relaxed">
-                        {t('settings.socialMedia.security.description')}
+                        {t('frontend.settings.socialMedia.security.description')}
                     </p>
                 </div>
             </div>
 
             {/* Scheduled Notifications (Cron Jobs) */}
             <SettingsPanel
-                title={t('settings.socialMedia.cronJobs.title')}
-                description={t('settings.socialMedia.cronJobs.description')}
+                title={t('frontend.settings.socialMedia.cronJobs.title')}
+                description={t('frontend.settings.socialMedia.cronJobs.description')}
                 icon={IconCalendar}
             >
                 <div className="space-y-4">
@@ -311,23 +311,23 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                     {/* New cron job form */}
                     {showNewCronForm && (
                         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
-                            <h5 className="text-sm font-medium">{t('settings.socialMedia.cronJobs.newTitle')}</h5>
+                            <h5 className="text-sm font-medium">{t('frontend.settings.socialMedia.cronJobs.newTitle')}</h5>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <SettingsField
-                                    label={t('settings.socialMedia.cronJobs.labelField')}
-                                    description={t('settings.socialMedia.cronJobs.labelDescription')}
+                                    label={t('frontend.settings.socialMedia.cronJobs.labelField')}
+                                    description={t('frontend.settings.socialMedia.cronJobs.labelDescription')}
                                 >
                                     <Input
                                         type="text"
                                         value={newCronDraft.label}
                                         onChange={e => setNewCronDraft(d => ({ ...d, label: e.target.value }))}
                                         className={SettingsInputClassName}
-                                        placeholder={t('settings.socialMedia.cronJobs.labelPlaceholder')}
+                                        placeholder={t('frontend.settings.socialMedia.cronJobs.labelPlaceholder')}
                                     />
                                 </SettingsField>
                                 <SettingsField
-                                    label={t('settings.socialMedia.cronJobs.expressionField')}
-                                    description={t('settings.socialMedia.cronJobs.expressionDescription')}
+                                    label={t('frontend.settings.socialMedia.cronJobs.expressionField')}
+                                    description={t('frontend.settings.socialMedia.cronJobs.expressionDescription')}
                                 >
                                     <Input
                                         type="text"
@@ -339,19 +339,19 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 </SettingsField>
                             </div>
                             <SettingsField
-                                label={t('settings.socialMedia.cronJobs.messageField')}
-                                description={t('settings.socialMedia.cronJobs.messageDescription')}
+                                label={t('frontend.settings.socialMedia.cronJobs.messageField')}
+                                description={t('frontend.settings.socialMedia.cronJobs.messageDescription')}
                             >
                                 <Input
                                     type="text"
                                     value={newCronDraft.message}
                                     onChange={e => setNewCronDraft(d => ({ ...d, message: e.target.value }))}
                                     className={SettingsInputClassName}
-                                    placeholder={t('settings.socialMedia.cronJobs.messagePlaceholder')}
+                                    placeholder={t('frontend.settings.socialMedia.cronJobs.messagePlaceholder')}
                                 />
                             </SettingsField>
                             <div className="flex items-center gap-3">
-                                <span className="typo-caption text-muted-foreground">{t('settings.socialMedia.cronJobs.platformsLabel')}</span>
+                                <span className="typo-caption text-muted-foreground">{t('frontend.settings.socialMedia.cronJobs.platformsLabel')}</span>
                                 <label className="flex items-center gap-1.5 typo-caption cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -392,7 +392,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                     disabled={!newCronDraft.label || !newCronDraft.message || newCronDraft.platforms.length === 0}
                                     className={C_SOCIALMEDIATAB_1}
                                 >
-                                    {t('settings.socialMedia.cronJobs.addButton')}
+                                    {t('frontend.settings.socialMedia.cronJobs.addButton')}
                                 </button>
                                 <button
                                     type="button"
@@ -416,7 +416,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                             className={C_SOCIALMEDIATAB_2}
                         >
                             <IconPlus className="h-4 w-4" />
-                            {t('settings.socialMedia.cronJobs.addNew')}
+                            {t('frontend.settings.socialMedia.cronJobs.addNew')}
                         </button>
                     )}
 
@@ -424,7 +424,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                     <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 typo-body text-muted-foreground">
                         <IconClock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                         <div>
-                            <p className="font-medium mb-1">{t('settings.socialMedia.cronJobs.helpTitle')}</p>
+                            <p className="font-medium mb-1">{t('frontend.settings.socialMedia.cronJobs.helpTitle')}</p>
                             <div className="space-y-0.5 font-mono">
                                 <p>{'┌──── minute (0-59)'}</p>
                                 <p>{'│ ┌── hour (0-23)'}</p>
@@ -433,7 +433,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 <p>{'│ │ │ │ ┌ day of week (0-6)'}</p>
                                 <p>{'* * * * *'}</p>
                             </div>
-                            <p className="mt-1.5">{t('settings.socialMedia.cronJobs.helpExamples')}</p>
+                            <p className="mt-1.5">{t('frontend.settings.socialMedia.cronJobs.helpExamples')}</p>
                         </div>
                     </div>
                 </div>
@@ -441,8 +441,8 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
 
             {/* WhatsApp Section (Coming Soon) */}
             <SettingsPanel
-                title={t('settings.socialMedia.whatsapp.title')}
-                description={t('settings.socialMedia.whatsapp.description')}
+                title={t('frontend.settings.socialMedia.whatsapp.title')}
+                description={t('frontend.settings.socialMedia.whatsapp.description')}
                 icon={IconMessage}
                 className="opacity-60"
             >
@@ -451,9 +451,9 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                         <div className="rounded-full bg-muted p-3">
                             <IconAlertCircle className="h-6 w-6 text-muted-foreground" />
                         </div>
-                        <h5 className="text-sm font-medium">{t('settings.socialMedia.whatsapp.comingSoonTitle')}</h5>
+                        <h5 className="text-sm font-medium">{t('frontend.settings.socialMedia.whatsapp.comingSoonTitle')}</h5>
                         <p className="typo-caption text-muted-foreground max-w-xs">
-                            {t('settings.socialMedia.whatsapp.comingSoonDescription')}
+                            {t('frontend.settings.socialMedia.whatsapp.comingSoonDescription')}
                         </p>
                     </div>
                 </div>

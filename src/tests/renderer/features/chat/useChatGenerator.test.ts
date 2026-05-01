@@ -260,6 +260,7 @@ const setupChatGeneratorTestMocks = () => {
         configurable: true,
         writable: true,
         value: {
+            invoke: vi.fn().mockResolvedValue([]),
             getToolDefinitions: mockGetToolDefinitions,
             executeTools: mockExecuteTools,
             log: {

@@ -8,6 +8,10 @@
  * (at your option) any later version.
  */
 
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { CopilotService } from '@main/services/llm/copilot.service';
@@ -50,6 +54,41 @@ const getSettingsErrorCode = (error: Error): string => {
     return SETTINGS_ERROR_CODE.SAVE_FAILED;
 };
 
+function pathExists(filePath: string | undefined): filePath is string {
+    return typeof filePath === 'string' && filePath.length > 0 && fs.existsSync(filePath);
+}
+
+function isInsideDirectory(candidatePath: string, parentDirectory: string): boolean {
+    const candidate = path.resolve(candidatePath).toLowerCase();
+    const parent = path.resolve(parentDirectory).toLowerCase();
+    const relative = path.relative(parent, candidate);
+    return relative === '' || (!!relative && !relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function resolveStartupExecutablePath(): string | null {
+    const portableExecutablePath =
+        process.env.PORTABLE_EXECUTABLE_FILE ||
+        process.env.PORTABLE_EXECUTABLE_PATH;
+
+    if (pathExists(portableExecutablePath)) {
+        return portableExecutablePath;
+    }
+
+    if (process.env.PORTABLE_EXECUTABLE_DIR && pathExists(process.env.PORTABLE_EXECUTABLE_DIR)) {
+        const portableFileName = process.env.PORTABLE_EXECUTABLE_APP_FILENAME || path.basename(process.execPath);
+        const candidate = path.join(process.env.PORTABLE_EXECUTABLE_DIR, portableFileName);
+        if (pathExists(candidate)) {
+            return candidate;
+        }
+    }
+
+    if (app.isPackaged && process.platform === 'win32' && isInsideDirectory(process.execPath, os.tmpdir())) {
+        return null;
+    }
+
+    return process.execPath;
+}
+
 
 
 
@@ -76,18 +115,36 @@ const AppSettingsSchema = z.object({
  * Synchronizes the OS login item settings based on application startup preferences.
  * @param settings - The application settings containing startup behavior configuration
  */
-function syncStartupBehavior(settings: AppSettings): void {
+export function syncStartupBehavior(settings: AppSettings): void {
     if (!app.isPackaged || settings.window?.startOnStartup === undefined) {
         return;
     }
 
     const shouldStartHidden = settings.window.workAtBackground ?? false;
-    app.setLoginItemSettings({
-        openAtLogin: settings.window.startOnStartup,
-        openAsHidden: shouldStartHidden,
-        path: process.execPath,
-        args: shouldStartHidden ? ['--hidden'] : []
-    });
+    const executablePath = resolveStartupExecutablePath();
+
+    try {
+        if (!executablePath) {
+            if (settings.window.startOnStartup === false) {
+                app.setLoginItemSettings({ openAtLogin: false });
+            }
+            appLogger.warn(
+                'SettingsIPC',
+                'Skipping startup sync because the packaged executable is running from a portable temp extraction path'
+            );
+            return;
+        }
+
+        app.setLoginItemSettings({
+            openAtLogin: settings.window.startOnStartup,
+            openAsHidden: shouldStartHidden,
+            path: executablePath,
+            args: shouldStartHidden ? ['--hidden'] : []
+        });
+        appLogger.debug('SettingsIPC', `Startup behavior synced. Path: ${executablePath}, Enabled: ${settings.window.startOnStartup}`);
+    } catch (error) {
+        appLogger.error('SettingsIPC', 'Failed to sync startup behavior', error as Error);
+    }
 }
 
 /**

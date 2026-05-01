@@ -105,8 +105,8 @@ export function TerminalSearchOverlay({
                             ? 'border-primary/70 text-primary bg-primary/10'
                             : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
                     )}
-                    aria-label={t('terminal.searchRegex')}
-                    title={t('terminal.searchRegex')}
+                    aria-label={t('frontend.terminal.searchRegex')}
+                    title={t('frontend.terminal.searchRegex')}
                 >
                     .*
                 </button>
@@ -115,7 +115,7 @@ export function TerminalSearchOverlay({
                         runTerminalSearch('prev');
                     }}
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={t('aria.findPrevious')}
+                    aria-label={t('frontend.aria.findPrevious')}
                 >
                     <IconChevronUp className="w-3.5 h-3.5" />
                 </button>
@@ -124,7 +124,7 @@ export function TerminalSearchOverlay({
                         runTerminalSearch('next');
                     }}
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={t('aria.findNext')}
+                    aria-label={t('frontend.aria.findNext')}
                 >
                     <IconChevronDown className="w-3.5 h-3.5" />
                 </button>
@@ -146,7 +146,7 @@ export function TerminalSearchOverlay({
                     )}
                 >
                     {searchStatus === 'invalid-regex'
-                        ? t('terminal.invalidRegex')
+                        ? t('frontend.terminal.invalidRegex')
                         : searchMatches.length > 0
                             ? `${searchActiveMatchIndex >= 0 ? searchActiveMatchIndex + 1 : 0}/${searchMatches.length}`
                             : searchStatus === 'not-found'

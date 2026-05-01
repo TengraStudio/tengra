@@ -96,7 +96,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
         <div className="space-y-6">
             <div className="mb-2">
                 <p className="text-sm text-muted-foreground/60 leading-relaxed font-medium">
-                    {t('council.setupSubtitle')}
+                    {t('frontend.council.setupSubtitle')}
                 </p>
             </div>
 
@@ -104,7 +104,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
                     <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30 mb-3">
                         <IconRobot className="h-3.5 w-3.5" />
-                        <span>{t('council.chairman')}</span>
+                        <span>{t('frontend.council.chairman')}</span>
                     </div>
                     <div className="text-lg font-bold text-foreground/90">
                         {councilSetup.chairman.mode === 'manual'
@@ -114,13 +114,13 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     <div className="mt-1 truncate typo-caption font-medium text-muted-foreground/40">
                         {councilSetup.chairman.mode === 'manual'
                             ? `${selectedChairmanProvider} · ${selectedChairmanModel}`
-                            : t('agents.strategy')}
+                            : t('frontend.agents.strategy')}
                     </div>
                 </div>
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
                     <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30 mb-3">
                         <IconSparkles className="h-3.5 w-3.5" />
-                        <span>{t('agents.strategy')}</span>
+                        <span>{t('frontend.agents.strategy')}</span>
                     </div>
                     <div className="text-lg font-bold text-foreground/90">
                         {t(`council.strategies.${councilSetup.strategy}`)}
@@ -132,7 +132,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
                     <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30 mb-3">
                         <IconTimeline className="h-3.5 w-3.5" />
-                        <span>{t('council.requestedSubagents')}</span>
+                        <span>{t('frontend.council.requestedSubagents')}</span>
                     </div>
                     <div className="text-lg font-bold text-foreground/90">
                         {requestedSubagentLabel}
@@ -147,7 +147,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 <div className="grid gap-6 md:grid-cols-3">
                     <div className="space-y-2.5">
                         <label className="typo-overline font-bold text-muted-foreground/40 px-1">
-                            {t('council.chairman')}
+                            {t('frontend.council.chairman')}
                         </label>
                         <Select
                             value={councilSetup.chairman.mode}
@@ -177,7 +177,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
 
                     <div className="space-y-2.5">
                         <label className="typo-overline font-bold text-muted-foreground/40 px-1">
-                            {t('agents.strategy')}
+                            {t('frontend.agents.strategy')}
                         </label>
                         <Select
                             value={councilSetup.strategy}
@@ -189,19 +189,19 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                             }
                         >
                             <SelectTrigger className="h-11 rounded-2xl border-border/40 bg-background/70 text-sm hover:bg-background/80 transition-all">
-                                <SelectValue placeholder={t('agents.strategy')} />
+                                <SelectValue placeholder={t('frontend.agents.strategy')} />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border-border/40 bg-background/95">
-                                <SelectItem value="reasoning-first" className="rounded-xl">{t('council.strategies.reasoning-first')}</SelectItem>
-                                <SelectItem value="balanced" className="rounded-xl">{t('council.strategies.balanced')}</SelectItem>
-                                <SelectItem value="local-first-simple" className="rounded-xl">{t('council.strategies.local-first-simple')}</SelectItem>
+                                <SelectItem value="reasoning-first" className="rounded-xl">{t('frontend.council.strategies.reasoning-first')}</SelectItem>
+                                <SelectItem value="balanced" className="rounded-xl">{t('frontend.council.strategies.balanced')}</SelectItem>
+                                <SelectItem value="local-first-simple" className="rounded-xl">{t('frontend.council.strategies.local-first-simple')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="space-y-2.5">
                         <label className="typo-overline font-bold text-muted-foreground/40 px-1">
-                            {t('council.requestedSubagents')}
+                            {t('frontend.council.requestedSubagents')}
                         </label>
                         <Select
                             value={`${councilSetup.requestedSubagentCount}`}
@@ -236,7 +236,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     <div className="pt-6 border-t border-border/30 grid gap-6 md:grid-cols-2">
                         <div className="space-y-2.5">
                             <label className="typo-overline font-bold text-muted-foreground/40 px-1">
-                                {t('agent.aiProvider')}
+                                {t('frontend.agent.aiProvider')}
                             </label>
                             <Select
                                 value={selectedChairmanProvider}
@@ -270,7 +270,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
 
                         <div className="space-y-2.5">
                             <label className="typo-overline font-bold text-muted-foreground/40 px-1">
-                                {t('agent.modelAssignment')}
+                                {t('frontend.agent.modelAssignment')}
                             </label>
                             <Select
                                 value={selectedChairmanModel}
@@ -315,7 +315,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     className={C_WORKSPACEAGENTCOUNCILSETUP_1}
                 >
                     <IconTimeline className="mr-2 h-4 w-4" />
-                    {t('council.runCouncil')}
+                    {t('frontend.council.runCouncil')}
                 </Button>
             </div>
         </div>

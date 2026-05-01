@@ -82,7 +82,7 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
             // Verify line content matches to avoid drift issues
             const targetLine = lines[item.line - 1];
             if (!targetLine || (!targetLine.includes('- [ ]') && !targetLine.includes('- [x]'))) {
-                throw new Error(t('workspace.errors.todoFileChanged'));
+                throw new Error(t('frontend.workspace.errors.todoFileChanged'));
             }
 
             const newLine = item.completed
@@ -121,7 +121,7 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
                 content = await window.electron.files.readFile(targetPath);
                 if (content && !content.endsWith('\n')) { content += '\n'; }
             } else {
-                content = `${t('workspace.todoDefaultTitle')}\n\n`;
+                content = `${t('frontend.workspace.todoDefaultTitle')}\n\n`;
             }
 
             const newTaskLine = `- [ ] ${text}`;

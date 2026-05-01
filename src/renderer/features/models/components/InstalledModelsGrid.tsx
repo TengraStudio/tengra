@@ -292,7 +292,7 @@ const InstalledModelCard = memo(({
 
     const formatPricing = (price: number | undefined): string => {
         if (price === undefined) { return '-'; }
-        if (price === 0) { return t('modelsPage.free'); }
+        if (price === 0) { return t('frontend.modelsPage.free'); }
         return `$${price.toFixed(4)}`;
     };
 
@@ -356,13 +356,13 @@ const InstalledModelCard = memo(({
             <div className="flex flex-wrap gap-2 mb-3">
                 {model.contextWindow !== undefined && (
                     <div className="bg-muted/30 rounded px-2 py-1">
-                        <span className="text-sm text-muted-foreground/60 mr-1">{t('modelsPage.context')}</span>
+                        <span className="text-sm text-muted-foreground/60 mr-1">{t('frontend.modelsPage.context')}</span>
                         <span className="text-sm font-bold">{formatContextWindow(model.contextWindow)}</span>
                     </div>
                 )}
                 {model.pricing && (
                     <div className="bg-muted/30 rounded px-2 py-1">
-                        <span className="text-sm text-muted-foreground/60 mr-1">{t('modelsPage.pricing')}</span>
+                        <span className="text-sm text-muted-foreground/60 mr-1">{t('frontend.modelsPage.pricing')}</span>
                         <span className="text-sm font-bold">{formatPricing(model.pricing.input)}</span>
                     </div>
                 )}
@@ -391,10 +391,10 @@ const InstalledModelCard = memo(({
                             ? "bg-primary/20 text-primary cursor-default"
                             : "bg-muted/30 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                     )}
-                    title={isDefault ? t('modelsPage.isDefault') : t('modelsPage.setDefault')}
+                    title={isDefault ? t('frontend.modelsPage.isDefault') : t('frontend.modelsPage.setDefault')}
                 >
                     <IconCheck className="w-3 h-3" />
-                    {isDefault ? t('modelsPage.default') : t('modelsPage.setDefault')}
+                    {isDefault ? t('frontend.modelsPage.default') : t('frontend.modelsPage.setDefault')}
                 </button>
 
                 {/* Favorite button */}
@@ -406,7 +406,7 @@ const InstalledModelCard = memo(({
                             ? "bg-warning/20 text-warning"
                             : "bg-muted/30 text-muted-foreground hover:bg-warning/10 hover:text-warning"
                     )}
-                    title={isFavorite ? t('modelsPage.unfavorite') : t('modelsPage.favorite')}
+                    title={isFavorite ? t('frontend.modelsPage.unfavorite') : t('frontend.modelsPage.favorite')}
                 >
                     <IconHeart className={cn("w-3.5 h-3.5", isFavorite && "fill-current")} />
                 </button>
@@ -420,7 +420,7 @@ const InstalledModelCard = memo(({
                             ? "bg-muted/50 text-muted-foreground"
                             : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
                     )}
-                    title={isHidden ? t('modelsPage.show') : t('modelsPage.hide')}
+                    title={isHidden ? t('frontend.modelsPage.show') : t('frontend.modelsPage.hide')}
                 >
                     {isHidden ? <IconEyeOff className="w-3.5 h-3.5" /> : <IconEye className="w-3.5 h-3.5" />}
                 </button>
@@ -508,8 +508,8 @@ const ProviderSection = memo(({
                             {t(config.labelKey)}
                         </h2>
                         <p className="typo-caption text-muted-foreground">
-                            {visibleModels.length} {t('modelsPage.modelsCount')}
-                            {accounts.length > 1 && ` · ${accounts.length} ${t('modelsPage.accounts')}`}
+                            {visibleModels.length} {t('frontend.modelsPage.modelsCount')}
+                            {accounts.length > 1 && ` · ${accounts.length} ${t('frontend.modelsPage.accounts')}`}
                         </p>
                     </div>
                 </button>
@@ -624,7 +624,7 @@ export function InstalledModelsGrid({
         return (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                 <IconLoader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-                <p className="text-sm">{t('modelsPage.loadingModels')}</p>
+                <p className="text-sm">{t('frontend.modelsPage.loadingModels')}</p>
             </div>
         );
     }
@@ -638,7 +638,7 @@ export function InstalledModelsGrid({
                         type="text"
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        placeholder={t('modelsPage.searchPlaceholder')}
+                        placeholder={t('frontend.modelsPage.searchPlaceholder')}
                         className={C_INSTALLEDMODELSGRID_1}
                     />
                 </div>
@@ -654,7 +654,7 @@ export function InstalledModelsGrid({
                         )}
                     >
                         {showHidden ? <IconEye className="w-3.5 h-3.5" /> : <IconEyeOff className="w-3.5 h-3.5" />}
-                        {showHidden ? t('modelsPage.hideHidden') : t('modelsPage.showHidden')}
+                        {showHidden ? t('frontend.modelsPage.hideHidden') : t('frontend.modelsPage.showHidden')}
                     </button>
 
                     <button
@@ -662,7 +662,7 @@ export function InstalledModelsGrid({
                         className={C_INSTALLEDMODELSGRID_2}
                     >
                         <IconRefresh className="w-3.5 h-3.5" />
-                        {t('modelsPage.refresh')}
+                        {t('frontend.modelsPage.refresh')}
                     </button>
                 </div>
             </div>
@@ -671,7 +671,7 @@ export function InstalledModelsGrid({
             {sortedProviders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
                     <IconAlertCircle className="w-10 h-10 mb-3 opacity-30" />
-                    <p className="text-sm">{t('modelsPage.noModelsFound')}</p>
+                    <p className="text-sm">{t('frontend.modelsPage.noModelsFound')}</p>
                 </div>
             ) : (
                 sortedProviders.map(provider => (

@@ -183,6 +183,38 @@ export function toCouncilConfig(chat: Chat, fallback?: WorkspaceAgentSessionSumm
     return metadata.councilConfig ?? fallback?.councilConfig ?? DEFAULT_COUNCIL_SETUP;
 }
 
+function normalizeMessageContent(message: Message): string {
+    return typeof message.content === 'string' ? message.content.trim() : '';
+}
+
+export function dedupeChatMessages(messages: Message[]): Message[] {
+    const uniqueMessages: Message[] = [];
+    const seenIds = new Set<string>();
+
+    for (const message of messages) {
+        if (!message.id || seenIds.has(message.id)) {
+            continue;
+        }
+
+        const previousMessage = uniqueMessages[uniqueMessages.length - 1];
+        const content = normalizeMessageContent(message);
+        if (
+            previousMessage &&
+            previousMessage.role === message.role &&
+            previousMessage.role !== 'tool' &&
+            normalizeMessageContent(previousMessage) === content &&
+            content.length > 0
+        ) {
+            continue;
+        }
+
+        uniqueMessages.push(message);
+        seenIds.add(message.id);
+    }
+
+    return uniqueMessages;
+}
+
 export function mergeWorkspaceChats(
     allChats: Chat[],
     workspaceId: string,
@@ -192,7 +224,9 @@ export function mergeWorkspaceChats(
         .filter(chat => chat.workspaceId === workspaceId)
         .map(chat => ({
             ...chat,
-            messages: previousChats.find(previous => previous.id === chat.id)?.messages ?? [],
+            messages: dedupeChatMessages(
+                previousChats.find(previous => previous.id === chat.id)?.messages ?? []
+            ),
         }))
         .sort(
             (left, right) =>
@@ -328,7 +362,13 @@ export async function loadWorkspaceSessionsForWorkspace(options: {
             )
         )
     );
-    options.setCurrentSessionId(listing.persistence.activeSessionId);
+    options.setCurrentSessionId(previousSessionId => {
+        if (!previousSessionId) {
+            return null;
+        }
+        const sessionStillExists = mergedChats.some(chat => chat.id === previousSessionId);
+        return sessionStillExists ? previousSessionId : null;
+    });
     options.setComposerValue(listing.persistence.composerDraft);
 }
 
@@ -573,14 +613,6 @@ export async function sendWorkspaceAgentMessage(options: {
     }));
     options.setComposerValue('');
     
-    // We start generation but wrap it to refresh telemetry when finished
-    options.generateResponse(targetSession.id, userMessage).then(async () => {
-        await options.refreshTelemetry(targetSession.id);
-        await options.loadWorkspaceSessions();
-    }).catch(err => {
-        appLogger.error('WorkspaceAgentSessionUtils', 'Failed to refresh telemetry after generation', err);
-    });
-
     const targetModes = target.modes;
     if (targetModes.plan || targetModes.council) {
         await window.electron.session.council.generatePlan(
@@ -588,6 +620,14 @@ export async function sendWorkspaceAgentMessage(options: {
             trimmedContent
         );
         await options.refreshCouncilState(targetSession.id);
+    } else {
+        // We start generation but wrap it to refresh telemetry when finished
+        options.generateResponse(targetSession.id, userMessage).then(async () => {
+            await options.refreshTelemetry(targetSession.id);
+            await options.loadWorkspaceSessions();
+        }).catch(err => {
+            appLogger.error('WorkspaceAgentSessionUtils', 'Failed to refresh telemetry after generation', err);
+        });
     }
 
     // Immediate refresh for UI responsiveness (message count etc)

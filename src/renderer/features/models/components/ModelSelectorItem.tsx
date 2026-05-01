@@ -153,7 +153,7 @@ const ModelQuotaDisplay: React.FC<{
 
     const aiCredits = quotaMatch?.quotaInfo?.aiCredits;
     const creditLabel = typeof aiCredits?.creditAmount === 'number'
-        ? `${t('models.creditsLeft')}: ${Math.max(0, Math.round(aiCredits.creditAmount))}`
+        ? `${t('frontend.models.creditsLeft')}: ${Math.max(0, Math.round(aiCredits.creditAmount))}`
         : null;
 
     return (
@@ -161,7 +161,7 @@ const ModelQuotaDisplay: React.FC<{
             {percent !== null && model.provider !== 'copilot' && (
                 <>
                     <div className="flex items-center justify-between gap-2 typo-overline font-bold">
-                        <span className="text-muted-foreground/55 uppercase ">{t('statistics.quotaStatus')}</span>
+                        <span className="text-muted-foreground/55 uppercase ">{t('frontend.statistics.quotaStatus')}</span>
                         <span className={cn("rounded border px-1.5 py-0.5 leading-none", getQuotaTone(percent).split(' ').slice(1))}>
                             {percent}%
                         </span>
@@ -351,7 +351,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                                                 : "bg-muted/10 text-muted-foreground/60 border-transparent hover:bg-muted/20 hover:text-foreground"
                                         )}
                                     >
-                                        {t(THINKING_LEVEL_LABEL_KEYS[level] ?? '') || (level.charAt(0).toUpperCase() + level.slice(1))}
+                                        {t(THINKING_LEVEL_LABEL_KEYS[level] ?? '')}
                                     </button>
                                 );
                             })}

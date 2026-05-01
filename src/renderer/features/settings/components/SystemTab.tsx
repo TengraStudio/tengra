@@ -84,7 +84,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-2xl font-semibold text-foreground leading-none">
-                            {t('settings.systemTitle')}
+                            {t('frontend.settings.systemTitle')}
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 rounded-full bg-primary" />
@@ -95,7 +95,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     </div>
                 </div>
                 <p className="max-w-2xl px-1 text-sm leading-relaxed text-muted-foreground/70">
-                    {t('settings.systemDescription')}
+                    {t('frontend.settings.systemDescription')}
                 </p>
             </div>
 
@@ -107,7 +107,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-foreground">
-                                {t('general.autoUpdate')}
+                                {t('frontend.general.autoUpdate')}
                             </h3>
                             <p className="mt-1 text-sm text-muted-foreground/70">
                                 Deployment Protocols
@@ -121,16 +121,16 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         }}
                         className={C_SYSTEMTAB_1}
                     >
-                        {t('general.checkForUpdates')}
+                        {t('frontend.general.checkForUpdates')}
                     </Button>
                 </div>
 
                 <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className={C_SYSTEMTAB_2}>
                         <div className="space-y-1">
-                            <div className="typo-body font-medium text-foreground">{t('general.autoUpdate')}</div>
+                            <div className="typo-body font-medium text-foreground">{t('frontend.general.autoUpdate')}</div>
                             <div className="max-w-240 typo-body leading-relaxed text-muted-foreground/70">
-                                {t('general.autoUpdateDesc')}
+                                {t('frontend.general.autoUpdateDesc')}
                             </div>
                         </div>
                         <Switch
@@ -141,9 +141,9 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
                     <div className={C_SYSTEMTAB_3}>
                         <div className="space-y-1">
-                            <div className="typo-body font-medium text-foreground">{t('general.checkOnStartup')}</div>
+                            <div className="typo-body font-medium text-foreground">{t('frontend.general.checkOnStartup')}</div>
                             <div className="max-w-240 typo-body leading-relaxed text-muted-foreground/70">
-                                {t('general.checkOnStartupDesc')}
+                                {t('frontend.general.checkOnStartupDesc')}
                             </div>
                         </div>
                         <Switch
@@ -154,9 +154,9 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
                     <div className={C_SYSTEMTAB_4}>
                         <div className="space-y-1">
-                            <div className="typo-body font-medium text-foreground">{t('settings.downloadUpdatesAutomatically')}</div>
+                            <div className="typo-body font-medium text-foreground">{t('frontend.settings.downloadUpdatesAutomatically')}</div>
                             <div className="max-w-420 typo-body leading-relaxed text-muted-foreground/70">
-                                {t('settings.downloadUpdatesAutomaticallyDescription')}
+                                {t('frontend.settings.downloadUpdatesAutomaticallyDescription')}
                             </div>
                         </div>
                         <Switch
@@ -174,7 +174,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-foreground">
-                            {t('settings.runtimeTitle')}
+                            {t('frontend.settings.runtimeTitle')}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground/70">
                             Process Life-Cycle
@@ -187,10 +187,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <IconPower className="w-3.5 h-3.5 text-primary opacity-40" />
-                                {t('general.startOnStartup')}
+                                {t('frontend.general.startOnStartup')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">
-                                {t('general.startOnStartupDesc')}
+                                {t('frontend.general.startOnStartupDesc')}
                             </div>
                         </div>
                         <Switch
@@ -203,10 +203,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <IconTerminal className="w-3.5 h-3.5 text-primary opacity-40" />
-                                {t('general.workAtBackground')}
+                                {t('frontend.general.workAtBackground')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">
-                                {t('general.workAtBackgroundDesc')}
+                                {t('frontend.general.workAtBackgroundDesc')}
                             </div>
                         </div>
                         <Switch
@@ -219,10 +219,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <IconBolt className="w-3.5 h-3.5 text-primary opacity-40" />
-                                {t('settings.lowPowerMode')}
+                                {t('frontend.settings.lowPowerMode')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">
-                                {t('settings.lowPowerModeDescription')}
+                                {t('frontend.settings.lowPowerModeDescription')}
                             </div>
                         </div>
                         <Switch
@@ -235,10 +235,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <IconShieldCheck className="w-3.5 h-3.5 text-primary opacity-40" />
-                                {t('settings.autoHibernation')}
+                                {t('frontend.settings.autoHibernation')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">
-                                {t('settings.autoHibernationDescription')}
+                                {t('frontend.settings.autoHibernationDescription')}
                             </div>
                         </div>
                         <Switch

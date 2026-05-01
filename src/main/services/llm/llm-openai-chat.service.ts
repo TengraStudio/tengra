@@ -43,12 +43,14 @@ export interface OpenAIBodyOptions {
     tools?: ToolDefinition[];
     provider?: string;
     stream?: boolean;
+    persistImages?: boolean;
     n?: number;
     temperature?: number;
     systemMode?: SystemMode;
     reasoningEffort?: string;
     workspaceRoot?: string;
     accountId?: string;
+    metadata?: Record<string, RuntimeValue>;
 }
 
 /** Request context for OpenAI-compatible calls. */
@@ -228,7 +230,7 @@ export class LLMOpenAIChatService {
             await this.handleOpenAIStreamError(response, options.model, provider);
         }
 
-        yield* this.handleStreamResponse(response);
+        yield* this.handleStreamResponse(response, { persistImages: options.persistImages !== false });
     }
 
     /**
@@ -237,7 +239,7 @@ export class LLMOpenAIChatService {
      * @param options - Build options.
      */
     buildOpenAIBody(messages: Array<Message | ChatMessage>, options: OpenAIBodyOptions): Record<string, RuntimeValue> {
-        const { model, tools, provider, stream = false, n = 1, temperature, systemMode, reasoningEffort } = options;
+        const { model, tools, provider, stream = false, n = 1, temperature, systemMode, reasoningEffort, metadata } = options;
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
         const finalModel = this.getNormalizedModelName(model, provider);
 
@@ -250,6 +252,7 @@ export class LLMOpenAIChatService {
         applyReasoningEffort(body, finalModel, systemMode, reasoningEffort);
         this.applyStreamOptions(body, stream, provider);
         this.applyOptionalOpenAIParams(body, n, provider, temperature);
+        if (metadata) { body.metadata = metadata; }
         this.applyTools(body, tools);
 
         return body;
@@ -337,13 +340,19 @@ export class LLMOpenAIChatService {
      * Processes a single stream chunk, saving any embedded images.
      * @param chunk - The parsed stream chunk.
      */
-    async processStreamChunk(chunk: StreamChunk): Promise<OpenAIStreamYield> {
-        const savedImages = await this.saveImagesFromStreamChunk(chunk.images);
+    async processStreamChunk(
+        chunk: StreamChunk,
+        seenImageUrls?: Set<string>,
+        persistImages: boolean = true
+    ): Promise<OpenAIStreamYield> {
+        const images = persistImages
+            ? await this.saveImagesFromStreamChunk(chunk.images, seenImageUrls)
+            : this.extractRawImagesFromStreamChunk(chunk.images, seenImageUrls);
         return {
             ...(chunk.index !== undefined ? { index: chunk.index } : {}),
             ...(chunk.content ? { content: chunk.content } : {}),
             ...(chunk.reasoning ? { reasoning: chunk.reasoning } : {}),
-            images: savedImages,
+            images,
             ...(chunk.type ? { type: chunk.type } : {}),
             ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {}),
             ...(chunk.usage ? { usage: chunk.usage } : {})
@@ -448,10 +457,14 @@ export class LLMOpenAIChatService {
         });
     }
 
-    private async *handleStreamResponse(response: Response): AsyncGenerator<OpenAIStreamYield> {
+    private async *handleStreamResponse(
+        response: Response,
+        options: { persistImages: boolean } = { persistImages: true }
+    ): AsyncGenerator<OpenAIStreamYield> {
+        const seenImageUrls = new Set<string>();
         try {
             for await (const chunk of StreamParser.parseChatStream(response)) {
-                const processedChunk = await this.processStreamChunk(chunk);
+                const processedChunk = await this.processStreamChunk(chunk, seenImageUrls, options.persistImages);
                 yield processedChunk;
             }
         } catch (e) {
@@ -499,6 +512,24 @@ export class LLMOpenAIChatService {
         return this.saveRawImages(rawImages);
     }
 
+    private extractRawImagesFromStreamChunk(
+        images: Array<string | { image_url: { url: string } }> | undefined,
+        seenImageUrls?: Set<string>
+    ): string[] {
+        if (!images || images.length === 0) { return []; }
+
+        const rawImages: string[] = [];
+        for (const img of images) {
+            const url = typeof img === 'string' ? img : img.image_url.url;
+            if (!url || seenImageUrls?.has(url)) {
+                continue;
+            }
+            seenImageUrls?.add(url);
+            rawImages.push(url);
+        }
+        return rawImages;
+    }
+
     private async saveRawImages(rawImages: Array<string | OpenAIContentPartImage>): Promise<string[]> {
         const savedImages: string[] = [];
         if (rawImages.length > 0) {
@@ -517,15 +548,22 @@ export class LLMOpenAIChatService {
         return savedImages;
     }
 
-    private async saveImagesFromStreamChunk(images: Array<string | { image_url: { url: string } }> | undefined): Promise<string[]> {
+    private async saveImagesFromStreamChunk(
+        images: Array<string | { image_url: { url: string } }> | undefined,
+        seenImageUrls?: Set<string>
+    ): Promise<string[]> {
         if (!images || images.length === 0) { return []; }
 
         const savedImages: string[] = [];
         await Promise.all(images.map(async (img) => {
             const url = (typeof img === 'string') ? img : img.image_url.url;
             if (url) {
+                if (seenImageUrls?.has(url)) {
+                    return;
+                }
                 try {
                     const localPath = await this.imagePersistence.saveImage(url);
+                    seenImageUrls?.add(url);
                     savedImages.push(localPath);
                 } catch (e) {
                     appLogger.warn('LLMOpenAIChatService', `Failed to save image in stream: ${getErrorMessage(e as Error)}`);

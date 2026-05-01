@@ -86,7 +86,7 @@ export const WorkspaceQuickSwitch: React.FC<WorkspaceQuickSwitchProps> = ({
                             onClose();
                         }
                     }}
-                    placeholder={t('workspace.quickSwitchPlaceholder')}
+                    placeholder={t('frontend.workspace.quickSwitchPlaceholder')}
                     className="w-full rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
                 />
                 <div className="max-h-72 overflow-y-auto space-y-1">
@@ -107,7 +107,7 @@ export const WorkspaceQuickSwitch: React.FC<WorkspaceQuickSwitchProps> = ({
                     ))}
                     {items.length === 0 && (
                         <div className="px-3 py-6 text-center typo-caption text-muted-foreground">
-                            {t('workspace.noMatchingTabs')}
+                            {t('frontend.workspace.noMatchingTabs')}
                         </div>
                     )}
                 </div>

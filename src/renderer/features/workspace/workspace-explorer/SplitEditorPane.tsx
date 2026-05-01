@@ -49,7 +49,7 @@ export const SplitEditorPane: React.FC<SplitEditorPaneProps> = ({
                     onChange={e => onSelectRightTab(e.target.value)}
                     className="typo-caption bg-transparent border border-border/40 rounded px-1 py-0.5 max-w-200 truncate"
                 >
-                    <option value="">{t('workspaceDashboard.editor.selectFile')}</option>
+                    <option value="">{t('frontend.workspaceDashboard.editor.selectFile')}</option>
                     {openTabs.map(tab => (
                         <option key={tab.id} value={tab.id}>
                             {tab.name}
@@ -74,7 +74,7 @@ export const SplitEditorPane: React.FC<SplitEditorPaneProps> = ({
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        {t('workspaceDashboard.editor.selectFileForSplit')}
+                        {t('frontend.workspaceDashboard.editor.selectFileForSplit')}
                     </div>
                 )}
             </div>

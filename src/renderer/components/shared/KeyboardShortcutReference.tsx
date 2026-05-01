@@ -102,17 +102,17 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
                             <div className="flex justify-center items-center p-2 bg-primary/10 rounded-lg text-primary"><IconKeyboard className="w-5 h-5" aria-hidden="true" /></div>
                             <div>
                                 <h2 id="shortcut-ref-title" className="text-lg font-bold text-foreground m-0">
-                                    {t('shortcuts.title')}
+                                    {t('frontend.shortcuts.title')}
                                 </h2>
                                 <p className="text-sm text-muted-foreground m-0 mt-0.5">
-                                    {t('shortcutReference.description')}
+                                    {t('frontend.shortcutReference.description')}
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
                             className="p-2 text-muted-foreground bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:bg-muted hover:text-foreground"
-                            aria-label={t('shortcuts.close')}
+                            aria-label={t('frontend.shortcuts.close')}
                         >
                             <IconX className="w-5 h-5" aria-hidden="true" />
                         </button>
@@ -154,7 +154,7 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
 
                     {/* Footer */}
                     <div className="p-4 border-t border-border/50 bg-muted/10 text-center">
-                        <p className="text-sm text-muted-foreground m-0">{t('shortcuts.footer')}</p>
+                        <p className="text-sm text-muted-foreground m-0">{t('frontend.shortcuts.footer')}</p>
                     </div>
                 </div>
             </div>

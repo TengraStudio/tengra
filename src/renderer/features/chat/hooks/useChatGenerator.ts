@@ -63,12 +63,18 @@ interface UseChatGeneratorProps {
     language: string;
     activeWorkspacePath?: string | undefined;
     workspaceId?: string | undefined;
+    workspaceTitle?: string | undefined;
+    workspaceDescription?: string | undefined;
     t: (key: string, options?: Record<string, unknown>) => string;
     handleSpeak: (id: string, content: string) => void;
     autoReadEnabled: boolean;
     formatChatError: (err: CatchError) => string;
     quotas?: { accounts: import('@/types/quota').QuotaResponse[] } | null | undefined;
     linkedAccounts?: Array<import('@/electron.d').LinkedAccountInfo> | undefined;
+    onMessageAdded?: (chatId: string, message: Message) => void;
+    onMessageUpdated?: (chatId: string, messageId: string, updates: Partial<Message>) => void;
+    onChatUpdated?: (chatId: string, updates: Partial<Chat>) => void;
+    onStreamingStateUpdated?: (chatId: string, state: StreamStreamingState | null) => void;
 }
 
 interface AntigravityCreditConfirmationState {
@@ -168,9 +174,9 @@ export const useChatGenerator = (
         };
         setAntigravityCreditConfirmation({
             isOpen: true,
-            title: t('chat.antigravityCreditsConfirmTitle'),
-            message: t('chat.antigravityCreditsConfirmMessage', interpolations),
-            confirmLabel: t('chat.antigravityCreditsConfirmAction'),
+            title: t('frontend.chat.antigravityCreditsConfirmTitle'),
+            message: t('frontend.chat.antigravityCreditsConfirmMessage', interpolations),
+            confirmLabel: t('frontend.chat.antigravityCreditsConfirmAction'),
         });
 
         return await new Promise<boolean>(resolve => {
@@ -226,25 +232,30 @@ export const useChatGenerator = (
                 : undefined,
         };
 
-        addMessageToStore(chatId, placeholder);
+        if (props.onMessageAdded) {
+            props.onMessageAdded(chatId, placeholder);
+        } else {
+            addMessageToStore(chatId, placeholder);
+        }
+        
         void window.electron.db.addMessage({ ...placeholder, chatId, timestamp: Date.now() }).catch((error) => {
             logRendererError('[generateResponse] Failed to persist assistant placeholder', error as Error);
         });
-    }, [language]);
+    }, [language, props]);
 
     const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string): Promise<void> => {
         setLastChatError(null);
         setStreamingState(chatId, { content: '', reasoning: '', speed: null, error: null });
         const assistantId = generateId();
-        const activeModel = retryModel ?? selectedModel;
+        const initialModel = retryModel ?? selectedModel;
 
         const modelsToUse: SelectedModelInfo[] =
             !retryModel && selectedModels && selectedModels.length > 1
                 ? selectedModels
-                : [{ provider: selectedProvider, model: activeModel }];
+                : [{ provider: selectedProvider, model: initialModel }];
 
         const isMultiModel = modelsToUse.length > 1;
-        const shouldUseDirectImageFlow = isImageOnlyModel(activeModel) || isExplicitImageRequest(userMessage);
+        const shouldUseDirectImageFlow = isImageOnlyModel(initialModel) || isExplicitImageRequest(userMessage);
         const intentClassification = classifyAiIntent(userMessage, systemMode);
         const shouldEnableTools = !shouldUseDirectImageFlow
             && (systemMode === 'agent' || intentClassification.requiresTooling);
@@ -253,7 +264,11 @@ export const useChatGenerator = (
             for (const modelInfo of modelsToUse) {
                 const approved = await requestAntigravityCreditConfirmation(modelInfo.model, modelInfo.provider);
                 if (!approved) {
-                    updateChatInStore(chatId, { isGenerating: false });
+                    if (props.onChatUpdated) {
+                        props.onChatUpdated(chatId, { isGenerating: false });
+                    } else {
+                        updateChatInStore(chatId, { isGenerating: false });
+                    }
                     return;
                 }
             }
@@ -272,7 +287,7 @@ export const useChatGenerator = (
                     chatId,
                     prompt: getMessageTextContent(userMessage),
                     requestedCount: extractImageRequestCount(userMessage),
-                    activeModel,
+                    activeModel: initialModel,
                     selectedProvider,
                     t,
                     intentClassification,
@@ -293,41 +308,69 @@ export const useChatGenerator = (
                 const tools = shouldEnableTools ? createModelToolList(allTools ?? []) : [];
 
                 const { allMessages, presetOptions } = prepareMessages({
-                    chatId, chats, userMessage, appSettings, selectedModel: activeModel,
-                    selectedProvider, language, activeWorkspacePath, systemMode, toolingEnabled: shouldEnableTools
+                    chatId, chats, userMessage, appSettings, selectedModel: initialModel,
+                    selectedProvider, language, activeWorkspacePath, systemMode, toolingEnabled: shouldEnableTools,
+                    workspaceTitle: props.workspaceTitle,
+                    workspaceDescription: props.workspaceDescription
                 });
 
-                const reasoningEffort = getReasoningEffort(activeModel, appSettings);
+                const reasoningEffort = getReasoningEffort(initialModel, appSettings);
                 const fullOptions = buildProviderOptions(selectedProvider, {
                     ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking',
                     agentToolsEnabled: shouldEnableTools, reasoningEffort
                 });
                 await executeToolTurnLoop({
                     initialMessages: allMessages,
-                    chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
+                    chatId, assistantId, activeModel: initialModel, selectedProvider, tools, fullOptions, workspaceId,
                     autoReadEnabled, handleSpeak, t, language, activeWorkspacePath, systemMode,
                     intentClassification,
                     confirmAntigravityCreditUsage: requestAntigravityCreditConfirmation,
+                    onStreamingUpdate: (update) => {
+                        if (props.onMessageUpdated) {
+                            props.onMessageUpdated(chatId, assistantId, update);
+                        } else {
+                            updateMessageInStore(chatId, assistantId, update);
+                        }
+                    }
                 });
             }
         } catch (e) {
             logRendererError('[generateResponse] Error', e as Error);
             const errText = formatChatError(e as CatchError);
-            setLastChatError(categorizeError(errText, activeModel));
+            setLastChatError(categorizeError(errText, initialModel));
             const partialContent = streamingStates[chatId]?.content ?? '';
             const finalErrorText = partialContent.trim().length > 0
                 ? `${partialContent}\n\n[Generation interrupted: ${errText}]`
-                : `${t('chat.error')}: ${errText}`;
-            updateMessageInStore(chatId, assistantId, { content: finalErrorText });
-            updateChatInStore(chatId, { isGenerating: false });
+                : `${t('frontend.chat.error')}: ${errText}`;
+            
+            if (props.onMessageUpdated) {
+                props.onMessageUpdated(chatId, assistantId, { content: finalErrorText });
+            } else {
+                updateMessageInStore(chatId, assistantId, { content: finalErrorText });
+            }
+
+            if (props.onChatUpdated) {
+                props.onChatUpdated(chatId, { isGenerating: false });
+            } else {
+                updateChatInStore(chatId, { isGenerating: false });
+            }
             void window.electron.db.updateMessage(assistantId, { content: finalErrorText });
         } finally {
-            updateChatInStore(chatId, { isGenerating: false });
+            if (props.onChatUpdated) {
+                props.onChatUpdated(chatId, { isGenerating: false });
+            } else {
+                updateChatInStore(chatId, { isGenerating: false });
+            }
             const chatUpdate = window.electron.db.updateChat?.(chatId, { isGenerating: false });
             void chatUpdate?.catch((error) => {
                 appLogger.warn('useChatGenerator', `Failed to persist generation completion for chatId=${chatId}`, error as Error);
             });
-            setStreamingState(chatId, null);
+            
+            if (props.onStreamingStateUpdated) {
+                props.onStreamingStateUpdated(chatId, null);
+            } else {
+                setStreamingState(chatId, null);
+            }
         }
     };
 

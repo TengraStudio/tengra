@@ -35,14 +35,14 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                     <IconFolderOpen className="w-6 h-6 text-primary" />
-                    {t('workspaces.mounts')}
+                    {t('frontend.workspaces.mounts')}
                 </h2>
                 <Button size="sm" variant="outline" onClick={onAddMount} className="gap-2">
                     <IconPlus className="w-4 h-4" />
-                    {t('workspaces.addMount')}
+                    {t('frontend.workspaces.addMount')}
                 </Button>
             </div>
-            <p className="text-muted-foreground">{t('workspaces.mountsDesc')}</p>
+            <p className="text-muted-foreground">{t('frontend.workspaces.mountsDesc')}</p>
         </div>
 
         <div className="space-y-4">
@@ -77,9 +77,9 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
             {workspace.mounts.length === 0 && (
                 <Card className="border-dashed border-2 bg-muted/5 py-12 flex flex-col items-center justify-center text-center">
                     <IconFolderOpen className="w-12 h-12 text-muted-foreground/20 mb-4" />
-                    <p className="text-sm text-muted-foreground mb-4">{t('workspaces.noMounts')}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{t('frontend.workspaces.noMounts')}</p>
                     <Button onClick={onAddMount} variant="link" className="text-primary font-bold">
-                        {t('workspace.addFirstMount')}
+                        {t('frontend.workspace.addFirstMount')}
                     </Button>
                 </Card>
             )}
@@ -88,16 +88,16 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
         <div className="pt-10">
             <h3 className="text-sm font-bold text-destructive uppercase mb-4 flex items-center gap-2">
                 <IconAlertTriangle className="w-4 h-4" />
-                {t('workspace.dangerZone')}
+                {t('frontend.workspace.dangerZone')}
             </h3>
             <Card className="border-destructive/20 bg-destructive/5 overflow-hidden">
                 <CardContent className="flex items-center justify-between p-6">
                     <div className="space-y-1">
                         <div className="text-sm font-bold text-foreground">
-                            {t('workspaces.deleteWorkspace')}
+                            {t('frontend.workspaces.deleteWorkspace')}
                         </div>
                         <p className="text-sm text-muted-foreground max-w-md">
-                            {t('workspaces.deleteWarning').trim()}
+                            {t('frontend.workspaces.deleteWarning').trim()}
                         </p>
                     </div>
                     <Button

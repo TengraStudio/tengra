@@ -29,14 +29,14 @@ interface ChatErrorBannerProps {
 
 /** Maps error kinds to their corresponding i18n keys */
 const ERROR_MESSAGE_KEYS: Record<ChatErrorKind, string> = {
-    provider_unavailable: 'chat.errorProviderUnavailable',
-    quota_exhausted: 'chat.errorQuotaExhausted',
-    capacity_exhausted: 'chat.errorCapacityExhausted',
-    rate_limited: 'chat.errorRateLimited',
-    timeout: 'chat.errorTimeout',
-    auth: 'chat.errorAuth',
-    permission_denied: 'chat.errorPermissionDenied',
-    generic: 'chat.errorGeneric',
+    provider_unavailable: 'frontend.chat.errorProviderUnavailable',
+    quota_exhausted: 'frontend.chat.errorQuotaExhausted',
+    capacity_exhausted: 'frontend.chat.errorCapacityExhausted',
+    rate_limited: 'frontend.chat.errorRateLimited',
+    timeout: 'frontend.chat.errorTimeout',
+    auth: 'frontend.chat.errorAuth',
+    permission_denied: 'frontend.chat.errorPermissionDenied',
+    generic: 'frontend.chat.errorGeneric',
 };
 
 /** Accent color per error kind */
@@ -85,7 +85,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
                     <button
                         onClick={onDismiss}
                         className="ml-auto text-muted-foreground hover:text-foreground typo-caption shrink-0"
-                        aria-label={t('aria.dismiss')}
+                        aria-label={t('frontend.aria.dismiss')}
                     >
                         ✕
                     </button>
@@ -98,7 +98,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
                     className={C_CHATERRORBANNER_1}
                 >
                     <IconRefresh className="w-3 h-3" />
-                    {t('chat.errorRetry')}
+                    {t('frontend.chat.errorRetry')}
                 </button>
 
                 {showSwitchModel && onSwitchModel && (
@@ -107,7 +107,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
                         className={C_CHATERRORBANNER_2}
                     >
                         <IconArrowsRightLeft className="w-3 h-3" />
-                        {t('chat.errorSwitchModel')}
+                        {t('frontend.chat.errorSwitchModel')}
                     </button>
                 )}
             </div>

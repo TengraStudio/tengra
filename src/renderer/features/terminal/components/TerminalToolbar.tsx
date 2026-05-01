@@ -224,8 +224,8 @@ export function TerminalToolbar({
                 <button
                     type="button"
                     onClick={handleTerminalViewSelect}
-                    aria-label={t('terminal.title')}
-                    title={t('terminal.title')}
+                    aria-label={t('frontend.terminal.title')}
+                    title={t('frontend.terminal.title')}
                     className={cn(
                         'h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors',
                         isTerminalActive
@@ -258,7 +258,7 @@ export function TerminalToolbar({
                                 {selectableBackends.length > 0 && (
                                     <div className="px-2 pt-1 pb-1">
                                         <div className="text-sm text-muted-foreground">
-                                            {t('terminal.defaultBackend')}: {defaultBackendName}
+                                            {t('frontend.terminal.defaultBackend')}: {defaultBackendName}
                                         </div>
                                         <div className="mt-1 space-y-0.5">
                                             {selectableBackends.map(backend => (
@@ -282,7 +282,7 @@ export function TerminalToolbar({
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
                                         <div className="px-2 py-1 text-sm text-muted-foreground">
-                                            {t('terminal.integratedSessions')}
+                                            {t('frontend.terminal.integratedSessions')}
                                         </div>
                                         {availableShells.map(s => (
                                                 <button
@@ -310,7 +310,7 @@ export function TerminalToolbar({
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
                                         <div className="px-2 py-1 text-sm text-muted-foreground">
-                                            {t('terminal.externalTerminals')}
+                                            {t('frontend.terminal.externalTerminals')}
                                         </div>
                                         {launchableExternalBackends.map(backend => (
                                             <button
@@ -340,7 +340,7 @@ export function TerminalToolbar({
                                 )}
                                 <div className="h-px bg-border/70 my-1" />
                                 <div className="px-2 py-1 text-sm text-muted-foreground">
-                                    {t('terminal.select_connection')}
+                                    {t('frontend.terminal.select_connection')}
                                 </div>
                                 {isLoadingRemoteConnections && (
                                     <div className="px-3 py-2 typo-caption text-muted-foreground">
@@ -357,7 +357,7 @@ export function TerminalToolbar({
                                             className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "justify-between")}
                                             title={`${profile.username}@${profile.host}:${profile.port}`}
                                         >
-                                            <span className="truncate">{t('terminal.sshPrefix')}: {profile.name}</span>
+                                            <span className="truncate">{t('frontend.terminal.sshPrefix')}: {profile.name}</span>
                                             <span className="text-sm text-muted-foreground">
                                                 {profile.host}
                                             </span>
@@ -373,7 +373,7 @@ export function TerminalToolbar({
                                             className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "justify-between")}
                                             title={container.id}
                                         >
-                                            <span className="truncate">{t('terminal.dockerPrefix')}: {container.name}</span>
+                                            <span className="truncate">{t('frontend.terminal.dockerPrefix')}: {container.name}</span>
                                             <span className="text-sm text-muted-foreground truncate max-w-24">
                                                 {container.status}
                                             </span>
@@ -381,18 +381,18 @@ export function TerminalToolbar({
                                     ))}
                                 {!isLoadingRemoteConnections && !hasRemoteConnections && (
                                     <div className="px-3 py-2 typo-caption text-muted-foreground">
-                                        {t('terminal.no_ssh_profiles')} / {t('terminal.no_containers')}
+                                        {t('frontend.terminal.no_ssh_profiles')} / {t('frontend.terminal.no_containers')}
                                     </div>
                                 )}
                                 {selectableBackends.length === 0 && (
                                     <div className="px-3 py-2 typo-caption text-muted-foreground">
-                                        {t('terminal.noBackendsAvailable')}
+                                        {t('frontend.terminal.noBackendsAvailable')}
                                     </div>
                                 )}
                             </>
                         ) : (
                             <div className="px-3 py-2 typo-caption text-muted-foreground">
-                                {t('terminal.noShellsFound')}
+                                {t('frontend.terminal.noShellsFound')}
                             </div>
                         )}
                     </PopoverContent>

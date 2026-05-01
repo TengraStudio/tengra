@@ -113,6 +113,7 @@ describe('WorkspaceAgentSessionModal', () => {
                 onClose={onClose}
                 onSelectSession={onSelectSession}
                 onArchiveSession={vi.fn()}
+                onDeleteSession={vi.fn()}
                 onRenameSession={vi.fn(async () => undefined)}
                 t={t}
             />
@@ -135,6 +136,7 @@ describe('WorkspaceAgentSessionModal', () => {
                 onClose={vi.fn()}
                 onSelectSession={vi.fn()}
                 onArchiveSession={vi.fn()}
+                onDeleteSession={vi.fn()}
                 onRenameSession={onRenameSession}
                 t={t}
             />
@@ -162,6 +164,7 @@ describe('WorkspaceAgentSessionModal', () => {
                 onClose={vi.fn()}
                 onSelectSession={vi.fn()}
                 onArchiveSession={onArchiveSession}
+                onDeleteSession={vi.fn()}
                 onRenameSession={vi.fn(async () => undefined)}
                 t={t}
             />
@@ -185,13 +188,14 @@ describe('WorkspaceAgentPanelHeader', () => {
                 currentSession={null}
                 onSelectSession={vi.fn()}
                 onArchiveSession={onArchiveSession}
+                onDeleteSession={vi.fn()}
                 onOpenSessionPicker={vi.fn()}
                 onCreateSession={vi.fn()}
                 t={t}
             />
         );
 
-        fireEvent.click(screen.getByTitle('memory.archive'));
+        fireEvent.click(screen.getByTitle('frontend.memory.archive'));
 
         expect(onArchiveSession).toHaveBeenCalledWith('session-1', true);
     });
@@ -225,6 +229,9 @@ describe('WorkspaceAgentComposer', () => {
                 }
                 composerValue={overrides?.composerValue ?? 'Investigate auth flow'}
                 setComposerValue={setComposerValue}
+                deliveryMode="send"
+                setDeliveryMode={vi.fn()}
+                queuedMessageCount={0}
                 onSend={onSend}
                 onStop={onStop}
                 onToggleCouncil={onToggleMode}
@@ -258,40 +265,51 @@ describe('WorkspaceAgentComposer', () => {
     it('routes preset selection and council toggle through the shared control surface', () => {
         const { onSelectMode, onToggleMode } = renderComposer();
 
-        fireEvent.click(screen.getByRole('button', { name: /settings.title/i }));
-        fireEvent.mouseEnter(screen.getByRole('button', { name: /workspaceAgent.selectAgentProfile/i }));
-        fireEvent.click(screen.getByRole('button', { name: /input.agent/i }));
-        fireEvent.click(screen.getByRole('button', { name: 'agents.council' }));
+        fireEvent.click(screen.getByTitle('frontend.workspaceAgent.permissions.profile'));
+        fireEvent.mouseEnter(screen.getByTitle('frontend.workspaceAgent.permissions.profile'));
+        fireEvent.click(screen.getByText('frontend.workspaceAgent.executeAction'));
+        fireEvent.click(screen.getByTitle('frontend.agents.council'));
 
         expect(onSelectMode).toHaveBeenCalledWith('agent');
         expect(onToggleMode).toHaveBeenCalledTimes(1);
     });
 
-    it('sends on Enter and stops when already loading', () => {
+    it('sends on Enter and steers when already loading', () => {
         const firstRender = renderComposer({ composerValue: 'Ship the fix' });
 
-        fireEvent.keyDown(screen.getByPlaceholderText('workspace.writeSomething'), {
+        fireEvent.keyDown(screen.getByPlaceholderText('frontend.workspace.writeSomething'), {
             key: 'Enter',
             shiftKey: false,
         });
-        expect(firstRender.onSend).toHaveBeenCalledTimes(1);
+        expect(firstRender.onSend).toHaveBeenCalledWith('send');
 
         const loadingRender = renderComposer({
             composerValue: 'Ship the fix',
             isLoading: true,
         });
 
-        fireEvent.keyDown(screen.getAllByPlaceholderText('workspace.writeSomething')[1], {
+        fireEvent.keyDown(screen.getAllByPlaceholderText('frontend.workspace.writeSomething')[1], {
             key: 'Enter',
             shiftKey: false,
         });
-        expect(loadingRender.onStop).toHaveBeenCalledTimes(1);
+        expect(loadingRender.onSend).toHaveBeenCalledWith('steer');
+    });
+
+    it('queues message on Ctrl+Enter', () => {
+        const { onSend } = renderComposer({ composerValue: 'Queue this' });
+
+        fireEvent.keyDown(screen.getByPlaceholderText('frontend.workspace.writeSomething'), {
+            key: 'Enter',
+            ctrlKey: true,
+            shiftKey: false,
+        });
+        expect(onSend).toHaveBeenCalledWith('queue');
     });
 
     it('shows inline council setup and applies it from the composer surface', () => {
         const { onApplyCouncilSetup } = renderComposer({ showCouncilSetup: true });
 
-        fireEvent.click(screen.getByRole('button', { name: 'agents.runCouncil' }));
+        fireEvent.click(screen.getByRole('button', { name: 'frontend.agents.runCouncil' }));
 
         expect(onApplyCouncilSetup).toHaveBeenCalledTimes(1);
     });
@@ -315,7 +333,7 @@ describe('WorkspaceAgentComposer', () => {
         });
 
         expect(screen.queryByText('common.commands: allowlist')).not.toBeInTheDocument();
-        expect(screen.queryByText('workspace.files: workspace-root-only')).not.toBeInTheDocument();
+        expect(screen.queryByText('frontend.workspace.files: workspace-root-only')).not.toBeInTheDocument();
         expect(screen.getAllByText('reasoning-first').length).toBeGreaterThan(0);
         expect(screen.getAllByText('8').length).toBeGreaterThan(0);
     });

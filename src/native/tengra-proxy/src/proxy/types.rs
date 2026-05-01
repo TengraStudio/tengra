@@ -19,6 +19,7 @@ pub struct ChatCompletionRequest {
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
     pub max_completion_tokens: Option<u32>,
+    pub n: Option<u32>,
     pub top_p: Option<f32>,
     pub stop: Option<Vec<String>>,
     pub reasoning_effort: Option<String>,

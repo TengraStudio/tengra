@@ -262,13 +262,13 @@ const useWorkspaceListOperations = (
 
     const executeUpdate = useCallback(async (): Promise<boolean> => {
         if (state.status !== 'editing' || !state.targetWorkspace) { return false; }
-        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.updating') });
+        dispatch({ type: 'OPERATION_START', message: t('frontend.workspace.listOps.updating') });
         try {
             await window.electron.db.updateWorkspace(state.targetWorkspace.id, state.editForm);
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
-            const msg = error instanceof Error ? error.message : t('workspace.listOps.updateFailed');
+            const msg = error instanceof Error ? error.message : t('frontend.workspace.listOps.updateFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
             return false;
@@ -277,12 +277,12 @@ const useWorkspaceListOperations = (
 
     const executeDelete = useCallback(async (deleteFiles: boolean = false) => {
         if (state.status !== 'deleting' || !state.targetWorkspace) { return; }
-        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.deleting') });
+        dispatch({ type: 'OPERATION_START', message: t('frontend.workspace.listOps.deleting') });
         try {
             await window.electron.db.deleteWorkspace(state.targetWorkspace.id, deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : t('workspace.listOps.deleteFailed');
+            const msg = error instanceof Error ? error.message : t('frontend.workspace.listOps.deleteFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
@@ -290,13 +290,13 @@ const useWorkspaceListOperations = (
 
     const executeArchive = useCallback(async () => {
         if (state.status !== 'archiving' || !state.targetWorkspace) { return; }
-        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.archiving') });
+        dispatch({ type: 'OPERATION_START', message: t('frontend.workspace.listOps.archiving') });
         try {
             const newStatus = state.targetWorkspace.status === 'archived' ? 'active' : 'archived';
             await window.electron.db.archiveWorkspace(state.targetWorkspace.id, newStatus === 'archived');
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : t('workspace.listOps.archiveFailed');
+            const msg = error instanceof Error ? error.message : t('frontend.workspace.listOps.archiveFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
@@ -306,13 +306,13 @@ const useWorkspaceListOperations = (
         if (state.status !== 'bulk_deleting' || state.selectedWorkspaceIds.size === 0) { return; }
         dispatch({
             type: 'OPERATION_START',
-            message: t('workspace.listOps.bulkDeleting', { count: state.selectedWorkspaceIds.size })
+            message: t('frontend.workspace.listOps.bulkDeleting', { count: state.selectedWorkspaceIds.size })
         });
         try {
             await window.electron.db.bulkDeleteWorkspaces(Array.from(state.selectedWorkspaceIds), deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : t('workspace.listOps.bulkDeleteFailed');
+            const msg = error instanceof Error ? error.message : t('frontend.workspace.listOps.bulkDeleteFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
@@ -322,20 +322,20 @@ const useWorkspaceListOperations = (
         if (state.status !== 'bulk_archiving' || state.selectedWorkspaceIds.size === 0) { return; }
         dispatch({
             type: 'OPERATION_START',
-            message: t('workspace.listOps.bulkArchiving', { count: state.selectedWorkspaceIds.size })
+            message: t('frontend.workspace.listOps.bulkArchiving', { count: state.selectedWorkspaceIds.size })
         });
         try {
             await window.electron.db.bulkArchiveWorkspaces(Array.from(state.selectedWorkspaceIds), isArchived);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : t('workspace.listOps.bulkArchiveFailed');
+            const msg = error instanceof Error ? error.message : t('frontend.workspace.listOps.bulkArchiveFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
     }, [state.status, state.selectedWorkspaceIds, dispatch, onError, t]);
 
     const executeCreate = useCallback(async (path: string, name: string, description: string, userMounts?: WorkspaceMount[]): Promise<boolean> => {
-        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.creating') });
+        dispatch({ type: 'OPERATION_START', message: t('frontend.workspace.listOps.creating') });
         try {
             const mounts = userMounts && userMounts.length > 0 ? userMounts : [{
                 id: `local-${Date.now()}`,
@@ -363,20 +363,20 @@ const useWorkspaceListOperations = (
                 if (existingMounts.has(buildMountKey(mount))) {
                     throw new Error(
                         mount.type === 'ssh'
-                            ? t('workspace.listOps.duplicateRemotePath')
-                            : t('workspace.listOps.duplicateLocalDirectory')
+                            ? t('frontend.workspace.listOps.duplicateRemotePath')
+                            : t('frontend.workspace.listOps.duplicateLocalDirectory')
                     );
                 }
             }
 
             const createdWorkspace = await window.electron.db.createWorkspace(name, path, description, mounts);
             if (!createdWorkspace || typeof createdWorkspace.id !== 'string' || createdWorkspace.id.trim().length === 0) {
-                throw new Error(t('workspace.listOps.createMissingWorkspace'));
+                throw new Error(t('frontend.workspace.listOps.createMissingWorkspace'));
             }
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
-            const msg = error instanceof Error ? error.message : t('workspace.listOps.createFailed');
+            const msg = error instanceof Error ? error.message : t('frontend.workspace.listOps.createFailed');
             const errorToReport = error instanceof Error ? error : new Error(msg);
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);

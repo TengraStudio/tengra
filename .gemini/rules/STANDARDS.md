@@ -11,7 +11,7 @@ STRICT ADHERENCE MANDATORY.
 ## 2. FRONTEND & UI (STRICT)
 - **AESTHETICS**: High-fidelity, premium design system. Glassmorphism + Atmospheric lighting.
 - **TYPOGRAPHY (FORBIDDEN)**: `text-[...]`, `tracking-[...]`, `italic`, `font-black`.
-- **TYPOGRAPHY (MANDATORY)**: Use semantic classes (`typo-overline`) or tokens (`text-10`).
+- **TYPOGRAPHY (MANDATORY)**: Use semantic classes (`typo-overline`) or tokens (`text-sm`).
 - **THEME**: ALL colors MUST use `hsl(var(--...))` tokens.
 - **COMPONENTS**: Functional with hooks. Max 100 lines. Split if larger.
 

@@ -36,7 +36,7 @@ const InputWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
   if (withLabel) {
     return (
       <div className="space-y-2 w-64">
-        <Label htmlFor="showcase-input">{labelText ? t(labelText) : t('showcase.input.fallback.label')}</Label>
+        <Label htmlFor="showcase-input">{labelText ? t(labelText) : t('frontend.showcase.input.fallback.label')}</Label>
         <Input
           id="showcase-input"
           variant={variant}
@@ -46,7 +46,7 @@ const InputWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
           type={type}
         />
         {variant === 'error' && (
-          <p className="typo-caption text-destructive">{t('showcase.input.validation.required')}</p>
+          <p className="typo-caption text-destructive">{t('frontend.showcase.input.validation.required')}</p>
         )}
       </div>
     );

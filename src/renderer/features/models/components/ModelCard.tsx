@@ -89,7 +89,7 @@ const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeC
             </div>
             {isInstalled && (
                 <div className="text-sm font-bold px-3 py-1.5 rounded-xl bg-success/20 text-success border border-success/20 shadow-sm">
-                    {t('modelExplorer.pulled')}
+                    {t('frontend.modelExplorer.pulled')}
                 </div>
             )}
         </div>
@@ -122,7 +122,7 @@ export const ModelCard = memo(({
     const params = isOllama
         ? (model as OllamaLibraryModel).tags.find(tag => tag.toLowerCase().includes('b') || tag.toLowerCase().includes('m'))
         : '';
-    const architecture = detectArchitecture(name, t('modelExplorer.architectureTransformer'));
+    const architecture = detectArchitecture(name, t('frontend.modelExplorer.architectureTransformer'));
     const badgeContent = getSecondaryBadgeContent(model);
 
     return (
@@ -140,13 +140,13 @@ export const ModelCard = memo(({
                         {isRecommended && (
                             <span className={C_MODELCARD_3}>
                                 <IconSparkles className="w-3 h-3" />
-                                {t('modelExplorer.recommended')}
+                                {t('frontend.modelExplorer.recommended')}
                             </span>
                         )}
                         {isWatchlisted && (
                             <span className={C_MODELCARD_4}>
                                 <IconStar className="w-3 h-3" />
-                                {t('modelExplorer.watchlist')}
+                                {t('frontend.modelExplorer.watchlist')}
                             </span>
                         )}
                     </div>
@@ -157,14 +157,14 @@ export const ModelCard = memo(({
                 <div className="flex items-center gap-3 mb-6">
                     <span className="text-sm font-bold text-primary/70">{architecture}</span>
                     {params && <span className="w-1 h-1 rounded-full bg-border" />}
-                    {params && <span className="text-sm font-bold text-muted-foreground">{params} {t('modelExplorer.paramsSuffix')}</span>}
+                    {params && <span className="text-sm font-bold text-muted-foreground">{params} {t('frontend.modelExplorer.paramsSuffix')}</span>}
                 </div>
                 <p className="text-sm text-muted-foreground/70 line-clamp-3 mb-8 leading-relaxed font-medium">
-                    {model.description || t('modelExplorer.defaultDescription')}
+                    {model.description || t('frontend.modelExplorer.defaultDescription')}
                 </p>
                 {model.provider === 'huggingface' && (
                     <div className={C_MODELCARD_5}>
-                        <span>{t('modelExplorer.benchmarkScore')}</span>
+                        <span>{t('frontend.modelExplorer.benchmarkScore')}</span>
                         <span className="text-primary">{Math.round((model as HFModel).recommendationScore ?? 0)}/100</span>
                     </div>
                 )}

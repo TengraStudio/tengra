@@ -73,14 +73,14 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={t('auth.connectProvider', { provider: providerName })}
+            title={t('frontend.auth.connectProvider', { provider: providerName })}
             preventClose={false}
             size="md"
         >
             <div className="space-y-6">
                 {/* Instructions */}
                 <p className="text-sm text-muted-foreground">
-                    {t('auth.enterCodeOnGithub')}
+                    {t('frontend.auth.enterCodeOnGithub')}
                 </p>
 
                 {/* Device Code Display */}
@@ -100,7 +100,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                                 ? "bg-success/20 border-success/50 text-success"
                                 : "bg-muted/30 border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50"
                         )}
-                        title={t('auth.copyCode')}
+                        title={t('frontend.auth.copyCode')}
                     >
                         {copied ? (
                             <IconCheck className="w-4 h-4" />
@@ -116,7 +116,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                     className={C_DEVICECODEMODAL_1}
                 >
                     <IconExternalLink className="w-4 h-4" />
-                    {t('auth.openGithubToEnter')}
+                    {t('frontend.auth.openGithubToEnter')}
                 </button>
 
                 {/* Status Display */}
@@ -124,19 +124,19 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                     {isPending && (
                         <>
                             <IconLoader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">{t('auth.waitingForLogin')}</span>
+                            <span className="text-sm text-muted-foreground">{t('frontend.auth.waitingForLogin')}</span>
                         </>
                     )}
                     {isSuccess && (
                         <>
                             <IconCheck className="w-4 h-4 text-success" />
-                            <span className="text-sm text-success font-semibold">{t('auth.connectedSuccessfully')}</span>
+                            <span className="text-sm text-success font-semibold">{t('frontend.auth.connectedSuccessfully')}</span>
                         </>
                     )}
                     {isError && (
                         <>
                             <IconX className="w-4 h-4 text-destructive" />
-                            <span className="text-sm text-destructive">{errorMessage ?? t('auth.connectionFailedGeneric')}</span>
+                            <span className="text-sm text-destructive">{errorMessage ?? t('frontend.auth.connectionFailedGeneric')}</span>
                         </>
                     )}
                 </div>

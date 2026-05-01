@@ -166,7 +166,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={t('workspaces.logoUpload')}
+            title={t('frontend.workspaces.logoUpload')}
             width="auto"
             height="auto"
             className="flex flex-col"
@@ -201,7 +201,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 {/* Mode Selection */}
                                 <div className="space-y-3">
                                     <Label className="typo-caption font-bold text-muted-foreground">
-                                        {t('workspaces.generationMode')}
+                                        {t('frontend.workspaces.generationMode')}
                                     </Label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <Button
@@ -226,7 +226,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 {/* Model Selection */}
                                 <div className="space-y-2.5">
                                     <Label className="typo-caption font-bold text-muted-foreground">
-                                        {t('workspaces.aiModel')}
+                                        {t('frontend.workspaces.aiModel')}
                                     </Label>
                                     <Select
                                         value={model}
@@ -234,7 +234,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                         disabled={loadingModels}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('workspaces.selectModel')} />
+                                            <SelectValue placeholder={t('frontend.workspaces.selectModel')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {models.map(m => (
@@ -247,7 +247,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                     {!loadingModels && models.length === 0 && (
                                         <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
                                             <p className="typo-caption text-muted-foreground">
-                                                {t('workspaces.noImageModelsFound')}
+                                                {t('frontend.workspaces.noImageModelsFound')}
                                             </p> 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                 <Button
@@ -259,7 +259,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                         )
                                                     }
                                                 >
-                                                    {t('workspaces.openImageModels')}
+                                                    {t('frontend.workspaces.openImageModels')}
                                                 </Button>
                                                 <Button
                                                     variant="outline"
@@ -270,7 +270,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                         )
                                                     }
                                                 >
-                                                    {t('workspaces.openCivitai')}
+                                                    {t('frontend.workspaces.openCivitai')}
                                                 </Button>
                                                 <Button
                                                     variant="outline"
@@ -281,7 +281,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                         )
                                                     }
                                                 >
-                                                    {t('workspaces.openStableDiffusionCpp')}
+                                                    {t('frontend.workspaces.openStableDiffusionCpp')}
                                                 </Button>
                                                 <Button
                                                     variant="outline"
@@ -292,7 +292,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                         )
                                                     }
                                                 >
-                                                    {t('workspaces.openOllamaLibrary')}
+                                                    {t('frontend.workspaces.openOllamaLibrary')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -303,7 +303,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 <div className="space-y-2.5">
                                     <div className="flex justify-between">
                                         <Label className="typo-caption font-bold text-muted-foreground">
-                                            {t('workspaces.numberOfLogos')}
+                                            {t('frontend.workspaces.numberOfLogos')}
                                         </Label>
                                         <span className="text-sm text-muted-foreground">
                                             {count}
@@ -327,7 +327,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 {/* Prompt Input */}
                                 <div className="space-y-2">
                                     <Label className="typo-caption font-bold text-muted-foreground">
-                                        {t('workspaces.prompt')}
+                                        {t('frontend.workspaces.prompt')}
                                     </Label>
                                     {mode === 'auto' ? (
                                         <div className="space-y-2">
@@ -343,13 +343,13 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                     <IconSparkles className="w-4 h-4 mr-2" />
                                                 )}
                                                 {suggestions.length > 0
-                                                    ? t('workspaces.reAnalyzeWorkspace')
-                                                    : t('workspaces.analyzeWorkspaceIdentity')}
+                                                    ? t('frontend.workspaces.reAnalyzeWorkspace')
+                                                    : t('frontend.workspaces.analyzeWorkspaceIdentity')}
                                             </Button>
                                             {suggestions.length > 0 && (
                                                 <div className="space-y-2 mt-2">
                                                     <Label className="typo-caption text-muted-foreground">
-                                                        {t('workspaces.suggestedPrompts')}
+                                                        {t('frontend.workspaces.suggestedPrompts')}
                                                     </Label>
                                                     <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
                                                         {suggestions.map((s, i) => (
@@ -372,7 +372,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                     <Textarea
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
-                                        placeholder={t('workspaces.logoPromptPlaceholder')}
+                                        placeholder={t('frontend.workspaces.logoPromptPlaceholder')}
                                         className="h-32 resize-none bg-background/80"
                                     />
                                 </div>
@@ -418,10 +418,10 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm font-medium">
-                                                {t('workspaces.clickToUpload')}
+                                                {t('frontend.workspaces.clickToUpload')}
                                             </p>
                                             <p className="typo-caption text-muted-foreground">
-                                                {t('workspaces.currentImplementationOpensFileDialog')}
+                                                {t('frontend.workspaces.currentImplementationOpensFileDialog')}
                                             </p>
                                         </div>
                                     </div>
@@ -435,15 +435,15 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                 <div className="min-h-0 rounded-2xl border border-border/60 bg-background/80 p-4 flex flex-col gap-4 overflow-hidden">
                     <div className="flex items-end justify-between border-b border-border/50 pb-3">
                         <div>
-                            <Label className="text-xl font-bold text-foreground">{t('workspace.errors.logoGenerator.generatedResults')}</Label>
+                            <Label className="text-xl font-bold text-foreground">{t('frontend.workspace.errors.logoGenerator.generatedResults')}</Label>
                             <p className="typo-caption text-muted-foreground mt-1">
-                                {t('workspace.errors.logoGenerator.pickLogo')}
+                                {t('frontend.workspace.errors.logoGenerator.pickLogo')}
                             </p>
                         </div>
                         <span className="text-sm text-muted-foreground font-medium">
                             {generatedLogos.length === 1
-                                ? t('workspace.errors.logoGenerator.singleResultCount')
-                                : t('workspace.errors.logoGenerator.resultsCount', { count: generatedLogos.length })}
+                                ? t('frontend.workspace.errors.logoGenerator.singleResultCount')
+                                : t('frontend.workspace.errors.logoGenerator.resultsCount', { count: generatedLogos.length })}
                         </span>
                     </div>
 
@@ -451,9 +451,9 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                         {generatedLogos.length === 0 ? (
                                 <div className={C_LOGOGENERATORMODAL_1}>
                                     <ImageIcon className="w-12 h-12 mb-4 opacity-25" />
-                                    <p className="font-medium">{t('workspace.errors.logoGenerator.noLogosYet')}</p>
+                                    <p className="font-medium">{t('frontend.workspace.errors.logoGenerator.noLogosYet')}</p>
                                     <p className="text-sm opacity-70">
-                                        {t('workspace.errors.logoGenerator.configureAndGenerate')}
+                                        {t('frontend.workspace.errors.logoGenerator.configureAndGenerate')}
                                     </p>
                                 </div>
                             ) : (
@@ -474,7 +474,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                 onClick={() => void handleApply(logoPath)}
                                             >
                                                 <IconCheck className="w-4 h-4 mr-2" />
-                                                {t('workspace.applyLogo')}
+                                                {t('frontend.workspace.applyLogo')}
                                             </Button>
                                         </div>
                                     </Card>

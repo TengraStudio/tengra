@@ -183,7 +183,7 @@ function ServerItem({
                         </p>
                         <div className="mt-2 flex items-center gap-3">
                             {!isInternal && (
-                                <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground/30">{server.version || '1.0.0'}</span>
+                                <span className="text-sm font-bold  uppercase text-muted-foreground/30">{server.version || '1.0.0'}</span>
                             )}
                             <div className="flex items-center gap-1">
                                 {ALL_PERMISSIONS.map(p => (
@@ -212,7 +212,7 @@ function ServerItem({
                             void onToggle(server.id ?? server.name, isEnabled, isInternal);
                         }}
                         className={cn(
-                            'flex items-center gap-2 rounded-full h-8 px-4 text-xs font-semibold transition-all',
+                            'flex items-center gap-2 rounded-full h-8 px-4 text-sm font-semibold transition-all',
                             isEnabled
                                 ? 'bg-primary/10 text-primary hover:bg-primary/20'
                                 : 'bg-muted/50 text-muted-foreground hover:bg-muted'
@@ -220,8 +220,8 @@ function ServerItem({
                     >
                         <div className={cn('h-1.5 w-1.5 rounded-full', isEnabled ? 'bg-primary animate-pulse' : 'bg-muted-foreground/40')} />
                         {isEnabled
-                            ? t('settings.mcp.status.enabled')
-                            : t('settings.mcp.status.disabled')}
+                            ? t('frontend.settings.mcp.status.enabled')
+                            : t('frontend.settings.mcp.status.disabled')}
                     </Button>
 
                     <Button
@@ -255,9 +255,9 @@ function ServerItem({
                 <div className="border-t border-border/20 bg-muted/5 p-4 sm:p-5">
                     <div className="space-y-6">
                         <div className="grid gap-3">
-                            <Label className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground/40 flex items-center gap-2">
+                            <Label className="text-sm font-bold  uppercase text-muted-foreground/40 flex items-center gap-2">
                                 <IconShieldCheck className="h-3 w-3" />
-                                {t('settings.mcp.permissions.title')}
+                                {t('frontend.settings.mcp.permissions.title')}
                             </Label>
 
                             {isInternal ? (
@@ -270,7 +270,7 @@ function ServerItem({
                                             <div className="min-w-0">
                                                 <div className="text-sm font-semibold text-foreground">{action.name}</div>
                                                 {action.description && (
-                                                    <div className="mt-0.5 text-xs text-muted-foreground/50 line-clamp-1">
+                                                    <div className="mt-0.5 text-sm text-muted-foreground/50 line-clamp-1">
                                                         {action.description}
                                                     </div>
                                                 )}
@@ -284,7 +284,7 @@ function ServerItem({
                                                         size="sm"
                                                         onClick={() => setActionPolicy(action.name, policy.id)}
                                                         className={cn(
-                                                            "h-7 rounded-lg px-3 text-[10px] font-bold uppercase tracking-tight",
+                                                            "h-7 rounded-lg px-3 text-sm font-bold uppercase ",
                                                             draftActionPermissions[action.name] === policy.id
                                                                 ? policy.className
                                                                 : "bg-transparent text-muted-foreground/40 hover:bg-muted/50 hover:text-muted-foreground"
@@ -329,8 +329,8 @@ function ServerItem({
                                                 <perm.icon className={cn("h-4 w-4", draftPermissions.includes(perm.id) ? "text-primary" : "text-muted-foreground/40")} />
                                             </div>
                                             <div className="flex-1 flex flex-col items-start text-left min-w-0">
-                                                <span className="text-xs font-semibold">{t(`settings.mcp.permissions.${perm.id}`)}</span>
-                                                <span className="text-[10px] text-muted-foreground/40 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
+                                                <span className="text-sm font-semibold">{t(`settings.mcp.permissions.${perm.id}`)}</span>
+                                                <span className="text-sm text-muted-foreground/40 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
                                             </div>
                                             <div className={cn(
                                                 "h-3.5 w-3.5 rounded-full border flex items-center justify-center transition-all",
@@ -349,14 +349,14 @@ function ServerItem({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onCancelEdit()}
-                                className="h-8 px-4 text-xs font-medium"
+                                className="h-8 px-4 text-sm font-medium"
                             >
                                 {t('common.cancel')}
                             </Button>
                             <Button
                                 size="sm"
                                 onClick={() => { void onSaveEdit(draftPermissions, draftActionPermissions); }}
-                                className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 px-5 text-xs font-semibold shadow-sm"
+                                className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 px-5 text-sm font-semibold shadow-sm"
                             >
                                 <IconRefresh className="mr-2 h-3.5 w-3.5" />
                                 {t('common.save')}
@@ -518,17 +518,17 @@ export function MCPServersTab(): JSX.Element {
         <div className="flex flex-col space-y-6 p-5 pb-20">
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h2 className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2.5">
+                    <h2 className="text-xl font-semibold  text-foreground flex items-center gap-2.5">
                         <IconServer className="h-5 w-5 text-primary" />
-                        {t('settings.mcp.servers.title')}
+                        {t('frontend.settings.mcp.servers.title')}
                     </h2>
                     <p className="text-sm text-muted-foreground/50">
-                        {t('settings.mcp.servers.subtitle')}
+                        {t('frontend.settings.mcp.servers.subtitle')}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-muted/40 border border-border/40 px-3 py-1 text-[11px] font-bold tracking-wider text-muted-foreground/60 uppercase">
-                        {activeCount} / {servers.length} {t('settings.mcp.status.active')}
+                    <div className="rounded-lg bg-muted/40 border border-border/40 px-3 py-1 text-sm font-bold  text-muted-foreground/60 uppercase">
+                        {activeCount} / {servers.length} {t('frontend.settings.mcp.status.active')}
                     </div>
                 </div>
             </div>
@@ -556,7 +556,7 @@ export function MCPServersTab(): JSX.Element {
                     {servers.length === 0 && !loading && (
                         <div className={C_MCPSERVERSTAB_1}>
                             <IconServer className="mb-4 h-12 w-12 opacity-10" />
-                            <p className="text-sm font-medium">{t('settings.mcp.servers.empty')}</p>
+                            <p className="text-sm font-medium">{t('frontend.settings.mcp.servers.empty')}</p>
                         </div>
                     )}
                 </div>

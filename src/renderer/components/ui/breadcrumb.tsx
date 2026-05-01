@@ -41,7 +41,7 @@ export function Breadcrumb({
     return (
         <nav 
             className={cn("flex items-center gap-2 text-sm", className)}
-            aria-label={t('aria.breadcrumb')}
+            aria-label={t('frontend.aria.breadcrumb')}
         >
             <ol className="flex items-center gap-2 m-0 p-0 list-none">
                 {showHome && (
@@ -50,7 +50,7 @@ export function Breadcrumb({
                             <button
                                 onClick={() => items[0]?.onClick?.()}
                                 className="flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground bg-transparent border-none cursor-pointer p-0"
-                                aria-label={t('aria.home')}
+                                aria-label={t('frontend.aria.home')}
                             >
                                 <IconHome className="w-4 h-4" />
                             </button>

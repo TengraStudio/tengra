@@ -8,7 +8,7 @@ import type { MarketplaceFilterValue, MarketplaceQueryState, MarketplaceSortValu
 
 /* Batch-02: Extracted Long Classes */
 const C_MARKETPLACETOOLBAR_1 = "w-full bg-muted/30 rounded-xl px-12 py-2.5 text-sm focus:outline-none transition-all font-medium border border-transparent focus:border-primary/20 placeholder:text-muted-foreground/20";
-const C_MARKETPLACETOOLBAR_2 = "flex items-center gap-2 px-3 py-2 rounded-lg text-warning/60 hover:text-warning hover:bg-warning/5 text-xs font-semibold transition-all";
+const C_MARKETPLACETOOLBAR_2 = "flex items-center gap-2 px-3 py-2 rounded-lg text-warning/60 hover:text-warning hover:bg-warning/5 text-sm font-semibold transition-all";
 
 
 interface MarketplaceToolbarProps {
@@ -56,7 +56,7 @@ export function MarketplaceToolbar({
                         <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/20" />
                         <input
                             type="text"
-                            placeholder={t('marketplace.search')}
+                            placeholder={t('frontend.marketplace.search')}
                             value={search}
                             onChange={(e) => onQueryChange(prev => ({ ...prev, search: e.target.value, page: 1 }))}
                             className={C_MARKETPLACETOOLBAR_1}
@@ -95,10 +95,10 @@ export function MarketplaceToolbar({
                             {t('common.clear')}
                         </button>
                     )}
-                    
+
                     <div className="h-1 w-1 rounded-full bg-muted/20" />
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">
-                        {totalCount} {t('marketplace.results')}
+                    <div className="text-sm font-bold uppercase  text-muted-foreground/20">
+                        {totalCount} {t('frontend.marketplace.results')}
                     </div>
                 </div>
             </div>
@@ -111,7 +111,7 @@ export function MarketplaceToolbar({
                                 key={tab}
                                 onClick={() => onQueryChange(prev => ({ ...prev, modelTab: tab, page: 1, selectedItemId: null }))}
                                 className={cn(
-                                    'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                                    'px-4 py-1.5 rounded-lg text-sm font-semibold transition-all',
                                     modelTab === tab
                                         ? 'bg-primary text-primary-foreground shadow-sm'
                                         : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/30'
@@ -130,50 +130,50 @@ export function MarketplaceToolbar({
                                 type="button"
                                 onClick={() => onQueryChange(prev => ({ ...prev, mcpView: 'all', page: 1 }))}
                                 className={cn(
-                                    'rounded-lg px-4 py-1.5 text-xs font-semibold transition-all',
+                                    'rounded-lg px-4 py-1.5 text-sm font-semibold transition-all',
                                     mcpView === 'all'
                                         ? 'bg-primary text-primary-foreground shadow-sm'
                                         : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/40'
                                 )}
                             >
-                                {t('marketplace.mcp.filters.all')}
+                                {t('frontend.marketplace.mcp.filters.all')}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onQueryChange(prev => ({ ...prev, mcpView: 'installed', page: 1 }))}
                                 className={cn(
-                                    'rounded-lg px-4 py-1.5 text-xs font-semibold transition-all',
+                                    'rounded-lg px-4 py-1.5 text-sm font-semibold transition-all',
                                     mcpView === 'installed'
                                         ? 'bg-primary text-primary-foreground shadow-sm'
                                         : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/40'
                                 )}
                             >
-                                {t('modelExplorer.installed')}
+                                {t('frontend.modelExplorer.installed')}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onQueryChange(prev => ({ ...prev, mcpView: 'external', page: 1 }))}
                                 className={cn(
-                                    'rounded-lg px-4 py-1.5 text-xs font-semibold transition-all',
+                                    'rounded-lg px-4 py-1.5 text-sm font-semibold transition-all',
                                     mcpView === 'external'
                                         ? 'bg-primary text-primary-foreground shadow-sm'
                                         : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/40'
                                 )}
                             >
-                                {t('marketplace.mcp.filters.user')}
+                                {t('frontend.marketplace.mcp.filters.user')}
                             </button>
                         </div>
                         <Select
                             value={sort}
                             onValueChange={value => onQueryChange(prev => ({ ...prev, sort: value as MarketplaceSortValue, page: 1 }))}
                         >
-                            <SelectTrigger className="h-9 w-44 text-xs font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
+                            <SelectTrigger className="h-9 w-44 text-sm font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl rounded-xl">
-                                <SelectItem value="name_asc">{t('modelExplorer.name')} ↑</SelectItem>
-                                <SelectItem value="name_desc">{t('modelExplorer.name')} ↓</SelectItem>
-                                <SelectItem value="version_desc">{t('mcp.version')} ↓</SelectItem>
+                                <SelectItem value="name_asc">{t('frontend.modelExplorer.name')} ↑</SelectItem>
+                                <SelectItem value="name_desc">{t('frontend.modelExplorer.name')} ↓</SelectItem>
+                                <SelectItem value="version_desc">{t('frontend.mcp.version')} ↓</SelectItem>
                             </SelectContent>
                         </Select>
                     </>
@@ -183,13 +183,13 @@ export function MarketplaceToolbar({
                             value={filter}
                             onValueChange={value => onQueryChange(prev => ({ ...prev, filter: value as MarketplaceFilterValue, page: 1 }))}
                         >
-                            <SelectTrigger className="h-9 w-44 text-xs font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
+                            <SelectTrigger className="h-9 w-44 text-sm font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl rounded-xl">
-                                <SelectItem value="all">{t('marketplace.mcp.filters.all')}</SelectItem>
-                                <SelectItem value="installed">{t('modelExplorer.installed')}</SelectItem>
-                                <SelectItem value="not_installed">{t('marketplace.install')}</SelectItem>
+                                <SelectItem value="all">{t('frontend.marketplace.mcp.filters.all')}</SelectItem>
+                                <SelectItem value="installed">{t('frontend.modelExplorer.installed')}</SelectItem>
+                                <SelectItem value="not_installed">{t('frontend.marketplace.install')}</SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -204,11 +204,11 @@ export function MarketplaceToolbar({
                                     }));
                                 }}
                             >
-                                <SelectTrigger className="h-9 w-44 text-xs font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
-                                    <SelectValue placeholder={t('marketplace.author')} />
+                                <SelectTrigger className="h-9 w-44 text-sm font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
+                                    <SelectValue placeholder={t('frontend.marketplace.author')} />
                                 </SelectTrigger>
                                 <SelectContent className="border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl rounded-xl">
-                                    <SelectItem value="all">{t('marketplace.mcp.filters.all authors')}</SelectItem>
+                                    <SelectItem value="all">{t('frontend.marketplace.mcp.filters.all authors')}</SelectItem>
                                     {authors.map(a => (
                                         <SelectItem key={a} value={a}>{a}</SelectItem>
                                     ))}
@@ -220,14 +220,14 @@ export function MarketplaceToolbar({
                             value={sort as string}
                             onValueChange={value => onQueryChange(prev => ({ ...prev, sort: value as MarketplaceSortValue, page: 1 }))}
                         >
-                            <SelectTrigger className="h-9 w-52 text-xs font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
+                            <SelectTrigger className="h-9 w-52 text-sm font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl rounded-xl">
-                                <SelectItem value="name_asc">{t('modelExplorer.name')} ↑</SelectItem>
-                                <SelectItem value="name_desc">{t('modelExplorer.name')} ↓</SelectItem>
-                                <SelectItem value="downloads_desc">{t('marketplace.mcp.filters.popularity')} ↓</SelectItem>
-                                <SelectItem value="version_desc">{t('mcp.version')} ↓</SelectItem>
+                                <SelectItem value="name_asc">{t('frontend.modelExplorer.name')} ↑</SelectItem>
+                                <SelectItem value="name_desc">{t('frontend.modelExplorer.name')} ↓</SelectItem>
+                                <SelectItem value="downloads_desc">{t('frontend.marketplace.mcp.filters.popularity')} ↓</SelectItem>
+                                <SelectItem value="version_desc">{t('frontend.mcp.version')} ↓</SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -237,15 +237,15 @@ export function MarketplaceToolbar({
                                     value={modelFit ?? 'all'}
                                     onValueChange={value => onQueryChange(prev => ({ ...prev, modelFit: value as MarketplaceQueryState['modelFit'], page: 1 }))}
                                 >
-                                    <SelectTrigger className="h-9 w-44 text-xs font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
+                                    <SelectTrigger className="h-9 w-44 text-sm font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl rounded-xl">
-                                        <SelectItem value="all">{t('marketplace.modelFit.all')}</SelectItem>
-                                        <SelectItem value="recommended">{t('marketplace.modelFit.recommended')}</SelectItem>
-                                        <SelectItem value="workable">{t('marketplace.modelFit.workable')}</SelectItem>
-                                        <SelectItem value="limited">{t('marketplace.modelFit.limited')}</SelectItem>
-                                        <SelectItem value="blocked">{t('marketplace.modelFit.blocked')}</SelectItem>
+                                        <SelectItem value="all">{t('frontend.marketplace.modelFit.all')}</SelectItem>
+                                        <SelectItem value="recommended">{t('frontend.marketplace.modelFit.recommended')}</SelectItem>
+                                        <SelectItem value="workable">{t('frontend.marketplace.modelFit.workable')}</SelectItem>
+                                        <SelectItem value="limited">{t('frontend.marketplace.modelFit.limited')}</SelectItem>
+                                        <SelectItem value="blocked">{t('frontend.marketplace.modelFit.blocked')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </>

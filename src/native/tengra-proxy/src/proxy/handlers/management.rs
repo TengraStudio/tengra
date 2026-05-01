@@ -242,7 +242,7 @@ pub async fn handle_list_accounts(
 }
 
 pub async fn handle_get_quota(
-    _state: State<Arc<AppState>>,
+    state: State<Arc<AppState>>,
     Query(query): Query<QuotaQuery>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
     let accounts = crate::db::get_provider_accounts(&query.provider)
@@ -284,40 +284,57 @@ pub async fn handle_get_quota(
     };
 
     match crate::quota::check_quota(&query.provider, &decrypted_token).await {
-        Ok(res) => Ok(Json(serde_json::to_value(res).unwrap_or_default())),
+        Ok(mut res) => {
+            if query.provider == "copilot" || query.provider == "github" {
+                if let Some(account_id) = query.account_id.as_deref() {
+                    let cache = state.copilot_usage_cache.lock().await;
+                    if let Some(usage) = cache.get(account_id) {
+                        if let Some(quota) = res.quota.as_mut() {
+                            if let Some(limits) = usage.get("session_limits") {
+                                quota.session_limits = serde_json::from_value(limits.clone()).ok();
+                            }
+                            if let Some(session_usage) = usage.get("session_usage") {
+                                quota.session_usage =
+                                    serde_json::from_value(session_usage.clone()).ok();
+                            }
+                        }
+                    }
+                }
+            }
+            Ok(Json(serde_json::to_value(res).unwrap_or_default()))
+        }
         Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
 }
 
 pub async fn handle_get_quota_snapshot(
-    _state: State<Arc<AppState>>,
+    state: State<Arc<AppState>>,
 ) -> Result<Json<Value>, (axum::http::StatusCode, String)> {
-    let snapshot = build_quota_snapshot().await.map_err(|e| {
-        (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            e.to_string(),
-        )
-    })?;
+    let snapshot = build_quota_snapshot(state.0.clone())
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(Json(snapshot))
 }
 
 pub async fn handle_stream_quota(
-    _state: State<Arc<AppState>>,
+    state: State<Arc<AppState>>,
 ) -> Sse<impl futures::Stream<Item = Result<Event, Infallible>>> {
-    let stream = IntervalStream::new(tokio::time::interval(Duration::from_secs(20))).then(|_| async {
-        let payload = match build_quota_snapshot().await {
-            Ok(snapshot) => snapshot,
-            Err(error) => json!({
-                "timestamp_ms": chrono::Utc::now().timestamp_millis(),
-                "accounts": [],
-                "error": error.to_string()
-            }),
-        };
+    let stream =
+        IntervalStream::new(tokio::time::interval(Duration::from_secs(20))).then(move |_| {
+            let state_inner = state.0.clone();
+            async move {
+                let payload = match build_quota_snapshot(state_inner).await {
+                    Ok(snapshot) => snapshot,
+                    Err(error) => json!({
+                        "timestamp_ms": chrono::Utc::now().timestamp_millis(),
+                        "accounts": [],
+                        "error": error.to_string()
+                    }),
+                };
 
-        Ok(Event::default()
-            .event("snapshot")
-            .data(payload.to_string()))
-    });
+                Ok(Event::default().event("snapshot").data(payload.to_string()))
+            }
+        });
 
     Sse::new(stream).keep_alive(
         KeepAlive::new()
@@ -326,7 +343,7 @@ pub async fn handle_stream_quota(
     )
 }
 
-async fn build_quota_snapshot() -> anyhow::Result<Value> {
+async fn build_quota_snapshot(state: Arc<AppState>) -> anyhow::Result<Value> {
     let accounts = crate::db::get_all_linked_accounts().await?;
     let tasks = accounts.into_iter().filter_map(|account| {
         let provider_raw = account
@@ -388,17 +405,37 @@ async fn build_quota_snapshot() -> anyhow::Result<Value> {
             };
 
             match tokio::time::timeout(
-                Duration::from_millis(900),
-                crate::quota::check_quota(provider_raw.as_str(), token.as_str())
-            ).await {
-                Ok(Ok(quota)) => json!({
-                    "provider": provider_raw,
-                    "account_id": account_id,
-                    "email": email,
-                    "is_active": is_active,
-                    "success": true,
-                    "quota": quota
-                }),
+                Duration::from_millis(4000),
+                crate::quota::check_quota(provider_raw.as_str(), token.as_str()),
+            )
+            .await
+            {
+                Ok(Ok(mut quota_res)) => {
+                    // Sanitize f64 values to avoid serialization failure (NaN/Infinity)
+                    if let Some(q) = &mut quota_res.quota {
+                        q.sanitize();
+                    }
+                    if let Some(models) = &mut quota_res.models {
+                        for m in models {
+                            m.sanitize();
+                        }
+                    }
+
+                    let mut res = json!({
+                        "provider": provider_raw,
+                        "account_id": account_id,
+                        "email": email,
+                        "is_active": is_active,
+                        "success": true,
+                    });
+
+                    // Set fields from QuotaResult explicitly
+                    res["quota"] = json!(quota_res.quota);
+                    res["models"] = json!(quota_res.models);
+                    res["error"] = json!(quota_res.error);
+
+                    res
+                }
                 Ok(Err(error)) => json!({
                     "provider": provider_raw,
                     "account_id": account_id,
@@ -421,9 +458,28 @@ async fn build_quota_snapshot() -> anyhow::Result<Value> {
 
     let results: Vec<Value> = futures::future::join_all(tasks).await;
 
+    let mut merged_results = Vec::new();
+    let usage_cache = state.copilot_usage_cache.lock().await;
+
+    for mut res in results {
+        if let Some(account_id) = res.get("account_id").and_then(Value::as_str) {
+            if let Some(usage) = usage_cache.get(account_id) {
+                if let Some(quota) = res.get_mut("quota") {
+                    if let Some(limits) = usage.get("session_limits") {
+                        quota["session_limits"] = limits.clone();
+                    }
+                    if let Some(session_usage) = usage.get("session_usage") {
+                        quota["session_usage"] = session_usage.clone();
+                    }
+                }
+            }
+        }
+        merged_results.push(res);
+    }
+
     Ok(json!({
         "timestamp_ms": chrono::Utc::now().timestamp_millis(),
-        "accounts": results
+        "accounts": merged_results
     }))
 }
 

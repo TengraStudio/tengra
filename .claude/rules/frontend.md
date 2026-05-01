@@ -15,7 +15,7 @@ STRICT ADHERENCE MANDATORY. Deviations will be rejected.
     - Styles: `italic`, `font-black`.
 - **MANDATORY**: 
     - Use Semantic Classes: `.typo-overline`, `.typo-caption`, `.typo-body-sm`.
-    - Use Tokens: `text-10`, `tracking-tight`, `tracking-16`.
+    - Use Tokens: `text-sm`, `tracking-tight`, `tracking-16`.
 - **Theme Consistency**: Colors MUST come from `hsl(var(--...))` tokens. NO hardcoded HEX/RGB.
 
 ## 2. i18n - Internationalization

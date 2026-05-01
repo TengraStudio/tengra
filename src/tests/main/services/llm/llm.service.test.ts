@@ -68,6 +68,7 @@ describe('LLMService', () => {
             configService: mockConfigService as never as LlmDeps['configService'],
             keyRotationService: mockKeyRotationService as never as LlmDeps['keyRotationService'],
             settingsService: { getSettings: vi.fn().mockReturnValue({}) } as never as LlmDeps['settingsService'],
+            authService: { getActiveToken: vi.fn().mockResolvedValue(null) } as never as LlmDeps['authService'],
             proxyService: { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as never as LlmDeps['proxyService'],
             tokenService: mockTokenService as never as LlmDeps['tokenService'],
             huggingFaceService: mockHuggingFaceService as never as LlmDeps['huggingFaceService'],
@@ -155,6 +156,10 @@ describe('LLMService', () => {
 
         it('should surface unauthorized responses without JS-side refresh retry', async () => {
             service.setOpenAIApiKey('sk-test');
+            // Mock auth token for codex to pass LLMService key check
+            const mockAuthService = (service as any).deps.authService;
+            vi.mocked(mockAuthService.getActiveToken).mockResolvedValueOnce('mock-codex-key');
+
             mockHttpService.fetch.mockResolvedValueOnce({
                 ok: false,
                 status: 401,
@@ -202,7 +207,7 @@ describe('LLMService', () => {
             await service.chat(messages, 'gpt-4o', undefined, 'codex');
 
             expect(mockHttpService.fetch).toHaveBeenCalledWith(
-                expect.stringContaining('http://localhost:8317/v1/chat/completions'),
+                expect.stringContaining('http://127.0.0.1:8317/v1/chat/completions'),
                 expect.objectContaining({
                     headers: expect.objectContaining({
                         Authorization: 'Bearer test-key'
@@ -248,7 +253,7 @@ describe('LLMService', () => {
             await service.chat([{ role: 'user', content: 'Hi' }], 'cursor/gpt-4o', undefined, 'cursor');
 
             expect(mockHttpService.fetch).toHaveBeenCalledWith(
-                'http://localhost:8317/v1/chat/completions',
+                'http://127.0.0.1:8317/v1/chat/completions',
                 expect.objectContaining({
                     headers: expect.objectContaining({
                         Authorization: 'Bearer test-key'
@@ -331,7 +336,7 @@ describe('LLMService', () => {
             const emptyMetrics = service.getHealthMetrics();
             expect(emptyMetrics.uiState).toBe('empty');
             expect(emptyMetrics.performanceBudget.chatCompletionMs).toBe(30000);
-            expect(en.serviceHealth.llm.empty).toBe(emptyMetrics.messageKey);
+            expect(en.frontend.serviceHealth.llm.empty).toBe(emptyMetrics.messageKey);
 
             service.setOpenAIApiKey('sk-test');
             mockHttpService.fetch.mockResolvedValue({
@@ -343,7 +348,7 @@ describe('LLMService', () => {
 
             const failureMetrics = service.getHealthMetrics();
             expect(failureMetrics.uiState).toBe('failure');
-            expect(en.serviceHealth.llm.failure).toBe(failureMetrics.messageKey);
+            expect(en.frontend.serviceHealth.llm.failure).toBe(failureMetrics.messageKey);
         });
     });
 

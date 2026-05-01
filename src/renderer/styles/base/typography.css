@@ -37,14 +37,14 @@
         --leading-normal: 1.55;
         --leading-relaxed: 1.68;
         --leading-loose: 1.9;
-        --tracking-tightest: -0.04em;
-        --tracking-tight: -0.02em;
+        --est: -0.04em;
+        --: -0.02em;
         --tracking-normal: -0.01em;
         --tracking-wide: 0.08em;
         --font-size-root: 15px;
         --font-size-base: var(--text-base);
         --line-height-body: var(--leading-relaxed);
-        --heading-tracking: var(--tracking-tight);
+        --heading-tracking: var(--);
     }
 }
 
@@ -91,7 +91,7 @@
     font-size: var(--text-5xl);
     font-weight: var(--font-bold);
     line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-tightest);
+    letter-spacing: var(--est);
 }
 
 .typo-heading-2 {
@@ -99,7 +99,7 @@
     font-size: var(--text-4xl);
     font-weight: var(--font-bold);
     line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-tight);
+    letter-spacing: var(--);
 }
 
 .typo-heading-3 {
@@ -107,7 +107,7 @@
     font-size: var(--text-3xl);
     font-weight: var(--font-bold);
     line-height: var(--leading-snug);
-    letter-spacing: var(--tracking-tight);
+    letter-spacing: var(--);
 }
 
 .typo-heading-4 {
@@ -115,7 +115,7 @@
     font-size: var(--text-2xl);
     font-weight: var(--font-semibold);
     line-height: var(--leading-snug);
-    letter-spacing: var(--tracking-tight);
+    letter-spacing: var(--);
 }
 
 .typo-heading-5 {
