@@ -11,23 +11,23 @@
 import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { HttpService } from '@main/services/external/http.service';
-import { HuggingFaceService } from '@main/services/llm/huggingface.service';
-import { LlamaService } from '@main/services/llm/llama.service';
+import { LLMOpenAIChatService, OpenAIStreamYield } from '@main/services/llm/chatgpt/llm-openai-chat.service';
 import { LLMAltProvidersService } from '@main/services/llm/llm-alt-providers.service';
 import { LLMEmbeddingsService } from '@main/services/llm/llm-embeddings.service';
-import { LLMOpenAIChatService, OpenAIStreamYield } from '@main/services/llm/llm-openai-chat.service';
+import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
+import { LlamaService } from '@main/services/llm/local/llama.service';
 import {
     resolveHuggingFaceLocalRouteTarget,
     resolveLocalRuntimeBaseUrl,
-} from '@main/services/llm/local-runtime-router.service';
+} from '@main/services/llm/local/local-runtime-router.service';
 import { ModelFallbackService } from '@main/services/llm/model-fallback.service';
 import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
+import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { AuthService } from '@main/services/security/auth.service';
 import { ChatMessage, ContentPart, OpenAIResponse } from '@main/types/llm.types';
 import { sanitizePrompt } from '@main/utils/prompt-sanitizer.util';
 import { buildLocaleReinforcementInstruction } from '@shared/instructions';
@@ -157,7 +157,7 @@ export class LLMService {
         this.openaiChat = new LLMOpenAIChatService(
             { httpService: deps.httpService, keyRotationService: deps.keyRotationService, tokenService: deps.tokenService },
             this.breakers.openai,
-            (model, provider) => this.normalizeModelName(model, provider),
+            (model: string, provider?: string) => this.normalizeModelName(model, provider),
             () => this.getDispatcher()
         );
 
@@ -727,24 +727,24 @@ export class LLMService {
     private async getApiKey(provider: string): Promise<string> {
         // 1. Rotation service
         const rotatedKey = this.deps.keyRotationService.getCurrentKey(provider);
-        if (rotatedKey) return rotatedKey;
+        if (rotatedKey) {return rotatedKey;}
 
         // 2. Local variables (initialized from configService or set manually)
         let localKey = '';
         const p = provider.toLowerCase();
-        if (p === 'openai') localKey = this.openaiApiKey;
-        else if (p === 'anthropic' || p === 'claude') localKey = this.anthropicApiKey;
-        else if (p === 'groq') localKey = this.groqApiKey;
-        else if (p === 'nvidia') localKey = this.nvidiaApiKey;
-        else if (p === 'kimi') localKey = this.kimiApiKey;
-        else if (p === 'opencode') localKey = this.opencodeApiKey;
+        if (p === 'openai') {localKey = this.openaiApiKey;}
+        else if (p === 'anthropic' || p === 'claude') {localKey = this.anthropicApiKey;}
+        else if (p === 'groq') {localKey = this.groqApiKey;}
+        else if (p === 'nvidia') {localKey = this.nvidiaApiKey;}
+        else if (p === 'kimi') {localKey = this.kimiApiKey;}
+        else if (p === 'opencode') {localKey = this.opencodeApiKey;}
 
-        if (localKey && localKey !== 'public') return localKey;
+        if (localKey && localKey !== 'public') {return localKey;}
 
         // 3. AuthService (DB accounts)
         if (this.deps.authService) {
             const authKey = await this.deps.authService.getActiveToken(provider);
-            if (authKey) return authKey;
+            if (authKey) {return authKey;}
         }
 
         return localKey; // fallback to 'public' or ''

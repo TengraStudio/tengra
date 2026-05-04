@@ -564,6 +564,11 @@ export class SystemRepository extends BaseRepository {
         `).run(record.chatId, record.workspaceId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
     }
 
+    /** Alias for addTokenUsage */
+    async recordUsage(record: TokenUsageRecord): Promise<void> {
+        return this.addTokenUsage(record);
+    }
+
     async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> {
         const now = Date.now();
         let since = now - 24 * 60 * 60 * 1000;

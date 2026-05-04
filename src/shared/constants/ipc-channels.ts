@@ -611,6 +611,15 @@ export const DB_CHANNELS = {
   CLEAR_HISTORY: 'db:clearHistory',
   /** Create a new chat */
   CREATE_CHAT: 'db:createChat',
+  /** Get a single chat */
+  CHAT_GET: 'db:getChat',
+  /** List chats with options */
+  CHAT_LIST: 'db:listChats',
+  /** Update a chat */
+  CHAT_UPDATE: 'db:updateChat',
+  /** Delete a chat */
+  CHAT_DELETE: 'db:deleteChat',
+
   /** Create a chat folder */
   CREATE_FOLDER: 'db:createFolder',
   /** Create a workspace */

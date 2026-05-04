@@ -12,9 +12,12 @@ import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { t } from '@main/utils/i18n.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { RuntimeValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
@@ -99,6 +102,13 @@ export class AgentService extends BaseService {
         return row?.id ?? id;
     }
 
+    @ipc('agent:create')
+    async createAgentIpc(payload: { agent: AgentDefinition; options?: AgentCreateOptions }): Promise<RuntimeValue> {
+        const { agent, options } = payload;
+        const result = await this.createAgent(agent, options);
+        return serializeToIpc(result);
+    }
+
     async createAgent(agent: AgentDefinition, options: AgentCreateOptions = {}): Promise<{ success: boolean; id?: string; workspacePath?: string; error?: string }> {
         const validation = this.validateAgentTemplate(agent);
         if (!validation.valid) {
@@ -127,6 +137,12 @@ export class AgentService extends BaseService {
         }
     }
 
+    @ipc('agent:clone')
+    async cloneAgentIpc(id: string, newName?: string): Promise<RuntimeValue> {
+        const result = await this.cloneAgent(id, newName);
+        return serializeToIpc(result);
+    }
+
     async cloneAgent(sourceId: string, newName?: string): Promise<{ success: boolean; id?: string; error?: string }> {
         const source = await this.getAgent(sourceId);
         if (!source) {
@@ -142,12 +158,25 @@ export class AgentService extends BaseService {
         return { success: true, id };
     }
 
+    @ipc('agent:export')
+    async exportAgentIpc(id: string): Promise<string | null> {
+        const agent = await this.getAgent(id);
+        if (!agent) { return null; }
+        return this.exportAgent(agent);
+    }
+
     exportAgent(agent: AgentDefinition): string {
         return JSON.stringify({
             version: 1,
             exportedAt: Date.now(),
             agent
         }, null, 2);
+    }
+
+    @ipc('agent:import')
+    async importAgentIpc(payload: string): Promise<RuntimeValue> {
+        const result = await this.importAgent(payload);
+        return serializeToIpc(result);
     }
 
     async importAgent(payload: string): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -161,6 +190,12 @@ export class AgentService extends BaseService {
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
+    }
+
+    @ipc('agent:get-templates-library')
+    async getAgentTemplatesLibraryIpc(): Promise<RuntimeValue> {
+        const result = await this.getAgentTemplatesLibrary();
+        return serializeToIpc(result);
     }
 
     async getAgentTemplatesLibrary(): Promise<AgentTemplate[]> {
@@ -210,6 +245,18 @@ export class AgentService extends BaseService {
         return { valid: errors.length === 0, errors };
     }
 
+    @ipc('agent:validate-template')
+    async validateAgentTemplateIpc(template: Partial<AgentDefinition>): Promise<RuntimeValue> {
+        const result = this.validateAgentTemplate(template);
+        return serializeToIpc(result);
+    }
+
+    @ipc('agent:delete')
+    async deleteAgentIpc(id: string, options: AgentDeleteOptions = { confirm: false }): Promise<RuntimeValue> {
+        const result = await this.deleteAgent(id, options);
+        return serializeToIpc(result);
+    }
+
     async deleteAgent(agentId: string, options: AgentDeleteOptions = {}): Promise<{ success: boolean; archivedId?: string; recoveryToken?: string; error?: string }> {
         if (!options.confirm) {
             return { success: false, error: 'Deletion not confirmed' };
@@ -241,6 +288,12 @@ export class AgentService extends BaseService {
         }
     }
 
+    @ipc('agent:recover')
+    async recoverAgentFromArchiveIpc(archiveId: string): Promise<RuntimeValue> {
+        const result = await this.recoverAgentFromArchive(archiveId);
+        return serializeToIpc(result);
+    }
+
     async recoverAgentFromArchive(archiveId: string): Promise<{ success: boolean; id?: string; error?: string }> {
         const db = this.dbService.getDatabase();
         const statement = await db.prepare('SELECT * FROM agent_archives WHERE id = $1');
@@ -255,6 +308,12 @@ export class AgentService extends BaseService {
         const id = await this.registerAgent({ ...parsed, id: parsed.id ?? undefined });
         await this.setupAgentWorkspace(id);
         return { success: true, id };
+    }
+
+    @ipc('agent:get')
+    async getAgentIpc(idOrName: string): Promise<RuntimeValue> {
+        const result = await this.getAgent(idOrName);
+        return serializeToIpc(result);
     }
 
     async getAgent(idOrName: string): Promise<AgentDefinition | null> {
@@ -277,6 +336,12 @@ export class AgentService extends BaseService {
             tools: safeJsonParse(result.tools, []),
             parentModel: result.parent_model
         };
+    }
+
+    @ipc('agent:get-all')
+    async getAllAgentsIpc(): Promise<RuntimeValue> {
+        const result = await this.getAllAgents();
+        return serializeToIpc(result);
     }
 
     async getAllAgents(): Promise<AgentDefinition[]> {

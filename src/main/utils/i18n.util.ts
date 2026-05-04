@@ -10,11 +10,11 @@
 
 import fs from 'fs';
 import path from 'path';
-import { app } from 'electron';
 
 import { appLogger } from '@main/logging/logger';
 import { JsonValue } from '@shared/types/common';
 import { LocalePack } from '@shared/types/locale';
+import { app } from 'electron';
 
 type TranslationTree = Record<string, JsonValue | undefined>;
 

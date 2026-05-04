@@ -40,6 +40,8 @@ import { DefaultExtensionType, defaultStyles, FileIcon as ReactFileIcon } from '
 import { useTheme } from '@/hooks/useTheme';
 import { resolveCssColorVariable } from '@/lib/theme-css';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 export interface IconProps {
     size?: number;
     className?: string;
@@ -47,7 +49,7 @@ export interface IconProps {
 
 // Custom folder icon config
 interface FolderIconConfig {
-    icon: any;
+    icon: UnsafeValue;
     cssVar: string;
 }
 

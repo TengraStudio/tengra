@@ -16,6 +16,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -135,8 +136,26 @@ export class FileChangeTracker extends BaseService {
     }
 
     /**
+     * Get a specific file diff by ID (IPC)
+     */
+    @ipc('files:getFileDiff')
+    async getFileDiffIpc(_diffId: string) {
+        const row = await this.databaseService.getFileDiff(_diffId);
+        if (!row) {
+            return { success: false, error: 'Diff not found' };
+        }
+        const raw = typeof row.diff === 'string' ? row.diff : '';
+        const parsed = raw ? safeJsonParse<FileDiff | null>(raw, null) : null;
+        if (!parsed) {
+            return { success: false, error: 'Invalid diff data' };
+        }
+        return { success: true, data: parsed };
+    }
+
+    /**
      * Revert a file to its previous state
      */
+    @ipc('files:revertFileChange')
     async revertFileChange(diffId: string): Promise<{ success: boolean; error?: string }> {
         try {
             const row = await this.databaseService.getFileDiff(diffId);

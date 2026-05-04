@@ -68,7 +68,7 @@ describe('SSHService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        service = new SSHService(storagePath);
+        service = new SSHService(storagePath, {} as any, () => null);
     });
 
     describe('Profile Management', () => {
@@ -452,7 +452,7 @@ describe('SSHService', () => {
 
         beforeEach(() => {
             // Use spyOn to better track calls
-            executeSpy = vi.spyOn(service, 'executeCommand').mockResolvedValue({ stdout: 'log content', stderr: '', code: 0 });
+            executeSpy = vi.spyOn(service, 'executeCommand').mockResolvedValue({ stdout: 'log content', stderr: '', code: 0, success: true });
             // Mock connection existence check
             service['connections'].set('test-id', {} as never);
         });
@@ -499,11 +499,11 @@ describe('SSHService', () => {
     describe('System Stats', () => {
         it('should parse system stats correctly', async () => {
             service.executeCommand = vi.fn().mockImplementation((_id, cmd) => {
-                if (cmd.includes('uptime')) { return Promise.resolve({ stdout: 'up 1 day', stderr: '', code: 0 }); }
-                if (cmd.includes('free -m')) { return Promise.resolve({ stdout: 'total used free\nMem: 2048 1024 512', stderr: '', code: 0 }); }
-                if (cmd.includes('Cpu(s)')) { return Promise.resolve({ stdout: 'Cpu(s): 10.0 us', stderr: '', code: 0 }); }
-                if (cmd.includes('df -h /')) { return Promise.resolve({ stdout: 'Filesystem Size Used Avail Use%\n/dev/sda1 10G 5G 5G 50%', stderr: '', code: 0 }); }
-                return Promise.resolve({ stdout: '', stderr: '', code: 0 });
+                if (cmd.includes('uptime')) { return Promise.resolve({ stdout: 'up 1 day', stderr: '', code: 0, success: true }); }
+                if (cmd.includes('free -m')) { return Promise.resolve({ stdout: 'total used free\nMem: 2048 1024 512', stderr: '', code: 0, success: true }); }
+                if (cmd.includes('Cpu(s)')) { return Promise.resolve({ stdout: 'Cpu(s): 10.0 us', stderr: '', code: 0, success: true }); }
+                if (cmd.includes('df -h /')) { return Promise.resolve({ stdout: 'Filesystem Size Used Avail Use%\n/dev/sda1 10G 5G 5G 50%', stderr: '', code: 0, success: true }); }
+                return Promise.resolve({ stdout: 'v1.0.0', stderr: '', code: 0, success: true });
             });
 
             const stats = await service.getSystemStats('test-id');

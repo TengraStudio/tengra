@@ -12,19 +12,23 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
 import { t } from '@main/utils/i18n.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { DB_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     AdvancedSemanticFragment,
     PendingMemory,
     SharedMemoryMergeConflict,
     SharedMemoryNamespace
 } from '@shared/types/advanced-memory';
+import { Chat, Folder, Message, Prompt, SearchChatsOptions } from '@shared/types/chat';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { AgentProfile } from '@shared/types/council';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
@@ -32,6 +36,7 @@ import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
 import { Workspace } from '@shared/types/workspace';
 import { AppErrorCode, TengraError, ValidationError } from '@shared/utils/error.util';
+import { BrowserWindow } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ChatRepository } from './repositories/chat.repository';
@@ -77,8 +82,7 @@ export interface TokenUsageRecord {
     timestamp?: number;
 }
 
-export interface Folder { id: string; name: string; color?: string | undefined; createdAt: number; updatedAt: number; }
-export interface Prompt { id: string; title: string; content: string; tags: string[]; createdAt: number; updatedAt: number; }
+export type { Chat, Folder, Prompt, SearchChatsOptions } from '@shared/types/chat';
 export interface ChatMessage { role: string; content: string; timestamp?: number; vector?: number[];[key: string]: JsonValue | undefined }
 export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; workspacePath?: string | undefined; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
 export interface EpisodicMemory {
@@ -96,9 +100,6 @@ export interface EpisodicMemory {
     timestamp: number;
 }
 export interface EntityKnowledge { id: string; entityType: string; entityName: string; key: string; value: string; confidence: number; source: string; updatedAt: number }
-
-
-export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; workspaceId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
 
 export interface CodeSymbolSearchResult { id: string; name: string; path: string; line: number; kind: string; signature: string; docstring: string; score?: number; }
 const WORKSPACE_COMPAT_CORE_TABLES = [
@@ -121,17 +122,6 @@ const VALID_SCHEMA_TABLE_NAMES = [
 ] as const;
 
 export interface CodeSymbolRecord { id: string; workspace_path?: string; [WORKSPACE_COMPAT_PATH_COLUMN]?: string; workspaceId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
-
-export interface SearchChatsOptions {
-    query?: string;
-    folderId?: string;
-    isPinned?: boolean;
-    isFavorite?: boolean;
-    isArchived?: boolean;
-    startDate?: number;
-    endDate?: number;
-    limit?: number;
-}
 
 export interface QueryRecommendation {
     code: 'select-star' | 'missing-limit' | 'leading-wildcard-like' | 'missing-where';
@@ -286,7 +276,8 @@ export class DatabaseService extends BaseService {
     constructor(
         private dataService: DataService,
         private eventBus: EventBusService,
-        private dbClient: DatabaseClientService
+        private dbClient: DatabaseClientService,
+        private readonly mainWindowProvider: () => BrowserWindow | null
     ) {
         super('DatabaseService');
     }
@@ -303,6 +294,272 @@ export class DatabaseService extends BaseService {
         if (typeof value !== 'string' || value.trim().length === 0) {
             throw new ValidationError(`[${DatabaseServiceErrorCode.INVALID_QUERY}] SQL statement must be a non-empty string`);
         }
+    }
+
+    // --- Chat IPC Handlers ---
+
+    @ipc({ channel: DB_CHANNELS.CHAT_LIST, isBatchable: true })
+    async listChatsIpc(options?: SearchChatsOptions): Promise<RuntimeValue> {
+        const result = await this._chats.list(options);
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.CHAT_GET)
+    async getChatIpc(id: string): Promise<RuntimeValue> {
+        this.validateId(id, 'Chat ID');
+        const result = await this._chats.get(id);
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.CREATE_CHAT)
+    async createChatIpc(chat: Partial<Chat>): Promise<RuntimeValue> {
+        const result = await this._chats.create(chat as Chat);
+        return serializeToIpc(result);
+    }
+
+    @ipc({ channel: 'db:getAllChats', isBatchable: true })
+    async getAllChatsIpc(): Promise<RuntimeValue> {
+        const result = await this._chats.getAllChats();
+        return serializeToIpc(result);
+    }
+
+    @ipc({ channel: DB_CHANNELS.CHAT_UPDATE, isBatchable: true })
+    async updateChatIpc(id: string, updates: Partial<Chat>): Promise<boolean> {
+        this.validateId(id, 'Chat ID');
+        return this._chats.update(id, updates);
+    }
+
+    @ipc({ channel: DB_CHANNELS.CHAT_DELETE, isBatchable: true })
+    async deleteChatIpc(id: string): Promise<boolean> {
+        this.validateId(id, 'Chat ID');
+        return this._chats.delete(id);
+    }
+
+    @ipc({ channel: DB_CHANNELS.SEARCH_CHATS, isBatchable: true })
+    async searchChatsIpc(options: SearchChatsOptions): Promise<RuntimeValue> {
+        const result = await this._chats.searchChats(options);
+        return serializeToIpc(result);
+    }
+
+    @ipc({ channel: 'db:bulkDeleteChats', isBatchable: true })
+    async bulkDeleteChatsIpc(ids: string[]): Promise<boolean> {
+        await this.bulkDeleteChats(ids);
+        return true;
+    }
+
+    @ipc({ channel: 'db:bulkArchiveChats', isBatchable: true })
+    async bulkArchiveChatsIpc(ids: string[], isArchived: boolean): Promise<boolean> {
+        await this.bulkArchiveChats(ids, isArchived);
+        return true;
+    }
+
+    @ipc({ channel: 'db:deleteAllChats', isBatchable: true })
+    async deleteAllChatsIpc(): Promise<boolean> {
+        const result = await this._chats.deleteAllChats();
+        return result.success;
+    }
+
+    @ipc({ channel: 'db:deleteChatsByTitle', isBatchable: true })
+    async deleteChatsByTitleIpc(title: string): Promise<boolean> {
+        const result = await this._chats.deleteChatsByTitle(title);
+        return result.success;
+    }
+
+    @ipc({ channel: DB_CHANNELS.PIN_CHAT, isBatchable: true })
+    async pinChatIpc(id: string, isPinned: boolean): Promise<boolean> {
+        this.validateId(id, 'Chat ID');
+        return this._chats.update(id, { isPinned });
+    }
+
+    @ipc(DB_CHANNELS.FAVORITE_CHAT)
+    async favoriteChatIpc(id: string, isFavorite: boolean): Promise<boolean> {
+        this.validateId(id, 'Chat ID');
+        return this._chats.update(id, { isFavorite });
+    }
+
+    @ipc(DB_CHANNELS.ARCHIVE_CHAT)
+    async archiveChatIpc(id: string, isArchived: boolean): Promise<boolean> {
+        this.validateId(id, 'Chat ID');
+        return this._chats.update(id, { isArchived });
+    }
+
+    @ipc(DB_CHANNELS.MOVE_CHAT_TO_FOLDER)
+    async moveChatToFolderIpc(chatId: string, folderId?: string): Promise<boolean> {
+        this.validateId(chatId, 'Chat ID');
+        return this._chats.update(chatId, { folderId });
+    }
+
+    @ipc(DB_CHANNELS.UPDATE_CHAT_TITLE)
+    async updateChatTitleIpc(id: string, title: string): Promise<boolean> {
+        this.validateId(id, 'Chat ID');
+        return this._chats.update(id, { title });
+    }
+
+    @ipc(DB_CHANNELS.CLEAR_HISTORY)
+    async clearHistoryIpc(): Promise<boolean> {
+        return this._chats.clearHistory();
+    }
+
+    // --- Message IPC Handlers ---
+
+    @ipc({ channel: 'db:getMessages', isBatchable: true })
+    async getMessagesIpc(chatId: string): Promise<RuntimeValue> {
+        this.validateId(chatId, 'Chat ID');
+        const result = await this._chats.getMessages(chatId);
+        return serializeToIpc(result);
+    }
+
+    @ipc({ channel: 'db:addMessage', isBatchable: true })
+    async addMessageIpc(message: Message): Promise<RuntimeValue> {
+        const result = await this._chats.addMessage(message as unknown as JsonObject);
+        return serializeToIpc(result);
+    }
+
+    @ipc({ channel: 'db:updateMessage', isBatchable: true })
+    async updateMessageIpc(id: string, updates: Partial<Message>): Promise<boolean> {
+        this.validateId(id, 'Message ID');
+        const result = await this._chats.updateMessage(id, updates as unknown as JsonObject);
+        return result.success;
+    }
+
+    @ipc(DB_CHANNELS.DELETE_MESSAGES)
+    async deleteMessagesIpc(ids: string[]): Promise<boolean> {
+        this.validateArray(ids, 'Message IDs');
+        return this._chats.deleteMessages(ids);
+    }
+
+    @ipc({ channel: DB_CHANNELS.UPDATE_MESSAGE_VECTOR, isBatchable: true })
+    async updateMessageVectorIpc(id: string, vector: number[]): Promise<boolean> {
+        this.validateId(id, 'Message ID');
+        this.validateArray(vector, 'Vector');
+        const result = await this._chats.updateMessage(id, { vector } as unknown as JsonObject);
+        return result.success;
+    }
+
+    @ipc(DB_CHANNELS.SEARCH_SIMILAR_MESSAGES)
+    async searchSimilarMessagesIpc(chatId: string, vector: number[], limit?: number): Promise<RuntimeValue> {
+        this.validateId(chatId, 'Chat ID');
+        this.validateArray(vector, 'Vector');
+        const result = await this._chats.searchSimilarMessages(chatId, vector, limit);
+        return serializeToIpc(result);
+    }
+
+    // --- Folder IPC Handlers ---
+
+    @ipc(DB_CHANNELS.GET_FOLDERS)
+    async getFoldersIpc(): Promise<RuntimeValue> {
+        const result = await this._chats.getFolders();
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.CREATE_FOLDER)
+    async createFolderIpc(folder: Partial<Folder>): Promise<RuntimeValue> {
+        const result = await this._chats.createFolder(folder as Folder);
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.UPDATE_FOLDER)
+    async updateFolderIpc(id: string, updates: Partial<Folder>): Promise<boolean> {
+        this.validateId(id, 'Folder ID');
+        return this._chats.updateFolder(id, updates);
+    }
+
+    @ipc(DB_CHANNELS.DELETE_FOLDER)
+    async deleteFolderIpc(id: string): Promise<boolean> {
+        this.validateId(id, 'Folder ID');
+        return this._chats.deleteFolder(id);
+    }
+
+    // --- Prompt IPC Handlers ---
+
+    @ipc(DB_CHANNELS.GET_PROMPTS)
+    async getPromptsIpc(): Promise<RuntimeValue> {
+        const result = await this._chats.getPrompts();
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.CREATE_PROMPT)
+    async createPromptIpc(prompt: Partial<Prompt>): Promise<RuntimeValue> {
+        const result = await this._chats.createPrompt(prompt as Prompt);
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.UPDATE_PROMPT)
+    async updatePromptIpc(id: string, updates: Partial<Prompt>): Promise<boolean> {
+        this.validateId(id, 'Prompt ID');
+        return this._chats.updatePrompt(id, updates);
+    }
+
+    @ipc(DB_CHANNELS.DELETE_PROMPT)
+    async deletePromptIpc(id: string): Promise<boolean> {
+        this.validateId(id, 'Prompt ID');
+        return this._chats.deletePrompt(id);
+    }
+
+    // --- Workspace IPC Handlers ---
+
+    @ipc(DB_CHANNELS.GET_WORKSPACES)
+    async getWorkspacesIpc(): Promise<RuntimeValue> {
+        const result = await this._workspaces.list();
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.GET_WORKSPACE_BY_ID)
+    async getWorkspaceByIdIpc(id: string): Promise<RuntimeValue> {
+        this.validateId(id, 'Workspace ID');
+        const result = await this._workspaces.get(id);
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.CREATE_WORKSPACE)
+    async createWorkspaceIpc(workspace: Partial<Workspace>): Promise<RuntimeValue> {
+        const result = await this._workspaces.create(workspace as Workspace);
+        this.notifyWorkspaceUpdate(result.id);
+        return serializeToIpc(result);
+    }
+
+    @ipc(DB_CHANNELS.UPDATE_WORKSPACE)
+    async updateWorkspaceIpc(id: string, updates: Partial<Workspace>): Promise<boolean> {
+        this.validateId(id, 'Workspace ID');
+        const success = await this._workspaces.update(id, updates);
+        if (success) {
+            this.notifyWorkspaceUpdate(id);
+        }
+        return success;
+    }
+
+    @ipc(DB_CHANNELS.DELETE_WORKSPACE)
+    async deleteWorkspaceIpc(id: string): Promise<boolean> {
+        this.validateId(id, 'Workspace ID');
+        const success = await this._workspaces.delete(id);
+        if (success) {
+            this.notifyWorkspaceUpdate(id);
+        }
+        return success;
+    }
+
+    @ipc({ channel: 'db:bulkDeleteWorkspaces', isBatchable: true })
+    async bulkDeleteWorkspacesIpc(ids: string[], deleteFiles: boolean = false): Promise<boolean> {
+        await this.bulkDeleteWorkspaces(ids, deleteFiles);
+        this.notifyWorkspaceUpdate();
+        return true;
+    }
+
+    @ipc({ channel: 'db:bulkArchiveWorkspaces', isBatchable: true })
+    async bulkArchiveWorkspacesIpc(ids: string[], isArchived: boolean): Promise<boolean> {
+        await this.bulkArchiveWorkspaces(ids, isArchived);
+        this.notifyWorkspaceUpdate();
+        return true;
+    }
+
+    @ipc(DB_CHANNELS.GET_DETAILED_STATS)
+    async getDetailedStatsIpc(period: string = 'daily'): Promise<RuntimeValue> {
+        const result = await this._system.getDetailedStats(period);
+        return serializeToIpc(result);
+    }
+
+    private notifyWorkspaceUpdate(id?: string) {
+        this.mainWindowProvider()?.webContents.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id });
     }
 
     private markInternalMigrationSql(sql: string): string {
@@ -769,6 +1026,7 @@ export class DatabaseService extends BaseService {
     }
 
     /** Returns the full migration history with version, name, checksum, and timestamps. */
+    @ipc('migration:history')
     async getMigrationHistory(): Promise<MigrationHistoryEntry[]> {
         const rows = await this.getMigrationHistoryRows();
         return rows.map(row => ({
@@ -1218,16 +1476,7 @@ export class DatabaseService extends BaseService {
     async updateChat(id: string, updates: Partial<Chat>) { await this.ensureInitialized(); return this._chats.updateChat(id, updates); }
     /** Deletes a chat by ID. */
     async deleteChat(id: string) { await this.ensureInitialized(); return this._chats.deleteChat(id); }
-    /** Archives or unarchives a chat by ID. */
-    async archiveChat(id: string, isArchived: boolean) { await this.ensureInitialized(); return this._chats.updateChat(id, { metadata: { isArchived } }); }
-    /** Retrieves all bookmarked messages. */
-    async getBookmarkedMessages() { return this._chats.getBookmarkedMessages(); }
-    /** Searches chats based on the provided search options. */
-    async searchChats(options: SearchChatsOptions) { await this.ensureInitialized(); return this._chats.searchChats(options); }
-    /** Deletes all chats. */
-    async deleteAllChats() { await this.ensureInitialized(); return this._chats.deleteAllChats(); }
-    /** Deletes all chats matching the given title. */
-    async deleteChatsByTitle(title: string) { await this.ensureInitialized(); return this._chats.deleteChatsByTitle(title); }
+
     /** Deletes multiple chats by ID. */
     async bulkDeleteChats(ids: string[]) {
         this.validateArray(ids, 'ids');
@@ -1242,10 +1491,19 @@ export class DatabaseService extends BaseService {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
             this.validateId(id, 'chatId');
-            await this.archiveChat(id, isArchived);
+            await this.updateChat(id, { metadata: { isArchived } });
         }
     }
-
+    /** Archives or unarchives a chat by ID. */
+    async archiveChat(id: string, isArchived: boolean) { await this.ensureInitialized(); return this._chats.updateChat(id, { metadata: { isArchived } }); }
+    /** Retrieves all bookmarked messages. */
+    async getBookmarkedMessages() { return this._chats.getBookmarkedMessages(); }
+    /** Searches chats based on the provided search options. */
+    async searchChats(options: SearchChatsOptions) { await this.ensureInitialized(); return this._chats.searchChats(options); }
+    /** Deletes all chats. */
+    async deleteAllChats() { await this.ensureInitialized(); return this._chats.deleteAllChats(); }
+    /** Deletes all chats matching the given title. */
+    async deleteChatsByTitle(title: string) { await this.ensureInitialized(); return this._chats.deleteChatsByTitle(title); }
     // Knowledge & Memories
     async findCodeSymbolsByName(workspacePath: string, name: string) { await this.ensureInitialized(); return this._knowledge.findCodeSymbolsByName(workspacePath, name); }
     async getCodeSymbolsByWorkspacePath(workspacePath: string) { await this.ensureInitialized(); return this._knowledge.getCodeSymbolsByWorkspacePath(workspacePath); }
@@ -1465,6 +1723,7 @@ export class DatabaseService extends BaseService {
     /** Returns detailed database statistics for the given period. */
     async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily'): Promise<DbDetailedStats> { await this.ensureInitialized(); return this._system.getDetailedStats(period); }
     /** Returns current migration version and last migration timestamp. */
+    @ipc('migration:status')
     async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { await this.ensureInitialized(); return this._system.getMigrationStatus(); }
     /** Records token usage, resolving workspace UUID to path if needed. */
     async addTokenUsage(record: TokenUsageRecord) {

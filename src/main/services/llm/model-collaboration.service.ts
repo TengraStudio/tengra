@@ -13,12 +13,17 @@
  * Enables multiple LLMs to work together on the same task
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
+import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { Message } from '@shared/types/chat';
-// Note: multiLLMOrchestrator could be used for task management in the future
+import { JsonObject, RuntimeValue } from '@shared/types/common';
+import { z } from 'zod';
 
 export interface CollaborationRequest {
     messages: Message[]
@@ -50,22 +55,53 @@ export interface CollaborationResult {
 const COLLABORATION_MEMORY_TIMEOUT_MS = 450;
 const COLLABORATION_MEMORY_MATCH_LIMIT = 3;
 
+const CollaborationConfigSchema = z.object({
+    maxConcurrent: z.any().refine(val => typeof val === 'number' && val > 0, { message: 'maxConcurrent must be a positive number' }),
+    priority: z.any().refine(val => typeof val === 'number', { message: 'priority must be a number' }),
+    rateLimitPerMinute: z.any().refine(val => typeof val === 'number' && val > 0, { message: 'rateLimitPerMinute must be a positive number' }),
+});
+
+const collaborationRequestSchema = z.object({
+    messages: z.array(z.any()),
+    models: z.array(z.object({
+        provider: z.string(),
+        model: z.string()
+    })).min(1),
+    strategy: z.enum(['consensus', 'vote', 'best-of-n', 'chain-of-thought']),
+    options: z.object({
+        temperature: z.number().optional(),
+        maxTokens: z.number().optional()
+    }).optional()
+});
+
 /**
  * Service for coordinating multiple LLMs to work together
  */
-export class ModelCollaborationService {
+export class ModelCollaborationService extends BaseService {
     private readonly memoryContext: MemoryContextService;
 
     constructor(
         private llmService: LLMService,
         advancedMemoryService?: AdvancedMemoryService
     ) {
+        super('ModelCollaborationService');
         this.memoryContext = new MemoryContextService(advancedMemoryService);
     }
 
     /**
-     * Run multiple models in parallel and combine results
+     * Run multiple models in collaboration
      */
+    @ipc('collaboration:run')
+    async collaborateIpc(requestRaw: RuntimeValue): Promise<RuntimeValue> {
+        const validated = collaborationRequestSchema.safeParse(requestRaw);
+        if (!validated.success) {
+            throw new Error(`Invalid collaboration request: ${validated.error.message}`);
+        }
+        const request = validated.data as CollaborationRequest;
+
+        return serializeToIpc(await this.collaborate(request));
+    }
+
     async collaborate(request: CollaborationRequest): Promise<CollaborationResult> {
         const { messages, models, strategy, options } = request;
         const memoryContext = await this.getResolutionMemoryContext(messages);
@@ -114,6 +150,59 @@ export class ModelCollaborationService {
         this.captureCollaborationMemory(memoryAwareMessages, strategy, collaborationResult);
 
         return collaborationResult;
+    }
+
+    /**
+     * Get provider statistics
+     */
+    @ipc('collaboration:getProviderStats')
+    async getProviderStatsIpc(provider: RuntimeValue): Promise<RuntimeValue> {
+        try {
+            if (!provider || typeof provider !== 'string') {
+                const allStats = multiLLMOrchestrator.getAllStats();
+                return serializeToIpc(Object.fromEntries(allStats));
+            }
+            const stats = multiLLMOrchestrator.getProviderStats(provider);
+            return serializeToIpc(stats ?? null);
+        } catch (error) {
+            return serializeToIpc({});
+        }
+    }
+
+    /**
+     * Get active task count for a provider
+     */
+    @ipc('collaboration:getActiveTaskCount')
+    async getActiveTaskCountIpc(provider: RuntimeValue): Promise<RuntimeValue> {
+        try {
+            if (typeof provider !== 'string') {
+                return serializeToIpc(0);
+            }
+            return serializeToIpc(multiLLMOrchestrator.getActiveTaskCount(provider));
+        } catch (error) {
+            return serializeToIpc(0);
+        }
+    }
+
+    /**
+     * Configure provider settings
+     */
+    @ipc('collaboration:setProviderConfig')
+    async setProviderConfigIpc(provider: RuntimeValue, config: unknown): Promise<RuntimeValue> {
+        if (typeof provider !== 'string') {
+            throw new Error('Provider must be a string');
+        }
+
+        try {
+            const validatedConfig = CollaborationConfigSchema.parse(config);
+            multiLLMOrchestrator.setProviderConfig(provider, validatedConfig);
+            return serializeToIpc({ success: true });
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                throw new Error(error.issues[0].message);
+            }
+            throw error;
+        }
     }
 
     /**

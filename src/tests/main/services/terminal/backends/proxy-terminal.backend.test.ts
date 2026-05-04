@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { ProxyTerminalBackend } from '@main/services/terminal/backends/proxy-terminal.backend';
 import { AuthService } from '@main/services/security/auth.service';
+import { ProxyTerminalBackend } from '@main/services/terminal/backends/proxy-terminal.backend';
 import axios from 'axios';
-import { WebSocket } from 'ws';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WebSocket } from 'ws';
 
 vi.mock('axios');
 

@@ -11,10 +11,11 @@
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { LogoService } from '@main/services/external/logo.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { LocalImageService } from '@main/services/llm/local-image.service';
+import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { DialogService } from '@main/services/system/dialog.service';
 import { WorkspaceAnalysis, WorkspaceService } from '@main/services/workspace/workspace.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -75,9 +76,16 @@ const createService = (): LogoTestContext => {
             getCopilotQuota: vi.fn<ProxyService['getCopilotQuota']>().mockResolvedValue({ accounts: [] }),
             getClaudeQuota: vi.fn<ProxyService['getClaudeQuota']>().mockResolvedValue({ accounts: [] }),
         } as never as ProxyService,
-        modelRegistryService: {
+                modelRegistryService: {
             getAllModels: getAllModelsMock,
         } as never as ModelRegistryService,
+        dialogService: {
+            showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: [] }),
+            showSaveDialog: vi.fn().mockResolvedValue({ canceled: false, filePath: '' }),
+            showMessageBox: vi.fn().mockResolvedValue({ response: 0 }),
+            showErrorBox: vi.fn(),
+        } as never as DialogService,
+        allowedFileRoots: new Set<string>(),
     };
 
     return {

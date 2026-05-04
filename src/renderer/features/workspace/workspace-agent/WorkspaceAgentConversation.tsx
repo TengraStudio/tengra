@@ -20,8 +20,8 @@ import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { MessageList } from '@/features/chat/components/MessageList';
 import { readAiPresentationMetadata } from '@/features/chat/components/message/message-presentation.util';
+import { MessageList } from '@/features/chat/components/MessageList';
 import { Language } from '@/i18n';
 import type { ChatError, Message } from '@/types';
 

@@ -154,8 +154,14 @@ export const createIpcHandler = <T = JsonValue, Args extends readonly RuntimeVal
 /**
  * Safely registers an IPC handle, removing any existing handler first.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function safeHandle(channel: string, handler: (event: electronNamespace.IpcMainInvokeEvent, ...args: any[]) => any, overwrite = true): void {
+export function safeHandle(
+    channel: string,
+    handler: (
+        event: electronNamespace.IpcMainInvokeEvent,
+        ...args: RuntimeValue[]
+    ) => RuntimeValue | Promise<RuntimeValue> | object | Promise<object>,
+    overwrite = true
+): void {
     try {
         if (overwrite) {
             electronNamespace.ipcMain.removeHandler(channel);
@@ -174,8 +180,10 @@ export function safeHandle(channel: string, handler: (event: electronNamespace.I
 /**
  * Safely registers an IPC 'on' listener, removing existing ones first to avoid duplicates.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function safeOn(channel: string, listener: (event: electronNamespace.IpcMainEvent, ...args: any[]) => void): void {
+export function safeOn(
+    channel: string,
+    listener: (event: electronNamespace.IpcMainEvent, ...args: RuntimeValue[]) => void
+): void {
     electronNamespace.ipcMain.removeAllListeners(channel);
     electronNamespace.ipcMain.on(channel, listener);
 }

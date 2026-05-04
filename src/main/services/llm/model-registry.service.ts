@@ -8,18 +8,19 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
-import { HuggingFaceService } from '@main/services/llm/huggingface.service';
-import { LocalImageService } from '@main/services/llm/local-image.service';
+import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
+import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import {
     LocalModelFileFormat,
     LocalModelRuntimeProvider,
     resolveLocalModelFileFormat,
     resolveRuntimeProviderForLocalModel,
-} from '@main/services/llm/local-runtime.types';
+} from '@main/services/llm/local/local-runtime.types';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data';
-import { OllamaService } from '@main/services/llm/ollama.service';
 import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { ProxyService, ProxyTelemetryEvent } from '@main/services/proxy/proxy.service';
@@ -29,9 +30,11 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { SystemEventKey } from '@shared/types/events';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { BrowserWindow } from 'electron';
 
 export type ModelProviderId =
     | 'ollama'
@@ -244,6 +247,16 @@ export class ModelRegistryService extends BaseService {
         this.deps.eventBus.onCustom(ProxyTelemetryEvent.PROXY_STARTED, () => {
             appLogger.debug('ModelRegistry', 'Embedded proxy reported ready, refreshing model cache...');
             void this.updateCache();
+        });
+
+        // Forward model:updated events to the renderer
+        this.deps.eventBus.on('model:updated', (payload) => {
+            const windows = BrowserWindow.getAllWindows();
+            for (const win of windows) {
+                if (!win.isDestroyed()) {
+                    win.webContents.send('model:updated', payload);
+                }
+            }
         });
 
         if (this.cachedModels.length === 0) {
@@ -463,7 +476,12 @@ export class ModelRegistryService extends BaseService {
     /**
      * Get all available models from all sources.
      * This is a cache-aware wrapper that merges remote and local installed models.
-     */
+     */ 
+    @ipc('model-registry:getAllModels')
+    async getAllModelsIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(await this.getAllModels());
+    }
+
     async getAllModels(): Promise<ModelProviderInfo[]> {
         const [remoteModels, installedModels] = await Promise.all([
             this.getRemoteModels(),
@@ -781,7 +799,7 @@ export class ModelRegistryService extends BaseService {
         const withProviderMetadata = this.ensureProviderMetadata(model);
         const withCapabilities = this.ensureModelCapabilities(withProviderMetadata);
         const resolvedContextWindow = resolveContextWindowForModel(withCapabilities);
-        
+
 
 
 
@@ -849,6 +867,11 @@ export class ModelRegistryService extends BaseService {
     /**
      * Get cached remote models.
      */
+    @ipc('model-registry:get-remote')
+    async getRemoteModelsIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(await this.getRemoteModels());
+    }
+
     async getRemoteModels(): Promise<ModelProviderInfo[]> {
         if (this.cachedModels.length === 0) {
             if (this.initialWarmupTimeout) {
@@ -1034,6 +1057,11 @@ export class ModelRegistryService extends BaseService {
     /**
      * Get locally installed models
      */
+    @ipc('model-registry:get-installed')
+    async getInstalledModelsIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(await this.getInstalledModels());
+    }
+
     async getInstalledModels(): Promise<ModelProviderInfo[]> {
         const [ollamaModels, huggingFaceModels] = await Promise.all([
             this.getInstalledOllamaModels(),

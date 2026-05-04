@@ -16,13 +16,57 @@ import * as fs from 'fs/promises';
 import * as https from 'https';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { JsonObject } from '@shared/types/common';
 import { AISystemType, DiffStats } from '@shared/types/file-diff';
 import { ServiceResponse } from '@shared/types/index';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { BrowserWindow, dialog, IpcMainInvokeEvent } from 'electron';
+import { z } from 'zod';
+
+import type { AuditLogService } from '../system/audit-log.service';
 
 import type { FileChangeTracker } from './file-change-tracker.service';
+
+// --- Constants ---
+const MAX_PATH_LENGTH = 4096;
+const MAX_CONTENT_SIZE = 50 * 1024 * 1024;
+const MAX_PATTERN_LENGTH = 256;
+const MAX_JOB_ID_LENGTH = 64;
+const MAX_FILE_TELEMETRY_EVENTS = 200;
+
+// --- Schemas ---
+const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
+const ContentSchema = z.string().max(MAX_CONTENT_SIZE);
+const PatternSchema = z.string().min(1).max(MAX_PATTERN_LENGTH).trim();
+const JobIdSchema = z.string().min(1).max(MAX_JOB_ID_LENGTH).regex(/^[\w-]+$/).trim();
+const DiffIdSchema = z.string().min(1).max(128).trim();
+
+const WriteContextSchema = z.object({
+    aiSystem: z.enum(['chat', 'workspace', 'council']).optional(),
+    chatSessionId: z.string().optional(),
+    changeReason: z.string().optional(),
+}).optional();
+
+const FILE_IPC_ERROR_CODE = {
+    VALIDATION: 'FILES_VALIDATION_ERROR',
+    OPERATION_FAILED: 'FILES_OPERATION_FAILED',
+} as const;
+
+const FILE_MESSAGE_KEY = {
+    OPERATION_FAILED: 'errors.files.operationFailed',
+    VALIDATION_FAILED: 'errors.files.validationFailed',
+    WRITE_FAILED: 'errors.files.writeFailed',
+    SEARCH_FAILED: 'errors.files.searchFailed',
+    WINDOW_NOT_FOUND: 'mainProcess.files.windowNotFound'
+} as const;
+
+const FILE_PERFORMANCE_BUDGET_MS = {
+    EXISTS: 30,
+    WRITE: 120,
+    SEARCH: 200
+} as const;
 
 type PdfParseResult = { text?: string };
 type PdfParseFunction = (dataBuffer: Buffer) => Promise<PdfParseResult>;
@@ -37,16 +81,197 @@ export class FileSystemService {
         'release-assets.githubusercontent.com'
     ]);
     private fileChangeTracker?: FileChangeTracker;
+    private auditLogService?: AuditLogService;
 
-    constructor(allowedRoots?: string[], fileChangeTracker?: FileChangeTracker) {
+    private telemetry = {
+        totalCalls: 0,
+        totalFailures: 0,
+        validationFailures: 0,
+        budgetExceededCount: 0,
+        lastErrorCode: null as string | null,
+        channels: {} as Record<string, {
+            calls: number;
+            failures: number;
+            validationFailures: number;
+            lastDurationMs: number;
+            budgetExceededCount: number;
+        }>,
+        events: [] as Array<{ channel: string; event: string; timestamp: number; durationMs?: number; code?: string }>
+    };
+
+    constructor(
+        allowedRoots?: string[],
+        fileChangeTracker?: FileChangeTracker,
+        auditLogService?: AuditLogService
+    ) {
         if (allowedRoots) {
             this.allowedRoots = allowedRoots.map(r => path.resolve(r));
         }
         this.fileChangeTracker = fileChangeTracker;
+        this.auditLogService = auditLogService;
+    }
+
+    private getChannelMetric(channel: string) {
+        if (!this.telemetry.channels[channel]) {
+            this.telemetry.channels[channel] = {
+                calls: 0,
+                failures: 0,
+                validationFailures: 0,
+                lastDurationMs: 0,
+                budgetExceededCount: 0
+            };
+        }
+        return this.telemetry.channels[channel];
+    }
+
+    private trackFileEvent(channel: string, event: string, details: { durationMs?: number; code?: string } = {}) {
+        this.telemetry.events = [...this.telemetry.events, {
+            channel,
+            event,
+            timestamp: Date.now(),
+            durationMs: details.durationMs,
+            code: details.code
+        }].slice(-MAX_FILE_TELEMETRY_EVENTS);
+    }
+
+    private getBudgetForChannel(channel: string): number {
+        if (channel === 'files:exists') {return FILE_PERFORMANCE_BUDGET_MS.EXISTS;}
+        if (channel === 'files:writeFile') {return FILE_PERFORMANCE_BUDGET_MS.WRITE;}
+        if (channel === 'files:searchFiles') {return FILE_PERFORMANCE_BUDGET_MS.SEARCH;}
+        return FILE_PERFORMANCE_BUDGET_MS.SEARCH;
+    }
+
+    private trackSuccessMetrics(channel: string, durationMs: number) {
+        const channelMetric = this.getChannelMetric(channel);
+        this.telemetry.totalCalls += 1;
+        channelMetric.calls += 1;
+        channelMetric.lastDurationMs = durationMs;
+        const budgetMs = this.getBudgetForChannel(channel);
+        if (durationMs > budgetMs) {
+            this.telemetry.budgetExceededCount += 1;
+            channelMetric.budgetExceededCount += 1;
+        }
+        this.trackFileEvent(channel, 'success', { durationMs });
+    }
+
+    private trackFailureMetrics(channel: string, code: string, eventName: 'failure' | 'validation-failure') {
+        const channelMetric = this.getChannelMetric(channel);
+        this.telemetry.totalCalls += 1;
+        this.telemetry.totalFailures += 1;
+        channelMetric.calls += 1;
+        channelMetric.failures += 1;
+        this.telemetry.lastErrorCode = code;
+        if (eventName === 'validation-failure') {
+            this.telemetry.validationFailures += 1;
+            channelMetric.validationFailures += 1;
+        }
+        this.trackFileEvent(channel, eventName, { code });
+    }
+
+    setAuditLogService(service: AuditLogService) {
+        this.auditLogService = service;
     }
 
     setFileChangeTracker(tracker: FileChangeTracker) {
         this.fileChangeTracker = tracker;
+    }
+
+    @ipc('files:exists')
+    async existsIpc(_event: IpcMainInvokeEvent, filePath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:exists';
+        try {
+            PathSchema.parse(filePath);
+            const result = await this.fileExists(filePath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return {
+                success: true,
+                data: result.exists,
+                uiState: result.exists ? 'ready' : 'empty'
+            };
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return {
+                success: true,
+                data: false,
+                errorCode: FILE_IPC_ERROR_CODE.OPERATION_FAILED,
+                messageKey: FILE_MESSAGE_KEY.OPERATION_FAILED,
+                uiState: 'failure'
+            };
+        }
+    }
+
+    @ipc('files:selectDirectory')
+    async selectDirectoryIpc(event: IpcMainInvokeEvent) {
+        const startedAt = Date.now();
+        const channel = 'files:selectDirectory';
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win) {
+            this.trackFailureMetrics(channel, FILE_IPC_ERROR_CODE.OPERATION_FAILED, 'failure');
+            return {
+                success: false,
+                error: 'Window not found',
+                messageKey: FILE_MESSAGE_KEY.WINDOW_NOT_FOUND
+            };
+        }
+
+        const result = await dialog.showOpenDialog(win, {
+            properties: ['openDirectory'],
+        });
+
+        if (result.canceled) {
+            this.trackFileEvent(channel, 'canceled');
+            return { success: false };
+        }
+
+        const chosenPath = result.filePaths[0];
+        if (chosenPath) {
+            const resolved = path.resolve(chosenPath);
+            if (!this.allowedRoots.includes(resolved)) {
+                this.allowedRoots.push(resolved);
+                this.updateAllowedRoots(this.allowedRoots);
+            }
+        }
+        this.trackSuccessMetrics(channel, Date.now() - startedAt);
+        return { success: true, path: chosenPath };
+    }
+
+    @ipc('files:selectFile')
+    async selectFileIpc(event: IpcMainInvokeEvent, options?: { title?: string, filters?: { name: string, extensions: string[] }[] }) {
+        const startedAt = Date.now();
+        const channel = 'files:selectFile';
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win) {
+            this.trackFailureMetrics(channel, FILE_IPC_ERROR_CODE.OPERATION_FAILED, 'failure');
+            return {
+                success: false,
+                error: 'Window not found',
+                messageKey: FILE_MESSAGE_KEY.WINDOW_NOT_FOUND
+            };
+        }
+
+        const result = await dialog.showOpenDialog(win, {
+            title: options?.title,
+            filters: options?.filters,
+            properties: ['openFile', 'showHiddenFiles'],
+        });
+
+        if (result.canceled) {
+            this.trackFileEvent(channel, 'canceled');
+            return { success: false };
+        }
+
+        const chosenPath = result.filePaths[0];
+        if (chosenPath) {
+            const resolved = path.resolve(chosenPath);
+            if (!this.allowedRoots.includes(resolved)) {
+                this.allowedRoots.push(resolved);
+                this.updateAllowedRoots(this.allowedRoots);
+            }
+        }
+        this.trackSuccessMetrics(channel, Date.now() - startedAt);
+        return { success: true, path: chosenPath };
     }
 
     updateAllowedRoots(allowedRoots: string[]) {
@@ -166,6 +391,70 @@ export class FileSystemService {
 
     // --- Core Operations ---
 
+    @ipc('files:listDirectory')
+    async listDirectoryIpc(_event: IpcMainInvokeEvent, dirPath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:listDirectory';
+        try {
+            PathSchema.parse(dirPath);
+            const result = await this.listDirectory(dirPath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, data: [], error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:readFile')
+    async readFileIpc(_event: IpcMainInvokeEvent, filePath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:readFile';
+        try {
+            PathSchema.parse(filePath);
+            const result = await this.readFile(filePath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, content: '', error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:readImage')
+    async readImageIpc(_event: IpcMainInvokeEvent, filePath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:readImage';
+        try {
+            PathSchema.parse(filePath);
+            const result = await this.readImage(filePath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, data: '', error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:readPdf')
+    async readPdfIpc(_event: IpcMainInvokeEvent, filePath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:readPdf';
+        try {
+            PathSchema.parse(filePath);
+            const result = await this.readPdf(filePath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, text: '', error: getErrorMessage(error as Error) };
+        }
+    }
+
     async readFile(filePath: string): Promise<ServiceResponse<string>> {
         try {
             const expandedPath = this.expandEnvVars(filePath);
@@ -259,6 +548,136 @@ export class FileSystemService {
 
             return { success: true, text };
         } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:writeFile')
+    async writeFileIpc(_event: IpcMainInvokeEvent, filePath: string, content: string, context?: unknown) {
+        const startedAt = Date.now();
+        const channel = 'files:writeFile';
+        try {
+            PathSchema.parse(filePath);
+            ContentSchema.parse(content);
+            const parsedContext = WriteContextSchema.parse(context);
+            
+            const aiSystem = parsedContext?.aiSystem;
+            let writeResult;
+            if (aiSystem) {
+                writeResult = await this.writeFileWithTracking(filePath, content, {
+                    aiSystem,
+                    chatSessionId: parsedContext.chatSessionId,
+                    changeReason: parsedContext.changeReason ?? 'AI file modification',
+                });
+            } else {
+                writeResult = await this.writeFile(filePath, content);
+            }
+
+            if (this.auditLogService) {
+                this.auditLogService.logFileSystemOperation('files.writeFile', writeResult.success, { targetPath: filePath });
+            }
+
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            if (writeResult.success) {
+                return { success: true, uiState: 'ready' };
+            }
+            return {
+                success: false,
+                error: writeResult.error ?? 'Write failed',
+                messageKey: FILE_MESSAGE_KEY.WRITE_FAILED,
+                uiState: 'failure'
+            };
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return {
+                success: false,
+                error: getErrorMessage(error as Error),
+                errorCode: isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED,
+                messageKey: isValidation ? FILE_MESSAGE_KEY.VALIDATION_FAILED : FILE_MESSAGE_KEY.WRITE_FAILED,
+                uiState: 'failure'
+            };
+        }
+    }
+
+    @ipc('files:createDirectory')
+    async createDirectoryIpc(_event: IpcMainInvokeEvent, dirPath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:createDirectory';
+        try {
+            PathSchema.parse(dirPath);
+            const result = await this.createDirectory(dirPath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:deleteFile')
+    async deleteFileIpc(_event: IpcMainInvokeEvent, filePath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:deleteFile';
+        try {
+            PathSchema.parse(filePath);
+            const result = await this.deleteFile(filePath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:deleteDirectory')
+    async deleteDirectoryIpc(_event: IpcMainInvokeEvent, dirPath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:deleteDirectory';
+        try {
+            PathSchema.parse(dirPath);
+            const result = await this.deleteDirectory(dirPath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:copyPath')
+    async copyPathIpc(_event: IpcMainInvokeEvent, sourcePath: string, destinationPath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:copyPath';
+        try {
+            PathSchema.parse(sourcePath);
+            PathSchema.parse(destinationPath);
+            const result = await this.copyPath(sourcePath, destinationPath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc('files:renamePath')
+    async renamePathIpc(_event: IpcMainInvokeEvent, oldPath: string, newPath: string) {
+        const startedAt = Date.now();
+        const channel = 'files:renamePath';
+        try {
+            PathSchema.parse(oldPath);
+            PathSchema.parse(newPath);
+            const result = await this.moveFile(oldPath, newPath);
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }
@@ -832,6 +1251,78 @@ export class FileSystemService {
                     resolve({ success: false, error: err.message });
                 });
         });
+    }
+
+    @ipc('files:searchFiles')
+    async searchFilesIpc(_event: IpcMainInvokeEvent, dirPath: string, pattern: string) {
+        const startedAt = Date.now();
+        const channel = 'files:searchFiles';
+        try {
+            PathSchema.parse(dirPath);
+            PatternSchema.parse(pattern);
+            const result = await this.searchFiles(dirPath, pattern);
+            const results = result.data ?? [];
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+            return {
+                success: result.success,
+                results,
+                uiState: results.length === 0 ? 'empty' : 'ready'
+            };
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+            return {
+                success: false,
+                results: [],
+                errorCode: FILE_IPC_ERROR_CODE.OPERATION_FAILED,
+                messageKey: FILE_MESSAGE_KEY.SEARCH_FAILED,
+                uiState: 'failure'
+            };
+        }
+    }
+
+    @ipc('files:searchFilesStream')
+    async searchFilesStreamIpc(event: IpcMainInvokeEvent, dirPath: string, pattern: string, jobId: string) {
+        const startedAt = Date.now();
+        const channel = 'files:searchFilesStream';
+        try {
+            PathSchema.parse(dirPath);
+            PatternSchema.parse(pattern);
+            JobIdSchema.parse(jobId);
+            await this.searchFilesStream(dirPath, pattern, (foundPath: string) => {
+                event.sender.send(`files:searchResult:${jobId}`, foundPath);
+            });
+            this.trackSuccessMetrics(channel, Date.now() - startedAt);
+        } catch (error) {
+            const isValidation = error instanceof z.ZodError;
+            this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
+        }
+    }
+
+    @ipc('files:health')
+    async healthIpc(_event: IpcMainInvokeEvent) {
+        return {
+            success: true,
+            data: this.getFilesHealthSummary()
+        };
+    }
+
+    private getFilesHealthSummary() {
+        const errorRate = this.telemetry.totalCalls === 0 ? 0 : this.telemetry.totalFailures / this.telemetry.totalCalls;
+        const status = errorRate > 0.05 || this.telemetry.budgetExceededCount > 0 ? 'degraded' : 'healthy';
+        return {
+            status,
+            uiState: status === 'healthy' ? 'ready' : 'failure',
+            budgets: {
+                existsMs: FILE_PERFORMANCE_BUDGET_MS.EXISTS,
+                writeMs: FILE_PERFORMANCE_BUDGET_MS.WRITE,
+                searchMs: FILE_PERFORMANCE_BUDGET_MS.SEARCH
+            },
+            metrics: {
+                ...this.telemetry,
+                errorRate
+            }
+        };
     }
 
     async getFileHash(

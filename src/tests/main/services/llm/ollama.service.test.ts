@@ -11,7 +11,7 @@
 import { EventEmitter } from 'events';
 import * as http from 'http';
 
-import { OllamaService } from '@main/services/llm/ollama.service';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -49,9 +49,17 @@ describe('OllamaService', () => {
             emit: vi.fn(),
             emitCustom: vi.fn()
         };
+        const mockLocalAIService = {
+            checkCudaSupport: vi.fn()
+        };
+        const mockAuthService = {
+            getAccountsByProvider: vi.fn()
+        };
         service = new OllamaService(
             mockSettingsService as never as SettingsService,
-            mockEventBusService as never as EventBusService
+            mockEventBusService as never as EventBusService,
+            mockLocalAIService as never as any,
+            mockAuthService as never as any
         );
     });
 

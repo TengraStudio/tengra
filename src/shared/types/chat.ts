@@ -88,6 +88,7 @@ export interface ChatRecoveryMetadata {
 }
 
 export interface Message {
+    [key: string]: unknown;
     id: string
     chatId?: string | undefined // Reference to parent chat
     role: 'user' | 'assistant' | 'system' | 'tool'
@@ -133,8 +134,9 @@ export interface Chat {
 export interface Folder {
     id: string
     name: string
-    createdAt: Date
-    updatedAt: Date
+    color?: string | undefined;
+    createdAt: number | Date;
+    updatedAt: number | Date;
 }
 
 export interface Prompt {
@@ -188,4 +190,15 @@ export interface ChatError {
     code?: number | null;
     reason?: string | null;
     retryable?: boolean;
+}
+
+export interface SearchChatsOptions {
+    query?: string;
+    folderId?: string;
+    isPinned?: boolean;
+    isFavorite?: boolean;
+    isArchived?: boolean;
+    startDate?: number;
+    endDate?: number;
+    limit?: number;
 }

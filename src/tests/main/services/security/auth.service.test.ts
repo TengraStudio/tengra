@@ -82,7 +82,13 @@ beforeEach(() => {
 
     
 
-    authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBus);
+    authService = new AuthService(
+        mockDatabaseService,
+        mockSecurityService,
+        mockEventBus,
+        { setGithubToken: vi.fn() } as any,
+        () => null
+    );
 });
 
 describe('AuthService - Lifecycle', () => {

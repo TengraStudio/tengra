@@ -19,7 +19,7 @@ import { FileSystemService } from '@main/services/data/filesystem.service';
 import { WebService } from '@main/services/external/web.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { LocalImageService } from '@main/services/llm/local-image.service';
+import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { CommandService } from '@main/services/system/command.service';
@@ -1395,8 +1395,8 @@ export class ToolExecutor {
                 displaySummary: observed.matched
                     ? `Terminal session ${sessionId} matched the requested pattern`
                     : observed.idle
-                      ? `Terminal session ${sessionId} became idle`
-                      : `Terminal session ${sessionId} wait timed out`,
+                        ? `Terminal session ${sessionId} became idle`
+                        : `Terminal session ${sessionId} wait timed out`,
             },
         };
     }

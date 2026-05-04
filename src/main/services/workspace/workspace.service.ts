@@ -15,10 +15,13 @@ import { fileURLToPath, pathToFileURL } from 'url';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { CacheService } from '@main/services/system/cache.service';
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { UtilityProcessService } from '@main/services/system/utility-process.service';
 import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
+import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import { LspService } from '@main/services/workspace/lsp.service';
 import {
     DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
@@ -46,6 +49,8 @@ import type {
 } from '@shared/types/workspace';
 import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { BrowserWindow, IpcMainInvokeEvent } from 'electron';
+import { z } from 'zod';
 
 export type {
     CodeAnnotation,
@@ -333,7 +338,12 @@ export class WorkspaceService extends BaseService {
         private lspService?: LspService,
         private utilityProcessService?: UtilityProcessService,
         private cacheService?: CacheService,
-        private proxyService?: ProxyService
+        private proxyService?: ProxyService,
+        private databaseService?: DatabaseService,
+        private codeIntelligenceService?: CodeIntelligenceService,
+        private jobSchedulerService?: JobSchedulerService,
+        private mainWindowProvider?: () => BrowserWindow | null,
+        private allowedFileRoots?: Set<string>
     ) {
         super('WorkspaceService');
     }

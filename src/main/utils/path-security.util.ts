@@ -23,6 +23,11 @@ export function isWithinRoot(candidatePath: string, rootPath: string): boolean {
     return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
+export function isPathAllowed(absolutePath: string, allowedRoots: string[]): boolean {
+    const normalizedPath = path.resolve(absolutePath);
+    return allowedRoots.some(root => isWithinRoot(normalizedPath, root));
+}
+
 export function assertPathWithinRoot(candidatePath: string, rootPath: string, label: string = 'path'): string {
     const resolvedPath = path.resolve(candidatePath);
     if (!isWithinRoot(resolvedPath, rootPath)) {

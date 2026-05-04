@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import CodexIcon from '@assets/chatgpt.svg?url';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -18,7 +19,6 @@ import { CodexUsage } from '@/types/quota';
 import { AccountWrapper } from '../../types';
 
 import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
-import CodexIcon from '@assets/chatgpt.svg?url';
 
 interface CodexCardProps {
     codexUsage: AccountWrapper<{ usage: CodexUsage }> | null

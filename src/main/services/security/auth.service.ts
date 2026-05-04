@@ -16,14 +16,21 @@ import {
     scryptSync
 } from 'crypto';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService, LinkedAccount } from '@main/services/data/database.service';
+import { CopilotService } from '@main/services/llm/copilot/copilot.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage, TengraError, ValidationError } from '@shared/utils/error.util';
+import { BrowserWindow } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
+
+type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 /**
  * Token data received from OAuth flows or browser session extraction.
@@ -53,7 +60,9 @@ export interface LinkedAccountInfo {
     isActive: boolean
     createdAt: number
     decryptionError?: boolean
+    [key: string]: RuntimeValue | undefined
 }
+
 
 export interface ProviderHealthCheck {
     provider: string
@@ -209,12 +218,20 @@ export class AuthService extends BaseService {
     private linkedAccountsCacheInFlight: Promise<LinkedAccount[]> | null = null;
     private upgradingAccountIds = new Set<string>();
 
+    private proxyService?: ProxyService;
+
     constructor(
         private databaseService: DatabaseService,
         private securityService: SecurityService,
-        private eventBus: EventBusService
+        private eventBus: EventBusService,
+        private copilotService: CopilotService,
+        private getMainWindow: () => BrowserWindow | null
     ) {
         super('AuthService');
+    }
+
+    setProxyService(proxyService: ProxyService): void {
+        this.proxyService = proxyService;
     }
 
     override async initialize(): Promise<void> {
@@ -226,6 +243,33 @@ export class AuthService extends BaseService {
         await this.refreshLinkedAccountsCache();
         await this.scrubSensitiveMetadataFromLinkedAccounts();
         await this.cleanupMirroredOAuthAccounts();
+
+        // Bridge events to renderer
+        this.eventBus.on('account:linked', (payload) => this.broadcastToRenderer('auth:account-changed', { type: 'linked', ...payload }));
+        this.eventBus.on('account:updated', (payload) => this.broadcastToRenderer('auth:account-changed', { type: 'updated', ...payload }));
+        this.eventBus.on('account:unlinked', (payload) => this.broadcastToRenderer('auth:account-changed', { type: 'unlinked', ...payload }));
+
+        // Register batchable handlers
+        registerBatchableHandler('auth:get-accounts-by-provider', async (_event, ...args) => {
+            return await this.getAccountsByProvider(args[0] as string);
+        });
+        registerBatchableHandler('auth:get-linked-accounts', async (_event, ...args) => {
+            const provider = args[0] as string | undefined;
+            return provider ? await this.getAccountsByProvider(provider) : await this.getAllAccounts();
+        });
+        registerBatchableHandler('auth:get-active-linked-account', async (_event, ...args) => {
+            return await this.getActiveAccount(args[0] as string);
+        });
+        registerBatchableHandler('auth:has-linked-account', async (_event, ...args) => {
+            return await this.hasLinkedAccount(args[0] as string);
+        });
+    }
+
+    private broadcastToRenderer(channel: string, data: UnsafeValue) {
+        const win = this.getMainWindow();
+        if (win && !win.isDestroyed()) {
+            win.webContents.send(channel, data);
+        }
     }
 
     async cleanup(): Promise<void> {
@@ -290,9 +334,58 @@ export class AuthService extends BaseService {
 
     // --- Provider Methods ---
 
+    @ipc('auth:github-login')
+    async githubLogin(appId: 'profile' | 'copilot' = 'copilot') {
+        if (!this.proxyService) {
+            throw new Error('ProxyService not initialized in AuthService');
+        }
+        return await this.proxyService.initiateGitHubAuth(appId);
+    }
+
+    @ipc('auth:poll-token')
+    async pollToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') {
+        try {
+            if (!this.proxyService) {
+                throw new Error('ProxyService not initialized in AuthService');
+            }
+            const response = await this.proxyService.waitForGitHubToken(deviceCode, interval, appId);
+            const token = response.access_token;
+            const provider = appId === 'copilot' ? 'copilot' : 'github';
+
+            const { email, displayName, avatarUrl } = await this.fetchGitHubIdentity(token);
+
+            const tokenData: TokenData = {
+                accessToken: token,
+                refreshToken: response.refresh_token,
+                sessionToken: response.session_token,
+                expiresAt: this.resolveGitHubTokenExpiry(response),
+                scope: response.scope ?? (appId === 'copilot' ? 'read:user user:email' : 'read:user user:email repo'),
+                email,
+                displayName,
+                avatarUrl,
+                metadata: this.buildGitHubTokenMetadata(response)
+            };
+
+            appLogger.info('AuthService', `Linking ${provider} account for identity: ${email ?? 'UnsafeValue'}`);
+            const linkedAccount = await this.linkAccount(provider, tokenData);
+
+            if (appId === 'copilot') {
+                this.copilotService.setGithubToken(token);
+                if (response.session_token) {
+                    this.copilotService.setCopilotToken(response.session_token);
+                }
+            }
+
+            return { success: true, account: linkedAccount };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     /**
      * Get all linked accounts for a provider.
      */
+    @ipc('auth:get-accounts-by-provider')
     async getAccountsByProvider(provider: string): Promise<LinkedAccountInfo[]> {
         const normalized = this.normalizeProvider(provider);
         const accounts = await this.getLinkedAccountsFresh(normalized);
@@ -302,6 +395,7 @@ export class AuthService extends BaseService {
     /**
      * Get the active (selected) account for a provider.
      */
+    @ipc('auth:get-active-linked-account')
     async getActiveAccount(provider: string): Promise<LinkedAccountInfo | null> {
         const normalized = this.normalizeProvider(provider);
         const account = await this.getActiveLinkedAccountFresh(normalized);
@@ -387,6 +481,7 @@ export class AuthService extends BaseService {
     /**
      * Set which account should be active for a provider.
      */
+    @ipc('auth:set-active-linked-account')
     async setActiveAccount(provider: string, accountId: string): Promise<void> {
         const normalized = this.normalizeProvider(provider);
         await this.databaseService.setActiveLinkedAccount(normalized, accountId);
@@ -399,6 +494,7 @@ export class AuthService extends BaseService {
     /**
      * Link a new account for a provider.
      */
+    @ipc('auth:link-account')
     async linkAccount(provider: string, tokenData: TokenData): Promise<LinkedAccountInfo> {
         const detected = this.detectProvider(provider, tokenData);
         const normalized = this.normalizeProvider(detected);
@@ -770,6 +866,7 @@ export class AuthService extends BaseService {
     /**
      * Unlink (remove) a specific account.
      */
+    @ipc('auth:unlink-account')
     async unlinkAccount(accountId: string): Promise<void> {
         // Get the account first to check if it's active
         const accounts = await this.getAllLinkedAccountsCached();
@@ -801,6 +898,7 @@ export class AuthService extends BaseService {
     /**
      * Unlink all accounts for a provider.
      */
+    @ipc('auth:unlink-provider')
     async unlinkAllForProvider(provider: string): Promise<void> {
         const normalized = this.normalizeProvider(provider);
         const accounts = await this.getLinkedAccountsCached(normalized);
@@ -863,6 +961,7 @@ export class AuthService extends BaseService {
     /**
      * Creates encrypted backup payload for master key recovery.
      */
+    @ipc('auth:create-master-key-backup')
     createMasterKeyBackup(passphrase: string): string {
         const result = this.securityService.createEncryptedMasterKeyBackup(passphrase);
         if (!result.success || !result.result?.backup) {
@@ -874,6 +973,7 @@ export class AuthService extends BaseService {
     /**
      * Restores master key from encrypted backup payload.
      */
+    @ipc('auth:restore-master-key-backup')
     async restoreMasterKeyBackup(backupPayload: string, passphrase: string): Promise<void> {
         const result = await this.securityService.restoreMasterKeyBackup(backupPayload, passphrase);
         if (!result.success) {
@@ -888,6 +988,7 @@ export class AuthService extends BaseService {
     /**
      * Get all linked accounts across all providers.
      */
+    @ipc('auth:get-linked-accounts')
     async getAllAccounts(): Promise<LinkedAccountInfo[]> {
         const accounts = await this.getAllLinkedAccountsFresh();
         return accounts.map(a => this.toPublicAccount(a));
@@ -896,6 +997,7 @@ export class AuthService extends BaseService {
     /**
      * Check if a provider has any linked accounts.
      */
+    @ipc('auth:has-linked-account')
     async hasLinkedAccount(provider: string): Promise<boolean> {
         const normalized = this.normalizeProvider(provider);
         const accounts = await this.getLinkedAccountsFresh(normalized);
@@ -1190,9 +1292,10 @@ export class AuthService extends BaseService {
             ?? [...richAccounts].sort((left, right) => right.updatedAt - left.updatedAt)[0];
     }
 
+    @ipc('auth:detect-auth-provider')
     detectProvider(providerHint: string | undefined, tokenData?: Partial<TokenData>): string {
         const normalizedHint = (providerHint ?? '').trim().toLowerCase();
-        if (normalizedHint && normalizedHint !== 'auto' && normalizedHint !== 'unknown') {
+        if (normalizedHint && normalizedHint !== 'auto' && normalizedHint !== 'UnsafeValue') {
             return normalizedHint;
         }
 
@@ -1217,7 +1320,7 @@ export class AuthService extends BaseService {
         if (accessToken.startsWith('sk-') || accessToken.startsWith('sess-')) {
             return 'codex';
         }
-        return 'unknown';
+        return 'UnsafeValue';
     }
 
     private looksLikeApiKeyToken(token?: string): boolean {
@@ -1240,6 +1343,7 @@ export class AuthService extends BaseService {
             || normalized.startsWith('xai-');
     }
 
+    @ipc('auth:get-provider-health')
     async getProviderHealth(provider?: string): Promise<ProviderHealthCheck[]> {
         const accounts = provider
             ? await this.databaseService.getLinkedAccounts(this.normalizeProvider(provider))
@@ -1273,6 +1377,7 @@ export class AuthService extends BaseService {
         }).sort((a, b) => a.provider.localeCompare(b.provider));
     }
 
+    @ipc('auth:get-provider-analytics')
     async getProviderAnalytics(): Promise<ProviderAnalytics[]> {
         const accounts = await this.databaseService.getLinkedAccounts();
         const byProvider = new Map<string, LinkedAccount[]>();
@@ -1293,6 +1398,7 @@ export class AuthService extends BaseService {
         })).sort((a, b) => a.provider.localeCompare(b.provider));
     }
 
+    @ipc('auth:rotate-token-encryption')
     async rotateTokenEncryption(provider?: string): Promise<{ rotated: number; failed: number }> {
         const targetProvider = provider ? this.normalizeProvider(provider) : undefined;
         const accounts = targetProvider
@@ -1411,6 +1517,7 @@ export class AuthService extends BaseService {
         };
     }
 
+    @ipc('auth:revoke-account-token')
     async revokeAccountTokens(
         accountId: string,
         options: { revokeAccess?: boolean; revokeRefresh?: boolean; revokeSession?: boolean } = {}
@@ -1441,6 +1548,7 @@ export class AuthService extends BaseService {
         this.eventBus.emit('account:updated', { accountId: account.id, provider: account.provider });
     }
 
+    @ipc('auth:get-token-analytics')
     async getTokenAnalytics(provider?: string): Promise<TokenAnalytics> {
         const accounts = provider
             ? await this.databaseService.getLinkedAccounts(this.normalizeProvider(provider))
@@ -1461,6 +1569,7 @@ export class AuthService extends BaseService {
     /**
      * Exports linked account credentials as an encrypted payload.
      */
+    @ipc('auth:export-credentials')
     async exportCredentials(
         options: CredentialExportOptions
     ): Promise<{ payload: string; checksum: string; expiresAt: number }> {
@@ -1507,6 +1616,7 @@ export class AuthService extends BaseService {
     /**
      * Imports linked account credentials from an encrypted export payload.
      */
+    @ipc('auth:import-credentials')
     async importCredentials(payloadText: string, password: string): Promise<CredentialImportResult> {
         this.validateExportPassword(password);
         const bundle = this.parseCredentialExportPackage(payloadText);
@@ -1944,5 +2054,62 @@ export class AuthService extends BaseService {
         };
 
         return mappings[p] ?? p;
+    }
+
+    private async fetchGitHubIdentity(token: string): Promise<{
+        email?: string,
+        displayName?: string,
+        avatarUrl?: string
+    }> {
+        let email: string | undefined;
+        let displayName: string | undefined;
+        let avatarUrl: string | undefined;
+
+        try {
+            if (!this.proxyService) {
+                throw new Error('ProxyService not available in AuthService');
+            }
+            const profile = await this.proxyService.fetchGitHubProfile(token);
+            displayName = profile.displayName;
+            avatarUrl = profile.avatarUrl;
+            email = profile.email;
+
+            if (!email) {
+                email = await this.proxyService.fetchGitHubEmails(token);
+            }
+
+            if (!email && profile.login) {
+                email = `${profile.login}@github.com`;
+            }
+        } catch (err) {
+            appLogger.error('AuthService', 'Failed to fetch GitHub identity', err as Error);
+        }
+
+        return { email, displayName, avatarUrl };
+    }
+
+    private resolveGitHubTokenExpiry(response: UnsafeValue): number | undefined {
+        if (typeof response.expires_at === 'number') {
+            return response.expires_at;
+        }
+        if (typeof response.expires_in === 'number') {
+            return Date.now() + (response.expires_in * 1000);
+        }
+        return undefined;
+    }
+
+    private buildGitHubTokenMetadata(response: UnsafeValue): JsonObject | undefined {
+        const metadata: JsonObject = {};
+        if (response.copilot_plan) {
+            metadata.copilot_plan = response.copilot_plan;
+            metadata.plan = response.copilot_plan;
+        }
+        if (response.token_type) {
+            metadata.token_type = response.token_type;
+        }
+        if (typeof response.refresh_token_expires_in === 'number') {
+            metadata.refresh_token_expires_in = response.refresh_token_expires_in;
+        }
+        return Object.keys(metadata).length > 0 ? metadata : undefined;
     }
 }

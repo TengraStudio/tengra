@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconTerminal, IconPlayerPlay } from '@tabler/icons-react';
+import { IconPlayerPlay,IconTerminal } from '@tabler/icons-react';
 import React from 'react';
 
 import { Input } from '@/components/ui/input';

@@ -8,9 +8,18 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service';
 import { AdvancedMemoryService, PersonalitySettings, SummarizationResult } from '@main/services/llm/advanced-memory.service';
+import { IpcMainInvokeEvent } from 'electron';
+import { z } from 'zod';
+
+const MemoryIdSchema = z.string().min(1).max(128);
+const MemoryContentSchema = z.string().min(1).max(10 * 1024);
+const MemoryQuerySchema = z.string().min(1).max(1024);
+const MemoryFieldSchema = z.string().min(1).max(256);
+const MemoryTagsSchema = z.array(z.string().min(1).max(64)).max(20).default([]);
 
 export class MemoryService {
     constructor(
@@ -19,6 +28,57 @@ export class MemoryService {
 
     async initialize(): Promise<void> {
         return this.advancedMemory.initialize();
+    }
+
+    @ipc('memory:getAll')
+    async getAllMemoriesIpc(_event: IpcMainInvokeEvent) {
+        return await this.getAllMemories();
+    }
+
+    @ipc('memory:deleteFact')
+    async deleteFactIpc(_event: IpcMainInvokeEvent, factId: string) {
+        const validatedId = MemoryIdSchema.parse(factId);
+        const success = await this.forgetFact(validatedId);
+        return { success };
+    }
+
+    @ipc('memory:deleteEntity')
+    async deleteEntityIpc(_event: IpcMainInvokeEvent, entityId: string) {
+        const validatedId = MemoryIdSchema.parse(entityId);
+        const success = await this.removeEntityFact(validatedId);
+        return { success };
+    }
+
+    @ipc('memory:addFact')
+    async addFactIpc(_event: IpcMainInvokeEvent, content: string, tags: string[]) {
+        const validatedContent = MemoryContentSchema.parse(content);
+        const validatedTags = MemoryTagsSchema.parse(tags);
+        const fragment = await this.rememberFact(validatedContent, 'manual', 'user-added', validatedTags);
+        return { success: true, id: fragment.id };
+    }
+
+    @ipc('memory:setEntityFact')
+    async setEntityFactIpc(
+        _event: IpcMainInvokeEvent,
+        entityType: string,
+        entityName: string,
+        key: string,
+        value: string
+    ) {
+        const vType = MemoryFieldSchema.parse(entityType);
+        const vName = MemoryFieldSchema.parse(entityName);
+        const vKey = MemoryFieldSchema.parse(key);
+        const vValue = MemoryContentSchema.parse(value);
+        const knowledge = await this.setEntityFact(vType, vName, vKey, vValue);
+        return { success: true, id: knowledge.id };
+    }
+
+    @ipc('memory:search')
+    async searchIpc(_event: IpcMainInvokeEvent, query: string) {
+        const validatedQuery = MemoryQuerySchema.parse(query);
+        const facts = await this.recallRelevantFacts(validatedQuery, 10);
+        const episodes = await this.recallEpisodes(validatedQuery, 5);
+        return { facts, episodes };
     }
 
     // Semantic Memory

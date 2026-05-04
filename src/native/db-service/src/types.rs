@@ -683,6 +683,30 @@ pub struct Stats {
 }
 
 // ============================================================================
+// Memory Types (for Advanced Memory)
+// ============================================================================
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Memory {
+    pub id: String,
+    pub content: String,
+    pub embedding: Option<Vec<f32>>,
+    pub metadata: Value,
+    pub importance: f32,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StoreMemoryRequest {
+    pub id: String,
+    pub content: String,
+    pub embedding: Option<Vec<f32>>,
+    pub metadata: Value,
+    pub importance: f32,
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

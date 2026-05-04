@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 
 export interface AuditLogFilters {
@@ -30,6 +31,15 @@ export class AuditLogService extends BaseService {
 
     constructor() {
         super('AuditLogService');
+    }
+
+    @ipc('audit:get-logs')
+    async getLogsIpc(_event: unknown, filters: AuditLogFilters = {}): Promise<AuditLogEntry[]> {
+        try {
+            return await this.getLogs(filters);
+        } catch (error) {
+            return [];
+        }
     }
 
     async getLogs(filters: AuditLogFilters = {}): Promise<AuditLogEntry[]> {

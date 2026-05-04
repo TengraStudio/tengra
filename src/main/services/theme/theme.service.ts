@@ -16,11 +16,14 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { themeStore } from '@main/utils/theme-store.util';
 import { BUILTIN_THEME_IDS, BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import type { ThemeManifest } from '@shared/types/theme';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { BrowserWindow, shell } from 'electron';
 
 // Performance budgets for theme operations (in milliseconds)
 const THEME_OPERATION_BUDGETS = {
@@ -122,11 +125,86 @@ export class ThemeService extends BaseService {
     private themesDir: string;
     private installedThemes: Map<string, ThemeManifest> = new Map();
 
-    constructor(private dataService: DataService) {
+    constructor(
+        private dataService: DataService,
+        private mainWindowProvider?: () => BrowserWindow | null
+    ) {
         super('ThemeService');
         // Runtime themes directory: userData/runtime/themes
         const userDataPath = path.dirname(this.dataService.getPath('db'));
         this.themesDir = path.join(userDataPath, 'runtime', 'themes');
+    }
+
+    private validateThemeId(value: RuntimeValue): string | null {
+        if (typeof value !== 'string') {
+            return null;
+        }
+        const trimmed = value.trim();
+        if (!trimmed || trimmed.length > 64) {
+            return null;
+        }
+        if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+            return null;
+        }
+        return trimmed;
+    }
+
+    private notifyRenderer(): void {
+        const mainWindow = this.mainWindowProvider?.();
+        if (mainWindow) {
+            mainWindow.webContents.send('theme:runtime:updated');
+        }
+    }
+
+    @ipc('theme:runtime:getAll')
+    async getAllThemesIpc() {
+        return this.getAllThemes();
+    }
+
+    @ipc('theme:runtime:install')
+    async installThemeIpc(_event: unknown, manifest: ThemeManifest) {
+        const result = await this.installTheme(manifest);
+        this.notifyRenderer();
+        return result;
+    }
+
+    @ipc('theme:runtime:uninstall')
+    async uninstallThemeIpc(_event: unknown, themeIdRaw: RuntimeValue) {
+        const themeId = this.validateThemeId(themeIdRaw);
+        if (!themeId) {
+            throw new Error('error.theme.invalid_id');
+        }
+
+        const result = await this.uninstallTheme(themeId);
+        this.notifyRenderer();
+        return result;
+    }
+
+    @ipc('theme:runtime:openDirectory')
+    async openDirectoryIpc() {
+        const themesDir = this.getThemesDirectory();
+        await shell.openPath(themesDir);
+        return true;
+    }
+
+    @ipc('theme:getCurrent')
+    async getCurrentThemeIpc() {
+        return themeStore.getCurrentTheme();
+    }
+
+    @ipc('theme:set')
+    async setThemeIpc(_event: unknown, themeIdRaw: RuntimeValue) {
+        const themeId = this.validateThemeId(themeIdRaw);
+        if (!themeId) {
+            return null;
+        }
+
+        return themeStore.setTheme(themeId);
+    }
+
+    @ipc('theme:getAll')
+    async getAllStoreThemesIpc() {
+        return themeStore.getAllThemes();
     }
 
     override async initialize(): Promise<void> {

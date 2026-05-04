@@ -11,20 +11,40 @@
 import { spawn } from 'child_process';
 import * as os from 'os';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { ISystemService } from '@main/types/services';
 import { t } from '@main/utils/i18n.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import {
+    IPC_CONTRACT_MIN_MAIN_VERSION,
+    IPC_CONTRACT_MIN_RENDERER_VERSION,
+    IPC_CONTRACT_VERSION,
+    IpcContractVersionInfo
+} from '@shared/constants/ipc-contract';
 import { ServiceResponse, SystemInfo } from '@shared/types';
+import { RuntimeValue } from '@shared/types/common';
 import type { MarketplaceGpuDevice } from '@shared/types/marketplace';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app } from 'electron';
+
+const CONTRACT_INFO: IpcContractVersionInfo = {
+    version: IPC_CONTRACT_VERSION,
+    minRendererVersion: IPC_CONTRACT_MIN_RENDERER_VERSION,
+    minMainVersion: IPC_CONTRACT_MIN_MAIN_VERSION,
+};
 
 export class SystemService extends BaseService implements ISystemService {
     private systemInfo?: SystemInfo;
 
     constructor() {
         super('SystemService');
+    }
+
+    @ipc('ipc:contract:get')
+    getContractIpc(): RuntimeValue {
+        return serializeToIpc(CONTRACT_INFO);
     }
 
     /**
@@ -504,5 +524,21 @@ Add-Type -TypeDefinition $code
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
         }
+    }
+
+    @ipc('clipboard:read-text')
+    async readClipboardText(): Promise<string> {
+        const { clipboard } = await import('electron');
+        return clipboard.readText();
+    }
+
+    @ipc('clipboard:write-text')
+    async writeClipboardText(text: string): Promise<boolean> {
+        if (typeof text === 'string') {
+            const { clipboard } = await import('electron');
+            clipboard.writeText(text);
+            return true;
+        }
+        return false;
     }
 }

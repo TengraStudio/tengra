@@ -164,7 +164,7 @@ describe('TerminalService', () => {
     });
 
     it('creates, writes, resizes, and kills terminal sessions', async () => {
-        const service = new TerminalService();
+        const service = new TerminalService({} as any, {} as any, {} as any, () => null);
 
         const created = await service.createSession({
             id: 'session-1',
@@ -182,7 +182,7 @@ describe('TerminalService', () => {
     });
 
     it('persists snapshots and restores sessions after restart', async () => {
-        const serviceBeforeRestart = new TerminalService();
+        const serviceBeforeRestart = new TerminalService({} as any, {} as any, {} as any, () => null);
         await serviceBeforeRestart.createSession({
             id: 'persist-1',
             cwd: USER_DATA_PATH,
@@ -196,7 +196,7 @@ describe('TerminalService', () => {
         const snapshotPath = normalizePath(path.join(USER_DATA_PATH, 'data/terminal/sessions.json'));
         expect(fileStore.get(snapshotPath)).toContain('persist-1');
 
-        const serviceAfterRestart = new TerminalService();
+        const serviceAfterRestart = new TerminalService({} as any, {} as any, {} as any, () => null);
         await serviceAfterRestart.initialize();
 
         const snapshots = serviceAfterRestart.getSessionSnapshots();
@@ -213,7 +213,7 @@ describe('TerminalService', () => {
     });
 
     it('uses userData path from electron app for persistence files', () => {
-        new TerminalService();
+        new TerminalService({} as any, {} as any, {} as any, () => null);
         expect(app.getPath).toHaveBeenCalledWith('userData');
     });
 });

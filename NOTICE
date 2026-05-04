@@ -1,0 +1,31 @@
+# Tengra Notices
+
+This software includes third-party open-source software components. Below is a non-exhaustive list of the major components and their licenses.
+
+## Node.js Dependencies
+- **Electron**: MIT
+- **React**: MIT
+- **Monaco Editor**: MIT
+- **Vite**: MIT
+- **Tailwind CSS**: MIT
+- **Radix UI**: MIT
+- **Lucide / Tabler Icons**: ISC / MIT
+- **Xterm.js**: MIT
+- **Axios**: MIT
+- **Zod**: MIT
+
+## Rust Dependencies
+- **Tokio**: MIT
+- **Axum**: MIT
+- **Reqwest**: MIT / Apache-2.0
+- **Serde**: MIT / Apache-2.0
+- **SQLx**: MIT / Apache-2.0
+- **Tracing**: MIT
+- **Anyhow / Thiserror**: MIT / Apache-2.0
+
+## Licenses
+Full text of most of these licenses can be found in the `node_modules` directory of a installed version or on the respective project homepages.
+
+---
+Tengra itself is licensed under the GNU General Public License v3.0.
+Copyright (c) 2026 TengraStudio.

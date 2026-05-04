@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import CopilotIcon from '@assets/copilot.svg?url';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -17,7 +18,6 @@ import { CopilotQuota } from '@/types/quota';
 import { AccountWrapper } from '../../types';
 
 import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
-import CopilotIcon from '@assets/copilot.svg?url';
 
 interface CopilotCardProps {
     copilotQuota: AccountWrapper<CopilotQuota> | null

@@ -66,9 +66,10 @@ export const sessionConversationToolDefinitionSchema = z.object({
     function: z.object({
         name: z.string(),
         description: z.string().optional(),
-        parameters: z.record(z.string(), z.unknown()).optional(),
+        parameters: z.record(z.string(), z.any()).optional(),
     }),
 });
+
 
 export const sessionConversationCompleteRequestSchema = z.object({
     messages: z.array(sessionConversationMessageSchema),
@@ -76,6 +77,7 @@ export const sessionConversationCompleteRequestSchema = z.object({
     tools: z.array(sessionConversationToolDefinitionSchema).optional(),
     provider: z.string(),
     workspaceId: z.string().optional(),
+    chatId: z.string().optional(),
     systemMode: z.enum(['thinking', 'agent', 'fast', 'architect']).optional(),
 });
 

@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -16,9 +17,11 @@ import { PowerManagerService } from '@main/services/system/power-manager.service
 import { SettingsService } from '@main/services/system/settings.service';
 import { IPerformanceService } from '@main/types/services';
 import { getCacheAnalyticsSnapshot } from '@main/utils/cache.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { ProcessMetric, ServiceResponse, StartupMetrics } from '@shared/types';
+import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { app } from 'electron';
+import { app, IpcMainInvokeEvent } from 'electron';
 
 export class PerformanceService extends BaseService implements IPerformanceService {
     private static readonly MEMORY_MONITOR_JOB_ID = 'performance:memory-monitor';
@@ -168,6 +171,11 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         };
     }
 
+    @ipc('performance:get-memory-stats')
+    getMemoryStatsIpc(_event: IpcMainInvokeEvent): ServiceResponse<{ main: NodeJS.MemoryUsage; timestamp: number }> {
+        return this.getMemoryStats();
+    }
+
     getMemoryStats(): ServiceResponse<{ main: NodeJS.MemoryUsage; timestamp: number }> {
         const stats = {
             main: process.memoryUsage(),
@@ -181,6 +189,11 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         }
 
         return { success: true, data: stats };
+    }
+
+    @ipc('performance:detect-leak')
+    async detectLeakIpc(_event: IpcMainInvokeEvent): Promise<ServiceResponse<{ isPossibleLeak: boolean; trend: number[] }>> {
+        return await this.detectLeak();
     }
 
     async detectLeak(): Promise<ServiceResponse<{ isPossibleLeak: boolean; trend: number[] }>> {
@@ -214,6 +227,11 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         };
     }
 
+    @ipc('performance:trigger-gc')
+    triggerGCIpc(_event: IpcMainInvokeEvent): ServiceResponse<{ success: boolean }> {
+        return this.triggerGC();
+    }
+
     triggerGC(): ServiceResponse<{ success: boolean }> {
         try {
             if (global.gc) {
@@ -228,6 +246,11 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         } catch (e) {
             return { success: false, error: getErrorMessage(e) };
         }
+    }
+
+    @ipc('performance:get-process-metrics')
+    async getProcessMetricsIpc(_event: IpcMainInvokeEvent): Promise<ServiceResponse<ProcessMetric[]>> {
+        return await this.getProcessMetrics();
     }
 
     async getProcessMetrics(): Promise<ServiceResponse<ProcessMetric[]>> {
@@ -246,8 +269,29 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         }
     }
 
+    @ipc('performance:get-startup-metrics')
+    getStartupMetricsIpc(_event: IpcMainInvokeEvent): ServiceResponse<StartupMetrics> {
+        return this.getStartupMetrics();
+    }
+
     getStartupMetrics(): ServiceResponse<StartupMetrics> {
         return { success: true, data: { ...this.startupMetrics } };
+    }
+
+    @ipc('metrics:get')
+    async getAppMetricsIpc(): Promise<RuntimeValue> {
+        const info = {
+            cpu: process.getCPUUsage(),
+            memory: await process.getProcessMemoryInfo(),
+            uptime: process.uptime()
+        };
+        return serializeToIpc(info);
+    }
+
+    @ipc('metrics:record')
+    async recordMetricIpc(_name: RuntimeValue, _value: RuntimeValue): Promise<RuntimeValue> {
+        // Implementation placeholder for analytics
+        return serializeToIpc({ success: true });
     }
 
     recordStartupEvent(event: keyof StartupMetrics): void {
@@ -259,6 +303,21 @@ export class PerformanceService extends BaseService implements IPerformanceServi
             this.startupMetrics.totalTime = this.startupMetrics.loadTime - this.startupMetrics.startTime;
             appLogger.info(this.name, `Startup complete in ${this.startupMetrics.totalTime}ms`);
         }
+    }
+
+    @ipc('performance:get-dashboard')
+    getDashboardIpc(_event: IpcMainInvokeEvent): ServiceResponse<{
+        memory: {
+            latestRss: number;
+            latestHeapUsed: number;
+            sampleCount: number;
+        };
+        processes: ProcessMetric[];
+        startup: StartupMetrics;
+        alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }>;
+        caches?: Record<string, RuntimeValue>;
+    }> {
+        return this.getDashboard();
     }
 
     getDashboard(): ServiceResponse<{

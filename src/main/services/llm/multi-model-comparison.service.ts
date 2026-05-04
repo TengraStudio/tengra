@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
@@ -15,10 +16,15 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { LLMTask, MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { ChatMessage, OpenAIResponse } from '@main/types/llm.types';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { ServiceResponse } from '@shared/types';
 import { Message as SharedMessage } from '@shared/types/chat';
+import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
+
+type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 export interface ComparisonRequest {
     chatId: string;
@@ -41,6 +47,13 @@ export interface ComparisonHistoryEntry {
 const COMPARISON_MEMORY_TIMEOUT_MS = 450;
 const COMPARISON_MEMORY_MATCH_LIMIT = 3;
 
+const compareRequestSchema = z.object({
+    chatId: z.string().trim().min(1).max(128),
+    messages: z.array(z.any()).min(1),
+    models: z.array(z.any()).min(1).max(10),
+    options: z.record(z.string(), z.any()).optional()
+});
+
 export class MultiModelComparisonService extends BaseService {
     private readonly memoryContext: MemoryContextService;
     private readonly history: ComparisonHistoryEntry[] = [];
@@ -52,6 +65,37 @@ export class MultiModelComparisonService extends BaseService {
     ) {
         super('MultiModelComparisonService');
         this.memoryContext = new MemoryContextService(advancedMemoryService);
+    }
+
+    @ipc('llm:compare-models')
+    async compareModelsIpc(requestRaw: RuntimeValue): Promise<RuntimeValue> {
+        if (!requestRaw || typeof requestRaw !== 'object') {
+            throw new Error('Invalid comparison request');
+        }
+
+        const parsed = compareRequestSchema.parse(requestRaw);
+
+        // Filter and validate model entries
+        const validModels = parsed.models.filter((m: UnsafeValue) => {
+            return m && 
+                   typeof m === 'object' && 
+                   typeof m.provider === 'string' && 
+                   m.provider.length > 0 &&
+                   typeof m.model === 'string' && 
+                   m.model.length > 0;
+        });
+
+        if (validModels.length === 0) {
+            throw new Error('Invalid comparison request');
+        }
+
+        const finalRequest: ComparisonRequest = {
+            chatId: parsed.chatId,
+            messages: parsed.messages,
+            models: validModels
+        };
+
+        return serializeToIpc(await this.compareModels(finalRequest));
     }
 
     async compareModels(request: ComparisonRequest): Promise<ServiceResponse<ComparisonResponse>> {
@@ -129,8 +173,18 @@ export class MultiModelComparisonService extends BaseService {
         // Stateless service; nothing to dispose currently.
     }
 
+    @ipc('llm:get-comparison-history')
+    async getHistoryIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(await this.getHistory());
+    }
+
     async getHistory(): Promise<ComparisonHistoryEntry[]> {
         return [...this.history];
+    }
+
+    @ipc('llm:clear-comparison-history')
+    async clearHistoryIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(await this.clearHistory());
     }
 
     async clearHistory(): Promise<{ success: boolean }> {

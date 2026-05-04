@@ -14,6 +14,7 @@ import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { LoggingService } from '@main/services/system/logging.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -68,6 +69,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
     let service: ProxyProcessManager;
     let settingsService: SettingsService;
     let authService: AuthService;
+    let loggingService: LoggingService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -104,13 +106,18 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             getRuntimeMasterKeyHex: vi.fn().mockReturnValue('mock-key'),
         } as never as AuthService;
 
+        loggingService = {
+            pushLogEntry: vi.fn(),
+        } as never as LoggingService;
+        
         service = new ProxyProcessManager(
             settingsService,
             authService,
             {
                 exec: vi.fn(),
                 getLinkedAccounts: vi.fn().mockResolvedValue([]),
-            } as never as DatabaseService
+            } as never as DatabaseService,
+            loggingService
         );
     });
 

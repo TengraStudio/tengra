@@ -19,6 +19,8 @@ import { AccountWrapper } from '../../types';
 
 import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 interface ClaudeCardProps {
     claudeQuota: AccountWrapper<ClaudeQuota> | null
     locale?: string
@@ -50,7 +52,7 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                 {[
                                     acc.fiveHour && { id: '5h', name: t('frontend.statistics.fiveHourStatus'), ...acc.fiveHour },
                                     acc.sevenDay && { id: '7d', name: t('frontend.statistics.sevenDayStatus'), ...acc.sevenDay }
-                                ].filter(Boolean).map((q: any) => {
+                                ].filter(Boolean).map((q: UnsafeValue) => {
                                     const percentage = 100 - (q.utilization || 0);
                                     return (
                                         <div key={q.id} className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/5 transition-colors">

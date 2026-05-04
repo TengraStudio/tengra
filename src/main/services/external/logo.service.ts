@@ -11,17 +11,19 @@
 import { promises as fs } from 'fs';
 import { extname, join } from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { LocalImageService } from '@main/services/llm/local-image.service';
+import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { DialogService } from '@main/services/system/dialog.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, RuntimeValue } from '@shared/types/common';
 import { ModelQuotaItem } from '@shared/types/quota';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -45,6 +47,8 @@ interface LogoServiceDependencies {
     authService: AuthService;
     proxyService: ProxyService;
     modelRegistryService: ModelRegistryService;
+    dialogService: DialogService;
+    allowedFileRoots: Set<string>;
     advancedMemoryService?: AdvancedMemoryService;
 }
 
@@ -60,6 +64,8 @@ export class LogoService {
     private readonly authService: AuthService;
     private readonly proxyService: ProxyService;
     private readonly modelRegistryService: ModelRegistryService;
+    private readonly dialogService: DialogService;
+    private readonly allowedFileRoots: Set<string>;
     private readonly memoryContext: MemoryContextService;
 
     constructor(deps: LogoServiceDependencies) {
@@ -70,6 +76,8 @@ export class LogoService {
         this.authService = deps.authService;
         this.proxyService = deps.proxyService;
         this.modelRegistryService = deps.modelRegistryService;
+        this.dialogService = deps.dialogService;
+        this.allowedFileRoots = deps.allowedFileRoots;
         this.memoryContext = new MemoryContextService(deps.advancedMemoryService);
     }
 
@@ -88,9 +96,13 @@ export class LogoService {
         return styles[style] || style;
     }
 
+    @ipc('workspace:analyzeIdentity')
     async analyzeWorkspaceIdentity(
         workspacePath: string
     ): Promise<{ suggestedPrompts: string[]; colors: string[] }> {
+        if (workspacePath && this.allowedFileRoots) {
+            this.allowedFileRoots.add(join(workspacePath));
+        }
         let pkgData: JsonObject = {};
         try {
             const pkgPath = join(workspacePath, 'package.json');
@@ -181,7 +193,7 @@ ${context}`;
         }
         const valid = input
             .filter((value): value is string => typeof value === 'string')
-            .map(value => value.trim())
+            .map(value => (value as string).trim())
             .filter(value => /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(value));
         return Array.from(new Set(valid)).slice(0, 5);
     }
@@ -704,6 +716,7 @@ ${context}`;
         return score;
     }
 
+    @ipc('workspace:improveLogoPrompt')
     async improveLogoPrompt(prompt: string): Promise<string> {
         const improvementPrompt = `You are a creative brand designer. Expand and improve the following logo description into a detailed, high-quality prompt for an AI image generator (like Flux or DALL-E). 
         Focus on artistic style, lighting, composition, and professional aesthetics. Keep it to 2-3 sentences.
@@ -743,6 +756,7 @@ ${context}`;
         }
     }
 
+    @ipc('workspace:generateLogo')
     async generateLogo(
         workspacePath: string,
         prompt: string,
@@ -826,7 +840,7 @@ ${context}`;
 
         if (response.images && response.images.length > 0) {
             return await this.saveGeneratedImage(
-                    workspacePath,
+                workspacePath,
                 response.images[0],
                 enhancedPrompt,
                 `${resolved.provider}/${resolved.model}`
@@ -949,7 +963,11 @@ ${context}`;
         return normalized;
     }
 
-    async applyLogo(_workspacePath: string, tempLogoDataUri: string): Promise<string> {
+    @ipc('workspace:applyLogo')
+    async applyLogo(workspacePath: string, tempLogoDataUri: string): Promise<string> {
+        if (workspacePath && this.allowedFileRoots) {
+            this.allowedFileRoots.add(join(workspacePath));
+        }
         // If it's already a data URI, we just return it to be saved in the DB
         if (tempLogoDataUri.startsWith('data:')) {
             return tempLogoDataUri;
@@ -966,6 +984,33 @@ ${context}`;
             appLogger.error('logo.service', '[LogoService] Convert logo to Base64 failed', error as Error);
             throw error;
         }
+    }
+
+    @ipc('workspace:uploadLogo')
+    async uploadLogo(workspacePath: string): Promise<string | null> {
+        if (workspacePath && this.allowedFileRoots) {
+            this.allowedFileRoots.add(join(workspacePath));
+        }
+        const result = await this.dialogService.showOpenDialog({
+            properties: ['openFile'],
+            filters: [{ name: 'Images', extensions: ['jpg', 'png', 'gif', 'webp', 'svg'] }],
+        });
+
+        if (!result.success || !('filePaths' in result) || result.filePaths.length === 0) {
+            return null;
+        }
+
+        const selectedFilePath = result.path;
+        if (!selectedFilePath || !this.isAllowedWorkspaceLogoPath(selectedFilePath)) {
+            throw new Error('Invalid logo file type selected');
+        }
+
+        return await this.applyLogo(workspacePath, selectedFilePath);
+    }
+
+    private isAllowedWorkspaceLogoPath(filePath: string): boolean {
+        const ext = extname(filePath).toLowerCase();
+        return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext);
     }
 
     private async buildMemoryAwarePrompt(prompt: string): Promise<string> {

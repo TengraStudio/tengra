@@ -8,10 +8,12 @@
  * (at your option) any later version.
  */
 
+import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -30,8 +32,15 @@ import {
 } from '@main/services/terminal/backends/terminal-backend.interface';
 import { WarpBackend } from '@main/services/terminal/backends/warp.backend';
 import { WindowsTerminalBackend } from '@main/services/terminal/backends/windows-terminal.backend';
+import { 
+    terminalCreateOptionsSchema, 
+    terminalGetDiscoverySnapshotArgsSchema 
+} from '@shared/schemas/terminal.schema';
+import { RuntimeValue } from '@shared/types/common';
 import { BatchedEventEmitter } from '@shared/utils/batched-event-emitter.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { BrowserWindow } from 'electron';
+import { z } from 'zod';
 
 const MAX_COMMAND_HISTORY_SIZE = 2000;
 const MAX_COMMAND_LENGTH = 2000;
@@ -185,8 +194,6 @@ interface ImportTerminalSessionResult {
 export class TerminalService extends BaseService {
     private sessions: Map<string, TerminalSession> = new Map();
     private backends: Map<string, ITerminalBackend> = new Map();
-    private readonly eventBus: EventBusService;
-    private readonly settingsService: SettingsService;
     private persistencePath: string;
     private historyPath: string;
     private markersPath: string;
@@ -210,21 +217,20 @@ export class TerminalService extends BaseService {
     private powerStateUnsubscribe: (() => void) | null = null;
 
     constructor(
-        eventBus?: EventBusService, 
-        settingsService?: SettingsService,
-        authService?: AuthService
+        private readonly eventBus: EventBusService,
+        private readonly settingsService: SettingsService,
+        private readonly authService: AuthService,
+        private readonly getMainWindow: () => BrowserWindow | null
     ) {
         super('TerminalService');
-        this.eventBus = eventBus ?? new EventBusService();
-        this.settingsService = settingsService ?? new SettingsService();
         
         // Register default backends
-        if (authService) {
-            const proxyTerminalBackend = new ProxyTerminalBackend(authService);
+        if (this.authService) {
+            const proxyTerminalBackend = new ProxyTerminalBackend(this.authService);
             this.backends.set(proxyTerminalBackend.id, proxyTerminalBackend);
             
             // Docker backend also needs auth for proxy communication
-            const dockerBackend = new DockerBackend(authService);
+            const dockerBackend = new DockerBackend(this.authService);
             this.backends.set(dockerBackend.id, dockerBackend);
         }
 
@@ -366,28 +372,37 @@ export class TerminalService extends BaseService {
     /**
      * Check if terminal service is available
      */
+    @ipc({
+        channel: 'terminal:isAvailable',
+        defaultValue: false
+    })
     async isAvailable(): Promise<boolean> {
         const snapshot = await this.getDiscoverySnapshot();
         return snapshot.terminalAvailable;
     }
 
-    /**
-     * Get available shells for the current platform
-     */
+    @ipc({
+        channel: 'terminal:getShells',
+        defaultValue: []
+    })
     async getAvailableShells(): Promise<TerminalShellInfo[]> {
         const snapshot = await this.getDiscoverySnapshot();
         return snapshot.shells;
     }
 
-    /**
-     * Get information about all registered terminal backends.
-     * @returns A list of terminal backends with their availability status.
-     */
+    @ipc({
+        channel: 'terminal:getBackends',
+        defaultValue: []
+    })
     async getAvailableBackends(): Promise<TerminalBackendInfo[]> {
         const snapshot = await this.getDiscoverySnapshot();
         return snapshot.backends;
     }
 
+    @ipc({
+        channel: 'terminal:getDiscoverySnapshot',
+        argsSchema: terminalGetDiscoverySnapshotArgsSchema
+    })
     async getDiscoverySnapshot(options?: { refresh?: boolean }): Promise<TerminalDiscoverySnapshot> {
         const refresh = options?.refresh === true;
         if (
@@ -432,6 +447,10 @@ export class TerminalService extends BaseService {
         );
     }
 
+    @ipc({
+        channel: 'terminal:getRuntimeHealth',
+        defaultValue: { terminalAvailable: false, totalBackends: 0, availableBackends: 0, backends: [] }
+    })
     async getRuntimeHealth(): Promise<{
         terminalAvailable: boolean;
         totalBackends: number;
@@ -527,6 +546,35 @@ export class TerminalService extends BaseService {
             : process.platform === 'win32'
               ? 'powershell.exe'
               : '/bin/bash';
+    }
+
+    /**
+     * Create a new terminal session (IPC wrapper)
+     */
+    @ipc({
+        channel: 'terminal:create',
+        argsSchema: z.tuple([terminalCreateOptionsSchema]),
+        defaultValue: null
+    })
+    async ipcCreateSession(options: {
+        id?: string;
+        shell?: string;
+        cwd?: string;
+        cols?: number;
+        rows?: number;
+        backendId?: string;
+        workspaceId?: string;
+        title?: string;
+        metadata?: Record<string, RuntimeValue>;
+    }): Promise<string | null> {
+        const sessionId = options.id ?? `term-${randomUUID()}`;
+        const success = await this.createSession({
+            ...options,
+            id: sessionId,
+            onData: (data) => this.broadcastEvent('terminal:data', { sessionId, data }),
+            onExit: (code) => this.broadcastEvent('terminal:exit', { sessionId, code })
+        });
+        return success ? sessionId : null;
     }
 
     /**
@@ -736,6 +784,11 @@ export class TerminalService extends BaseService {
     /**
      * Write data to terminal session
      */
+    @ipc({
+        channel: 'terminal:write',
+        argsSchema: z.tuple([z.string(), z.string()]),
+        defaultValue: false
+    })
     write(sessionId: string, data: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session?.process) {
@@ -760,6 +813,11 @@ export class TerminalService extends BaseService {
     /**
      * Resize terminal session
      */
+    @ipc({
+        channel: 'terminal:resize',
+        argsSchema: z.tuple([z.string(), z.number().int(), z.number().int()]),
+        defaultValue: false
+    })
     resize(sessionId: string, cols: number, rows: number): boolean {
         const session = this.sessions.get(sessionId);
         if (!session?.process) {
@@ -780,6 +838,11 @@ export class TerminalService extends BaseService {
     /**
      * Kill terminal session
      */
+    @ipc({
+        channel: 'terminal:kill',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: false
+    })
     kill(sessionId: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session?.process) {
@@ -813,6 +876,10 @@ export class TerminalService extends BaseService {
     /**
      * Get all active session IDs
      */
+    @ipc({
+        channel: 'terminal:getSessions',
+        defaultValue: []
+    })
     getActiveSessions(): string[] {
         return Array.from(this.sessions.keys());
     }
@@ -827,10 +894,20 @@ export class TerminalService extends BaseService {
     /**
      * Get session buffer content
      */
+    @ipc({
+        channel: 'terminal:readBuffer',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: ''
+    })
     async getSessionBuffer(sessionId: string): Promise<string> {
         return this.readLogTail(sessionId);
     }
 
+    @ipc({
+        channel: 'terminal:getCommandHistory',
+        argsSchema: z.tuple([z.string().optional(), z.number().int().optional()]),
+        defaultValue: []
+    })
     getCommandHistory(query = '', limit = 100): TerminalCommandHistoryEntry[] {
         const normalizedQuery = query.trim().toLowerCase();
         const cappedLimit = Math.max(1, Math.min(limit, 500));
@@ -843,10 +920,19 @@ export class TerminalService extends BaseService {
         return list.slice(0, cappedLimit);
     }
 
+    @ipc({
+        channel: 'terminal:getSnapshotSessions',
+        defaultValue: []
+    })
     getSessionSnapshots(): TerminalSnapshot[] {
         return Array.from(this.snapshots.values()).sort((a, b) => b.timestamp - a.timestamp);
     }
 
+    @ipc({
+        channel: 'terminal:exportSession',
+        argsSchema: z.tuple([z.string(), z.object({ includeScrollback: z.boolean().optional() }).optional()]),
+        defaultValue: null
+    })
     async exportSession(
         sessionId: string,
         options: { includeScrollback?: boolean } = {}
@@ -869,6 +955,11 @@ export class TerminalService extends BaseService {
         return JSON.stringify(payload, null, 2);
     }
 
+    @ipc({
+        channel: 'terminal:importSession',
+        argsSchema: z.tuple([z.string(), z.object({ overwrite: z.boolean().optional(), sessionId: z.string().optional() }).optional()]),
+        defaultValue: { success: false, error: 'Import failed' }
+    })
     async importSession(
         payloadRaw: string,
         options: { overwrite?: boolean; sessionId?: string } = {}
@@ -906,6 +997,11 @@ export class TerminalService extends BaseService {
         return { success: true, sessionId: targetSessionId };
     }
 
+    @ipc({
+        channel: 'terminal:createSessionShareCode',
+        argsSchema: z.tuple([z.string(), z.object({ includeScrollback: z.boolean().optional() }).optional()]),
+        defaultValue: null
+    })
     async generateSessionShareCode(
         sessionId: string,
         options: { includeScrollback?: boolean } = {}
@@ -917,6 +1013,11 @@ export class TerminalService extends BaseService {
         return `termshare:${Buffer.from(payload, 'utf-8').toString('base64url')}`;
     }
 
+    @ipc({
+        channel: 'terminal:importSessionShareCode',
+        argsSchema: z.tuple([z.string(), z.object({ overwrite: z.boolean().optional(), sessionId: z.string().optional() }).optional()]),
+        defaultValue: { success: false, error: 'Import failed' }
+    })
     async importSessionShareCode(
         shareCode: string,
         options: { overwrite?: boolean; sessionId?: string } = {}
@@ -938,10 +1039,19 @@ export class TerminalService extends BaseService {
         }
     }
 
+    @ipc({
+        channel: 'terminal:getSessionTemplates',
+        defaultValue: []
+    })
     getSessionTemplates(): TerminalSessionTemplate[] {
         return Array.from(this.templates.values()).sort((a, b) => b.updatedAt - a.updatedAt);
     }
 
+    @ipc({
+        channel: 'terminal:saveSessionTemplate',
+        argsSchema: z.tuple([z.string(), z.object({ templateId: z.string().optional(), name: z.string().optional() }).optional()]),
+        defaultValue: null
+    })
     async createSessionTemplate(
         sessionId: string,
         options: { templateId?: string; name?: string } = {}
@@ -979,6 +1089,11 @@ export class TerminalService extends BaseService {
         return template;
     }
 
+    @ipc({
+        channel: 'terminal:deleteSessionTemplate',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: false
+    })
     async deleteSessionTemplate(templateId: string): Promise<boolean> {
         const existed = this.templates.delete(templateId);
         if (!existed) {
@@ -986,6 +1101,22 @@ export class TerminalService extends BaseService {
         }
         await this.saveSessionTemplates();
         return true;
+    }
+
+    @ipc({
+        channel: 'terminal:createFromSessionTemplate',
+        argsSchema: z.tuple([z.string(), z.object({ sessionId: z.string().optional(), title: z.string().optional() }).optional()]),
+        defaultValue: null
+    })
+    async ipcCreateFromSessionTemplate(
+        templateId: string,
+        options?: { sessionId?: string; title?: string }
+    ): Promise<string | null> {
+        return this.restoreSessionTemplate(templateId, {
+            ...options,
+            onData: (data) => this.broadcastEvent('terminal:data', { sessionId: options?.sessionId ?? templateId, data }),
+            onExit: (code) => this.broadcastEvent('terminal:exit', { sessionId: options?.sessionId ?? templateId, code })
+        });
     }
 
     async restoreSessionTemplate(
@@ -1023,6 +1154,21 @@ export class TerminalService extends BaseService {
         return created ? sessionId : null;
     }
 
+    @ipc({
+        channel: 'terminal:restoreSnapshotSession',
+        argsSchema: z.tuple([z.object({ snapshotId: z.string() })]),
+        defaultValue: false
+    })
+    async ipcRestoreSnapshotSession(options: {
+        snapshotId: string;
+    }): Promise<boolean> {
+        return this.restoreSnapshotSession({
+            ...options,
+            onData: (data) => this.broadcastEvent('terminal:data', { sessionId: options.snapshotId, data }),
+            onExit: (code) => this.broadcastEvent('terminal:exit', { sessionId: options.snapshotId, code })
+        });
+    }
+
     async restoreSnapshotSession(options: {
         snapshotId: string;
         onData: (data: string) => void;
@@ -1048,6 +1194,23 @@ export class TerminalService extends BaseService {
         });
     }
 
+    /**
+     * Restore all persisted terminal sessions (IPC wrapper)
+     */
+    @ipc({
+        channel: 'terminal:restoreAllSnapshots',
+        defaultValue: { restored: 0, failed: 0, sessionIds: [] }
+    })
+    async ipcRestoreAllSnapshots(): Promise<{ restored: number; failed: number; sessionIds: string[] }> {
+        return this.restoreAllSnapshots({
+            onData: (sessionId, data) => this.broadcastEvent('terminal:data', { sessionId, data }),
+            onExit: (sessionId, code) => this.broadcastEvent('terminal:exit', { sessionId, code })
+        });
+    }
+
+    /**
+     * Restore all persisted terminal sessions
+     */
     async restoreAllSnapshots(options: {
         onData: (sessionId: string, data: string) => void;
         onExit: (sessionId: string, code: number) => void;
@@ -1085,6 +1248,7 @@ export class TerminalService extends BaseService {
         return { restored, failed, sessionIds };
     }
 
+    @ipc('terminal:setSessionTitle')
     async setSessionTitle(sessionId: string, title: string): Promise<boolean> {
         const normalized = title.trim().slice(0, 120);
         if (!normalized) {
@@ -1110,6 +1274,7 @@ export class TerminalService extends BaseService {
         return true;
     }
 
+    @ipc('terminal:searchScrollback')
     async searchSessionScrollback(
         sessionId: string,
         query: string,
@@ -1173,6 +1338,7 @@ export class TerminalService extends BaseService {
         return results;
     }
 
+    @ipc('terminal:getSearchSuggestions')
     getSearchSuggestions(query = '', limit = 10): string[] {
         const normalizedQuery = query.trim().toLowerCase();
         const max = Math.max(1, Math.min(limit, 100));
@@ -1201,6 +1367,7 @@ export class TerminalService extends BaseService {
         return suggestions.slice(0, max);
     }
 
+    @ipc('terminal:exportSearchResults')
     async exportSearchResults(
         sessionId: string,
         query: string,
@@ -1239,6 +1406,7 @@ export class TerminalService extends BaseService {
         }
     }
 
+    @ipc('terminal:exportScrollback')
     async exportSessionScrollback(
         sessionId: string,
         exportPath?: string
@@ -1263,6 +1431,7 @@ export class TerminalService extends BaseService {
         }
     }
 
+    @ipc('terminal:getSessionAnalytics')
     async getSessionAnalytics(sessionId: string): Promise<TerminalSessionAnalytics> {
         const content = await this.readLogAll(sessionId);
         const bytes = Buffer.byteLength(content, 'utf-8');
@@ -1278,10 +1447,12 @@ export class TerminalService extends BaseService {
         return { sessionId, bytes, lineCount, commandCount, updatedAt };
     }
 
+    @ipc('terminal:getSearchAnalytics')
     getSearchAnalytics(): TerminalSearchAnalytics {
         return { ...this.searchAnalytics };
     }
 
+    @ipc('terminal:addScrollbackMarker')
     async addScrollbackMarker(
         sessionId: string,
         label: string,
@@ -1306,6 +1477,7 @@ export class TerminalService extends BaseService {
         return marker;
     }
 
+    @ipc('terminal:listScrollbackMarkers')
     listScrollbackMarkers(sessionId?: string): TerminalScrollbackMarker[] {
         const list = sessionId
             ? this.scrollbackMarkers.filter(item => item.sessionId === sessionId)
@@ -1313,6 +1485,7 @@ export class TerminalService extends BaseService {
         return [...list].sort((a, b) => b.createdAt - a.createdAt);
     }
 
+    @ipc('terminal:deleteScrollbackMarker')
     async deleteScrollbackMarker(markerId: string): Promise<boolean> {
         const prevLength = this.scrollbackMarkers.length;
         this.scrollbackMarkers = this.scrollbackMarkers.filter(item => item.id !== markerId);
@@ -1323,6 +1496,7 @@ export class TerminalService extends BaseService {
         return true;
     }
 
+    @ipc('terminal:filterScrollback')
     async filterSessionScrollback(
         sessionId: string,
         options: TerminalScrollbackFilterOptions = {}
@@ -1351,6 +1525,7 @@ export class TerminalService extends BaseService {
             .map(item => item.line);
     }
 
+    @ipc('terminal:clearCommandHistory')
     async clearCommandHistory(): Promise<boolean> {
         this.commandHistory = [];
         this.lineBuffers.clear();
@@ -1842,6 +2017,13 @@ export class TerminalService extends BaseService {
         } catch (error) {
             appLogger.error('TerminalService', 'Failed to save terminal search state', error as Error);
             return false;
+        }
+    }
+
+    private broadcastEvent(channel: string, payload: RuntimeValue): void {
+        const window = this.getMainWindow();
+        if (window && !window.isDestroyed()) {
+            window.webContents.send(channel, payload);
         }
     }
 

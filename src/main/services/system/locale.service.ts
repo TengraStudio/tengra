@@ -10,13 +10,14 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { app } from 'electron';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { localePackSchema } from '@shared/schemas/locale.schema';
 import { LocalePack, LocalePackManifest } from '@shared/types/locale';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { app } from 'electron';
 
 const LOCALE_FILE_SUFFIX = '.locale.json';
 
@@ -98,6 +99,11 @@ export class LocaleService extends BaseService {
             coverage: locale.coverage,
             schemaVersion: locale.schemaVersion,
         }));
+    }
+
+    @ipc('locale:runtime:getAll')
+    async getAllLocalePacksIpc() {
+        return this.getAllLocalePacks();
     }
 
     async getAllLocalePacks(): Promise<LocalePack[]> {

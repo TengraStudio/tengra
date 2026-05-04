@@ -19,7 +19,6 @@ import React from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,6 +35,7 @@ import {
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import type { AppSettings, CodexUsage, GroupedModels, QuotaResponse } from '@/types';
 
 import { WorkspaceAgentCouncilSetup } from './WorkspaceAgentCouncilSetup';

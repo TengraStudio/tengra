@@ -8,10 +8,12 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { CommandService } from '@main/services/system/command.service';
 import { SSHService } from '@main/services/workspace/ssh.service';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { z } from 'zod';
 
 export class DockerService {
     constructor(
@@ -37,6 +39,11 @@ export class DockerService {
         }
     }
 
+    @ipc({
+        channel: 'terminal:getDockerContainers',
+        argsSchema: z.tuple([z.boolean().optional(), z.string().optional()]),
+        defaultValue: { success: false, error: 'Failed to list containers' }
+    })
     async listContainers(all: boolean = false, connectionId?: string) {
         const cmd = `docker ps ${all ? '-a' : ''} --format "{{json .}}"`;
         const result = await this.execute(cmd, connectionId);
@@ -54,16 +61,31 @@ export class DockerService {
         }
     }
 
+    @ipc({
+        channel: 'docker:manageContainer',
+        argsSchema: z.tuple([z.string(), z.enum(['start', 'stop', 'restart', 'remove']), z.string().optional()]),
+        defaultValue: { success: false, error: 'Failed to manage container' }
+    })
     async manageContainer(id: string, action: 'start' | 'stop' | 'restart' | 'remove', connectionId?: string) {
         const cmd = `docker ${action === 'remove' ? 'rm -f' : action} ${id}`;
         return await this.execute(cmd, connectionId);
     }
 
+    @ipc({
+        channel: 'docker:getLogs',
+        argsSchema: z.tuple([z.string(), z.number().optional(), z.string().optional()]),
+        defaultValue: { success: false, error: 'Failed to get logs' }
+    })
     async getLogs(id: string, tail: number = 50, connectionId?: string) {
         const cmd = `docker logs --tail ${tail} ${id}`;
         return await this.execute(cmd, connectionId);
     }
 
+    @ipc({
+        channel: 'docker:getStats',
+        argsSchema: z.tuple([z.string().optional()]),
+        defaultValue: { success: false, error: 'Failed to get stats' }
+    })
     async getStats(connectionId?: string) {
         const cmd = `docker stats --no-stream --format "{{json .}}"`;
         const result = await this.execute(cmd, connectionId);
@@ -80,6 +102,11 @@ export class DockerService {
         }
     }
 
+    @ipc({
+        channel: 'docker:listImages',
+        argsSchema: z.tuple([z.string().optional()]),
+        defaultValue: { success: false, error: 'Failed to list images' }
+    })
     async listImages(connectionId?: string) {
         const cmd = `docker images --format "{{json .}}"`;
         const result = await this.execute(cmd, connectionId);

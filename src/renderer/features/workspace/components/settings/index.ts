@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-export * from './PipelinesSection';
 export * from './CouncilSection';
 export * from './GeneralSection';
 export * from './GitSection';
 export * from './IntelligenceSection';
+export * from './PipelinesSection';
 export * from './SettingsHeader';
 export * from './SettingsSidebar';
 export * from './types';

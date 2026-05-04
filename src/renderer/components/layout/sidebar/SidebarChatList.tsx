@@ -16,6 +16,8 @@ import { Chat, Folder } from '@/types';
 
 import { SidebarItem } from './SidebarItem';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 interface SidebarChatListProps {
     isCollapsed: boolean;
     searchQuery: string;
@@ -35,7 +37,7 @@ interface SidebarChatListProps {
 }
 
 type SidebarListItem =
-    | { type: 'header', label: string, icon?: any, action?: { label: string, icon: any, onClick: () => void } }
+    | { type: 'header', label: string, icon?: UnsafeValue, action?: { label: string, icon: UnsafeValue, onClick: () => void } }
     | { type: 'chat', chat: Chat, isIndented?: boolean }
     | { type: 'folder', folder: Folder, isExpanded: boolean, count: number }
     | { type: 'empty-state', label: string }

@@ -115,7 +115,8 @@ function collectPresence(
     }
 
     const entries: WorkspacePresenceEntry[] = [];
-    awareness.getStates().forEach(state => {
+        awareness.getStates().forEach((state: unknown) => {
+
         if (!state || typeof state !== 'object' || Array.isArray(state)) {
             return;
         }

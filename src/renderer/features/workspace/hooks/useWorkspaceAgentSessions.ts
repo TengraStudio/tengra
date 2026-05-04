@@ -29,10 +29,10 @@ import { EMPTY_COUNCIL_STATE } from '../types/workspace-agent-session-local';
 import {
     applyCouncilSetupToSession,
     buildNormalizedQuotaSnapshot,
+    dedupeChatMessages,
     DEFAULT_COUNCIL_SETUP,
     DEFAULT_MODES,
     DEFAULT_PERMISSION_POLICY,
-    dedupeChatMessages,
     toCouncilRuntime,
     toSessionModes,
 } from '../utils/workspace-agent-session-utils';

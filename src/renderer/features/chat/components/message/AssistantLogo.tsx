@@ -8,8 +8,6 @@
  * (at your option) any later version.
  */
 
-import { memo } from 'react';
-
 import LogoAntigravity from '@assets/antigravity.svg?url';
 import LogoOpenAI from '@assets/chatgpt.svg?url';
 import LogoClaude from '@assets/claude.svg?url';
@@ -19,6 +17,8 @@ import LogoHuggingFace from '@assets/huggingface.svg?url';
 import LogoNvidia from '@assets/nvidia.svg?url';
 import LogoOllama from '@assets/ollama.svg?url';
 import LogoOpenCode from '@assets/opencode.svg?url';
+import { memo } from 'react';
+
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { cn } from '@/lib/utils';
 

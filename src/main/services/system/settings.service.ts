@@ -9,14 +9,62 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
+import { t } from '@main/utils/i18n.util';
 import { RuntimeValue } from '@shared/types/common';
 import { AntigravityCreditUsageMode, AppSettings } from '@shared/types/settings';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { getErrorMessage, TengraError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { app, BrowserWindow, IpcMainInvokeEvent } from 'electron';
+import { z } from 'zod';
+
+// --- Constants ---
+const MAX_SECRET_LENGTH = 4096;
+const SETTINGS_PERFORMANCE_BUDGET_MS = {
+    GET: 40,
+    SAVE: 150
+} as const;
+const MAX_SETTINGS_TELEMETRY_EVENTS = 120;
+
+const SETTINGS_ERROR_CODE = {
+    VALIDATION: 'SETTINGS_VALIDATION_ERROR',
+    SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
+} as const;
+
+const SETTINGS_MESSAGE_KEY = {
+    SAVE_FAILED: 'errors.settings.saveFailed',
+    VALIDATION_FAILED: 'errors.settings.validationFailed',
+} as const;
+
+// --- Schemas ---
+const AntigravityCreditUsageModeSchema = z.enum(['auto', 'ask-every-time']);
+const SettingsCredentialSchema = z.object({
+    apiKey: z.string().max(MAX_SECRET_LENGTH).optional(),
+    token: z.string().max(MAX_SECRET_LENGTH).optional(),
+    key: z.string().max(MAX_SECRET_LENGTH).optional()
+}).passthrough();
+
+const AppSettingsSchema = z.object({
+    general: z.object({
+        language: z.string().min(2).max(32).regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/).optional(),
+        telemetryEnabled: z.boolean().optional()
+    }).passthrough().optional(),
+    openai: SettingsCredentialSchema.optional(),
+    anthropic: SettingsCredentialSchema.optional(),
+    groq: SettingsCredentialSchema.optional(),
+    nvidia: SettingsCredentialSchema.optional(),
+    github: SettingsCredentialSchema.optional(),
+    copilot: SettingsCredentialSchema.optional(),
+    antigravity: SettingsCredentialSchema.extend({
+        connected: z.boolean().optional(),
+        creditUsageModeByAccount: z.record(z.string(), AntigravityCreditUsageModeSchema).optional()
+    }).optional(),
+}).passthrough();
 
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
@@ -264,6 +312,8 @@ interface WhatsappRemoteChannelSettings extends RemoteChannelSettings {
     botId?: string;
 }
 
+import { OllamaHealthService } from '@main/services/llm/local/ollama-health.service';
+
 export class SettingsService extends BaseService {
     private static readonly ERROR_CODES = {
         SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
@@ -292,14 +342,22 @@ export class SettingsService extends BaseService {
         loadAttempts: 0,
         saveAttempts: 0,
         saveFailures: 0,
+        validationFailures: 0,
+        retryCount: 0,
+        budgetExceededCount: 0,
         lastLoadAt: 0,
         lastSaveAt: 0,
+        lastGetDurationMs: 0,
+        lastSaveDurationMs: 0,
+        lastErrorCode: '' as string | null,
         recentEvents: [] as Array<{ name: string; timestamp: number }>,
+        events: [] as Array<{ event: string; timestamp: number; durationMs?: number; code?: string }>
     };
 
     constructor(
         dataService?: DataService,
-        private authService?: AuthService
+        private authService?: AuthService,
+        private ollamaHealthService?: OllamaHealthService
     ) {
         super('SettingsService');
 
@@ -310,6 +368,112 @@ export class SettingsService extends BaseService {
         }
 
         this.settings = { ...DEFAULT_SETTINGS };
+    }
+
+    private trackSettingsEvent(event: string, details: { durationMs?: number; code?: string } = {}) {
+        this.telemetry.events = [...this.telemetry.events, {
+            event,
+            timestamp: Date.now(),
+            durationMs: details.durationMs,
+            code: details.code
+        }].slice(-MAX_SETTINGS_TELEMETRY_EVENTS);
+    }
+
+    private trackSettingsBudget(durationMs: number, budgetMs: number) {
+        if (durationMs > budgetMs) {
+            this.telemetry.budgetExceededCount += 1;
+        }
+    }
+
+    private getSettingsHealthSummary() {
+        const operationCount = this.telemetry.loadAttempts + this.telemetry.saveAttempts;
+        const errorCount = this.telemetry.saveFailures + this.telemetry.validationFailures;
+        const errorRate = operationCount === 0 ? 0 : errorCount / operationCount;
+        const status = errorRate > 0.05 || this.telemetry.budgetExceededCount > 0 ? 'degraded' : 'healthy';
+
+        return {
+            status,
+            uiState: status === 'healthy' ? 'ready' : 'failure',
+            metrics: {
+                ...this.telemetry,
+                errorRate
+            },
+            budgets: {
+                getMs: SETTINGS_PERFORMANCE_BUDGET_MS.GET,
+                saveMs: SETTINGS_PERFORMANCE_BUDGET_MS.SAVE
+            }
+        };
+    }
+
+    private syncStartupBehavior(settings: AppSettings): void {
+        if (!app.isPackaged || settings.window?.startOnStartup === undefined) {
+            return;
+        }
+
+        const shouldStartHidden = settings.window.workAtBackground ?? false;
+        const executablePath = this.resolveStartupExecutablePath();
+
+        try {
+            if (!executablePath) {
+                if (settings.window.startOnStartup === false) {
+                    app.setLoginItemSettings({ openAtLogin: false });
+                }
+                appLogger.warn(
+                    'SettingsService',
+                    'Skipping startup sync because the packaged executable is running from a portable temp extraction path'
+                );
+                return;
+            }
+
+            app.setLoginItemSettings({
+                openAtLogin: settings.window.startOnStartup,
+                openAsHidden: shouldStartHidden,
+                path: executablePath,
+                args: shouldStartHidden ? ['--hidden'] : []
+            });
+            appLogger.debug('SettingsService', `Startup behavior synced. Path: ${executablePath}, Enabled: ${settings.window.startOnStartup}`);
+        } catch (error) {
+            appLogger.error('SettingsService', 'Failed to sync startup behavior', error as Error);
+        }
+    }
+
+    private resolveStartupExecutablePath(): string | null {
+        const portableExecutablePath =
+            process.env.PORTABLE_EXECUTABLE_FILE ||
+            process.env.PORTABLE_EXECUTABLE_PATH;
+
+        if (this.pathExists(portableExecutablePath)) {
+            return portableExecutablePath;
+        }
+
+        if (process.env.PORTABLE_EXECUTABLE_DIR && this.pathExists(process.env.PORTABLE_EXECUTABLE_DIR)) {
+            const portableFileName = process.env.PORTABLE_EXECUTABLE_APP_FILENAME || path.basename(process.execPath);
+            const candidate = path.join(process.env.PORTABLE_EXECUTABLE_DIR, portableFileName);
+            if (this.pathExists(candidate)) {
+                return candidate;
+            }
+        }
+
+        if (app.isPackaged && process.platform === 'win32' && this.isInsideDirectory(process.execPath, os.tmpdir())) {
+            return null;
+        }
+
+        return process.execPath;
+    }
+
+    private pathExists(filePath: string | undefined): filePath is string {
+        return typeof filePath === 'string' && filePath.length > 0 && fs.existsSync(filePath);
+    }
+
+    private isInsideDirectory(candidatePath: string, parentDirectory: string): boolean {
+        const candidate = path.resolve(candidatePath).toLowerCase();
+        const parent = path.resolve(parentDirectory).toLowerCase();
+        const relative = path.relative(parent, candidate);
+        return relative === '' || (!!relative && !relative.startsWith('..') && !path.isAbsolute(relative));
+    }
+
+    setOllamaHealthService(service: OllamaHealthService) {
+        this.ollamaHealthService = service;
     }
 
     /**
@@ -729,6 +893,79 @@ export class SettingsService extends BaseService {
             }
         }
         return -1;
+    }
+
+    @ipc('settings:get')
+    async getSettingsIpc(_event: IpcMainInvokeEvent) {
+        const startedAt = Date.now();
+        const settings = this.getSettings();
+        const durationMs = Date.now() - startedAt;
+        this.telemetry.loadAttempts += 1; 
+        this.telemetry.lastGetDurationMs = durationMs;
+        this.trackSettingsBudget(durationMs, SETTINGS_PERFORMANCE_BUDGET_MS.GET);
+        this.trackSettingsEvent('settings.get.success', { durationMs });
+        return settings;
+    }
+
+    @ipc('settings:save')
+    async saveSettingsIpc(event: IpcMainInvokeEvent, newSettings: AppSettings) {
+        const startedAt = Date.now();
+        try {
+            AppSettingsSchema.parse(newSettings);
+            const finalSettings = await this.saveSettings(newSettings);
+            
+            const durationMs = Date.now() - startedAt;
+            this.telemetry.saveAttempts += 1;
+            this.telemetry.lastSaveDurationMs = durationMs;
+            this.trackSettingsBudget(durationMs, SETTINGS_PERFORMANCE_BUDGET_MS.SAVE);
+            this.trackSettingsEvent('settings.save.success', { durationMs });
+
+            this.syncStartupBehavior(finalSettings);
+            
+            this.updateOpenAIConnection(event);
+            void this.updateOllamaConnection(event);
+
+            return finalSettings;
+        } catch (error) {
+            const durationMs = Date.now() - startedAt;
+            const isValidation = error instanceof z.ZodError;
+            const errorCode = isValidation ? SETTINGS_ERROR_CODE.VALIDATION : SETTINGS_ERROR_CODE.SAVE_FAILED;
+            
+            if (isValidation) {
+                this.telemetry.validationFailures += 1;
+            } else {
+                this.telemetry.saveFailures += 1;
+            }
+            
+            this.telemetry.lastErrorCode = errorCode;
+            this.telemetry.lastSaveDurationMs = durationMs;
+            this.trackSettingsBudget(durationMs, SETTINGS_PERFORMANCE_BUDGET_MS.SAVE);
+            this.trackSettingsEvent(isValidation ? 'settings.save.validation-failed' : 'settings.save.failed', { durationMs, code: errorCode });
+            
+            throw new TengraError((error as Error).message, errorCode);
+        }
+    }
+
+    @ipc('settings:health')
+    async getHealthIpc(_event: IpcMainInvokeEvent) {
+        return this.getSettingsHealthSummary();
+    }
+
+    private updateOpenAIConnection(_event: IpcMainInvokeEvent) {
+        appLogger.debug('SettingsService', 'OpenAI connection update requested');
+    }
+
+    private async updateOllamaConnection(event: IpcMainInvokeEvent) {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (win && this.ollamaHealthService) {
+            try {
+                const status = await this.ollamaHealthService.checkHealth();
+                win.webContents.send('ollama:connection-status', status.online);
+            } catch (error) {
+                appLogger.error('SettingsService', `Failed to check Ollama connection: ${getErrorMessage(error as Error)}`);
+                win.webContents.send('ollama:connection-status', false);
+            }
+        }
     }
 
     /** Returns the current in-memory application settings. */

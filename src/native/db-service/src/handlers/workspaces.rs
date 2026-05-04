@@ -23,7 +23,7 @@ use crate::types::*;
 pub async fn list_workspaces(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Workspace>>> {
     match db.get_workspaces().await {
         Ok(workspaces) => Json(ApiResponse::success(workspaces)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Vec<Workspace>>::error(e.to_string())),
     }
 }
 
@@ -34,7 +34,7 @@ pub async fn get_workspace(
 ) -> Json<ApiResponse<Option<Workspace>>> {
     match db.get_workspace(&id).await {
         Ok(workspace) => Json(ApiResponse::success(workspace)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Option<Workspace>>::error(e.to_string())),
     }
 }
 
@@ -45,7 +45,7 @@ pub async fn create_workspace(
 ) -> Json<ApiResponse<Workspace>> {
     match db.create_workspace(req).await {
         Ok(workspace) => Json(ApiResponse::success(workspace)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Workspace>::error(e.to_string())),
     }
 }
 
@@ -57,7 +57,7 @@ pub async fn update_workspace(
 ) -> Json<ApiResponse<bool>> {
     match db.update_workspace(&id, req).await {
         Ok(updated) => Json(ApiResponse::success(updated)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -68,6 +68,6 @@ pub async fn delete_workspace(
 ) -> Json<ApiResponse<bool>> {
     match db.delete_workspace(&id).await {
         Ok(deleted) => Json(ApiResponse::success(deleted)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }

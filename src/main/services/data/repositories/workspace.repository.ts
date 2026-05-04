@@ -39,6 +39,39 @@ export class WorkspaceRepository extends BaseRepository {
         return row ? this.mapRowToWorkspace(row) : undefined;
     }
 
+    /** Alias for getWorkspaces */
+    async list(): Promise<Workspace[]> {
+        return this.getWorkspaces();
+    }
+
+    /** Alias for getWorkspace */
+    async get(id: string): Promise<Workspace | undefined> {
+        return this.getWorkspace(id);
+    }
+
+    /** Alias for createWorkspace */
+    async create(workspace: Workspace): Promise<Workspace> {
+        return this.createWorkspace(
+            workspace.title,
+            workspace.path,
+            workspace.description,
+            workspace.mounts ? JSON.stringify(workspace.mounts) : undefined,
+            workspace.councilConfig ? JSON.stringify(workspace.councilConfig) : undefined
+        );
+    }
+
+    /** Alias for updateWorkspace */
+    async update(id: string, updates: Partial<Workspace>): Promise<boolean> {
+        const result = await this.updateWorkspace(id, updates);
+        return !!result;
+    }
+
+    /** Alias for deleteWorkspace */
+    async delete(id: string): Promise<boolean> {
+        await this.deleteWorkspace(id);
+        return true;
+    }
+
     async hasIndexedSymbols(workspacePath: string): Promise<boolean> {
         const row = await this.adapter
             .prepare(`SELECT count(*) as count FROM code_symbols WHERE ${WORKSPACE_COMPAT_PATH_COLUMN} = ?`)

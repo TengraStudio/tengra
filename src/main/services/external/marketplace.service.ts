@@ -13,28 +13,33 @@ import path from 'path';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { PerformanceService } from '@main/services/analysis/performance.service';
 import { BaseService } from '@main/services/base.service';
 import { ExtensionService } from '@main/services/extension/extension.service';
-import { HuggingFaceService } from '@main/services/llm/huggingface.service';
-import { LlamaService } from '@main/services/llm/llama.service';
+import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
+import { LlamaService } from '@main/services/llm/local/llama.service';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import {
     ModelDownloaderService,
     ModelDownloadResult
 } from '@main/services/llm/model-downloader.service';
-import { OllamaService } from '@main/services/llm/ollama.service';
+import { CodeLanguageService } from '@main/services/system/code-language.service';
 import { LocaleService } from '@main/services/system/locale.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { SystemService } from '@main/services/system/system.service';
+import { ThemeService } from '@main/services/theme/theme.service';
 import { localePackSchema } from '@shared/schemas/locale.schema';
 import {
+    marketplaceInstallRequestSchema,
     marketplaceRegistrySchema,
     remoteModelRecordSchema,
     remoteModelSourceSchema,
 } from '@shared/schemas/marketplace.schema';
 import {
     IndexedModel,
+    InstallRequest,
     InstallResult,
     MarketplaceExtension,
     MarketplaceItem,
@@ -46,6 +51,7 @@ import {
 } from '@shared/types/marketplace';
 import { MCPServerConfig } from '@shared/types/settings';
 import axios from 'axios';
+import { BrowserWindow } from 'electron';
 import { app } from 'electron';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -72,6 +78,8 @@ interface MarketplaceExtensionPackageJson {
 
 export interface MarketplaceServiceDependencies {
     localeService?: LocaleService;
+    themeService?: ThemeService;
+    codeLanguageService?: CodeLanguageService;
     modelDownloaderService?: ModelDownloaderService;
     huggingFaceService?: HuggingFaceService;
     ollamaService?: OllamaService;
@@ -107,6 +115,8 @@ export class MarketplaceService extends BaseService {
     private registryFetchPromise: Promise<MarketplaceRegistry> | null = null;
 
     private readonly localeService?: LocaleService;
+    private readonly themeService?: ThemeService;
+    private readonly codeLanguageService?: CodeLanguageService;
     private readonly modelDownloaderService?: ModelDownloaderService;
     private readonly huggingFaceService?: HuggingFaceService;
     private readonly ollamaService?: OllamaService;
@@ -117,9 +127,14 @@ export class MarketplaceService extends BaseService {
     private readonly settingsService?: SettingsService;
     private readonly mcpPluginService?: McpPluginService;
 
-    constructor(deps: MarketplaceServiceDependencies) {
+    constructor(
+        deps: MarketplaceServiceDependencies,
+        private readonly mainWindowProvider?: () => BrowserWindow | null
+    ) {
         super('MarketplaceService');
         this.localeService = deps.localeService;
+        this.themeService = deps.themeService;
+        this.codeLanguageService = deps.codeLanguageService;
         this.modelDownloaderService = deps.modelDownloaderService;
         this.huggingFaceService = deps.huggingFaceService;
         this.ollamaService = deps.ollamaService;
@@ -129,6 +144,120 @@ export class MarketplaceService extends BaseService {
         this.extensionService = deps.extensionService;
         this.settingsService = deps.settingsService;
         this.mcpPluginService = deps.mcpPluginService;
+    }
+
+    @ipc('marketplace:fetch')
+    async fetchRegistryIpc() {
+        return await this.fetchRegistry();
+    }
+
+    @ipc('marketplace:getRuntimeProfile')
+    async getRuntimeProfileIpc() {
+        return await this.getRuntimeProfile();
+    }
+
+    @ipc('marketplace:get-update-count')
+    async getUpdateCountIpc() {
+        return await this.getUpdateCount();
+    }
+
+    @ipc('marketplace:check-live-updates')
+    async checkLiveUpdatesIpc() {
+        return await this.checkLiveExtensionUpdates();
+    }
+
+    @ipc('marketplace:fetch-readme')
+    async fetchReadmeIpc(_event: unknown, extensionId: string, repository?: string) {
+        return await this.fetchExtensionReadme(extensionId, repository);
+    }
+
+    @ipc('marketplace:install')
+    async installItemIpc(_event: unknown, request: InstallRequest) {
+        try {
+            const validatedRequest = marketplaceInstallRequestSchema.parse(request);
+            const baseInstallItem = {
+                id: validatedRequest.id,
+                name: validatedRequest.name ?? validatedRequest.id,
+                description: validatedRequest.description ?? `${validatedRequest.type} item installed from marketplace.`,
+                author: validatedRequest.author ?? 'Marketplace',
+                version: validatedRequest.version ?? 'latest',
+                itemType: validatedRequest.type,
+                downloadUrl: validatedRequest.downloadUrl,
+            } satisfies MarketplaceItem;
+
+            const itemToInstall = validatedRequest.type === 'model'
+                ? {
+                    ...baseInstallItem,
+                    provider: validatedRequest.provider ?? 'custom',
+                    source: validatedRequest.provider ?? 'custom',
+                    sourceUrl: validatedRequest.sourceUrl,
+                    category: validatedRequest.category,
+                    pipelineTag: validatedRequest.pipelineTag,
+                } satisfies MarketplaceModel
+                : baseInstallItem;
+
+            const result = await this.installItem(itemToInstall);
+
+            if (result.success) {
+                const mainWindow = this.mainWindowProvider?.();
+                if (validatedRequest.type === 'theme') {
+                    appLogger.info('MarketplaceService', 'Theme installed, triggering reload...');
+                    if (this.themeService) {
+                        await this.themeService.initialize();
+                    }
+                    if (mainWindow) {
+                        mainWindow.webContents.send('theme:runtime:updated');
+                    }
+                }
+                if (validatedRequest.type === 'language') {
+                    appLogger.info('MarketplaceService', 'Language pack installed, triggering reload...');
+                    if (this.localeService) {
+                        await this.localeService.reload();
+                    }
+                    if (mainWindow) {
+                        mainWindow.webContents.send('locale:runtime:updated');
+                    }
+                }
+                if (validatedRequest.type === 'code-language-pack') {
+                    appLogger.info('MarketplaceService', 'Code language pack installed, triggering reload...');
+                    if (this.codeLanguageService) {
+                        await this.codeLanguageService.reload();
+                    }
+                    if (mainWindow) {
+                        mainWindow.webContents.send('code-language:runtime:updated');
+                    }
+                }
+            }
+            return result;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Installation failed';
+            const [code, humanMessage] = message.includes(':')
+                ? [message.split(':', 1)[0], message.slice(message.indexOf(':') + 1).trim()]
+                : ['INSTALL_FAILED', message];
+            return {
+                success: false,
+                code,
+                message: humanMessage,
+                path: '',
+                queuedDownloads: 0,
+                downloadIds: [],
+            };
+        }
+    }
+
+    @ipc('marketplace:uninstall')
+    async uninstallItemIpc(_event: unknown, itemId: string, itemType: MarketplaceItem['itemType']) {
+        const result = await this.uninstallItem(itemId, itemType);
+        if (result.success && itemType === 'code-language-pack') {
+            if (this.codeLanguageService) {
+                await this.codeLanguageService.reload();
+            }
+            const mainWindow = this.mainWindowProvider?.();
+            if (mainWindow) {
+                mainWindow.webContents.send('code-language:runtime:updated');
+            }
+        }
+        return result;
     }
 
     async initialize(): Promise<void> {

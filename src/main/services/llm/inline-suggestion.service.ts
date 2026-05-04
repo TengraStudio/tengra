@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
@@ -174,6 +175,7 @@ ${suffixSection}`;
         }
     }
 
+    @ipc('workspace:getInlineSuggestion')
     async getInlineSuggestion(
         request: InlineSuggestionRequest
     ): Promise<InlineSuggestionResponse> {
@@ -248,6 +250,7 @@ ${suffixSection}`;
         }
     }
 
+    @ipc('workspace:getCompletion')
     async getCompletion(text: string): Promise<string> {
         const lines = text.split(/\r?\n/u);
         const lastLine = lines.at(-1) ?? '';
@@ -262,6 +265,7 @@ ${suffixSection}`;
         return response.suggestion ?? '';
     }
 
+    @ipc('workspace:trackInlineSuggestionTelemetry')
     async trackTelemetry(event: InlineSuggestionTelemetry): Promise<{ success: boolean }> {
         this.recordTelemetry(event);
         return { success: true };

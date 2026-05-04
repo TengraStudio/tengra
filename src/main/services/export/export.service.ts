@@ -10,9 +10,15 @@
 
 import * as fs from 'fs/promises';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { RuntimeValue } from '@shared/types/common';
 import { BrowserWindow } from 'electron';
+
+const MAX_CONTENT_SIZE = 50 * 1024 * 1024;
+const MAX_PATH_LENGTH = 1024;
 
 export interface ExportOptions {
     format: 'markdown' | 'pdf'
@@ -25,6 +31,36 @@ export class ExportService extends BaseService {
 
     constructor() {
         super('ExportService');
+    }
+
+    private validateExportInput(content: RuntimeValue, filePath: RuntimeValue): { content: string; filePath: string } {
+        if (typeof content !== 'string' || typeof filePath !== 'string') {
+            throw new Error('Invalid export parameters: content and filePath must be strings');
+        }
+
+        if (content.length > MAX_CONTENT_SIZE) {
+            throw new Error('Export content exceeds maximum allowed size (50MB)');
+        }
+
+        if (!filePath.trim() || filePath.length > MAX_PATH_LENGTH) {
+            throw new Error('Invalid or too long file path');
+        }
+
+        return { content, filePath: filePath.trim() };
+    }
+
+    @ipc('export:markdown')
+    async exportToMarkdownIpc(contentRaw: RuntimeValue, filePathRaw: RuntimeValue): Promise<RuntimeValue> {
+        const validated = this.validateExportInput(contentRaw, filePathRaw);
+        const result = await this.exportToMarkdown(validated.content, validated.filePath);
+        return serializeToIpc(result);
+    }
+
+    @ipc('export:pdf')
+    async exportToPDFIpc(htmlContentRaw: RuntimeValue, filePathRaw: RuntimeValue): Promise<RuntimeValue> {
+        const validated = this.validateExportInput(htmlContentRaw, filePathRaw);
+        const result = await this.exportToPDF(validated.content, validated.filePath);
+        return serializeToIpc(result);
     }
 
     async initialize(): Promise<void> {

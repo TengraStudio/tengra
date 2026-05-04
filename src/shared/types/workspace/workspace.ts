@@ -1,0 +1,318 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { Message } from '../ai/chat';
+import { JsonObject, JsonValue } from '../common';
+
+export type WorkspaceDashboardTab =
+    | 'overview'
+    | 'terminal'
+    | 'files'
+    | 'explorer'
+    | 'tasks'
+    | 'search'
+    | 'git'
+    | 'env'
+    | 'environment'
+    | 'settings'
+    | 'chat'
+    | 'editor';
+
+export interface WorkspaceFilesPageMeta {
+    offset: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+}
+
+export type WorkspaceMountType = 'local' | 'ssh';
+
+export interface WorkspaceSshConfig {
+    host: string;
+    port?: number;
+    username: string;
+    authType?: 'password' | 'key';
+    password?: string;
+    privateKey?: string;
+    passphrase?: string;
+}
+
+export interface WorkspaceMount {
+    id: string;
+    name: string;
+    type: WorkspaceMountType;
+    rootPath: string;
+    ssh?: WorkspaceSshConfig;
+}
+
+export interface WorkspaceEntry {
+    name: string;
+    path: string;
+    isDirectory: boolean;
+    mountId: string;
+    isGitIgnored?: boolean;
+    size?: number;
+    lastModified?: Date;
+    children?: WorkspaceEntry[];
+    initialLine?: number;
+}
+
+export interface EditorTab {
+    id: string;
+    mountId: string;
+    path: string;
+    name: string;
+    content: string;
+    savedContent: string;
+    isDirty: boolean;
+    isPinned?: boolean;
+    isLoaded?: boolean;
+    type: 'code' | 'image' | 'diff';
+    initialLine?: number;
+    readOnly?: boolean;
+    originalContent?: string;
+    diffId?: string;
+}
+
+export interface WorkspaceDefinitionLocation {
+    file: string;
+    line: number;
+    column: number;
+}
+
+export interface ActivityEntry {
+    id: string;
+    timestamp: Date;
+    title: string;
+    detail?: string;
+    type?: 'info' | 'error' | 'success' | 'plan' | 'action';
+    agentId?: string;
+    message: string;
+}
+
+export interface MountForm {
+    type: 'local' | 'ssh';
+    name: string;
+    rootPath: string;
+    host: string;
+    port: string;
+    username: string;
+    authType: 'password' | 'key';
+    password: string;
+    privateKey: string;
+    passphrase: string;
+    saveProfile?: boolean;
+}
+
+export interface Workspace {
+    id: string;
+    title: string;
+    description: string;
+    path: string;
+    mounts: WorkspaceMount[];
+    createdAt: number;
+    updatedAt: number;
+    chatIds: string[];
+    councilConfig: {
+        enabled: boolean;
+        members: string[]; // Model IDs
+        consensusThreshold: number; // 0-1 (e.g. 0.7 for 70% agreement)
+    };
+    status: 'active' | 'archived' | 'draft';
+    logo?: string;
+    rules?: string;
+    metadata?: JsonObject;
+    type?: string;
+    // Build Configuration
+    buildConfig?: {
+        buildCommand?: string;      // e.g. "npm run build"
+        testCommand?: string;       // e.g. "npm test"
+        lintCommand?: string;       // e.g. "npm run lint"
+        outputDir?: string;         // e.g. "dist"
+        envFile?: string;           // e.g. ".env.local"
+    };
+    // Development Server
+    devServer?: {
+        command?: string;           // e.g. "npm run dev"
+        port?: number;              // e.g. 3000
+        autoStart?: boolean;        // Start on workspace open
+    };
+    // AI Configuration
+    intelligence?: {
+        defaultModelId?: string;    // Default model for this workspace
+        discussModelId?: string;    // Model for council discussions
+        systemPrompt?: string;      // Workspace-specific system prompt override
+        temperature?: number;       // AI temperature setting
+    };
+    // Source Control
+    git?: {
+        commitPrefix?: string;      // e.g. "[FEAT]"
+        branchPrefix?: string;      // e.g. "feature/"
+        autoFetch?: boolean;        // Automatically fetch from remote
+    };
+    // Advanced Options
+    advancedOptions?: {
+        fileWatchEnabled?: boolean;     // Enable file change detection
+        fileWatchIgnore?: string[];     // Patterns to ignore (e.g. ["node_modules", ".git"])
+        indexingEnabled?: boolean;      // Enable code indexing for AI
+        indexingInterval?: number;      // Re-index interval in minutes
+        indexingMaxFileSize?: number;   // Max file size to index in bytes
+        indexingExclude?: string[];     // Specific patterns to exclude from indexing
+        maxConcurrency?: number;        // Max parallel indexing tasks
+        autoSave?: boolean;             // Auto-save files
+        layoutProfile?: {
+            sidebarCollapsed?: boolean;
+            terminalVisible?: boolean;
+            terminalHeight?: number;
+            panel?: 'chat' | 'terminal' | 'files' | 'explorer' | 'search' | 'git' | 'settings' | 'none';
+        };
+    };
+    // Editor Settings
+    editor?: {
+        fontSize?: number;
+        fontFamily?: string;
+        fontWeight?: string;
+        letterSpacing?: number;
+        lineHeight?: number;
+        minimap?: boolean;
+        minimapSide?: 'left' | 'right';
+        minimapRenderCharacters?: boolean;
+        wordWrap?: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
+        lineNumbers?: 'on' | 'off' | 'relative' | 'interval';
+        tabSize?: number;
+        cursorBlinking?: 'blink' | 'smooth' | 'phase' | 'expand' | 'solid';
+        cursorStyle?: 'block' | 'line' | 'underline' | 'line-thin' | 'block-outline' | 'underline-thin';
+        cursorWidth?: number;
+        fontLigatures?: boolean;
+        formatOnPaste?: boolean;
+        formatOnType?: boolean;
+        smoothScrolling?: boolean;
+        folding?: boolean;
+        showFoldingControls?: 'always' | 'mouseover';
+        codeLens?: boolean;
+        inlayHints?: boolean;
+        renderWhitespace?: 'none' | 'boundary' | 'selection' | 'trailing' | 'all';
+        renderLineHighlight?: 'none' | 'gutter' | 'line' | 'all';
+        renderControlCharacters?: boolean;
+        roundedSelection?: boolean;
+        scrollBeyondLastLine?: boolean;
+        cursorSmoothCaretAnimation?: 'on' | 'off' | 'explicit';
+        wordBasedSuggestions?: 'off' | 'currentDocument' | 'matchingDocuments' | 'allDocuments';
+        acceptSuggestionOnEnter?: 'on' | 'off' | 'smart';
+        suggestFontSize?: number;
+        suggestLineHeight?: number;
+        stickyScroll?: boolean;
+        bracketPairColorization?: boolean;
+        guidesIndentation?: boolean;
+        mouseWheelZoom?: boolean;
+        multiCursorModifier?: 'ctrlCmd' | 'alt';
+        occurrenceHighlight?: boolean;
+        selectionHighlight?: boolean;
+        renderFinalNewline?: 'on' | 'off' | 'dimmed';
+        additionalOptions?: Record<string, JsonValue>;
+    };
+}
+
+export interface WorkspaceCouncilMessage extends Message {
+    votes?: Record<string, 'agree' | 'disagree' | 'neutral'>;
+    consensusReached?: boolean;
+}
+
+export interface WorkspaceStats {
+    fileCount: number;
+    totalSize: number;
+    loc: number; // approximate
+    lastModified: number;
+    largestDirectories?: Array<{
+        path: string;
+        size: number;
+        fileCount: number;
+    }>;
+    topFilesByLoc?: Array<{
+        path: string;
+        loc: number;
+    }>;
+}
+
+export interface CodeAnnotation {
+    file: string;
+    line: number;
+    message: string;
+    type: 'todo' | 'fixme' | 'warn' | 'error';
+}
+
+export interface WorkspaceIssue {
+    file: string;
+    line: number;
+    column?: number;
+    message: string;
+    severity: 'error' | 'warning' | 'info' | 'hint';
+    source: string;
+    code?: string | number;
+}
+
+export type WorkspaceDiagnosticsSourceStatus = 'ok' | 'failed' | 'skipped';
+
+export interface WorkspaceDiagnosticsSourceResult {
+    source: string;
+    status: WorkspaceDiagnosticsSourceStatus;
+    issueCount?: number;
+    message?: string;
+}
+
+export interface WorkspaceDiagnosticsStatus {
+    partial: boolean;
+    generatedAt: number;
+    sources: WorkspaceDiagnosticsSourceResult[];
+}
+
+export interface WorkspaceLspServerSupport {
+    languageId: string;
+    serverId: string;
+    status: 'running' | 'available' | 'unavailable';
+    bundled: boolean;
+    fileCount: number;
+}
+
+export interface WorkspaceAnalysis {
+    type: 'node' | 'python' | 'rust' | 'go' | 'cpp' | 'java' | 'php' | 'csharp' | 'unknown' | string;
+    frameworks: string[];
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+    stats: WorkspaceStats;
+    languages: Record<string, number>;
+    files: string[];
+    filesPage?: WorkspaceFilesPageMeta;
+    monorepo?: {
+        type: 'npm' | 'yarn' | 'pnpm' | 'lerna' | 'turbo' | 'rush' | 'unknown';
+        packages: string[];
+    };
+    todos: string[];
+    issues?: WorkspaceIssue[];
+    annotations?: CodeAnnotation[];
+    lspDiagnostics?: WorkspaceIssue[];
+    lspServers?: WorkspaceLspServerSupport[];
+    diagnosticsStatus?: WorkspaceDiagnosticsStatus;
+}
+
+export interface TodoItem {
+    id: string;
+    text: string;
+    completed: boolean;
+    line: number;
+    filePath: string;
+    relativePath: string;
+}
+
+export interface TodoFile {
+    path: string;
+    relativePath: string;
+    items: TodoItem[];
+}

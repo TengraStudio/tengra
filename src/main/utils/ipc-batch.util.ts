@@ -18,7 +18,11 @@
  */
 
 
+import { ipc } from '@main/core/ipc-decorators';
+import { BaseService } from '@main/services/base.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { IpcValue } from '@shared/types/common';
+import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
@@ -167,18 +171,18 @@ async function executeBatchRequest(
 }
 
 /**
- * Register the main batching IPC handlers.
- * Includes parallel, sequential, and introspection handlers.
+ * Service for handling IPC batching operations
  */
-export function registerBatchIpc(): void {
+export class IpcBatchService extends BaseService {
+    constructor() {
+        super('IpcBatchService');
+    }
+
     /**
      * Handle batch invoke requests in parallel.
-     * Channels: batch:invoke
      */
-    ipcMain.handle('batch:invoke', async (
-        event: IpcMainInvokeEvent,
-        requests: BatchRequest[]
-    ): Promise<BatchResponse> => {
+    @ipc({ channel: 'batch:invoke', withEvent: true })
+    async invokeParallel(event: IpcMainInvokeEvent, requests: BatchRequest[]): Promise<BatchResponse> {
         const startTime = Date.now();
 
         if (!Array.isArray(requests) || requests.length === 0) {
@@ -205,7 +209,6 @@ export function registerBatchIpc(): void {
         const endTime = Date.now();
         const totalMs = endTime - startTime;
 
-
         return {
             results,
             timing: {
@@ -214,16 +217,16 @@ export function registerBatchIpc(): void {
                 totalMs
             }
         };
-    });
+    }
 
     /**
      * Handle batch invoke requests sequentially.
-     * Channels: batch:invokeSequential
      */
-    ipcMain.handle('batch:invokeSequential', async (
+    @ipc({ channel: 'batch:invokeSequential', withEvent: true })
+    async invokeSequential(
         event: IpcMainInvokeEvent,
         requests: BatchRequest[]
-    ): Promise<BatchResponse> => {
+    ): Promise<BatchResponse> {
         const startTime = Date.now();
 
         if (!Array.isArray(requests) || requests.length === 0) {
@@ -257,14 +260,34 @@ export function registerBatchIpc(): void {
                 totalMs
             }
         };
-    });
+    }
 
     /**
      * Get list of all registered batchable channels.
-     * Channels: batch:getChannels
      */
-    ipcMain.handle('batch:getChannels', async (): Promise<string[]> => {
+    @ipc('batch:getChannels')
+    async getChannels(): Promise<string[]> {
         return getBatchableChannels();
+    }
+}
+
+/**
+ * Register the main batching IPC handlers.
+ * @deprecated Use IpcBatchService and registerServiceIpc instead.
+ */
+export function registerBatchIpc(): void {
+    const service = new IpcBatchService();
+    
+    ipcMain.handle('batch:invoke', async (event, requests) => {
+        return await service.invokeParallel(event, requests);
+    });
+
+    ipcMain.handle('batch:invokeSequential', async (event, requests) => {
+        return await service.invokeSequential(event, requests);
+    });
+
+    ipcMain.handle('batch:getChannels', async () => {
+        return await service.getChannels();
     });
 }
 

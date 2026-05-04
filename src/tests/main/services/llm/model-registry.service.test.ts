@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { HuggingFaceService } from '@main/services/llm/huggingface.service';
-import { LocalImageService } from '@main/services/llm/local-image.service';
+import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
+import { LocalImageService } from '@main/services/llm/local/local-image.service';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { OllamaService } from '@main/services/llm/ollama.service';
 import { ProxyService, ProxyTelemetryEvent } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
@@ -381,7 +381,7 @@ describe('ModelRegistryService', () => {
                 Object.assign(service, { lastUpdate: Date.now() });
 
                 vi.mocked(mockAuthService.getActiveToken!).mockImplementation(async (provider) => {
-                    if (provider === 'nvidia') {return 'nv-token';}
+                    if (provider === 'nvidia') { return 'nv-token'; }
                     return undefined;
                 });
                 vi.mocked(mockProxyService.getRawModelCatalog!)

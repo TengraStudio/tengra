@@ -73,31 +73,38 @@ const BOOTSTRAP_IPC_MAX_ATTEMPTS = 60;
 const BOOTSTRAP_IPC_RETRY_DELAY_MS = 50;
 const originalInvoke = ipcRenderer.invoke.bind(ipcRenderer);
 
-function isNoHandlerRegisteredError(error: unknown): boolean {
-    if (!error) {return false;}
-    const msg = String(error instanceof Error ? error.message : error);
-    // Standard Electron error messages for missing handlers
-    return (
-        msg.includes('No handler registered for') || 
-        msg.includes('Error occurred in handler for') ||
-        msg.includes('IpcMain.handle() is not registered')
-    );
-}
-
 function waitForBootstrapRetry(): Promise<void> {
     return new Promise(resolve => {
         setTimeout(resolve, BOOTSTRAP_IPC_RETRY_DELAY_MS);
     });
 }
 
-async function invokeWithBootstrapRetry(channel: string, ...args: IpcValue[]): Promise<unknown> {
-    let lastError: unknown = null;
+type BootstrapInvokeError = Error | string | { message?: string } | null;
+
+function isNoHandlerRegisteredError(error: BootstrapInvokeError): boolean {
+    if (!error) { return false; }
+    const msg = typeof error === 'string'
+        ? error
+        : error instanceof Error
+            ? error.message
+            : typeof error.message === 'string'
+                ? error.message
+                : '';
+    return (
+        msg.includes('No handler registered for')
+        || msg.includes('Error occurred in handler for')
+        || msg.includes('IpcMain.handle() is not registered')
+    );
+}
+
+async function invokeWithBootstrapRetry(channel: string, ...args: IpcValue[]): Promise<IpcValue> {
+    let lastError: BootstrapInvokeError = null;
     for (let attempt = 0; attempt < BOOTSTRAP_IPC_MAX_ATTEMPTS; attempt += 1) {
         try {
-            return await originalInvoke(channel, ...args);
+            return await originalInvoke(channel, ...args) as IpcValue;
         } catch (error) {
-            lastError = error;
-            if (!isNoHandlerRegisteredError(error) || attempt === BOOTSTRAP_IPC_MAX_ATTEMPTS - 1) {
+            lastError = error as BootstrapInvokeError;
+            if (!isNoHandlerRegisteredError(lastError) || attempt === BOOTSTRAP_IPC_MAX_ATTEMPTS - 1) {
                 throw error;
             }
             await waitForBootstrapRetry();

@@ -5,6 +5,7 @@
 
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { RuntimeValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 
 import { appLogger } from '../logging/logger';
@@ -28,7 +29,10 @@ class EarlyIpcManager {
     public initialize(getMainWindow: () => BrowserWindow | null): void {
         this.getMainWindow = getMainWindow;
 
-        const register = (channel: string, handler: (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown> | unknown) => {
+        const register = (
+            channel: string,
+            handler: (event: IpcMainInvokeEvent, ...args: RuntimeValue[]) => Promise<RuntimeValue | object> | RuntimeValue | object
+        ) => {
             try {
                 ipcMain.removeHandler(channel);
             } catch { /* ignore */ }
@@ -37,14 +41,14 @@ class EarlyIpcManager {
             ipcMain.handle(channel, async (event, ...args) => {
                 try {
                     return await handler(event, ...args);
-                } catch (e: unknown) {
+                } catch (e) {
                     appLogger.error('BOOT', `Early IPC Error [${channel}]`, e);
                     throw e;
                 }
             });
         };
 
-        const listen = (channel: string, listener: (event: IpcMainEvent, ...args: unknown[]) => void) => {
+        const listen = (channel: string, listener: (event: IpcMainEvent, ...args: RuntimeValue[]) => void) => {
             this.registeredListeners.add(channel);
             ipcMain.on(channel, listener);
         };
@@ -63,12 +67,12 @@ class EarlyIpcManager {
                     return result;
                 }
             }
-            return { 
-                status: 'pending', 
-                mainProcessReady: this.isReady, 
-                summary: { blockingFailures: 0, totalFailures: 0, totalWarnings: 0 }, 
-                entries: [], 
-                health: { online: true, entries: [], lastCheck: Date.now() } 
+            return {
+                status: 'pending',
+                mainProcessReady: this.isReady,
+                summary: { blockingFailures: 0, totalFailures: 0, totalWarnings: 0 },
+                entries: [],
+                health: { online: true, entries: [], lastCheck: Date.now() }
             };
         });
 
@@ -97,15 +101,15 @@ class EarlyIpcManager {
         listen('window:close', () => this.getMainWindow?.()?.close());
 
         // Logging Fallback
-        listen('log:write', (_: IpcMainEvent, arg1: unknown, arg2?: unknown) => {
-            const message = typeof arg1 === 'string' ? ((arg2 as string) || arg1) : (typeof arg1 === 'object' && arg1 !== null && 'message' in arg1 ? (arg1 as {message: string}).message : '');
+        listen('log:write', (_: IpcMainEvent, arg1: RuntimeValue, arg2?: RuntimeValue) => {
+            const message = typeof arg1 === 'string' ? ((arg2 as string) || arg1) : (typeof arg1 === 'object' && arg1 !== null && 'message' in arg1 ? (arg1 as { message: string }).message : '');
             appLogger.info('renderer', message);
         });
 
-        const fallbackResultsByChannel: Record<string, unknown> = {
+        const fallbackResultsByChannel: Record<string, RuntimeValue> = {
             'ipc:contract:get': { version: 'boot', channels: [] },
             'extension:get-all': [],
-            'model-registry:get-all': [],
+            'model-registry:getAllModels': [],
             'model-downloader:history': { success: true, items: [] },
             'marketplace:check-live-updates': { success: true, data: [], installed: [], enabled: [], domains: {} },
             'db:getPrompts': [],
@@ -137,8 +141,11 @@ class EarlyIpcManager {
             const startTime = Date.now();
             const normalizedRequests = Array.isArray(requests) ? requests : [];
             const results = normalizedRequests.map((request) => {
-                const channel = typeof request === 'object' && request !== null && 'channel' in request
-                    ? String((request as { channel?: unknown }).channel ?? '')
+                const channel = typeof request === 'object'
+                    && request !== null
+                    && 'channel' in request
+                    && typeof request.channel === 'string'
+                    ? request.channel
                     : '';
                 const data = fallbackResultsByChannel[channel] ?? null;
                 return {
@@ -163,8 +170,11 @@ class EarlyIpcManager {
             const startTime = Date.now();
             const normalizedRequests = Array.isArray(requests) ? requests : [];
             const results = normalizedRequests.map((request) => {
-                const channel = typeof request === 'object' && request !== null && 'channel' in request
-                    ? String((request as { channel?: unknown }).channel ?? '')
+                const channel = typeof request === 'object'
+                    && request !== null
+                    && 'channel' in request
+                    && typeof request.channel === 'string'
+                    ? request.channel
                     : '';
                 const data = fallbackResultsByChannel[channel] ?? null;
                 return {

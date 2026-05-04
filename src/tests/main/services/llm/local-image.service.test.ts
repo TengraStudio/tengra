@@ -11,7 +11,7 @@
 
 import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { type ImageGenerationOptions, type ImageGenerationRecord, LocalImageService, type LocalImageServiceDeps } from '@main/services/llm/local-image.service';
+import { type ImageGenerationOptions, type ImageGenerationRecord, LocalImageService, type LocalImageServiceDeps } from '@main/services/llm/local/local-image.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -106,7 +106,7 @@ describe('LocalImageService Integration', () => {
 
         it('should reject generation when prompt is blank', async () => {
             await expect(service.generateImage({ prompt: '   ' })).rejects.toThrow('Prompt is required');
-        }); 
+        });
 
         it('should track success metric when sd-cpp succeeds', async () => {
             vi.spyOn(service, 'ensureSDCppReady').mockResolvedValue({
@@ -131,7 +131,7 @@ describe('LocalImageService Integration', () => {
             vi.spyOn(
                 service as never as { generateWithSDCpp: (options: ImageGenerationOptions) => Promise<string> },
                 'generateWithSDCpp'
-            ).mockRejectedValue(new Error('sd-cpp failed')); 
+            ).mockRejectedValue(new Error('sd-cpp failed'));
 
             await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('sd-cpp failed');
             expect(mockTelemetryService.track).toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
@@ -152,7 +152,7 @@ describe('LocalImageService Integration', () => {
             await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('ollama unavailable');
             expect(mockTelemetryService.track).not.toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
         });
- 
+
     });
 
     describe('Telemetry Tracking', () => {

@@ -10,6 +10,7 @@
 
 import * as fs from 'fs';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
@@ -71,6 +72,7 @@ export class TerminalProfileService extends BaseService {
     /**
      * Get all terminal profiles
      */
+    @ipc('terminal:getProfiles')
     getProfiles(): TerminalProfile[] {
         return Array.from(this.profiles.values());
     }
@@ -85,6 +87,7 @@ export class TerminalProfileService extends BaseService {
     /**
      * Create or update a profile
      */
+    @ipc('terminal:saveProfile')
     async saveProfile(profile: TerminalProfile): Promise<void> {
         const validation = this.validateProfile(profile);
         if (!validation.valid) {
@@ -97,11 +100,13 @@ export class TerminalProfileService extends BaseService {
     /**
      * Delete a profile
      */
+    @ipc('terminal:deleteProfile')
     async deleteProfile(id: string): Promise<void> {
         this.profiles.delete(id);
         await this.saveProfilesToDisk();
     }
 
+    @ipc('terminal:validateProfile')
     validateProfile(profile: TerminalProfile): TerminalProfileValidationResult {
         const errors: string[] = [];
 
@@ -141,6 +146,7 @@ export class TerminalProfileService extends BaseService {
         return { valid: errors.length === 0, errors };
     }
 
+    @ipc('terminal:getProfileTemplates')
     getProfileTemplates(): TerminalProfile[] {
         const isWin = process.platform === 'win32';
         if (isWin) {
@@ -201,6 +207,7 @@ export class TerminalProfileService extends BaseService {
         ];
     }
 
+    @ipc('terminal:exportProfiles')
     exportProfiles(): string {
         return JSON.stringify({
             version: 1,
@@ -209,6 +216,7 @@ export class TerminalProfileService extends BaseService {
         }, null, 2);
     }
 
+    @ipc('terminal:importProfiles')
     async importProfiles(payload: string, options?: { overwrite?: boolean }): Promise<TerminalProfileImportResult> {
         const errors: string[] = [];
         let imported = 0;
@@ -246,6 +254,7 @@ export class TerminalProfileService extends BaseService {
         };
     }
 
+    @ipc('terminal:exportProfileShareCode')
     exportProfileShareCode(profileId: string): string | null {
         const profile = this.profiles.get(profileId);
         if (!profile) {
@@ -261,6 +270,7 @@ export class TerminalProfileService extends BaseService {
         return `termprofile:${Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64url')}`;
     }
 
+    @ipc('terminal:importProfileShareCode')
     async importProfileShareCode(
         shareCode: string,
         options?: { overwrite?: boolean }

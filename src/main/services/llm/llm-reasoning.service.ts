@@ -9,6 +9,7 @@
  */
 
 import { SystemMode } from '@shared/types/chat';
+import { RuntimeValue } from '@shared/types/common';
 
 /** Reasoning model type categories. */
 export type ReasoningModelType = 'openai' | 'gemini3' | 'gemini25' | 'claude';

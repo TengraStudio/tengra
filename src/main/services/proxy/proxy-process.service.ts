@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-import { app } from 'electron';
 import { ChildProcess, exec, spawn } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -17,10 +16,10 @@ import * as net from 'net';
 import * as path from 'path';
 import { promisify } from 'util';
 
-import { pushLogEntry } from '@main/ipc/logging';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { LoggingService } from '@main/services/system/logging.service';
 import { getManagedRuntimeBinaryPath } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { getMainWindow } from '@main/startup/window';
@@ -28,6 +27,7 @@ import { JsonObject } from '@shared/types/common';
 import type { AppSettings } from '@shared/types/settings';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { app } from 'electron';
 
 import { validateOAuthTimeoutMs } from './proxy-validation.util';
 
@@ -76,7 +76,8 @@ export class ProxyProcessManager {
     constructor(
         private settingsService: SettingsService,
         private authService: AuthService,
-        private databaseService: DatabaseService
+        private databaseService: DatabaseService,
+        private loggingService: LoggingService
     ) { }
 
     async start(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
@@ -387,7 +388,7 @@ export class ProxyProcessManager {
         }
         
         if (isPackaged) {
-            if (binaryExists) return binaryPath;
+            if (binaryExists) {return binaryPath;}
             throw new Error(`Critical component missing: tengra-proxy not found at ${binaryPath}`);
         }
 
@@ -550,7 +551,7 @@ export class ProxyProcessManager {
         } else {
             appLogger.info('Proxy', message);
         }
-        pushLogEntry(level === 'warning' ? 'warn' : level, 'Proxy', message);
+        this.loggingService.pushLogEntry(level === 'warning' ? 'warn' : level, 'Proxy', message);
     }
 
     private detectLogLevel(

@@ -13,9 +13,12 @@
  * Implements UI-11: Voice-first interface option
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { withRetry } from '@main/utils/retry.util';
 import { JsonValue } from '@shared/types/common';
+import { RuntimeValue } from '@shared/types/common';
 import {
     DEFAULT_VOICE_COMMANDS,
     DEFAULT_VOICE_SETTINGS,
@@ -28,7 +31,7 @@ import {
     VoiceSynthesisOptions,
 } from '@shared/types/voice';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow } from 'electron';
 import { z } from 'zod';
 
 /** Voice service state */
@@ -232,67 +235,12 @@ export class VoiceService extends BaseService {
 
     /** Setup IPC handlers for voice operations */
     private setupIpcHandlers(): void {
-        ipcMain.handle('voice:get-settings', async () => await this.handleGetSettings());
-        ipcMain.handle(
-            'voice:update-settings',
-            async (event, settings: Partial<VoiceSettings>) =>
-                await this.handleUpdateSettings(event, settings)
-        );
-        ipcMain.handle('voice:get-commands', async () => await this.handleGetCommands());
-        ipcMain.handle(
-            'voice:add-command',
-            async (event, command: VoiceCommand) => await this.handleAddCommand(event, command)
-        );
-        ipcMain.handle(
-            'voice:remove-command',
-            async (event, commandId: string) => await this.handleRemoveCommand(event, commandId)
-        );
-        ipcMain.handle(
-            'voice:update-command',
-            async (event, command: VoiceCommand) => await this.handleUpdateCommand(event, command)
-        );
-        ipcMain.handle(
-            'voice:process-transcript',
-            async (event, transcript: string) => await this.handleProcessTranscript(event, transcript)
-        );
-        ipcMain.handle(
-            'voice:execute-command',
-            async (event, command: VoiceCommand) => await this.handleExecuteCommand(event, command)
-        );
-        ipcMain.handle('voice:get-voices', async () => await this.handleGetVoices());
-        ipcMain.handle(
-            'voice:synthesize',
-            async (event, options: VoiceSynthesisOptions) => await this.handleSynthesize(event, options)
-        );
-        ipcMain.handle('voice:stop-speaking', async () => await this.handleStopSpeaking());
-        ipcMain.handle(
-            'voice:set-listening',
-            async (event, listening: boolean) => await this.handleSetListening(event, listening)
-        );
-        ipcMain.handle(
-            'voice:send-event',
-            async (event, eventType: VoiceEventType, data: RuntimeValue) =>
-                await this.handleSendEvent(event, eventType, data)
-        );
-        ipcMain.handle('voice:health', async () => await this.handleHealth());
+        // Handlers are now registered via @ipc decorators
     }
 
     /** Remove IPC handlers */
     public removeIpcHandlers(): void {
-        ipcMain.removeHandler('voice:get-settings');
-        ipcMain.removeHandler('voice:update-settings');
-        ipcMain.removeHandler('voice:get-commands');
-        ipcMain.removeHandler('voice:add-command');
-        ipcMain.removeHandler('voice:remove-command');
-        ipcMain.removeHandler('voice:update-command');
-        ipcMain.removeHandler('voice:process-transcript');
-        ipcMain.removeHandler('voice:execute-command');
-        ipcMain.removeHandler('voice:get-voices');
-        ipcMain.removeHandler('voice:synthesize');
-        ipcMain.removeHandler('voice:stop-speaking');
-        ipcMain.removeHandler('voice:set-listening');
-        ipcMain.removeHandler('voice:send-event');
-        ipcMain.removeHandler('voice:health');
+        // Handlers are now managed by registerServiceIpc
     }
 
     private getChannelMetrics(channel: string): VoiceChannelMetrics {
@@ -648,6 +596,7 @@ export class VoiceService extends BaseService {
         return await this.handleHealth();
     }
 
+    @ipc('voice:get-settings')
     public async handleGetSettings(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:get-settings',
@@ -656,8 +605,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:update-settings')
     public async handleUpdateSettings(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         settings: Partial<VoiceSettings>
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -671,6 +621,7 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:get-commands')
     public async handleGetCommands(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:get-commands',
@@ -685,8 +636,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:add-command')
     public async handleAddCommand(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -700,8 +652,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:remove-command')
     public async handleRemoveCommand(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         commandId: string
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -719,8 +672,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:update-command')
     public async handleUpdateCommand(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -738,8 +692,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:process-transcript')
     public async handleProcessTranscript(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         transcript: string
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -769,8 +724,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:execute-command')
     public async handleExecuteCommand(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -789,6 +745,7 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:get-voices')
     public async handleGetVoices(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:get-voices',
@@ -803,8 +760,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:synthesize')
     public async handleSynthesize(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         options: VoiceSynthesisOptions
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -822,6 +780,7 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:stop-speaking')
     public async handleStopSpeaking(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:stop-speaking',
@@ -830,8 +789,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:set-listening')
     public async handleSetListening(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         listening: boolean
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
@@ -849,8 +809,9 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:send-event')
     public async handleSendEvent(
-        _event: Electron.IpcMainInvokeEvent | {},
+        _event: Electron.IpcMainInvokeEvent | object,
         eventType: VoiceEventType,
         data: RuntimeValue
     ): Promise<VoiceResponse> {
@@ -867,6 +828,7 @@ export class VoiceService extends BaseService {
         );
     }
 
+    @ipc('voice:health')
     public async handleHealth(): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:health',

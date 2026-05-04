@@ -245,7 +245,7 @@ export class DatabaseClientService extends BaseService {
         let portOpen = false;
         for (let i = 0; i < 10; i++) {
             portOpen = await this.isPortOpen(this.servicePort);
-            if (portOpen) break;
+            if (portOpen) {break;}
             await delay(200);
         }
 

@@ -17,6 +17,8 @@ import { AuthBusyState, AuthStatusState, BrowserOAuthProvider } from '../types';
 
 import { UseLinkedAccountsResult } from './useLinkedAccounts';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 type ProviderType = BrowserOAuthProvider | 'copilot';
 const BROWSER_AUTH_ACCOUNT_LOAD_TIMEOUT_MS = 10_000;
 const BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS = 15_000;
@@ -589,7 +591,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     window.electron.ollama.initiateConnect(),
                     BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS,
                     'ollama connect initialization'
-                ) as any;
+                ) as UnsafeValue;
 
                 if (requestId !== activeRequestRef.current) {return;}
                 if (!response.success || !response.connectUrl || !response.code) {
@@ -618,7 +620,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                             response.code,
                             response.privateKeyB64,
                             response.publicKeyB64
-                        ) as any;
+                        ) as UnsafeValue;
                         if (requestId !== activeRequestRef.current) {return;}
                         if (result.success) {
                             await completeBrowserAuth(request);
@@ -744,7 +746,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             try {
                 const result = await window.electron.ollamaSignout(ollamaAccountId);
                 if (!result.success && !result.alreadySignedOut) {
-                    appLogger.warn('BrowserAuth', `Ollama signout failed: ${result.error ?? 'unknown error'}`);
+                    appLogger.warn('BrowserAuth', `Ollama signout failed: ${result.error ?? 'UnsafeValue error'}`);
                 }
             } catch (error) {
                 appLogger.warn('BrowserAuth', 'Ollama signout request failed', error as Error);

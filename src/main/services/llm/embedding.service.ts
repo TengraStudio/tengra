@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
-import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { OllamaService } from '@main/services/llm/ollama.service';
+import { LlamaService } from '@main/services/llm/local/llama.service';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withRetry } from '@main/utils/retry.util';
 import { EmbeddingTextInputSchema } from '@shared/schemas/service-hardening.schema';
@@ -128,6 +129,7 @@ export class EmbeddingService {
         return settings.embeddings.provider;
     }
 
+    @ipc('embedding:generate')
     async generateEmbedding(text: string): Promise<number[]> {
         const startedAt = Date.now();
         // Always check latest settings before generating
@@ -191,6 +193,7 @@ export class EmbeddingService {
         return vector;
     }
 
+    @ipc('embedding:get-analytics')
     getAnalytics(): EmbeddingAnalytics {
         return {
             ...this.analytics,
@@ -199,6 +202,7 @@ export class EmbeddingService {
         };
     }
 
+    @ipc('embedding:get-health')
     getHealthStatus(): EmbeddingHealthSnapshot {
         const totalRequests = this.analytics.totalRequests;
         const failedRequests = Object.values(this.analytics.providerFailures)

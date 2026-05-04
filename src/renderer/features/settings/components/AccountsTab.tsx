@@ -8,9 +8,6 @@
  * (at your option) any later version.
  */
 
-import { IconBolt,IconChevronDown, IconCpu, IconExternalLink, IconGlobe, IconInfoCircle, IconKey, IconPlus, IconRefresh, IconRobot, IconShield, IconSparkles, IconTerminal, IconTrash, IconUserPlus } from '@tabler/icons-react';
-import React, { useState } from 'react';
-
 import antigravityLogo from '@assets/antigravity.svg?url';
 import chatgptLogo from '@assets/chatgpt.svg?url';
 import claudeLogo from '@assets/claude.svg?url';
@@ -18,6 +15,9 @@ import copilotLogo from '@assets/copilot.svg?url';
 import geminiLogo from '@assets/gemini.png';
 import ollamaLogo from '@assets/ollama.svg?url';
 import opencodeLogo from '@assets/opencode.svg?url';
+import { IconBolt,IconChevronDown, IconCpu, IconExternalLink, IconGlobe, IconInfoCircle, IconKey, IconPlus, IconRefresh, IconRobot, IconShield, IconSparkles, IconTerminal, IconTrash, IconUserPlus } from '@tabler/icons-react';
+import React, { useState } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

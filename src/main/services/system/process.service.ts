@@ -16,15 +16,29 @@ import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { resolveWindowsCommand } from '@main/utils/windows-command.util';
+import { IPC_TIMEOUTS } from '@shared/constants/timeouts';
+import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { quoteShellArg, safeJsonParse } from '@shared/utils/sanitize.util';
+import { BrowserWindow } from 'electron';
 import * as pty from 'node-pty';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 const execAsync = promisify(exec);
 const SENSITIVE_FLAG_PATTERN = /^(?:--?(?:token|password|pass|secret|api[-_]?key|auth|authorization)|\/(?:p|pass|password))$/i;
+
+const MAX_COMMAND_LENGTH = 1024;
+const MAX_PATH_LENGTH = 4096;
+const MAX_ID_LENGTH = 64;
+const MAX_DATA_LENGTH = 65536;
+const MAX_ARGS = 100;
+const MAX_COLS = 1000;
+const MAX_ROWS = 500;
 
 function redactSensitiveArgs(args: string[]): string {
     const redacted: string[] = [];
@@ -60,45 +74,124 @@ export interface TaskProcess {
     ptyProcess: pty.IPty;
 }
 
-export class ProcessService extends EventEmitter {
+export class ProcessService extends BaseService {
     private processes: Map<string, TaskProcess> = new Map();
     private shell: string;
     private shellArgsPrefix: string[];
+    private emitter = new EventEmitter();
+    private buffers = new Map<string, string>();
+    private flushTimer: NodeJS.Timeout | null = null;
 
-    constructor() {
-        super();
+    constructor(private readonly mainWindowProvider: () => BrowserWindow | null) {
+        super('ProcessService');
         if (os.platform() === 'win32') {
             this.shell = 'powershell.exe';
             this.shellArgsPrefix = ['-Command'];
+        } else {
+            this.shell = (process.env.SHELL && process.env.SHELL.trim().length > 0)
+                ? process.env.SHELL
+                : 'bash';
+            this.shellArgsPrefix = ['-c'];
+        }
+
+        // Setup output buffering
+        this.on('data', ({ id, data }) => {
+            const current = this.buffers.get(id) ?? '';
+            this.buffers.set(id, current + data);
+
+            if (!this.flushTimer) {
+                this.flushTimer = setTimeout(() => this.flushBuffers(), IPC_TIMEOUTS.BUFFER_FLUSH);
+            }
+        });
+    }
+
+    private flushBuffers(): void {
+        if (this.buffers.size === 0) {
+            this.flushTimer = null;
             return;
         }
 
-        this.shell = (process.env.SHELL && process.env.SHELL.trim().length > 0)
-            ? process.env.SHELL
-            : 'bash';
-        this.shellArgsPrefix = ['-c'];
+        const win = this.mainWindowProvider();
+        if (win && !win.isDestroyed()) {
+            this.buffers.forEach((data, id) => {
+                win.webContents.send('process:data', { id, data });
+            });
+        }
+        this.buffers.clear();
+        this.flushTimer = null;
     }
 
-    // --- Task Runner (2.2.21) ---
+    // --- EventEmitter Bridge ---
+    on(event: string, listener: (...args: UnsafeValue[]) => void): this {
+        this.emitter.on(event, listener);
+        return this;
+    }
 
-    // Spawn a process using node-pty for terminal integration
+    emit(event: string, ...args: UnsafeValue[]): boolean {
+        return this.emitter.emit(event, ...args);
+    }
+
+    // --- Validation Utilities ---
+
+    private validateCommand(value: RuntimeValue): string | null {
+        if (typeof value !== 'string') { return null; }
+        const trimmed = value.trim();
+        if (!trimmed || trimmed.length > MAX_COMMAND_LENGTH) { return null; }
+        // Security: Block shell control characters (SEC-001-3)
+        if (/[;&|`$(){}<>\r\n\0]/.test(trimmed)) { return null; }
+        return trimmed;
+    }
+
+    private validatePath(value: RuntimeValue): string | null {
+        if (typeof value !== 'string') { return null; }
+        const trimmed = value.trim();
+        if (!trimmed || trimmed.length > MAX_PATH_LENGTH) { return null; }
+        return trimmed;
+    }
+
+    private validateId(value: RuntimeValue): string | null {
+        if (typeof value !== 'string') { return null; }
+        const trimmed = value.trim();
+        if (!trimmed || trimmed.length > MAX_ID_LENGTH) { return null; }
+        return trimmed;
+    }
+
+    private validateArgs(value: RuntimeValue): string[] {
+        if (!Array.isArray(value)) { return []; }
+        return value
+            .slice(0, MAX_ARGS)
+            .filter((arg): arg is string => typeof arg === 'string')
+            .map(arg => arg.slice(0, MAX_COMMAND_LENGTH));
+    }
+
+    private validateNumber(value: RuntimeValue, min: number, max: number): number | null {
+        if (typeof value !== 'number' || !Number.isFinite(value)) { return null; }
+        if (value < min || value > max) { return null; }
+        return Math.floor(value);
+    }
+
+    // --- Task Runner ---
+
+    @ipc('process:spawn')
+    async spawnIpc(commandRaw: RuntimeValue, argsRaw: RuntimeValue, cwdRaw: RuntimeValue): Promise<string | null> {
+        const command = this.validateCommand(commandRaw);
+        if (!command) {
+            throw new Error('error.process.invalid_command');
+        }
+
+        const args = this.validateArgs(argsRaw);
+        const cwd = this.validatePath(cwdRaw) ?? process.cwd();
+
+        return this.spawn(command, args, cwd);
+    }
+
     spawn(command: string, args: string[], cwd: string): string {
         const id = crypto.randomUUID().substring(0, 8);
         const resolvedCommand = resolveWindowsCommand(command);
 
-        appLogger.info('process.service', `[ProcessService] Spawning: ${resolvedCommand} ${redactSensitiveArgs(args)} in ${cwd} `);
+        this.logInfo(`Spawning: ${resolvedCommand} ${redactSensitiveArgs(args)} in ${cwd}`);
 
-        // Quote arguments to prevent injection
         const safeArgs = args.map(quoteShellArg);
-
-        // Combine command and arguments safely
-        // Note: node-pty on Windows with 'bits' of shell usage might still be complex,
-        // but quoting individual args is safer than raw join.
-        // For pty.spawn with shell (powershell), we pass the command line string to -c (or implicit).
-        // pty.spawn(file, args, options)
-        // If file is 'powershell.exe', args should be the arguments to powershell.
-        // If we want to run a command inside, we usually do: powershell.exe -c "command arg1 arg2"
-
         const commandLine = `${quoteShellArg(resolvedCommand)} ${safeArgs.join(' ')}`;
 
         const ptyProcess = pty.spawn(this.shell, [...this.shellArgsPrefix, commandLine], {
@@ -122,17 +215,14 @@ export class ProcessService extends EventEmitter {
 
         this.processes.set(id, task);
 
-        // Relay data to frontend
         ptyProcess.onData((data) => {
             this.emit('data', { id, data });
         });
 
         ptyProcess.onExit(({ exitCode }) => {
-            appLogger.info('process.service', `[ProcessService] Task ${id} exited with ${exitCode} `);
+            this.logInfo(`Task ${id} exited with ${exitCode}`);
             task.status = exitCode === 0 ? 'stopped' : 'failed';
             this.emit('exit', { id, code: exitCode });
-            // Optional: Keep in history, but remove active reference later?
-            // For now, keep it so we can query status
             if (exitCode === 0) {
                 this.processes.delete(id);
             }
@@ -141,10 +231,19 @@ export class ProcessService extends EventEmitter {
         return id;
     }
 
-    kill(id: string) {
+    @ipc('process:kill')
+    async killIpc(idRaw: RuntimeValue): Promise<boolean> {
+        const id = this.validateId(idRaw);
+        if (!id) {
+            throw new Error('Invalid process ID');
+        }
+        return this.kill(id);
+    }
+
+    kill(id: string): boolean {
         const task = this.processes.get(id);
         if (task) {
-            appLogger.info('process.service', `[ProcessService] Killing task ${id} `);
+            this.logInfo(`Killing task ${id}`);
             task.ptyProcess.kill();
             task.status = 'stopped';
             this.processes.delete(id);
@@ -153,17 +252,21 @@ export class ProcessService extends EventEmitter {
         return false;
     }
 
-    getEncoding() {
-        // ...
-    }
+    // --- Script Auto-Discovery ---
 
-    // --- Script Auto-Discovery (2.2.22) ---
+    @ipc('process:scan-scripts')
+    async scanScriptsIpc(rootPathRaw: RuntimeValue): Promise<Record<string, string>> {
+        const rootPath = this.validatePath(rootPathRaw);
+        if (!rootPath) {
+            throw new Error('Invalid root path');
+        }
+        return await this.scanScripts(rootPath);
+    }
 
     async scanScripts(rootPath: string): Promise<Record<string, string>> {
         const scripts: Record<string, string> = {};
 
         try {
-            // NPM / Node
             const pkgPath = path.join(rootPath, 'package.json');
             const pkgExists = await fs.access(pkgPath).then(() => true).catch(() => false);
 
@@ -174,17 +277,19 @@ export class ProcessService extends EventEmitter {
                     Object.assign(scripts, pkg.scripts);
                 }
             }
-
-            // Python (basic check for manage.py or similar)
-            // Makefile?
         } catch (error) {
-            appLogger.error('ProcessService', 'Failed to scan scripts', error as Error);
+            this.logError('Failed to scan scripts', error);
         }
 
         return scripts;
     }
 
-    // --- Process Manager (2.2.23) ---
+    // --- Process Manager ---
+
+    @ipc('process:list')
+    async getRunningTasksIpc(): Promise<UnsafeValue[]> {
+        return this.getRunningTasks();
+    }
 
     getRunningTasks(): Array<{
         id: string;
@@ -212,6 +317,22 @@ export class ProcessService extends EventEmitter {
         }));
     }
 
+    @ipc('process:resize')
+    async resizeIpc(idRaw: RuntimeValue, colsRaw: RuntimeValue, rowsRaw: RuntimeValue): Promise<boolean> {
+        const id = this.validateId(idRaw);
+        if (!id) {
+            throw new Error('Invalid process ID');
+        }
+
+        const cols = this.validateNumber(colsRaw, 1, MAX_COLS);
+        const rows = this.validateNumber(rowsRaw, 1, MAX_ROWS);
+        if (cols === null || rows === null) {
+            throw new Error('Invalid dimensions');
+        }
+
+        return this.resize(id, cols, rows);
+    }
+
     resize(id: string, cols: number, rows: number): boolean {
         const task = this.processes.get(id);
         if (!task) { return false; }
@@ -219,9 +340,23 @@ export class ProcessService extends EventEmitter {
             task.ptyProcess.resize(cols, rows);
             return true;
         } catch (e) {
-            appLogger.error('ProcessService', `Resize failed for task ${id}`, e as Error);
+            this.logError(`Resize failed for task ${id}`, e);
             return false;
         }
+    }
+
+    @ipc('process:write')
+    async writeIpc(idRaw: RuntimeValue, dataRaw: RuntimeValue): Promise<boolean> {
+        const id = this.validateId(idRaw);
+        if (!id) {
+            throw new Error('Invalid process ID');
+        }
+
+        if (typeof dataRaw !== 'string' || dataRaw.length > MAX_DATA_LENGTH) {
+            throw new Error('Invalid data');
+        }
+
+        return this.write(id, dataRaw);
     }
 
     write(id: string, data: string): boolean {
@@ -231,10 +366,9 @@ export class ProcessService extends EventEmitter {
             task.ptyProcess.write(data);
             return true;
         } catch (e) {
-            // Broken pipe errors are common when process has exited
             const errorMsg = getErrorMessage(e as Error);
             if (!errorMsg.includes('EPIPE') && !errorMsg.includes('broken pipe')) {
-                appLogger.error('ProcessService', `Write failed for task ${id}`, e as Error);
+                this.logError(`Write failed for task ${id}`, e);
             }
             return false;
         }
@@ -251,3 +385,4 @@ export class ProcessService extends EventEmitter {
         }
     }
 }
+

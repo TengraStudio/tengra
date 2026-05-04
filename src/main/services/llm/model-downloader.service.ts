@@ -11,14 +11,18 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
-import { HuggingFaceService } from '@main/services/llm/huggingface.service';
-import { LlamaService } from '@main/services/llm/llama.service';
-import { OllamaService } from '@main/services/llm/ollama.service';
+import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
+import { LlamaService } from '@main/services/llm/local/llama.service';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { t } from '@main/utils/i18n.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { BrowserWindow } from 'electron';
 
 export type DownloadProvider = 'ollama' | 'huggingface';
 
@@ -183,6 +187,16 @@ export class ModelDownloaderService extends BaseService {
         super('ModelDownloaderService');
     }
 
+    override async initialize(): Promise<void> {
+        await this.restorePersistedQueue();
+    }
+
+    @ipc('model-downloader:start')
+    async startDownloadIpc(requestRaw: RuntimeValue): Promise<RuntimeValue> {
+        const request = requestRaw as ModelDownloadRequest;
+        return serializeToIpc(this.startDownload(request));
+    }
+
     startDownload(
         request: ModelDownloadRequest,
         onProgress?: (progress: ModelDownloadProgress) => void
@@ -237,6 +251,12 @@ export class ModelDownloaderService extends BaseService {
         };
     }
 
+    @ipc('model-downloader:pause')
+    async pauseDownloadIpc(downloadIdRaw: RuntimeValue): Promise<RuntimeValue> {
+        const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
+        return serializeToIpc({ success: this.pauseDownload(downloadId) });
+    }
+
     pauseDownload(downloadId: string): boolean {
         const task = this.tasks.get(downloadId);
         if (!task) {
@@ -281,6 +301,12 @@ export class ModelDownloaderService extends BaseService {
         return true;
     }
 
+    @ipc('model-downloader:cancel')
+    async cancelDownloadIpc(downloadIdRaw: RuntimeValue): Promise<RuntimeValue> {
+        const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
+        return serializeToIpc({ success: this.cancelDownload(downloadId) });
+    }
+
     cancelDownload(downloadId: string): boolean {
         const task = this.tasks.get(downloadId);
         if (!task) {
@@ -323,6 +349,12 @@ export class ModelDownloaderService extends BaseService {
         return true;
     }
 
+    @ipc('model-downloader:resume')
+    async resumeDownloadIpc(downloadIdRaw: RuntimeValue): Promise<RuntimeValue> {
+        const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
+        return serializeToIpc(this.resumeDownload(downloadId));
+    }
+
     resumeDownload(downloadId: string): ModelDownloadResult {
         const task = this.tasks.get(downloadId);
         if (task?.state !== 'paused') {
@@ -361,6 +393,13 @@ export class ModelDownloaderService extends BaseService {
         };
     }
 
+    @ipc('model-downloader:history')
+    async getHistoryIpc(limitRaw: RuntimeValue): Promise<RuntimeValue> {
+        const limit = typeof limitRaw === 'number' ? limitRaw : 100;
+        const items = this.getHistory(limit);
+        return serializeToIpc({ success: true, items });
+    }
+
     getHistory(limit = 100): ModelDownloadHistoryEntry[] {
         const safeLimit = Math.max(1, Math.min(this.MAX_HISTORY_ENTRIES, limit));
         const items: ModelDownloadHistoryEntry[] = [];
@@ -372,6 +411,12 @@ export class ModelDownloaderService extends BaseService {
             }
         }
         return items;
+    }
+
+    @ipc('model-downloader:retry')
+    async retryFromHistoryIpc(historyIdRaw: RuntimeValue): Promise<RuntimeValue> {
+        const historyId = typeof historyIdRaw === 'string' ? historyIdRaw : '';
+        return serializeToIpc(this.retryFromHistory(historyId));
     }
 
     retryFromHistory(historyId: string): ModelDownloadResult {
@@ -469,7 +514,7 @@ export class ModelDownloaderService extends BaseService {
         if (progress.status === 'downloading' && progress.received !== undefined && progress.total !== undefined) {
             const now = Date.now();
             let stats = this.taskStats.get(task.downloadId);
-            
+
             if (!stats) {
                 stats = {
                     lastReceived: progress.received,
@@ -484,7 +529,7 @@ export class ModelDownloaderService extends BaseService {
             if (timeDiff >= 0.5) { // Update speed every 500ms
                 const bytesDiff = progress.received - stats.lastReceived;
                 const speed = bytesDiff / timeDiff; // bps
-                
+
                 // Average speed since start for smoother ETA
                 const totalTime = (now - stats.startTime) / 1000;
                 const totalBytes = progress.received - stats.startReceived;
@@ -514,6 +559,14 @@ export class ModelDownloaderService extends BaseService {
         task.emitter(progress);
         for (const listener of this.globalListeners) {
             listener(progress);
+        }
+
+        // Broadcast to all windows via IPC
+        const windows = BrowserWindow.getAllWindows();
+        for (const win of windows) {
+            if (!win.isDestroyed()) {
+                win.webContents.send('model-downloader:progress', progress);
+            }
         }
     }
 

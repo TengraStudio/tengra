@@ -15,9 +15,12 @@ import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { t } from '@main/utils/i18n.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { NETWORK_DEFAULTS } from '@shared/constants/app-config';
+import { RuntimeValue } from '@shared/types/common';
 import { JsonObject } from '@shared/types/common';
 import {
     RuntimeBootstrapExecutionEntry,
@@ -62,6 +65,7 @@ export class RuntimeBootstrapService extends BaseService {
     ]);
     private latestExecutionResult: RuntimeBootstrapExecutionResult | null = null;
     public onScanFinished?: (result: RuntimeBootstrapExecutionResult) => void;
+    private isMainProcessReadyGetter?: () => boolean;
 
     constructor(
         private readonly runtimeManifestService: RuntimeManifestService = new RuntimeManifestService(),
@@ -668,5 +672,41 @@ export class RuntimeBootstrapService extends BaseService {
             case 'temp':
                 return getManagedRuntimeTempDir();
         }
+    }
+
+    // --- IPC Decorated Methods ---
+
+    public setMainProcessReadyGetter(getter: () => boolean): void {
+        this.isMainProcessReadyGetter = getter;
+    }
+
+    @ipc('runtime:get-status')
+    async getStatusIpc(): Promise<RuntimeValue> {
+        const result = this.getLatestExecutionResult();
+        if (result) {
+            result.mainProcessReady = this.isMainProcessReadyGetter ? this.isMainProcessReadyGetter() : true;
+        }
+        return serializeToIpc(result);
+    }
+
+    @ipc('runtime:refresh-status')
+    async refreshStatusIpc(): Promise<RuntimeValue> {
+        const result = await this.scanManagedRuntime();
+        return serializeToIpc(result);
+    }
+
+    @ipc('runtime:repair')
+    async repairIpc(manifestUrl: RuntimeValue): Promise<RuntimeValue> {
+        const result = await this.ensureManagedRuntime(typeof manifestUrl === 'string' ? manifestUrl : undefined);
+        return serializeToIpc(result);
+    }
+
+    @ipc('runtime:run-component-action')
+    async runComponentActionIpc(componentId: RuntimeValue): Promise<RuntimeValue> {
+        if (typeof componentId !== 'string') {
+            throw new Error('componentId must be a string');
+        }
+        const result = await this.runComponentAction(componentId);
+        return serializeToIpc(result);
     }
 }

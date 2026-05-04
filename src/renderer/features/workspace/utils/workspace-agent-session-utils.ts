@@ -199,8 +199,7 @@ export function dedupeChatMessages(messages: Message[]): Message[] {
         const previousMessage = uniqueMessages[uniqueMessages.length - 1];
         const content = normalizeMessageContent(message);
         if (
-            previousMessage &&
-            previousMessage.role === message.role &&
+            previousMessage?.role === message.role &&
             previousMessage.role !== 'tool' &&
             normalizeMessageContent(previousMessage) === content &&
             content.length > 0

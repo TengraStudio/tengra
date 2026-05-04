@@ -8,10 +8,13 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { SESSION_CAPABILITY_DESCRIPTORS } from '@shared/constants/session-capabilities';
+import { RuntimeValue } from '@shared/types/common';
 import {
     SessionCapability,
     SessionCapabilityDescriptor,
@@ -81,5 +84,13 @@ export class SessionModuleRegistryService extends BaseService {
 
     private registerModule(module: SessionRuntimeModule): void {
         this.modules.set(module.id, module);
+    }
+
+    // --- IPC Decorated Methods ---
+
+    @ipc('session:list-capabilities')
+    async listCapabilitiesIpc(): Promise<RuntimeValue> {
+        const result = this.listCapabilityDescriptors();
+        return serializeToIpc(result as unknown);
     }
 }

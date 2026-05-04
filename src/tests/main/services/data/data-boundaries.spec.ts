@@ -47,7 +47,8 @@ describe('Data Model Boundaries Contract', () => {
         databaseService = new DatabaseService(
             mockDataService,
             mockEventBus,
-            mockDbClient
+            mockDbClient,
+            () => null
         );
 
         // We forcefully initialize it and stub out adapter behavior

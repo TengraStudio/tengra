@@ -9,16 +9,16 @@
  */
 
 import {
+    IconAdjustmentsHorizontal,
+    IconCheck,
+    IconChevronLeft,
+    IconChevronRight,
+    IconCrop,
+    IconFocus2,
     IconPhoto,
     IconRefresh,
     IconSparkles,
-    IconChevronLeft,
-    IconChevronRight,
-    IconFocus2,
-    IconCrop,
-    IconCheck,
     IconX,
-    IconAdjustmentsHorizontal,
 } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -37,8 +37,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { ModelDefinition } from '@/electron';
 import { useTranslation } from '@/i18n';
-import { pushNotification } from '@/store/notification-center.store';
 import { cn } from '@/lib/utils';
+import { pushNotification } from '@/store/notification-center.store';
 import { appLogger } from '@/utils/renderer-logger';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
 

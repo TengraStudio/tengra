@@ -11,6 +11,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { IpcValue } from '@shared/types';
@@ -127,7 +128,6 @@ export class UpdateService extends BaseService {
 
         try {
             this.registerEvents();
-            this.registerIpcHandlers();
 
             const settings = this.settingsService.getSettings();
             if (settings.autoUpdate?.enabled && settings.autoUpdate.checkOnStartup) {
@@ -199,26 +199,28 @@ export class UpdateService extends BaseService {
         });
     }
 
-    private registerIpcHandlers() {
-        ipcMain.handle('update:check', async () => {
-            if (!this.isSupported) {
-                return { error: 'Updates not supported in this version' };
-            }
-            return await this.checkForUpdates();
-        });
+    @ipc('update:check')
+    async checkForUpdatesIpc(): Promise<UpdateCheckResult | null | { error: string }> {
+        if (!this.isSupported) {
+            return { error: 'Updates not supported in this version' };
+        }
+        return await this.checkForUpdates();
+    }
 
-        ipcMain.handle('update:download', async () => {
-            if (!this.isSupported) {
-                return { error: 'Updates not supported in this version' };
-            }
-            return await this.downloadUpdate();
-        });
+    @ipc('update:download')
+    async downloadUpdateIpc(): Promise<{ success: boolean } | { error: string }> {
+        if (!this.isSupported) {
+            return { error: 'Updates not supported in this version' };
+        }
+        await this.downloadUpdate();
+        return { success: true };
+    }
 
-        ipcMain.handle('update:install', () => {
-            if (this.isSupported) {
-                this.quitAndInstall();
-            }
-        });
+    @ipc('update:install')
+    quitAndInstallIpc(): void {
+        if (this.isSupported) {
+            this.quitAndInstall();
+        }
     }
 
     async checkForUpdates(): Promise<UpdateCheckResult | null> {

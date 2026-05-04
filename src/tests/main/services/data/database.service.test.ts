@@ -120,7 +120,8 @@ describe('DatabaseService', () => {
         } as never as DatabaseClientService;
 
 
-        service = new DatabaseService(mockDataService, mockEventBus, mockDatabaseClient);
+                service = new DatabaseService(mockDataService, mockEventBus, mockDatabaseClient, () => null);
+
         await service.initialize();
         mockQuery.mockClear();
     });

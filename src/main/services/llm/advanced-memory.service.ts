@@ -20,6 +20,7 @@
  * - Context-aware recall
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, EntityKnowledge, EpisodicMemory } from '@main/services/data/database.service';
 import { AdvancedMemoryIndexingService } from '@main/services/llm/advanced-memory-indexing.service';
@@ -35,6 +36,7 @@ import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage } from '@main/types/llm.types';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { withRetry } from '@main/utils/retry.util';
 import {
     AdvancedMemoryImportPayloadSchema,
@@ -66,6 +68,7 @@ import {
     SharedMemorySyncResult,
     SimilarMemoryCandidate
 } from '@shared/types/advanced-memory';
+import { RuntimeValue } from '@shared/types/common';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -248,6 +251,13 @@ export class AdvancedMemoryService {
     // FACT EXTRACTION (Entry Point)
     // ========================================================================
 
+    @ipc('advancedMemory:extractAndStage')
+    async extractAndStageFromMessageIpc(payload: { content: string; sourceId: string; workspaceId?: string }): Promise<RuntimeValue> {
+        const { content, sourceId, workspaceId } = payload;
+        const result = await this.extractAndStageFromMessage(content, sourceId, workspaceId);
+        return serializeToIpc(result);
+    }
+
     /**
      * Extract facts from a user message and stage them for validation
      */
@@ -318,6 +328,18 @@ export class AdvancedMemoryService {
     /**
      * Explicitly remember a fact (user said "remember this")
      */
+    @ipc('advancedMemory:remember')
+    async rememberExplicitIpc(content: string, options?: { category?: MemoryCategory; tags?: string[]; workspaceId?: string }): Promise<RuntimeValue> {
+        const memory = await this.rememberExplicit(
+            content,
+            'user-explicit',
+            options?.category ?? 'fact',
+            options?.tags ?? [],
+            options?.workspaceId
+        );
+        return serializeToIpc(memory);
+    }
+
     async rememberExplicit(
         content: string,
         sourceId: string,
@@ -469,6 +491,12 @@ export class AdvancedMemoryService {
     /**
      * Get all pending memories awaiting validation
      */
+    @ipc('advancedMemory:getPending')
+    async getPendingMemoriesIpc(): Promise<RuntimeValue> {
+        const pending = this.getPendingMemories();
+        return serializeToIpc(pending);
+    }
+
     getPendingMemories(): PendingMemory[] {
         return Array.from(this.stagingBuffer.values())
             .sort((a, b) => b.extractedAt - a.extractedAt);
@@ -477,6 +505,12 @@ export class AdvancedMemoryService {
     /**
      * Confirm a pending memory (user validation)
      */
+    @ipc('advancedMemory:confirm')
+    async confirmPendingMemoryIpc(id: string, adjustments?: { content?: string; category?: MemoryCategory; tags?: string[]; importance?: number }): Promise<RuntimeValue> {
+        const memory = await this.confirmPendingMemory(id, 'user', adjustments);
+        return serializeToIpc(memory);
+    }
+
     async confirmPendingMemory(
         id: string,
         validatedBy: 'user' | 'auto' = 'user',
@@ -591,6 +625,28 @@ export class AdvancedMemoryService {
         await this.deletePendingMemory(id);
     }
 
+    @ipc('advancedMemory:confirmAll')
+    async confirmAllIpc(): Promise<RuntimeValue> {
+        const pending = this.getPendingMemories();
+        let confirmed = 0;
+        for (const p of pending) {
+            if (!p.requiresUserValidation) {
+                await this.confirmPendingMemory(p.id, 'user');
+                confirmed++;
+            }
+        }
+        return serializeToIpc({ confirmed });
+    }
+
+    @ipc('advancedMemory:rejectAll')
+    async rejectAllIpc(): Promise<RuntimeValue> {
+        const pending = this.getPendingMemories();
+        for (const p of pending) {
+            await this.rejectPendingMemory(p.id, 'Bulk rejection');
+        }
+        return serializeToIpc({ rejected: pending.length });
+    }
+
     // ========================================================================
     // CONTEXT-AWARE RECALL
     // ========================================================================
@@ -598,6 +654,12 @@ export class AdvancedMemoryService {
     /**
      * Recall memories with full context awareness
      */
+    @ipc('advancedMemory:recall')
+    async recallIpc(context: RecallContext): Promise<RuntimeValue> {
+        const result = await this.recall(context);
+        return serializeToIpc(result);
+    }
+
     async recall(context: RecallContext): Promise<RecallResult> {
         const startedAt = Date.now();
         this.operationalAnalytics.totalRequests++;
@@ -644,6 +706,12 @@ export class AdvancedMemoryService {
      */
     async recallRelevantFacts(query: string, limit: number = 5): Promise<AdvancedSemanticFragment[]> {
         return this.retrievalService.recallRelevantFacts(query, limit);
+    }
+
+    @ipc('advancedMemory:search')
+    async searchMemoriesHybridIpc(query: string, limit: number = 10): Promise<RuntimeValue> {
+        const result = await this.searchMemoriesHybrid(query, limit);
+        return serializeToIpc(result);
     }
 
     async searchMemoriesHybrid(query: string, limit: number = 10): Promise<AdvancedSemanticFragment[]> {
@@ -704,12 +772,24 @@ export class AdvancedMemoryService {
         }
     }
 
+    @ipc('advancedMemory:searchResolutions')
+    async findResolutionMemoriesIpc(errorQuery: string, limit: number = 5): Promise<RuntimeValue> {
+        const result = await this.findResolutionMemories(errorQuery, limit);
+        return serializeToIpc(result);
+    }
+
     async findResolutionMemories(errorQuery: string, limit: number = 5): Promise<AdvancedSemanticFragment[]> {
         const normalizedLimit = Math.max(1, Math.min(50, limit));
         const candidates = await this.searchMemoriesHybrid(errorQuery, normalizedLimit * 3);
         return candidates
             .filter(memory => memory.tags.includes('resolution') || memory.tags.includes('error-fix'))
             .slice(0, normalizedLimit);
+    }
+
+    @ipc('advancedMemory:export')
+    async exportMemoriesIpc(query?: string, limit: number = 200): Promise<RuntimeValue> {
+        const result = await this.exportMemories(query, limit);
+        return serializeToIpc(result);
     }
 
     async exportMemories(query?: string, limit: number = 200): Promise<{
@@ -719,6 +799,12 @@ export class AdvancedMemoryService {
         memories: AdvancedSemanticFragment[];
     }> {
         return this.retrievalService.exportMemories(query, limit);
+    }
+
+    @ipc('advancedMemory:import')
+    async importMemoriesIpc(payload: { memories?: Array<Partial<AdvancedSemanticFragment>>; pendingMemories?: Array<Partial<PendingMemory>>; replaceExisting?: boolean }): Promise<RuntimeValue> {
+        const result = await this.importMemories(payload);
+        return serializeToIpc(result);
     }
 
     async importMemories(payload: {
@@ -806,6 +892,12 @@ export class AdvancedMemoryService {
         return result;
     }
 
+    @ipc('advancedMemory:getSearchAnalytics')
+    async getSearchAnalyticsIpc(): Promise<RuntimeValue> {
+        const result = this.getSearchAnalytics();
+        return serializeToIpc(result);
+    }
+
     getSearchAnalytics(): MemorySearchAnalytics {
         const totalQueries = this.searchAnalytics.totalQueries;
         const averageResults = totalQueries === 0
@@ -826,6 +918,12 @@ export class AdvancedMemoryService {
             lastQueryAt: this.searchAnalytics.lastQueryAt || undefined,
             topQueries
         };
+    }
+
+    @ipc('advancedMemory:health')
+    async getHealthStatusIpc(): Promise<RuntimeValue> {
+        const result = this.getHealthStatus();
+        return serializeToIpc(result);
     }
 
     getHealthStatus(): AdvancedMemoryHealthSnapshot {
@@ -862,10 +960,22 @@ export class AdvancedMemoryService {
         };
     }
 
+    @ipc('advancedMemory:getSearchHistory')
+    async getSearchHistoryIpc(limit: number = 25): Promise<RuntimeValue> {
+        const result = this.getSearchHistory(limit);
+        return serializeToIpc(result);
+    }
+
     getSearchHistory(limit: number = 25): MemorySearchHistoryEntry[] {
         const safeLimit = Math.max(1, Math.min(200, limit));
         const startIndex = Math.max(0, this.searchAnalytics.history.length - safeLimit);
         return this.searchAnalytics.history.slice(startIndex).reverse();
+    }
+
+    @ipc('advancedMemory:getSearchSuggestions')
+    async getSearchSuggestionsIpc(prefix?: string, limit: number = 8): Promise<RuntimeValue> {
+        const result = this.getSearchSuggestions(prefix, limit);
+        return serializeToIpc(result);
     }
 
     getSearchSuggestions(prefix?: string, limit: number = 8): string[] {
@@ -882,6 +992,13 @@ export class AdvancedMemoryService {
     // ========================================================================
     // EPISODIC MEMORY (Conversations)
     // ========================================================================
+
+    @ipc('advancedMemory:summarizeChat')
+    async summarizeChatIpc(payload: { chatId: string; provider?: string; model?: string }): Promise<RuntimeValue> {
+        const { chatId, provider, model } = payload;
+        const result = await this.summarizeChat(chatId, provider, model);
+        return serializeToIpc(result);
+    }
 
     async summarizeChat(chatId: string, provider?: string, model?: string): Promise<SummarizationResult> {
         const messages = await this.db.getMessages(chatId);

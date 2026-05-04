@@ -81,7 +81,7 @@ describe('ProcessService', () => {
             latestExitHandler = handler;
             return mockPtyProcess;
         });
-        service = new ProcessService();
+        service = new ProcessService(() => null);
     });
 
     afterEach(() => {

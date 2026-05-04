@@ -68,14 +68,20 @@ describe('Missing service TODO coverage (functional)', () => {
                 ),
                 getActiveLinkedAccount: vi.fn(async () => null),
                 initialize: vi.fn(async () => undefined),
+                saveLinkedAccount: vi.fn(),
             } as never,
             {
                 encrypt: vi.fn(),
                 decrypt: vi.fn(),
             } as never,
             {
+                on: vi.fn(),
                 emit: vi.fn(),
-            } as never
+            } as never,
+            {
+                setGithubToken: vi.fn(),
+            } as never,
+            () => null
         );
 
         const githubAccounts = await auth.getAccountsByProvider('github');
@@ -86,7 +92,7 @@ describe('Missing service TODO coverage (functional)', () => {
     });
 
     it('ProcessService exposes no running tasks by default', () => {
-        const processService = new ProcessService();
+        const processService = new ProcessService(() => null);
         expect(processService.getRunningTasks()).toEqual([]);
     });
 
@@ -100,7 +106,7 @@ describe('Missing service TODO coverage (functional)', () => {
     it('ThemeService returns persisted default theme', () => {
         const service = new ThemeService({
             getPath: vi.fn(() => 'C:/user-data/db'),
-        } as never);
+        } as never, () => null);
         expect(service.getThemesDirectory()).toContain('runtime');
     });
 });

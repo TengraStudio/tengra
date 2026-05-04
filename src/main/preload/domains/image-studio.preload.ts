@@ -9,11 +9,38 @@
  */
 
 import { IpcRenderer } from 'electron';
+import type { RuntimeValue } from '@shared/types/common';
+
+interface ImageStudioGeneratePayload {
+    prompt: string;
+    modelId: string;
+    count?: number;
+    width?: number;
+    height?: number;
+}
+
+interface ImageStudioEditPayload {
+    contextImage?: string;
+    sourceImage: string;
+    maskImage: string;
+    prompt: string;
+    mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
+    strength?: number;
+    modelId: string;
+}
+
+interface ImageStudioSavePayload {
+    image: string;
+    prompt?: string;
+    modelId?: string;
+    width?: number;
+    height?: number;
+}
 
 export interface ImageStudioBridge {
-    generate: (payload: any) => Promise<any>;
-    edit: (payload: any) => Promise<any>;
-    save: (payload: any) => Promise<any>;
+    generate: (payload: ImageStudioGeneratePayload) => Promise<RuntimeValue>;
+    edit: (payload: ImageStudioEditPayload) => Promise<RuntimeValue>;
+    save: (payload: ImageStudioSavePayload) => Promise<RuntimeValue>;
 }
 
 export function createImageStudioBridge(ipc: IpcRenderer): ImageStudioBridge {

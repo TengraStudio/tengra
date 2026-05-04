@@ -11,6 +11,7 @@
 import crypto from 'crypto';
 import http, { ClientRequest } from 'http';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
@@ -22,6 +23,8 @@ import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { getMainWindow } from '@main/startup/window';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { proxyAccountIdSchema, sessionKeySchema } from '@main/utils/ipc-validation';
 import { JsonObject, JsonValue, RuntimeValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import {
@@ -35,6 +38,8 @@ import {
 import { AppErrorCode, getErrorMessage, ProxyServiceError, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
+
+type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 /**
  * Check if file/directory exists using async fs.access
@@ -418,7 +423,7 @@ export class ProxyService extends BaseService {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send(QUOTA_STREAM_CHANNEL, payload);
       }
-      this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as unknown as RuntimeValue);
+      this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as UnsafeValue as RuntimeValue);
     } catch (error) {
       const message = getErrorMessage(error);
       if (message.includes('ECONNREFUSED')) {
@@ -499,7 +504,7 @@ export class ProxyService extends BaseService {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send(QUOTA_STREAM_CHANNEL, payload);
     }
-    this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as unknown as RuntimeValue);
+    this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as UnsafeValue as RuntimeValue);
   }
 
   private buildQuotaFingerprint(payload: ProxyQuotaBroadcastPayload): string {
@@ -586,7 +591,7 @@ export class ProxyService extends BaseService {
       const remainingQuota = this.asNumber(modelObj?.remaining_quota ?? modelObj?.remainingQuota);
       const totalQuota = this.asNumber(modelObj?.total_quota ?? modelObj?.totalQuota);
       const resetTime = this.asString(modelObj?.reset_time ?? modelObj?.resetTime);
-      const modelId = this.asString(modelObj?.id) ?? 'unknown-model';
+      const modelId = this.asString(modelObj?.id) ?? 'UnsafeValue-model';
       const modelName = this.asString(modelObj?.name ?? modelObj?.displayName) ?? modelId;
 
       return {
@@ -1191,6 +1196,7 @@ export class ProxyService extends BaseService {
    * @returns Proxy status
    * @throws on invalid port
    */
+  @ipc('proxy-embed:start')
   async startEmbeddedProxy(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
     const previous = this.operationLock;
     const current = (async () => {
@@ -1247,6 +1253,7 @@ export class ProxyService extends BaseService {
   }
 
   /** Stops the embedded proxy process. @throws ProxyServiceError on failure */
+  @ipc('proxy-embed:stop')
   async stopEmbeddedProxy(): Promise<void> {
     const previous = this.operationLock;
     const current = (async () => {
@@ -1281,6 +1288,7 @@ export class ProxyService extends BaseService {
   }
 
   /** Returns current embedded proxy running status. @returns Proxy embed status */
+  @ipc('proxy-embed:status')
   getEmbeddedProxyStatus(): ProxyEmbedStatus {
     const status = this.processManager.getStatus();
     if (status.running && status.port) { this.currentPort = status.port; }
@@ -1468,7 +1476,7 @@ export class ProxyService extends BaseService {
       '/v0/skills',
       await this.getRuntimeProxyApiKey(),
       'POST',
-      input as unknown as RuntimeValue
+      input as UnsafeValue as RuntimeValue
     );
     if ('item' in response && response.item) {
       return response.item;
@@ -1485,7 +1493,7 @@ export class ProxyService extends BaseService {
       `/v0/skills/${encodeURIComponent(skillId)}/toggle`,
       await this.getRuntimeProxyApiKey(),
       'POST',
-      input as unknown as RuntimeValue
+      input as UnsafeValue as RuntimeValue
     );
     if ('item' in response && response.item) {
       return response.item;
@@ -1527,7 +1535,7 @@ export class ProxyService extends BaseService {
       '/v0/skills/marketplace/install',
       await this.getRuntimeProxyApiKey(),
       'POST',
-      input as unknown as RuntimeValue
+      input as UnsafeValue as RuntimeValue
     );
     if ('item' in response && response.item) {
       return response.item;
@@ -1590,7 +1598,7 @@ export class ProxyService extends BaseService {
 
   private normalizeCodexQuota(codexData: CodexUsage | null): QuotaInfo | undefined {
     if (!codexData) { return undefined; }
-    const usageObj = codexData as unknown as Record<string, RuntimeValue>;
+    const usageObj = codexData as UnsafeValue as Record<string, RuntimeValue>;
     const remaining = (usageObj.remainingRequests as number) || (usageObj.remainingTokens as number) || 0;
     const limit = (usageObj.dailyLimit as number) || (usageObj.weeklyLimit as number) || (usageObj.totalRequests as number) || 0;
     const fraction = this.determineCodexFraction(codexData, remaining, limit);
@@ -1852,7 +1860,7 @@ export class ProxyService extends BaseService {
                   parsed['error'] = `HTTP ${res.statusCode}`;
                 }
               }
-              resolve(parsed as unknown as ProxyRequestResponse<T>);
+              resolve(parsed as UnsafeValue as ProxyRequestResponse<T>);
               return;
             }
 
@@ -2048,5 +2056,144 @@ export class ProxyService extends BaseService {
       });
       request.end();
     });
+  }
+
+  // --- IPC Decorated Methods ---
+
+  @ipc('proxy:getQuota')
+  async getQuotaIpc(): Promise<RuntimeValue> {
+    return serializeToIpc(await this.getQuota());
+  }
+
+  @ipc('proxy:getCopilotQuota')
+  async getCopilotQuotaIpc(): Promise<RuntimeValue> {
+    return serializeToIpc(await this.getCopilotQuota());
+  }
+
+  @ipc('proxy:getCodexUsage')
+  async getCodexUsageIpc(): Promise<RuntimeValue> {
+    return serializeToIpc(await this.getCodexUsage());
+  }
+
+  @ipc('proxy:getClaudeQuota')
+  async getClaudeQuotaIpc(): Promise<RuntimeValue> {
+    return serializeToIpc(await this.getClaudeQuota());
+  }
+
+  @ipc('proxy:antigravityLogin')
+  async antigravityLoginIpc(_accountId?: string): Promise<RuntimeValue> {
+    const result = await this.getAntigravityAuthUrl(_accountId);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:ollamaLogin')
+  async ollamaLoginIpc(_accountId?: string): Promise<RuntimeValue> {
+    proxyAccountIdSchema.parse(_accountId);
+    const result = await this.getOllamaAuthUrl(_accountId);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:ollamaSignout')
+  async ollamaSignoutIpc(_accountId?: string): Promise<RuntimeValue> {
+    proxyAccountIdSchema.parse(_accountId);
+    const result = await this.ollamaSignout(_accountId);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:claudeLogin')
+  async claudeLoginIpc(_accountId?: string): Promise<RuntimeValue> {
+    const result = await this.getAnthropicAuthUrl(_accountId);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:saveClaudeSession')
+  async saveClaudeSessionIpc(sessionKey: string, accountId?: string): Promise<RuntimeValue> {
+    sessionKeySchema.parse(sessionKey);
+    proxyAccountIdSchema.parse(accountId);
+    try {
+      const result = await this.saveClaudeSession(sessionKey, accountId);
+      return serializeToIpc(result);
+    } catch (error) {
+      this.logError('Failed to save manual session:', error as Error);
+      return serializeToIpc({ success: false, error: (error as Error).message });
+    }
+  }
+
+  @ipc('proxy:codexLogin')
+  async codexLoginIpc(accountId?: string): Promise<RuntimeValue> {
+    this.logInfo(`proxy:codexLogin requested${accountId ? ` for ${accountId}` : ''}`);
+    try {
+      const result = await this.getCodexAuthUrl(accountId);
+      return serializeToIpc(result);
+    } catch (error) {
+      this.logError(`proxy:codexLogin failed: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  @ipc('proxy:getAuthStatus')
+  async getAuthStatusIpc(provider: string, state: string, accountId: string): Promise<RuntimeValue> {
+    const result = await this.getBrowserAuthStatus(provider as UnsafeValue, state, accountId);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:verifyAuthBridge')
+  async verifyAuthBridgeIpc(provider?: string): Promise<RuntimeValue> {
+    const result = await this.verifyAuthBridge(provider as UnsafeValue);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:cancelAuth')
+  async cancelAuthIpc(provider: string, state: string, accountId: string): Promise<RuntimeValue> {
+    const result = await this.cancelBrowserAuth(provider as UnsafeValue, state, accountId);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:getModels')
+  async getModelsIpc(): Promise<RuntimeValue> {
+    const result = await this.getModels();
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:listSkills')
+  async listSkillsIpc(): Promise<RuntimeValue> {
+    const result = await this.listSkills();
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:saveSkill')
+  async saveSkillIpc(input: UnsafeValue): Promise<RuntimeValue> {
+    const result = await this.saveSkill(input);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:toggleSkill')
+  async toggleSkillIpc(skillId: string, enabled: boolean): Promise<RuntimeValue> {
+    const result = await this.toggleSkill(skillId, { enabled });
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:deleteSkill')
+  async deleteSkillIpc(skillId: string): Promise<RuntimeValue> {
+    const result = await this.deleteSkill(skillId);
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:listMarketplaceSkills')
+  async listMarketplaceSkillsIpc(): Promise<RuntimeValue> {
+    const result = await this.listMarketplaceSkills();
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:installMarketplaceSkill')
+  async installMarketplaceSkillIpc(skillId: string): Promise<RuntimeValue> {
+    const result = await this.installMarketplaceSkill({ id: skillId });
+    return serializeToIpc(result);
+  }
+
+  @ipc('proxy:forceRefreshQuota')
+  async forceRefreshQuotaIpc(): Promise<RuntimeValue> {
+    await this.triggerQuotaSnapshotRefresh(true);
+    return serializeToIpc(true);
   }
 }

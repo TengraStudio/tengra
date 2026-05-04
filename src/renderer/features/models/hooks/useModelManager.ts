@@ -10,8 +10,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useTranslation } from '@/i18n';
 import { fetchLinkedAccountsSnapshot } from '@/features/settings/hooks/useLinkedAccounts';
+import { useTranslation } from '@/i18n';
 import { pushNotification } from '@/store/notification-center.store';
 import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';

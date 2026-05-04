@@ -15,6 +15,7 @@
 
 import * as fsPromises from 'fs/promises';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -106,6 +107,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Create a new shared prompt. */
+    @ipc('shared-prompts:create')
     async create(input: SharedPromptInput): Promise<SharedPrompt> {
         await this.ensureReady();
         const now = Date.now();
@@ -130,6 +132,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Get a shared prompt by ID. */
+    @ipc('shared-prompts:getById')
     async getById(id: string): Promise<SharedPrompt | undefined> {
         await this.ensureReady();
         const stmt = await this.db.prepare(
@@ -140,6 +143,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** List shared prompts with optional filtering. */
+    @ipc('shared-prompts:list')
     async list(filter?: SharedPromptFilter): Promise<SharedPrompt[]> {
         await this.ensureReady();
         const conditions: string[] = [];
@@ -175,7 +179,9 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Update an existing shared prompt. */
-    async update(id: string, input: Partial<SharedPromptInput>): Promise<SharedPrompt | undefined> {
+    @ipc('shared-prompts:update')
+    async update(payload: { id: string, input: Partial<SharedPromptInput> }): Promise<SharedPrompt | undefined> {
+        const { id, input } = payload;
         await this.ensureReady();
         const existing = await this.getById(id);
         if (!existing) {return undefined;}
@@ -199,6 +205,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Delete a shared prompt by ID. */
+    @ipc('shared-prompts:delete')
     async delete(id: string): Promise<boolean> {
         await this.ensureReady();
         const stmt = await this.db.prepare(`DELETE FROM shared_prompts WHERE id = $1`);
@@ -209,6 +216,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Export all shared prompts as a JSON string. */
+    @ipc('shared-prompts:exportToJson')
     async exportToJson(): Promise<string> {
         await this.ensureReady();
         const prompts = await this.list({ limit: MAX_SEARCH_LIMIT });
@@ -216,6 +224,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Import shared prompts from a JSON string. */
+    @ipc('shared-prompts:importFromJson')
     async importFromJson(jsonString: string): Promise<number> {
         await this.ensureReady();
         let data: RuntimeValue;
@@ -246,12 +255,14 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Import shared prompts from a JSON file path. */
+    @ipc('shared-prompts:importFromFile')
     async importFromFile(filePath: string): Promise<number> {
         const content = await fsPromises.readFile(filePath, 'utf-8');
         return this.importFromJson(content);
     }
 
     /** Export shared prompts to a JSON file. */
+    @ipc('shared-prompts:exportToFile')
     async exportToFile(filePath: string): Promise<void> {
         const json = await this.exportToJson();
         await fsPromises.writeFile(filePath, json, 'utf-8');

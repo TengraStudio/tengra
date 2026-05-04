@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import AntigravityIcon from '@assets/antigravity.svg?url';
 import React from 'react';
 
 import { formatReset } from '@/lib/formatters';
@@ -17,7 +18,6 @@ import { ModelQuotaItem, QuotaResponse } from '@/types/quota';
 import { AccountWrapper } from '../../types';
 
 import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
-import AntigravityIcon from '@assets/antigravity.svg?url';
 
 interface AntigravityCardProps {
     t: (key: string, options?: Record<string, string | number>) => string

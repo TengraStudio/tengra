@@ -8,10 +8,12 @@
  * (at your option) any later version.
  */
 
+import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { ipc, registerServiceIpc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { SecurityService } from '@main/services/security/security.service';
 import { SSHKeyManager } from '@main/services/workspace/ssh-key-manager';
@@ -19,7 +21,17 @@ import { SSHProfileManager } from '@main/services/workspace/ssh-profile-manager'
 import { SSHSessionRecordingManager } from '@main/services/workspace/ssh-session-recording-manager';
 import { SSHTunnelManager } from '@main/services/workspace/ssh-tunnel-manager';
 import { validateCommand } from '@main/utils/command-validator.util';
+import { fileOpSchema,sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/utils/ipc-validation';
+import { isPathAllowed } from '@main/utils/path-security.util';
 import { withRetry } from '@main/utils/retry.util';
+import { IpcValue, JsonValue, RuntimeValue } from '@shared/types/common';
+import { BrowserWindow, safeStorage } from 'electron';
+import { Client, ClientChannel } from 'ssh2';
+import { z } from 'zod';
+
+/** Maximum content size for SSH file writes (50 MB) */
+const MAX_SSH_CONTENT_SIZE = 50 * 1024 * 1024;
+
 import {
     SSHDevContainer,
     SSHExecOptions,
@@ -37,9 +49,7 @@ import {
     SSHTransferTask,
     SSHTunnelPreset
 } from '@shared/types/ssh';
-import { getErrorMessage } from '@shared/utils/error.util';
-import { safeStorage } from 'electron';
-import { Client, ClientChannel } from 'ssh2';
+import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 
 export interface SSHConnection {
     id: string;
@@ -148,7 +158,12 @@ export class SSHService extends EventEmitter {
         return this._tunnelManager;
     }
 
-    constructor(storagePath: string, securityService?: SecurityService) {
+    constructor(
+        storagePath: string,
+        securityService: SecurityService,
+        private getMainWindow: () => BrowserWindow | null,
+        private readonly allowedFileRoots?: Set<string>
+    ) {
         super();
         this.securityService = securityService;
         this.storagePath = storagePath;
@@ -166,6 +181,31 @@ export class SSHService extends EventEmitter {
         // Forward tunnel manager events
         this._tunnelManager.on('portForwardCreated', this.onTunnelCreated);
         this._tunnelManager.on('portForwardClosed', this.onTunnelClosed);
+
+        this.setupIpcForwarding();
+    }
+
+    private broadcastEvent(channel: string, payload: RuntimeValue): void {
+        const window = this.getMainWindow();
+        if (window && !window.isDestroyed()) {
+            window.webContents.send(channel, payload);
+        }
+    }
+
+    private setupIpcForwarding(): void {
+        this.on('stdout', (payload) => this.broadcastEvent('ssh:stdout', payload));
+        this.on('stderr', (payload) => this.broadcastEvent('ssh:stderr', payload));
+        this.on('connected', (id) => this.broadcastEvent('ssh:connected', id));
+        this.on('disconnected', (id) => this.broadcastEvent('ssh:disconnected', id));
+        this.on('error', (payload) => this.broadcastEvent('ssh:error', payload));
+    }
+
+    private sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'> {
+        const safeConnection = { ...connection };
+        delete safeConnection.password;
+        delete safeConnection.privateKey;
+        delete safeConnection.passphrase;
+        return safeConnection;
     }
 
     /**
@@ -271,8 +311,36 @@ export class SSHService extends EventEmitter {
         return this.initPromise;
     }
 
+    @ipc({
+        channel: 'ssh:getProfiles',
+        defaultValue: []
+    })
+    async ipcGetProfiles(): Promise<Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'>[]> {
+        const profiles = await this.getSavedProfiles();
+        return profiles.map(p => this.sanitizeConnectionForRenderer(p));
+    }
+
     async getSavedProfiles(): Promise<SSHConnection[]> {
         return this.profileManager.getSavedProfiles();
+    }
+
+    @ipc({
+        channel: 'ssh:saveProfile',
+        argsSchema: z.tuple([sshProfileSchema]),
+        defaultValue: { success: false, error: 'Save failed' }
+    })
+    async ipcSaveProfile(profile: SSHConnection): Promise<{ success: boolean; error?: string; code?: string }> {
+        try {
+            const success = await this.profileManager.saveProfile(profile);
+            return { success };
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            return {
+                success: false,
+                error: message,
+                code: AppErrorCode.SSH_PROFILE_SAVE_FAILED
+            };
+        }
     }
 
     async saveProfile(profile: SSHConnection): Promise<boolean> {
@@ -321,10 +389,18 @@ export class SSHService extends EventEmitter {
         return this.profileManager.searchProfiles(query);
     }
 
+    @ipc({
+        channel: 'ssh:listManagedKeys',
+        defaultValue: []
+    })
     async listManagedKeys(): Promise<SSHManagedKey[]> {
         return this.keyManager.listManagedKeys();
     }
 
+    @ipc({
+        channel: 'ssh:generateManagedKey',
+        argsSchema: z.tuple([z.string(), z.string().optional()])
+    })
     async generateManagedKey(name: string, passphrase?: string): Promise<{
         key: SSHManagedKey;
         privateKey: string;
@@ -333,33 +409,82 @@ export class SSHService extends EventEmitter {
         return this.keyManager.generateManagedKey(name, passphrase);
     }
 
+    @ipc({
+        channel: 'ssh:importManagedKey',
+        argsSchema: z.tuple([z.string(), z.string(), z.string().optional()])
+    })
     async importManagedKey(name: string, privateKey: string, passphrase?: string): Promise<SSHManagedKey> {
         return this.keyManager.importManagedKey(name, privateKey, passphrase);
     }
 
+    @ipc({
+        channel: 'ssh:deleteManagedKey',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: false
+    })
     async deleteManagedKey(id: string): Promise<boolean> {
         return this.keyManager.deleteManagedKey(id);
     }
 
+    @ipc({
+        channel: 'ssh:rotateManagedKey',
+        argsSchema: z.tuple([z.string(), z.string().optional()]),
+        defaultValue: null
+    })
     async rotateManagedKey(id: string, nextPassphrase?: string): Promise<SSHManagedKey | null> {
         return this.keyManager.rotateManagedKey(id, nextPassphrase);
     }
 
+    @ipc({
+        channel: 'ssh:backupManagedKey',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: null
+    })
     async backupManagedKey(id: string): Promise<{ filename: string; privateKey: string } | null> {
         return this.keyManager.backupManagedKey(id);
     }
 
+    @ipc({
+        channel: 'ssh:listKnownHosts',
+        defaultValue: []
+    })
     async listKnownHosts(): Promise<SSHKnownHostEntry[]> {
         return this.keyManager.listKnownHosts();
     }
 
+    @ipc('ssh:addKnownHost')
     async addKnownHost(entry: SSHKnownHostEntry): Promise<boolean> {
         return this.keyManager.addKnownHost(entry);
     }
 
+    @ipc({
+        channel: 'ssh:removeKnownHost',
+        argsSchema: z.tuple([z.string(), z.string().optional()]),
+        defaultValue: false
+    })
     async removeKnownHost(host: string, keyType?: string): Promise<boolean> {
         return this.keyManager.removeKnownHost(host, keyType);
     }
+
+    @ipc({
+        channel: 'ssh:deleteProfile',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: { success: false, error: 'Delete failed' }
+    })
+    async ipcDeleteProfile(id: string): Promise<{ success: boolean; error?: string; code?: string }> {
+        try {
+            const success = await this.deleteProfile(id);
+            return { success };
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            return {
+                success: false,
+                error: message,
+                code: AppErrorCode.SSH_PROFILE_DELETE_FAILED
+            };
+        }
+    }
+
 
     async deleteProfile(id: string): Promise<boolean> {
         return this.profileManager.deleteProfile(id);
@@ -408,16 +533,32 @@ export class SSHService extends EventEmitter {
         };
     }
 
+    @ipc({
+        channel: 'ssh:connect',
+        argsSchema: z.tuple([sshConnectionSchema]),
+        defaultValue: { success: false, error: 'Connection failed' }
+    })
     async connect(config: SSHConnection): Promise<{ success: boolean; error?: string; diagnostics?: SSHConnectDiagnostics }> {
+        const id = config.id ?? randomUUID();
+        const authType = config.authType ?? (config.privateKey ? 'key' : 'password');
+
+        const payload: SSHConnection = {
+            ...config,
+            id,
+            name: config.name ?? `${config.username}@${config.host}`,
+            authType,
+            connected: false
+        };
+
         // Check if already connected
-        if (this.connections.has(config.id)) {
+        if (this.connections.has(payload.id)) {
             return { success: true };
         }
 
         let privateKeyContent: Buffer | undefined;
         try {
-            if (config.privateKey) {
-                privateKeyContent = await fs.promises.readFile(config.privateKey);
+            if (payload.privateKey) {
+                privateKeyContent = await fs.promises.readFile(payload.privateKey);
             }
         } catch (error) {
             const message = getErrorMessage(error as Error);
@@ -426,30 +567,30 @@ export class SSHService extends EventEmitter {
 
         return new Promise(resolve => {
             const conn = new Client();
-            const keepaliveInterval = config.keepaliveInterval ?? 30000;
+            const keepaliveInterval = payload.keepaliveInterval ?? 30000;
 
-            this.setupConnectionHandlers(conn, config, keepaliveInterval, resolve);
+            this.setupConnectionHandlers(conn, payload, keepaliveInterval, resolve);
 
             try {
                 // Decrypt credentials if needed
-                const password = config.password
-                    ? this.decryptCredential(config.password)
+                const password = payload.password
+                    ? this.decryptCredential(payload.password)
                     : undefined;
-                const passphrase = config.passphrase
-                    ? this.decryptCredential(config.passphrase)
+                const passphrase = payload.passphrase
+                    ? this.decryptCredential(payload.passphrase)
                     : undefined;
 
                 conn.connect({
-                    host: config.host,
-                    port: config.port,
-                    username: config.username,
+                    host: payload.host,
+                    port: payload.port,
+                    username: payload.username,
                     password,
                     privateKey: privateKeyContent,
                     passphrase,
                     keepaliveInterval,
                     keepaliveCountMax: 3,
                     readyTimeout: 20000,
-                    agentForward: config.forwardAgent,
+                    agentForward: payload.forwardAgent,
                 });
             } catch (error) {
                 const message = getErrorMessage(error as Error);
@@ -654,6 +795,11 @@ export class SSHService extends EventEmitter {
         return this.connectionStats.get(connectionId) ?? null;
     }
 
+    @ipc({
+        channel: 'ssh:disconnect',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: false
+    })
     async disconnect(connectionId: string): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (conn) {
@@ -665,24 +811,62 @@ export class SSHService extends EventEmitter {
         return false;
     }
 
+    @ipc('ssh:getConnections')
+    ipcGetConnections(): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'>[] {
+        return Array.from(this.connectionDetails.values()).map(c => this.sanitizeConnectionForRenderer(c));
+    }
+
     getAllConnections(): SSHConnection[] {
         return Array.from(this.connectionDetails.values());
     }
 
+    @ipc({
+        channel: 'ssh:isConnected',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: false
+    })
     isConnected(connectionId: string): boolean {
         return this.connections.has(connectionId);
     }
 
+    @ipc({
+        channel: 'ssh:execute',
+        argsSchema: z.tuple([z.string(), z.string(), z.any().optional()]),
+        defaultValue: { code: -1, stdout: '', stderr: 'Execution failed', success: false }
+    })
     async executeCommand(
         connectionId: string,
         command: string,
         options?: SSHExecOptions
-    ): Promise<{ stdout: string; stderr: string; code: number }> {
+    ): Promise<{ stdout: string; stderr: string; code: number; success: boolean; error?: string }> {
+        if (command.includes('\n') || command.includes('\r') || command.includes('\0')) {
+            throw new Error('Invalid SSH command: command contains forbidden control characters');
+        }
+
         const validation = validateCommand(command);
         if (!validation.allowed) {
             throw new Error(`Command blocked: ${validation.reason}`);
         }
 
+        const conn = this.connections.get(connectionId);
+        if (!conn) {
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
+        }
+
+        try {
+            const result = await this.executeCommandInternal(connectionId, command, options);
+            return { ...result, success: result.code === 0 };
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            return { success: false, error: message, stdout: '', stderr: message, code: 1 };
+        }
+    }
+
+    private async executeCommandInternal(
+        connectionId: string,
+        command: string,
+        options?: SSHExecOptions
+    ): Promise<{ stdout: string; stderr: string; code: number }> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -696,7 +880,7 @@ export class SSHService extends EventEmitter {
             stats.bytesSent += command.length;
         }
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const execOptions: Record<string, RuntimeValue> = {};
             if (options?.env) {
                 execOptions.env = options.env;
@@ -707,7 +891,7 @@ export class SSHService extends EventEmitter {
 
             conn.exec(command, execOptions, (err, stream) => {
                 if (err) {
-                    return reject(err);
+                    return resolve({ stdout: '', stderr: getErrorMessage(err), code: 1 });
                 }
                 let stdout = '';
                 let stderr = '';
@@ -717,7 +901,7 @@ export class SSHService extends EventEmitter {
                 if (options?.timeout) {
                     timeout = setTimeout(() => {
                         stream.close();
-                        reject(new Error('Command timed out'));
+                        resolve({ stdout: '', stderr: 'Command timed out', code: 1 });
                     }, options.timeout);
                 }
 
@@ -796,10 +980,19 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc({
+        channel: 'ssh:listDir',
+        argsSchema: z.tuple([z.string(), z.string()]),
+        defaultValue: { success: false, error: 'List failed' }
+    })
     async listDirectory(
         connectionId: string,
         dirPath: string
     ): Promise<{ success: boolean; files?: SSHFile[]; error?: string }> {
+        if (dirPath.includes('..') || dirPath.includes('\0') || dirPath.includes('\r') || dirPath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:listDir: path contains forbidden characters`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -854,7 +1047,25 @@ export class SSHService extends EventEmitter {
         };
     }
 
+    @ipc({
+        channel: 'ssh:readFile',
+        argsSchema: z.tuple([z.string(), z.string()]),
+        defaultValue: { success: false, error: 'Read failed' }
+    })
+    async ipcReadFile(connectionId: string, filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
+        try {
+            const content = await this.readFile(connectionId, filePath);
+            return { success: true, content };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async readFile(connectionId: string, filePath: string): Promise<string> {
+        if (filePath.includes('..') || filePath.includes('\0') || filePath.includes('\r') || filePath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:readFile: path contains forbidden characters`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -875,7 +1086,28 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc({
+        channel: 'ssh:writeFile',
+        argsSchema: z.tuple([z.string(), z.string(), z.string()]),
+        defaultValue: { success: false, error: 'Write failed' }
+    })
+    async ipcWriteFile(connectionId: string, filePath: string, content: string): Promise<{ success: boolean; error?: string }> {
+        try {
+            const success = await this.writeFile(connectionId, filePath, content);
+            return { success };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async writeFile(connectionId: string, filePath: string, content: string): Promise<boolean> {
+        if (filePath.includes('..') || filePath.includes('\0') || filePath.includes('\r') || filePath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:writeFile: path contains forbidden characters`);
+        }
+        if (content.length > MAX_SSH_CONTENT_SIZE) {
+            throw new Error(`Content exceeds maximum size of ${MAX_SSH_CONTENT_SIZE} bytes`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -899,7 +1131,21 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc('ssh:deleteDir')
+    async ipcDeleteDir(connectionId: string, dirPath: string): Promise<{ success: boolean; error?: string }> {
+        try {
+            const success = await this.deleteDirectory(connectionId, dirPath);
+            return { success };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async deleteDirectory(connectionId: string, dirPath: string): Promise<boolean> {
+        if (dirPath.includes('..') || dirPath.includes('\0') || dirPath.includes('\r') || dirPath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:deleteDir: path contains forbidden characters`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -922,7 +1168,25 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc({
+        channel: 'ssh:deleteFile',
+        argsSchema: z.tuple([z.string(), z.string()]),
+        defaultValue: { success: false, error: 'Delete failed' }
+    })
+    async ipcDeleteFile(connectionId: string, filePath: string): Promise<{ success: boolean; error?: string }> {
+        try {
+            const success = await this.deleteFile(connectionId, filePath);
+            return { success };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async deleteFile(connectionId: string, filePath: string): Promise<boolean> {
+        if (filePath.includes('..') || filePath.includes('\0') || filePath.includes('\r') || filePath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:deleteFile: path contains forbidden characters`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -945,7 +1209,25 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc({
+        channel: 'ssh:mkdir',
+        argsSchema: z.tuple([z.string(), z.string()]),
+        defaultValue: { success: false, error: 'Mkdir failed' }
+    })
+    async ipcMkdir(connectionId: string, dirPath: string): Promise<{ success: boolean; error?: string }> {
+        try {
+            const success = await this.createDirectory(connectionId, dirPath);
+            return { success };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async createDirectory(connectionId: string, dirPath: string): Promise<boolean> {
+        if (dirPath.includes('..') || dirPath.includes('\0') || dirPath.includes('\r') || dirPath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:mkdir: path contains forbidden characters`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -968,7 +1250,28 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc({
+        channel: 'ssh:rename',
+        argsSchema: z.tuple([z.string(), z.string(), z.string()]),
+        defaultValue: { success: false, error: 'Rename failed' }
+    })
+    async ipcRename(connectionId: string, oldPath: string, newPath: string): Promise<{ success: boolean; error?: string }> {
+        try {
+            const success = await this.rename(connectionId, oldPath, newPath);
+            return { success };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async rename(connectionId: string, oldPath: string, newPath: string): Promise<boolean> {
+        if (oldPath.includes('..') || oldPath.includes('\0') || oldPath.includes('\r') || oldPath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:rename oldPath: path contains forbidden characters`);
+        }
+        if (newPath.includes('..') || newPath.includes('\0') || newPath.includes('\r') || newPath.includes('\n')) {
+            throw new Error(`Invalid SSH path for ssh:rename newPath: path contains forbidden characters`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) {
             throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
@@ -995,6 +1298,22 @@ export class SSHService extends EventEmitter {
 
     /** Minimum interval between progress emissions (ms) */
     private static readonly PROGRESS_THROTTLE_MS = 100;
+
+    @ipc({
+        channel: 'ssh:upload',
+        argsSchema: z.tuple([fileOpSchema]),
+        defaultValue: { success: false, error: 'Upload failed' }
+    })
+    async ipcUpload(payload: { connectionId: string; local: string; remote: string }): Promise<{ success: boolean; error?: string }> {
+        try {
+            const success = await this.uploadFile(payload.connectionId, payload.local, payload.remote, (transferred, total) => {
+                this.broadcastEvent('ssh:uploadProgress', { connectionId: payload.connectionId, transferred, total });
+            });
+            return { success };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
 
     async uploadFile(
         connectionId: string,
@@ -1062,6 +1381,22 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc({
+        channel: 'ssh:download',
+        argsSchema: z.tuple([fileOpSchema]),
+        defaultValue: { success: false, error: 'Download failed' }
+    })
+    async ipcDownload(payload: { connectionId: string; remote: string; local: string }): Promise<{ success: boolean; error?: string }> {
+        try {
+            const success = await this.downloadFile(payload.connectionId, payload.remote, payload.local, (transferred, total) => {
+                this.broadcastEvent('ssh:downloadProgress', { connectionId: payload.connectionId, transferred, total });
+            });
+            return { success };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async downloadFile(
         connectionId: string,
         remotePath: string,
@@ -1126,6 +1461,15 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc('ssh:shellStart')
+    async ipcShellStart(connectionId: string): Promise<{ success: boolean; error?: string }> {
+        return this.startShell(
+            connectionId,
+            (data) => this.broadcastEvent('ssh:shellData', { connectionId, data }),
+            () => this.broadcastEvent('ssh:disconnected', connectionId)
+        );
+    }
+
     async startShell(
         connectionId: string,
         onData: (data: string) => void,
@@ -1178,6 +1522,7 @@ export class SSHService extends EventEmitter {
     /**
      * Resize the shell terminal
      */
+    @ipc('ssh:shellResize')
     resizeShell(connectionId: string, cols: number, rows: number): boolean {
         const session = this.shellSessions.get(connectionId);
         if (!session) {
@@ -1191,6 +1536,12 @@ export class SSHService extends EventEmitter {
     /**
      * Write data to the shell session
      */
+    @ipc('ssh:shellWrite')
+    ipcShellWrite(connectionId: string, data: string): { success: boolean } {
+        const success = this.writeToShell(connectionId, data);
+        return { success };
+    }
+
     writeToShell(connectionId: string, data: string): boolean {
         const session = this.shellSessions.get(connectionId);
         if (!session) {
@@ -1204,6 +1555,7 @@ export class SSHService extends EventEmitter {
     /**
      * Close the shell session
      */
+    @ipc('ssh:shellClose')
     closeShell(connectionId: string): boolean {
         const session = this.shellSessions.get(connectionId);
         if (!session) {
@@ -1215,6 +1567,7 @@ export class SSHService extends EventEmitter {
         return true;
     }
 
+    @ipc('ssh:getLogFiles')
     async getLogFiles(connectionId: string): Promise<string[]> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
@@ -1235,6 +1588,7 @@ export class SSHService extends EventEmitter {
         }
     }
 
+    @ipc('ssh:readLogFile')
     async readLogFile(connectionId: string, filePath: string, lines: number = 50): Promise<string> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
@@ -1279,6 +1633,7 @@ export class SSHService extends EventEmitter {
     /**
      * Create a local port forward (local -> remote)
      */
+    @ipc('ssh:createTunnel')
     async createLocalForward(
         connectionId: string,
         localHost: string,
@@ -1366,14 +1721,17 @@ export class SSHService extends EventEmitter {
         return this._tunnelManager.createDynamicForward(connectionId, conn, localHost, localPort);
     }
 
+    @ipc('ssh:saveTunnelPreset')
     async saveTunnelPreset(preset: Omit<SSHTunnelPreset, 'id' | 'createdAt' | 'updatedAt'>): Promise<SSHTunnelPreset> {
         return this._tunnelManager.saveTunnelPreset(preset);
     }
 
+    @ipc('ssh:listTunnelPresets')
     async listTunnelPresets(): Promise<SSHTunnelPreset[]> {
         return this._tunnelManager.listTunnelPresets();
     }
 
+    @ipc('ssh:deleteTunnelPreset')
     async deleteTunnelPreset(id: string): Promise<boolean> {
         return this._tunnelManager.deleteTunnelPreset(id);
     }
@@ -1381,6 +1739,7 @@ export class SSHService extends EventEmitter {
     /**
      * Get all active port forwards
      */
+    @ipc('ssh:listTunnels')
     getPortForwards(connectionId?: string): SSHPortForward[] {
         const allForwards = this._tunnelManager.getAllPortForwards();
         if (connectionId) {
@@ -1392,6 +1751,7 @@ export class SSHService extends EventEmitter {
     /**
      * Close a port forward
      */
+    @ipc('ssh:closeTunnel')
     async closePortForward(forwardId: string): Promise<boolean> {
         return await this._tunnelManager.closePortForward(forwardId);
     }
@@ -1441,6 +1801,11 @@ export class SSHService extends EventEmitter {
         this.removeAllListeners();
     }
 
+    @ipc({
+        channel: 'ssh:getSystemStats',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: { uptime: '-', memory: { total: 0, used: 0, percent: 0 }, cpu: 0, disk: '0%' }
+    })
     async getSystemStats(connectionId: string): Promise<SSHSystemStats> {
         try {
             const uptime = (await this.executeCommand(connectionId, 'uptime -p')).stdout.trim();
@@ -1486,6 +1851,11 @@ export class SSHService extends EventEmitter {
         return values[4] ?? '0%';
     }
 
+    @ipc({
+        channel: 'ssh:getInstalledPackages',
+        argsSchema: z.tuple([z.string(), z.enum(['apt', 'npm', 'pip']).optional()]),
+        defaultValue: []
+    })
     async getInstalledPackages(
         connectionId: string,
         manager: 'apt' | 'npm' | 'pip' = 'apt'
@@ -1551,6 +1921,11 @@ export class SSHService extends EventEmitter {
         }
     }
 
+    @ipc({
+        channel: 'ssh:searchRemoteFiles',
+        argsSchema: z.tuple([z.string(), z.string(), z.object({ path: z.string().optional(), contentSearch: z.boolean().optional(), limit: z.number().optional() }).optional()]),
+        defaultValue: []
+    })
     async searchRemoteFiles(
         connectionId: string,
         query: string,
@@ -1582,14 +1957,28 @@ export class SSHService extends EventEmitter {
         return results;
     }
 
+    @ipc({
+        channel: 'ssh:getSearchHistory',
+        argsSchema: z.tuple([z.string().optional()]),
+        defaultValue: []
+    })
     async getSearchHistory(connectionId?: string): Promise<SSHSearchHistoryEntry[]> {
         return this.profileManager.getSearchHistory(connectionId);
     }
 
+    @ipc({
+        channel: 'ssh:exportSearchHistory',
+        defaultValue: ''
+    })
     async exportSearchHistory(): Promise<string> {
         return this.profileManager.exportSearchHistory();
     }
 
+    @ipc({
+        channel: 'ssh:reconnect',
+        argsSchema: z.tuple([z.string(), z.number().optional()]),
+        defaultValue: { success: false, error: 'Reconnect failed' }
+    })
     async reconnectConnection(connectionId: string, maxRetries: number = 3): Promise<{
         success: boolean;
         error?: string;
@@ -1626,6 +2015,11 @@ export class SSHService extends EventEmitter {
         }
     }
 
+    @ipc({
+        channel: 'ssh:acquireConnection',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: { success: false, error: 'Acquire failed' }
+    })
     async acquireConnection(connectionId: string): Promise<{
         success: boolean;
         error?: string;
@@ -1640,6 +2034,11 @@ export class SSHService extends EventEmitter {
         return this.reconnectConnection(connectionId, 1);
     }
 
+    @ipc({
+        channel: 'ssh:releaseConnection',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: false
+    })
     async releaseConnection(connectionId: string): Promise<boolean> {
         const refs = this.connectionPoolRefs.get(connectionId) ?? 0;
         if (refs <= 1) {
@@ -1650,10 +2049,18 @@ export class SSHService extends EventEmitter {
         return true;
     }
 
+    @ipc({
+        channel: 'ssh:getConnectionPoolStats',
+        defaultValue: []
+    })
     getConnectionPoolStats(): Array<{ connectionId: string; refs: number }> {
         return Array.from(this.connectionPoolRefs.entries()).map(([connectionId, refs]) => ({ connectionId, refs }));
     }
 
+    @ipc({
+        channel: 'ssh:enqueueTransfer',
+        argsSchema: z.tuple([z.any()])
+    })
     async enqueueTransfer(task: SSHTransferTask): Promise<void> {
         this.transferQueue.push(task);
         if (!this.transferQueueProcessing) {
@@ -1661,6 +2068,10 @@ export class SSHService extends EventEmitter {
         }
     }
 
+    @ipc({
+        channel: 'ssh:getTransferQueue',
+        defaultValue: []
+    })
     getTransferQueue(): SSHTransferTask[] {
         return [...this.transferQueue];
     }
@@ -1684,6 +2095,11 @@ export class SSHService extends EventEmitter {
         return this.downloadFile(task.connectionId, task.remotePath, task.localPath);
     }
 
+    @ipc({
+        channel: 'ssh:runTransferBatch',
+        argsSchema: z.tuple([z.array(z.any()), z.number().optional()]),
+        defaultValue: []
+    })
     async runTransferBatch(tasks: SSHTransferTask[], concurrency: number = 2): Promise<boolean[]> {
         const limit = Math.max(1, Math.min(concurrency, 8));
         const results: boolean[] = new Array(tasks.length).fill(false);
@@ -1699,6 +2115,11 @@ export class SSHService extends EventEmitter {
         return results;
     }
 
+    @ipc({
+        channel: 'ssh:listRemoteContainers',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: []
+    })
     async listRemoteContainers(connectionId: string): Promise<SSHDevContainer[]> {
         const { stdout } = await this.executeCommand(
             connectionId,
@@ -1710,6 +2131,11 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    @ipc({
+        channel: 'ssh:runRemoteContainer',
+        argsSchema: z.tuple([z.string(), z.string(), z.string(), z.array(z.any()).optional()]),
+        defaultValue: { success: false, error: 'Failed to run container' }
+    })
     async runRemoteContainer(
         connectionId: string,
         image: string,
@@ -1722,43 +2148,90 @@ export class SSHService extends EventEmitter {
         return code === 0 ? { success: true, id: stdout.trim() } : { success: false, error: stderr || 'Failed to start container' };
     }
 
+    @ipc({
+        channel: 'ssh:stopRemoteContainer',
+        argsSchema: z.tuple([z.string(), z.string()]),
+        defaultValue: false
+    })
     async stopRemoteContainer(connectionId: string, containerId: string): Promise<boolean> {
         const { code } = await this.executeCommand(connectionId, `docker stop ${containerId}`);
         return code === 0;
     }
 
+    @ipc({
+        channel: 'ssh:saveProfileTemplate',
+        argsSchema: z.tuple([z.any()])
+    })
     async saveProfileTemplate(template: Omit<SSHProfileTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<SSHProfileTemplate> {
         return this.profileManager.saveProfileTemplate(template);
     }
 
+    @ipc({
+        channel: 'ssh:listProfileTemplates',
+        defaultValue: []
+    })
     async listProfileTemplates(): Promise<SSHProfileTemplate[]> {
         return this.profileManager.listProfileTemplates();
     }
 
+    @ipc({
+        channel: 'ssh:deleteProfileTemplate',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: false
+    })
     async deleteProfileTemplate(id: string): Promise<boolean> {
         return this.profileManager.deleteProfileTemplate(id);
     }
 
+    @ipc({
+        channel: 'ssh:exportProfiles',
+        argsSchema: z.tuple([z.array(z.string()).optional()]),
+        defaultValue: '[]'
+    })
     async exportProfiles(ids?: string[]): Promise<string> {
         return this.profileManager.exportProfiles(ids);
     }
 
+    @ipc({
+        channel: 'ssh:importProfiles',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: 0
+    })
     async importProfiles(payload: string): Promise<number> {
         return this.profileManager.importProfiles(payload);
     }
 
+    @ipc({
+        channel: 'ssh:validateProfile',
+        argsSchema: z.tuple([z.any()]),
+        defaultValue: { valid: false, errors: ['Validation failed'] }
+    })
     validateProfile(profile: Partial<SSHConnection>): { valid: boolean; errors: string[] } {
         return this.profileManager.validateProfile(profile);
     }
 
+    @ipc({
+        channel: 'ssh:testProfile',
+        argsSchema: z.tuple([z.any()]),
+        defaultValue: { success: false, error: 'Test failed' }
+    })
     async testProfile(profile: Partial<SSHConnection>): Promise<SSHProfileTestResult> {
         return this.profileManager.testProfile(profile);
     }
 
+    @ipc({
+        channel: 'ssh:startSessionRecording',
+        argsSchema: z.tuple([z.string()])
+    })
     startSessionRecording(connectionId: string): SSHSessionRecording {
         return this.sessionRecordingManager.start(connectionId);
     }
 
+    @ipc({
+        channel: 'ssh:stopSessionRecording',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: null
+    })
     stopSessionRecording(connectionId: string): SSHSessionRecording | null {
         return this.sessionRecordingManager.stop(connectionId);
     }
@@ -1767,20 +2240,82 @@ export class SSHService extends EventEmitter {
         this.sessionRecordingManager.append(connectionId, chunk);
     }
 
+    @ipc({
+        channel: 'ssh:getSessionRecording',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: null
+    })
     getSessionRecording(connectionId: string): SSHSessionRecording | null {
         return this.sessionRecordingManager.get(connectionId);
     }
 
+    @ipc({
+        channel: 'ssh:searchSessionRecording',
+        argsSchema: z.tuple([z.string(), z.string()]),
+        defaultValue: []
+    })
     searchSessionRecording(connectionId: string, query: string): string[] {
         return this.sessionRecordingManager.search(connectionId, query);
     }
 
+    @ipc({
+        channel: 'ssh:exportSessionRecording',
+        argsSchema: z.tuple([z.string()]),
+        defaultValue: ''
+    })
     exportSessionRecording(connectionId: string): string {
         return this.sessionRecordingManager.export(connectionId);
     }
 
+    @ipc({
+        channel: 'ssh:listSessionRecordings',
+        defaultValue: []
+    })
     listSessionRecordings(): SSHSessionRecording[] {
         return this.sessionRecordingManager.list();
+    }
+
+    @ipc({
+        channel: 'ssh:copyPath',
+        argsSchema: z.tuple([z.object({ connectionId: z.string(), sourcePath: z.string(), destinationPath: z.string() })]),
+        defaultValue: { success: false, error: 'Copy failed' }
+    })
+    async copyPath(payload: { connectionId: string; sourcePath: string; destinationPath: string }): Promise<{ success: boolean; error?: string }> {
+        try {
+            if (payload.sourcePath.includes('..') || payload.sourcePath.includes('\0') || payload.sourcePath.includes('\r') || payload.sourcePath.includes('\n')) {
+                throw new Error('Invalid SSH path for sourcePath: path contains forbidden characters');
+            }
+            if (payload.destinationPath.includes('..') || payload.destinationPath.includes('\0') || payload.destinationPath.includes('\r') || payload.destinationPath.includes('\n')) {
+                throw new Error('Invalid SSH path for destinationPath: path contains forbidden characters');
+            }
+            const parentPath = this.getSshParentPath(payload.destinationPath);
+            const command = `mkdir -p -- ${this.quoteSshShellArgument(parentPath)} && cp -R -- ${this.quoteSshShellArgument(payload.sourcePath)} ${this.quoteSshShellArgument(payload.destinationPath)}`;
+            const result = await this.executeCommand(payload.connectionId, command);
+            if (result.code !== 0) {
+                return {
+                    success: false,
+                    error: result.stderr || result.stdout || 'Failed to copy remote path'
+                };
+            }
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    private quoteSshShellArgument(value: string): string {
+        return `'${value.replace(/'/g, `'"'"'`)}'`;
+    }
+
+    private getSshParentPath(targetPath: string): string {
+        const separatorIndex = targetPath.lastIndexOf('/');
+        if (separatorIndex < 0) {
+            return '.';
+        }
+        if (separatorIndex === 0) {
+            return '/';
+        }
+        return targetPath.slice(0, separatorIndex);
     }
 }
 

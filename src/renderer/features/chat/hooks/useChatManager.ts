@@ -34,8 +34,8 @@ import {
     useChatStore} from '@/store/chat.store';
 import { AppSettings, Chat, Message } from '@/types';
 import { CatchError } from '@/types/common';
-import { appLogger } from '@/utils/renderer-logger';
 import { CachedDatabase } from '@/utils/cached-database.util';
+import { appLogger } from '@/utils/renderer-logger';
 
 /** Maximum messages to keep in memory per chat to prevent memory leaks */
 const MAX_MESSAGES_IN_MEMORY = 100;

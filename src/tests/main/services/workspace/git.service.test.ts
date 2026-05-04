@@ -135,11 +135,12 @@ describe('GitService', () => {
         });
     });
 
-    describe('getLog', () => {
+    describe('getRecentCommits', () => {
         it('should parse log entries', async () => {
             setupExecFile('abc1234|feat: init|John|2024-01-01T00:00:00Z');
-            const result = await service.getLog('/repo', 5);
-            expect(result).toEqual([{
+            const result = await service.getRecentCommits('/repo', 5);
+            expect(result.success).toBe(true);
+            expect(result.commits).toEqual([{
                 hash: 'abc1234',
                 message: 'feat: init',
                 author: 'John',
@@ -148,14 +149,16 @@ describe('GitService', () => {
         });
 
         it('should return empty for blank cwd', async () => {
-            const result = await service.getLog('');
-            expect(result).toEqual([]);
+            const result = await service.getRecentCommits('');
+            expect(result.success).toBe(true);
+            expect(result.commits).toEqual([]);
         });
 
         it('should return empty when no output', async () => {
             setupExecFile('');
-            const result = await service.getLog('/repo');
-            expect(result).toEqual([]);
+            const result = await service.getRecentCommits('/repo');
+            expect(result.success).toBe(true);
+            expect(result.commits).toEqual([]);
         });
     });
 
@@ -164,7 +167,7 @@ describe('GitService', () => {
             setupExecFile('* main\n  feature');
             const result = await service.getBranches('/repo');
             expect(result.success).toBe(true);
-            expect(result.stdout).toContain('main');
+            expect(result.branches).toContain('main');
         });
     });
 

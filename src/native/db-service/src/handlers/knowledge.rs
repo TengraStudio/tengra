@@ -23,7 +23,7 @@ pub async fn store_code_symbol(
 ) -> Json<ApiResponse<()>> {
     match db.store_code_symbol(req).await {
         Ok(()) => Json(ApiResponse::ok()),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<()>::error(e.to_string())),
     }
 }
 
@@ -34,7 +34,7 @@ pub async fn search_code_symbols(
 ) -> Json<ApiResponse<Vec<CodeSymbol>>> {
     match db.search_code_symbols(req).await {
         Ok(symbols) => Json(ApiResponse::success(symbols)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Vec<CodeSymbol>>::error(e.to_string())),
     }
 }
 
@@ -45,7 +45,7 @@ pub async fn store_semantic_fragment(
 ) -> Json<ApiResponse<()>> {
     match db.store_semantic_fragment(req).await {
         Ok(()) => Json(ApiResponse::ok()),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<()>::error(e.to_string())),
     }
 }
 
@@ -56,6 +56,6 @@ pub async fn search_semantic_fragments(
 ) -> Json<ApiResponse<Vec<SemanticFragment>>> {
     match db.search_semantic_fragments(req).await {
         Ok(fragments) => Json(ApiResponse::success(fragments)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Vec<SemanticFragment>>::error(e.to_string())),
     }
 }

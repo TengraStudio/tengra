@@ -14,6 +14,7 @@ import {
     MemoryCategory,
     PendingMemory
 } from '@shared/types/advanced-memory';
+import { RuntimeValue } from '@shared/types/common';
 import { IpcRenderer } from 'electron';
 
 export interface AdvancedMemoryBridge {
@@ -32,24 +33,24 @@ export interface AdvancedMemoryBridge {
         tags?: string[];
         workspaceId?: string;
     }) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
-    recall: (context: Record<string, unknown>) => Promise<{ success: boolean; data: { memories: AdvancedSemanticFragment[]; totalMatches: number }; error?: string }>;
+    recall: (context: Record<string, RuntimeValue>) => Promise<{ success: boolean; data: { memories: AdvancedSemanticFragment[]; totalMatches: number }; error?: string }>;
     search: (query: string, limit?: number) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
     searchResolutions: (query: string, limit?: number) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
-    getSearchAnalytics: () => Promise<{ success: boolean; data: unknown; error?: string }>;
-    getSearchHistory: (limit?: number) => Promise<{ success: boolean; data: unknown[]; error?: string }>;
+    getSearchAnalytics: () => Promise<{ success: boolean; data: RuntimeValue; error?: string }>;
+    getSearchHistory: (limit?: number) => Promise<{ success: boolean; data: RuntimeValue[]; error?: string }>;
     getSearchSuggestions: (prefix?: string, limit?: number) => Promise<{ success: boolean; data: string[]; error?: string }>;
-    export: (query?: string, limit?: number) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+    export: (query?: string, limit?: number) => Promise<{ success: boolean; data?: RuntimeValue; error?: string }>;
     import: (payload: {
         memories?: Array<Partial<AdvancedSemanticFragment>>;
         pendingMemories?: Array<Partial<PendingMemory>>;
         replaceExisting?: boolean;
-    }) => Promise<{ success: boolean; data?: unknown; error?: string }>;
-    getStats: () => Promise<{ success: boolean; data?: unknown; error?: string }>;
+    }) => Promise<{ success: boolean; data?: RuntimeValue; error?: string }>;
+    getStats: () => Promise<{ success: boolean; data?: RuntimeValue; error?: string }>;
     runDecay: () => Promise<{ success: boolean; error?: string }>;
     extractFromMessage: (content: string, sourceId: string, workspaceId?: string) => Promise<{ success: boolean; data: PendingMemory[]; error?: string }>;
     delete: (id: string) => Promise<{ success: boolean; error?: string }>;
     deleteMany: (ids: string[]) => Promise<{ success: boolean; deleted: number; failed: string[]; error?: string }>;
-    edit: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
+    edit: (id: string, updates: Record<string, RuntimeValue>) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
     archive: (id: string) => Promise<{ success: boolean; error?: string }>;
     archiveMany: (ids: string[]) => Promise<{ success: boolean; archived: number; failed: string[]; error?: string }>;
     restore: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -60,20 +61,20 @@ export interface AdvancedMemoryBridge {
         name: string;
         workspaceIds: string[];
         accessControl?: Record<string, string[]>;
-    }) => Promise<{ success: boolean; data?: unknown; error?: string }>;
-    syncSharedNamespace: (request: Record<string, unknown>) => Promise<{ success: boolean; data?: unknown; error?: string }>;
-    getSharedNamespaceAnalytics: (namespaceId: string) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+    }) => Promise<{ success: boolean; data?: RuntimeValue; error?: string }>;
+    syncSharedNamespace: (request: Record<string, RuntimeValue>) => Promise<{ success: boolean; data?: RuntimeValue; error?: string }>;
+    getSharedNamespaceAnalytics: (namespaceId: string) => Promise<{ success: boolean; data?: RuntimeValue; error?: string }>;
     searchAcrossWorkspaces: (payload: {
         namespaceId: string;
         query: string;
         workspaceId: string;
         limit?: number;
     }) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
-    getHistory: (id: string) => Promise<{ success: boolean; data: unknown[]; error?: string }>;
+    getHistory: (id: string) => Promise<{ success: boolean; data: RuntimeValue[]; error?: string }>;
     rollback: (id: string, versionIndex: number) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
     recategorize: (ids?: string[]) => Promise<{ success: boolean; error?: string }>;
-    getAllEntityKnowledge: () => Promise<{ success: boolean; data: unknown[]; error?: string }>;
-    getAllEpisodes: () => Promise<{ success: boolean; data: unknown[]; error?: string }>;
+    getAllEntityKnowledge: () => Promise<{ success: boolean; data: RuntimeValue[]; error?: string }>;
+    getAllEpisodes: () => Promise<{ success: boolean; data: RuntimeValue[]; error?: string }>;
     getAllAdvancedMemories: () => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
     health: () => Promise<{ success: boolean; data?: AdvancedMemoryHealthSummary; error?: string }>;
 }

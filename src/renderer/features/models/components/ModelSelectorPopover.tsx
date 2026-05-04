@@ -8,6 +8,15 @@
  * (at your option) any later version.
  */
 
+import LogoAntigravity from '@assets/antigravity.svg?url';
+import LogoChatgpt from '@assets/chatgpt.svg?url';
+import LogoClaude from '@assets/claude.svg?url';
+import LogoCopilot from '@assets/copilot.svg?url';
+import LogoGemini from '@assets/gemini.png';
+import LogoHuggingFace from '@assets/huggingface.svg?url';
+import LogoNvidia from '@assets/nvidia.svg?url';
+import LogoOllama from '@assets/ollama.svg?url';
+import LogoOpenCode from '@assets/opencode.svg?url';
 import { Label } from '@radix-ui/react-label';
 import type {
     WorkspaceAgentCommandPolicy,
@@ -30,15 +39,6 @@ import { WorkspaceAgentPermissionEditor } from '@/features/workspace/workspace-a
 import { useThemeDetection } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
-import LogoAntigravity from '@assets/antigravity.svg?url';
-import LogoChatgpt from '@assets/chatgpt.svg?url';
-import LogoClaude from '@assets/claude.svg?url';
-import LogoCopilot from '@assets/copilot.svg?url';
-import LogoGemini from '@assets/gemini.png';
-import LogoHuggingFace from '@assets/huggingface.svg?url';
-import LogoNvidia from '@assets/nvidia.svg?url';
-import LogoOllama from '@assets/ollama.svg?url';
-import LogoOpenCode from '@assets/opencode.svg?url';
 import { ModelCategory } from '../types';
 
 import {

@@ -26,12 +26,15 @@
 
 import * as crypto from 'crypto';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { BackgroundModelResolver } from '@main/services/llm/background-model-resolver.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { RuntimeValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export interface UserFact {
@@ -87,6 +90,12 @@ export class BrainService {
     /**
      * Learn a fact about the user
      */
+    @ipc('brain:learn')
+    async learnUserFactIpc(category: UserFact['category'], content: string, confidence: number = 0.8): Promise<RuntimeValue> {
+        const result = await this.learnUserFact(category, content, confidence);
+        return serializeToIpc(result);
+    }
+
     async learnUserFact(
         category: UserFact['category'],
         content: string,
@@ -134,6 +143,12 @@ export class BrainService {
     /**
      * Recall relevant user facts for a given query/context
      */
+    @ipc('brain:recall')
+    async recallUserFactsIpc(query: string, limit: number = 5): Promise<RuntimeValue> {
+        const result = await this.recallUserFacts(query, limit);
+        return serializeToIpc(result);
+    }
+
     async recallUserFacts(query: string, limit: number = 5): Promise<UserFact[]> {
         const queryEmbedding = await this.embedding.generateEmbedding(query);
 
@@ -147,6 +162,12 @@ export class BrainService {
     /**
      * Get all facts by category
      */
+    @ipc('brain:get-by-category')
+    async getUserFactsByCategoryIpc(category: UserFact['category']): Promise<RuntimeValue> {
+        const result = await this.getUserFactsByCategory(category);
+        return serializeToIpc(result);
+    }
+
     async getUserFactsByCategory(category: UserFact['category']): Promise<UserFact[]> {
         const fragments = await this.db.searchSemanticFragmentsByText(this.userId, '');
         const userFragments = fragments.filter(f =>
@@ -161,6 +182,12 @@ export class BrainService {
     /**
      * Get structured brain context for AI injection
      */
+    @ipc('brain:get-context')
+    async getBrainContextIpc(query?: string): Promise<RuntimeValue> {
+        const result = await this.getBrainContext(query);
+        return serializeToIpc(result);
+    }
+
     async getBrainContext(query?: string): Promise<BrainContext> {
         const identity = await this.getUserFactsByCategory('identity');
         const preferences = await this.getUserFactsByCategory('preference');
@@ -209,11 +236,17 @@ export class BrainService {
         return sections.length > 0
             ? `## About the User\n\n${sections.join('\n\n')}`
             : '';
-    }
+    }
 
     /**
      * Auto-extract user facts from conversation
      */
+    @ipc('brain:extract-from-message')
+    async extractUserFactsFromMessageIpc(message: string, userId: string = this.userId): Promise<RuntimeValue> {
+        const result = await this.extractUserFactsFromMessage(message, userId);
+        return serializeToIpc(result);
+    }
+
     async extractUserFactsFromMessage(message: string, _userId: string = this.userId): Promise<UserFact[]> {
         const now = Date.now();
         if (now - this.lastExtractionTime < this.EXTRACTION_THROTTLE_MS) {
@@ -286,6 +319,12 @@ If NO user facts found, return: []`;
     /**
      * Forget a user fact
      */
+    @ipc('brain:forget')
+    async forgetUserFactIpc(factId: string): Promise<boolean> {
+        await this.forgetUserFact(factId);
+        return true;
+    }
+
     async forgetUserFact(factId: string): Promise<void> {
         await this.db.deleteSemanticFragment(factId);
         appLogger.info('BrainService', `Forgot fact: ${factId}`);
@@ -294,10 +333,16 @@ If NO user facts found, return: []`;
     /**
      * Update fact confidence (e.g., when user corrects it)
      */
+    @ipc('brain:update-confidence')
+    async updateFactConfidenceIpc(factId: string, confidence: number): Promise<boolean> {
+        await this.updateFactConfidence(factId, confidence);
+        return true;
+    }
+
     async updateFactConfidence(factId: string, confidence: number): Promise<void> {
         const fragments = await this.db.getSemanticFragmentsByIds([factId]);
         const fragment = fragments[0];
-        if (fragment.source === 'user-brain') {
+        if (fragment?.source === 'user-brain') {
             fragment.importance = confidence;
             fragment.tags = fragment.tags.filter((t: string) => !t.startsWith('confidence:'));
             fragment.tags.push(`confidence:${confidence}`);
@@ -317,37 +362,26 @@ If NO user facts found, return: []`;
         }
 
         // Must contain user-related indicators with stronger patterns
-        // These patterns require the content to actually be ABOUT the user
         const userPatterns = [
-            // English - First person statements
             /\bi am\b/, /\bi'm\b/, /\bi prefer\b/, /\bi like\b/, /\bi use\b/, /\bi know\b/,
             /\bi can\b/, /\bi want\b/, /\bi work\b/, /\bi need\b/, /\bi have\b/, /\bi enjoy\b/,
             /\bmy name is\b/, /\bmy role is\b/, /\bmy job is\b/, /\bmy skill\b/, /\bmy goal\b/,
             /\bmy preference\b/, /\bmy expertise\b/, /\bmy background\b/, /\bmy experience\b/,
-            // Turkish
             /\bben\b/, /\bbenim\b/, /\btercih ederim\b/, /\bseviyorum\b/, /\bkullan.yorum\b/,
             /\bistiyorum\b/, /\bbiliyorum\b/, /\byapabiliyorum\b/,
-            // German
             /\bich bin\b/, /\bich bevorzuge\b/, /\bich mag\b/, /\bich nutze\b/,
             /\bich will\b/, /\bich brauche\b/, /\bmein name\b/, /\bmeine erfahrung\b/,
-            // French
             /\bje suis\b/, /\bje pr.f.re\b/, /\bj'aime\b/, /\bj'utilise\b/,
             /\bje veux\b/, /\bmon nom\b/, /\bmon r.le\b/, /\bma comp.tence\b/,
-            // Spanish
             /\byo soy\b/, /\bme llamo\b/, /\bprefiero\b/, /\bme gusta\b/, /\buso\b/,
             /\bquiero\b/, /\bnecesito\b/, /\bmi nombre\b/, /\bmi trabajo\b/,
-            // Portuguese
             /\beu sou\b/, /\bmeu nome\b/, /\bprefiro\b/, /\bgosto\b/,
-            // Italian
             /\bio sono\b/, /\bmi chiamo\b/, /\bpreferisco\b/, /\bmi piace\b/,
-            // Dutch
             /\bik ben\b/, /\bik gebruik\b/, /\bik wil\b/, /\bmijn naam\b/,
-            // Additional explicit patterns can be added per language as needed.
         ];
 
         // Must NOT contain workspace/conversation/temporal indicators
         const excludePatterns = [
-            // English - Workspace/feature/code references
             /\bthe workspace\b/, /\bthis workspace\b/, /\bthe feature\b/, /\bthis feature\b/,
             /\bwe discussed\b/, /\bconversation about\b/, /\bin the chat\b/, /\bthe file\b/,
             /\bthe code\b/, /\berror in\b/, /\bbug in\b/, /\bissue with\b/, /\bproblem with\b/,
@@ -355,9 +389,7 @@ If NO user facts found, return: []`;
             /\bthe api\b/, /\bthe database\b/, /\bthe server\b/, /\bthe client\b/,
             /\bthis conversation\b/, /\byou said\b/, /\bi was told\b/, /\bmentioned earlier\b/,
             /\byesterday\b/, /\btomorrow\b/, /\blast week\b/, /\bnext week\b/, /\bjust now\b/,
-            // Turkish
             /\bproje\b/, /\b.zellik\b/, /\bsohbet\b/, /\bdosya\b/, /\bkod\b/, /\bhata\b/,
-            // German/French/Spanish
             /\bprojekt\b/, /\bfeature\b/, /\bchat\b/, /\bdatei\b/, /\bcode\b/, /\bfehler\b/,
             /\bprojet\b/, /\bfonctionnalit.\b/, /\bdiscussion\b/, /\bfichier\b/, /\berreur\b/,
             /\bproyecto\b/, /\bfuncionalidad\b/, /\bconversaci.n\b/, /\barchivo\b/, /\bc.digo\b/,
@@ -405,6 +437,12 @@ If NO user facts found, return: []`;
     /**
      * Get brain summary stats
      */
+    @ipc('brain:get-stats')
+    async getBrainStatsIpc(): Promise<RuntimeValue> {
+        const result = await this.getBrainStats();
+        return serializeToIpc(result);
+    }
+
     async getBrainStats(): Promise<{
         totalFacts: number
         byCategory: Record<string, number>

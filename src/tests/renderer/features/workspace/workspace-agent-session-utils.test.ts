@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
-import type { Chat } from '@/types';
 import {
     dedupeChatMessages,
     loadWorkspaceSessionsForWorkspace,
 } from '@/features/workspace/utils/workspace-agent-session-utils';
+import type { Chat } from '@/types';
 
 const mockListByWorkspace = vi.fn();
 const mockGetAllChats = vi.fn();

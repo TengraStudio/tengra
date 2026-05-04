@@ -39,6 +39,7 @@ out/
 **/*.dylib
 **/*.dll
 **/*.exe
+**/*.tmp
 !src/native/bin/*.exe
 
 # Environment & Secrets
@@ -47,9 +48,7 @@ out/
 !.env.example
 *.key
 *.pem
-*.cert
-tengra_key.txt
-.claude/settings.local.json
+*.cert 
 vitest-results.json
 
 # IDEs & Editors

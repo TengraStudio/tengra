@@ -16,11 +16,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { BUILTIN_TEMPLATES, PromptTemplate, renderTemplate as renderUtil } from '@main/utils/prompt-templates.util';
+import { RuntimeValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+
+type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 export class PromptTemplatesService extends BaseService {
     private templatesPath: string;
@@ -48,6 +53,11 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get all templates (builtin + custom)
      */
+    @ipc('prompt-templates:getAll')
+    getAllTemplatesIpc(): RuntimeValue {
+        return serializeToIpc(this.getAllTemplates());
+    }
+
     getAllTemplates(): PromptTemplate[] {
         return [...BUILTIN_TEMPLATES, ...this.customTemplates];
     }
@@ -55,6 +65,12 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get templates by category
      */
+    @ipc('prompt-templates:getByCategory')
+    getByCategoryIpc(category: RuntimeValue): RuntimeValue {
+        if (typeof category !== 'string') {return serializeToIpc([]);}
+        return serializeToIpc(this.getByCategory(category));
+    }
+
     getByCategory(category: string): PromptTemplate[] {
         return this.getAllTemplates().filter(t => t.category === category);
     }
@@ -62,6 +78,12 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get templates by tag
      */
+    @ipc('prompt-templates:getByTag')
+    getByTagIpc(tag: RuntimeValue): RuntimeValue {
+        if (typeof tag !== 'string') {return serializeToIpc([]);}
+        return serializeToIpc(this.getByTag(tag));
+    }
+
     getByTag(tag: string): PromptTemplate[] {
         return this.getAllTemplates().filter(t => t.tags?.includes(tag));
     }
@@ -69,6 +91,12 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Search templates by name or description
      */
+    @ipc('prompt-templates:search')
+    searchIpc(query: RuntimeValue): RuntimeValue {
+        if (typeof query !== 'string') {return serializeToIpc([]);}
+        return serializeToIpc(this.search(query));
+    }
+
     search(query: string): PromptTemplate[] {
         const lowerQuery = query.toLowerCase();
         return this.getAllTemplates().filter(t =>
@@ -81,6 +109,12 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get a template by ID
      */
+    @ipc('prompt-templates:get')
+    async getTemplateIpc(id: RuntimeValue): Promise<RuntimeValue> {
+        if (typeof id !== 'string') {return serializeToIpc(null);}
+        return serializeToIpc(this.getTemplate(id) ?? null);
+    }
+
     getTemplate(id: string): PromptTemplate | undefined {
         return this.getAllTemplates().find(t => t.id === id);
     }
@@ -88,6 +122,11 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Create a new custom template
      */
+    @ipc('prompt-templates:create')
+    async createTemplateIpc(template: UnsafeValue): Promise<RuntimeValue> {
+        return serializeToIpc(await this.createTemplate(template));
+    }
+
     async createTemplate(template: Omit<PromptTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<PromptTemplate> {
         const newTemplate: PromptTemplate = {
             ...template,
@@ -105,6 +144,16 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Update an existing custom template
      */
+    @ipc('prompt-templates:update')
+    async updateTemplateIpc(id: RuntimeValue, updates: UnsafeValue): Promise<RuntimeValue> {
+        if (typeof id !== 'string') {throw new Error('Invalid template ID');}
+        const result = await this.updateTemplate(id, updates);
+        if (!result) {
+            throw new Error(`Template not found: ${id}`);
+        }
+        return serializeToIpc(result);
+    }
+
     async updateTemplate(id: string, updates: Partial<Omit<PromptTemplate, 'id' | 'createdAt'>>): Promise<PromptTemplate | null> {
         const index = this.customTemplates.findIndex(t => t.id === id);
         if (index === -1) {
@@ -126,6 +175,16 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Delete a custom template
      */
+    @ipc('prompt-templates:delete')
+    async deleteTemplateIpc(id: RuntimeValue): Promise<RuntimeValue> {
+        if (typeof id !== 'string') {throw new Error('Invalid template ID');}
+        const success = await this.deleteTemplate(id);
+        if (!success) {
+            throw new Error(`Template not found: ${id}`);
+        }
+        return serializeToIpc({ success: true });
+    }
+
     async deleteTemplate(id: string): Promise<boolean> {
         const index = this.customTemplates.findIndex(t => t.id === id);
         if (index === -1) {
@@ -140,6 +199,15 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Render a template with variables
      */
+    @ipc('prompt-templates:render')
+    async renderTemplateIpc(id: RuntimeValue, variables: UnsafeValue): Promise<RuntimeValue> {
+        if (typeof id !== 'string' || !variables || typeof variables !== 'object') {
+            return serializeToIpc('');
+        }
+        const result = await this.renderTemplate(id, variables);
+        return serializeToIpc(result ?? '');
+    }
+
     renderTemplate(templateId: string, variables: Record<string, string>): string | null {
         const template = this.getTemplate(templateId);
         if (!template) {
@@ -153,6 +221,11 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get all categories
      */
+    @ipc('prompt-templates:getCategories')
+    getCategoriesIpc(): RuntimeValue {
+        return serializeToIpc(this.getCategories());
+    }
+
     getCategories(): string[] {
         const categories = new Set<string>();
         this.getAllTemplates().forEach(t => {
@@ -166,6 +239,11 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get all tags
      */
+    @ipc('prompt-templates:getTags')
+    getTagsIpc(): RuntimeValue {
+        return serializeToIpc(this.getTags());
+    }
+
     getTags(): string[] {
         const tags = new Set<string>();
         this.getAllTemplates().forEach(t => {

@@ -19,7 +19,7 @@ export interface ModelRegistryBridge {
 
 export function createModelRegistryBridge(ipc: IpcRenderer): ModelRegistryBridge {
     return {
-        getAllModels: () => ipc.invoke('model-registry:get-all'),
+        getAllModels: () => ipc.invoke('model-registry:getAllModels'),
         getRemoteModels: () => ipc.invoke('model-registry:get-remote'),
         getInstalledModels: () => ipc.invoke('model-registry:get-installed'),
     };

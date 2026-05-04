@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ModelSelectionService } from '@main/services/llm/model-selection.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
+import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { WorkspaceStep } from '@shared/types/council';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -40,6 +40,7 @@ describe('CouncilCapabilityService', () => {
             llm: mockLlm as LLMService,
             proxy: mockProxy as ProxyService,
             modelSelectionService: mockModelSelection as ModelSelectionService,
+            databaseService: { getUsageRecords: vi.fn().mockResolvedValue([]) } as any,
         });
     });
 

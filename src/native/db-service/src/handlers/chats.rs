@@ -23,7 +23,7 @@ use crate::types::*;
 pub async fn list_chats(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Chat>>> {
     match db.get_all_chats().await {
         Ok(chats) => Json(ApiResponse::success(chats)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Vec<Chat>>::error(e.to_string())),
     }
 }
 
@@ -34,7 +34,7 @@ pub async fn get_chat(
 ) -> Json<ApiResponse<Option<Chat>>> {
     match db.get_chat(&id).await {
         Ok(chat) => Json(ApiResponse::success(chat)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Option<Chat>>::error(e.to_string())),
     }
 }
 
@@ -45,7 +45,7 @@ pub async fn create_chat(
 ) -> Json<ApiResponse<Chat>> {
     match db.create_chat(req).await {
         Ok(chat) => Json(ApiResponse::success(chat)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Chat>::error(e.to_string())),
     }
 }
 
@@ -57,7 +57,7 @@ pub async fn update_chat(
 ) -> Json<ApiResponse<bool>> {
     match db.update_chat(&id, req).await {
         Ok(updated) => Json(ApiResponse::success(updated)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -68,7 +68,7 @@ pub async fn delete_chat(
 ) -> Json<ApiResponse<bool>> {
     match db.delete_chat(&id).await {
         Ok(deleted) => Json(ApiResponse::success(deleted)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -79,7 +79,7 @@ pub async fn get_messages(
 ) -> Json<ApiResponse<Vec<Message>>> {
     match db.get_messages(&id).await {
         Ok(messages) => Json(ApiResponse::success(messages)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Vec<Message>>::error(e.to_string())),
     }
 }
 
@@ -90,7 +90,7 @@ pub async fn add_message(
 ) -> Json<ApiResponse<Message>> {
     match db.add_message(req).await {
         Ok(message) => Json(ApiResponse::success(message)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Message>::error(e.to_string())),
     }
 }
 
@@ -102,7 +102,7 @@ pub async fn update_message(
 ) -> Json<ApiResponse<bool>> {
     match db.update_message(&id, req).await {
         Ok(updated) => Json(ApiResponse::success(updated)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -113,6 +113,6 @@ pub async fn delete_message(
 ) -> Json<ApiResponse<bool>> {
     match db.delete_message(&id).await {
         Ok(deleted) => Json(ApiResponse::success(deleted)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }

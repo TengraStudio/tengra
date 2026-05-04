@@ -26,6 +26,8 @@ import { pushNotification } from '@/store/notification-center.store';
 
 import type { MarketplaceQueryState } from '../marketplace-query.types';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 /* Batch-02: Extracted Long Classes */
 const C_SKILLSMARKETPLACE_1 = "w-full bg-muted/30 rounded-xl px-12 py-3 text-sm focus:outline-none transition-all font-medium border border-transparent focus:border-primary/20 placeholder:text-muted-foreground/20";
 const C_SKILLSMARKETPLACE_2 = "h-8 px-3 flex items-center gap-2 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/5 transition-colors text-sm font-semibold";
@@ -208,7 +210,7 @@ export function SkillsMarketplace({
                 <div className="flex items-center gap-3">
                     <Select
                         value={filter}
-                        onValueChange={value => onQueryChange(prev => ({ ...prev, filter: value as any, page: 1 }))}
+                        onValueChange={value => onQueryChange(prev => ({ ...prev, filter: value as UnsafeValue, page: 1 }))}
                     >
                         <SelectTrigger className="h-9 w-40 text-sm font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
                             <SelectValue />

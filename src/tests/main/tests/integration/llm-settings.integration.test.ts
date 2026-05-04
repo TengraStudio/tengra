@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { OllamaService } from '@main/services/llm/ollama.service';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import * as path from 'node:path';
@@ -49,9 +49,9 @@ describe('LLM-Settings Integration', () => {
         settingsService = new SettingsService();
         await settingsService.initialize();
         eventBusService = new EventBusService();
-        
+
         // We need to verify OllamaService reads from SettingsService
-        ollamaService = new OllamaService(settingsService, eventBusService);
+        ollamaService = new OllamaService(settingsService, eventBusService, null as any, null as any);
     });
 
     it('should initialize OllamaService with URL from settings', () => {

@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
@@ -487,6 +488,7 @@ export class SecurityService extends BaseService implements ISecurityService {
      * Resets the Master Key by deleting the key file and generating a new one.
      * WARNING: This will make all existing encrypted data unreadable.
      */
+    @ipc('security:reset-master-key')
     async resetMasterKey(): Promise<ServiceResponse> {
         try {
             this.logWarn('RESETTING MASTER KEY - All existing encrypted data will become unreadable!');

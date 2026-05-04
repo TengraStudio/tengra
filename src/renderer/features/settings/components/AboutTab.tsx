@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
+import logoBlack from '@assets/tengra_black.png';
+import logoWhite from '@assets/tengra_white.png';
 import { IconAlertTriangle, IconBolt, IconDeviceMobile, IconExternalLink, IconGlobe, IconRefresh } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
-import logoBlack from '@assets/tengra_black.png';
-import logoWhite from '@assets/tengra_white.png';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';

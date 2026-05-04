@@ -197,6 +197,28 @@ export const WorkspaceActiveRootPathSchema = z.union([
 ]).transform(val => val ?? null);
 export const WorkspaceEnvKeySchema = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/);
 export const WorkspaceEnvVarsSchema = z.record(WorkspaceEnvKeySchema, z.string().max(20000));
+export const WorkspaceAnalyzeOptionsSchema = z.object({
+    force: z.boolean().optional(),
+    depth: z.number().int().min(1).max(20).optional(),
+    includeGitIgnore: z.boolean().optional(),
+    includeIssues: z.boolean().optional(),
+}).optional();
+
+export const WorkspaceGetFilesPageParamsSchema = z.object({
+    rootPath: WorkspaceRootPathSchema,
+    offset: z.number().int().nonnegative().optional(),
+    limit: z.number().int().positive().max(10000).optional(),
+});
+
+export const WorkspaceEnvSaveParamsSchema = z.object({
+    rootPath: WorkspaceRootPathSchema,
+    vars: WorkspaceEnvVarsSchema,
+});
+
+export const WorkspaceGetDiagnosticsParamsSchema = z.object({
+    rootPath: WorkspaceRootPathSchema,
+    filePath: z.string().trim().min(1).max(1024).optional(),
+});
 
 /**
  * Agent Service Schemas

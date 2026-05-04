@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
@@ -101,6 +102,7 @@ export class TerminalSmartService extends BaseService {
     /**
      * Get AI-powered command suggestions based on current input and history
      */
+    @ipc('terminal:getSuggestions')
     async getSuggestions(options: SuggestionOptions): Promise<string[]> {
         try {
             const { command, shell, cwd, historyLimit = 10 } = options;
@@ -176,6 +178,7 @@ Return as a JSON array of strings.
     /**
      * Explain what a command does in plain language
      */
+    @ipc('terminal:explainCommand')
     async explainCommand(options: ExplainCommandOptions): Promise<ExplainCommandResult> {
         const { command, shell, cwd } = options;
         const TIMEOUT_MS = 30000;
@@ -250,6 +253,7 @@ Return ONLY valid JSON, no markdown or other text.
     /**
      * Explain an error message and provide troubleshooting guidance
      */
+    @ipc('terminal:explainError')
     async explainError(options: ExplainErrorOptions): Promise<ExplainErrorResult> {
         const { errorOutput, command, shell, cwd } = options;
         const TIMEOUT_MS = 30000;
@@ -332,6 +336,7 @@ Return ONLY valid JSON, no markdown or other text.
     /**
      * Suggest a fix for a failed command based on the error
      */
+    @ipc('terminal:fixError')
     async fixError(options: FixErrorOptions): Promise<FixErrorResult> {
         const { errorOutput, command, shell, cwd } = options;
         const TIMEOUT_MS = 30000;

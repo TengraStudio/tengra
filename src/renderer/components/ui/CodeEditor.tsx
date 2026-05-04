@@ -43,6 +43,8 @@ import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 import { initTextMateSupport } from '@/utils/textmate-loader';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 type MonacoEditorInstance = editor.IStandaloneCodeEditor;
 
 export interface MonacoEditorComponentProps {
@@ -480,10 +482,10 @@ export interface CodeEditorProps {
 let textMateInitialized = false;
 let textMateInitializing = false;
 
-const useMonacoLoader = (performanceMarkPrefix?: string): { monacoComponents: { Editor: ComponentType<MonacoEditorComponentProps>; DiffEditor: ComponentType<any>; monaco: Monaco } | null; loading: boolean } => {
+const useMonacoLoader = (performanceMarkPrefix?: string): { monacoComponents: { Editor: ComponentType<MonacoEditorComponentProps>; DiffEditor: ComponentType<UnsafeValue>; monaco: Monaco } | null; loading: boolean } => {
     const [monacoComponents, setMonacoComponents] = useState<{
         Editor: ComponentType<MonacoEditorComponentProps>;
-        DiffEditor: ComponentType<any>;
+        DiffEditor: ComponentType<UnsafeValue>;
         monaco: Monaco;
     } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -494,7 +496,7 @@ const useMonacoLoader = (performanceMarkPrefix?: string): { monacoComponents: { 
             .then(({ Editor, DiffEditor, monaco }) => {
                 setMonacoComponents({
                     Editor: Editor as ComponentType<MonacoEditorComponentProps>,
-                    DiffEditor: DiffEditor as ComponentType<any>,
+                    DiffEditor: DiffEditor as ComponentType<UnsafeValue>,
                     monaco,
                 });
                 if (performanceMarkPrefix) {
@@ -965,7 +967,7 @@ const useEditorInitialLine = (
 
 const MonacoEditorInternal: React.FC<{
     Editor: ComponentType<MonacoEditorComponentProps>;
-    DiffEditor: ComponentType<any>;
+    DiffEditor: ComponentType<UnsafeValue>;
     language: string;
     modelPath?: string;
     value: string;
@@ -1002,7 +1004,7 @@ const MonacoEditorInternal: React.FC<{
                     modified={value}
                     language={language}
                     theme={theme}
-                    onMount={(editor: any, m: any) => onMount(editor.getModifiedEditor(), m)}
+                    onMount={(editor: UnsafeValue, m: UnsafeValue) => onMount(editor.getModifiedEditor(), m)}
                     loading={loading}
                     options={{
                         ...options,

@@ -8,16 +8,21 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { IpcValue,JsonObject, RuntimeValue } from '@shared/types/common';
 import {
     ModelRoutingRule,
     StepModelConfig,
     TaskType,
     WorkspaceStep,
 } from '@shared/types/council';
+import { randomUUID } from 'node:crypto';
 
 /** Default model routing rules based on task type */
 const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
@@ -45,6 +50,129 @@ export interface CouncilCapabilityDependencies {
     llm: LLMService;
     proxy: ProxyService;
     modelSelectionService: ModelSelectionService;
+    databaseService: DatabaseService;
+}
+
+interface StoredChat {
+    id: string;
+    metadata?: JsonObject;
+}
+
+interface TimelineEventRecord {
+    id: string;
+    timestamp: number;
+    type: string;
+    stateBeforeTransition: string;
+    stateAfterTransition: string;
+    payload?: IpcValue;
+}
+
+const WORKSPACE_AGENT_METADATA_KEY = 'workspaceAgentSession';
+
+function readJsonObject(value: JsonObject | undefined, key: string): JsonObject | null {
+    const candidate = value?.[key];
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+        return null;
+    }
+    return candidate as JsonObject;
+}
+
+function getSessionMetadata(chat: StoredChat): JsonObject {
+    return readJsonObject(chat.metadata, WORKSPACE_AGENT_METADATA_KEY) ?? {};
+}
+
+function buildFallbackPlan(task: string): WorkspaceStep[] {
+    return [
+        {
+            id: randomUUID(),
+            text: task.trim(),
+            status: 'pending',
+            priority: 'normal',
+            taskType: 'general',
+        },
+    ];
+}
+
+function normalizeWorkspaceSteps(rawSteps: unknown): WorkspaceStep[] {
+    if (!Array.isArray(rawSteps)) {
+        return [];
+    }
+
+    const isTaskType = (value: unknown): value is TaskType =>
+        value === 'code_generation' ||
+        value === 'code_review' ||
+        value === 'research' ||
+        value === 'documentation' ||
+        value === 'debugging' ||
+        value === 'testing' ||
+        value === 'refactoring' ||
+        value === 'planning' ||
+        value === 'general';
+
+    return rawSteps
+        .filter((step): step is Record<string, unknown> => Boolean(step) && typeof step === 'object' && !Array.isArray(step))
+        .map((step, index) => ({
+            id: typeof step.id === 'string' && step.id.trim().length > 0 ? step.id : `step-${index + 1}`,
+            text: typeof step.text === 'string' && step.text.trim().length > 0 ? step.text : `Step ${index + 1}`,
+            status:
+                step.status === 'running' ||
+                step.status === 'completed' ||
+                step.status === 'failed' ||
+                step.status === 'skipped' ||
+                step.status === 'awaiting_step_approval'
+                    ? step.status
+                    : 'pending',
+            priority:
+                step.priority === 'low' ||
+                step.priority === 'high' ||
+                step.priority === 'critical'
+                    ? step.priority
+                    : 'normal',
+            taskType: isTaskType(step.taskType) ? step.taskType : 'general',
+        }));
+}
+
+function readStoredPlan(chat: StoredChat): WorkspaceStep[] {
+    const metadata = getSessionMetadata(chat);
+    const council = readJsonObject(metadata, 'council');
+    const rawProposal = council?.['proposal'];
+    if (Array.isArray(rawProposal)) {
+        return normalizeWorkspaceSteps(rawProposal);
+    }
+
+    const rawDrafts = council?.['drafts'];
+    if (Array.isArray(rawDrafts) && rawDrafts.length > 0) {
+        return rawDrafts.map((draft, index) => ({
+            id:
+                typeof (draft as Record<string, unknown>).id === 'string'
+                    ? String((draft as Record<string, unknown>).id)
+                    : `draft-${index + 1}`,
+            text:
+                typeof (draft as Record<string, unknown>).patchSummary === 'string' &&
+                String((draft as Record<string, unknown>).patchSummary).trim().length > 0
+                    ? String((draft as Record<string, unknown>).patchSummary)
+                    : `Draft ${index + 1}`,
+            status: 'pending',
+            priority: 'normal',
+            taskType: 'general',
+        }));
+    }
+
+    return [];
+}
+
+function toTimelineEvent(log: { id: string; created_at: number; role: string; content: string }): TimelineEventRecord {
+    return {
+        id: log.id,
+        timestamp: log.created_at,
+        type: log.role === 'system' ? 'PLAN_READY' : 'MESSAGE',
+        stateBeforeTransition: 'planning',
+        stateAfterTransition: 'executing',
+        payload: {
+            content: log.content,
+            role: log.role,
+        },
+    };
 }
 
 /**
@@ -202,5 +330,105 @@ export class CouncilCapabilityService extends BaseService {
         if (input.includes('plan') || input.includes('roadmap') || input.includes('structure')) { return 'planning'; }
         if (input.includes('create') || input.includes('implement') || input.includes('add')) { return 'code_generation'; }
         return 'general';
+    }
+
+    private async ensureCouncilTask(
+        taskId: string,
+        task: string
+    ): Promise<void> {
+        const existingTask = await this.deps.databaseService.uac.getTask(taskId);
+        if (!existingTask) {
+            await this.deps.databaseService.uac.createTask({
+                workspaceId: taskId,
+                description: task,
+                status: 'planning',
+                metadata: { taskId, source: 'workspace-agent-council' },
+            });
+        }
+
+        const existingSteps = await this.deps.databaseService.uac.getSteps(taskId);
+        if (existingSteps.length === 0) {
+            await this.deps.databaseService.uac.createSteps(taskId, buildFallbackPlan(task));
+        }
+
+        await this.deps.databaseService.uac.addLog(taskId, 'system', `Plan requested: ${task}`);
+    }
+
+    // --- IPC Decorated Methods ---
+
+    @ipc('session:council:generate-plan')
+    async generatePlanIpc(payload: { taskId: string; task: string }): Promise<RuntimeValue> {
+        await this.ensureCouncilTask(payload.taskId, payload.task);
+        return serializeToIpc({ success: true });
+    }
+
+    @ipc('session:council:get-proposal')
+    async getProposalIpc(payload: { taskId: string }): Promise<RuntimeValue> {
+        const chat = await this.deps.databaseService.getChat(payload.taskId);
+        const storedPlan = chat ? readStoredPlan(chat as StoredChat) : [];
+
+        if (storedPlan.length > 0) {
+            return serializeToIpc({ success: true, plan: storedPlan });
+        }
+
+        const steps = await this.deps.databaseService.uac.getSteps(payload.taskId);
+        const plan = steps.map(step => ({
+            id: step.id,
+            text: step.text,
+            status:
+                step.status === 'running' ||
+                step.status === 'completed' ||
+                step.status === 'failed' ||
+                step.status === 'skipped' ||
+                step.status === 'awaiting_step_approval'
+                    ? step.status
+                    : 'pending',
+        } satisfies WorkspaceStep));
+
+        return serializeToIpc({ success: true, plan });
+    }
+
+    @ipc('session:council:get-timeline')
+    async getTimelineIpc(payload: { taskId: string }): Promise<RuntimeValue> {
+        const logs = await this.deps.databaseService.uac.getLogs(payload.taskId);
+        return serializeToIpc({
+            success: true,
+            events: logs.map(toTimelineEvent),
+        });
+    }
+
+    @ipc('session:council:approve-proposal')
+    async approveProposalIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
+        await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'waiting_for_approval');
+        await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Proposal approved');
+        return serializeToIpc({ success: true });
+    }
+
+    @ipc('session:council:reject-proposal')
+    async rejectProposalIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
+        await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'failed');
+        await this.deps.databaseService.uac.addLog(payload.taskId, 'system', `Proposal rejected${payload.reason ? `: ${payload.reason}` : ''}`);
+        return serializeToIpc({ success: true });
+    }
+
+    @ipc('session:council:start-execution')
+    async startExecutionIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
+        await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'running');
+        await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Execution started');
+        return serializeToIpc({ success: true });
+    }
+
+    @ipc('session:council:pause-execution')
+    async pauseExecutionIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
+        await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'paused');
+        await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Execution paused');
+        return serializeToIpc({ success: true });
+    }
+
+    @ipc('session:council:resume-execution')
+    async resumeExecutionIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
+        await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'running');
+        await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Execution resumed');
+        return serializeToIpc({ success: true });
     }
 }

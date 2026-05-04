@@ -12,7 +12,7 @@ import {
     CollaborationResponseSchema,
     CollaborationSyncUpdateSchema,
     JoinCollaborationRoomSchema} from '@shared/schemas/collaboration.schema';
-import { IpcRenderer } from 'electron';
+import { IpcRenderer, IpcRendererEvent } from 'electron';
 import { z } from 'zod';
 
 export interface LiveCollaborationBridge {
@@ -44,7 +44,7 @@ export function createLiveCollaborationBridge(ipc: IpcRenderer): LiveCollaborati
             return () => ipc.removeListener('collaboration:sync:left', listener);
         },
         onSyncUpdate: callback => {
-            const listener = (_: unknown, payload: { roomId: string, data: string | Uint8Array }) => callback(payload);
+            const listener = (_: IpcRendererEvent, payload: { roomId: string, data: string | Uint8Array }) => callback(payload);
             ipc.on('collaboration:sync:update', listener);
             return () => ipc.removeListener('collaboration:sync:update', listener);
         },

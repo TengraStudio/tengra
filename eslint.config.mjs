@@ -9,6 +9,7 @@ export default tseslint.config(
     {
         ignores: [
             'dist/**',
+            'release/**',
             'logs/**',
             'node_modules/**', 
             'scripts/audit-i18n.ts',

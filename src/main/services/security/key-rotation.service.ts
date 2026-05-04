@@ -8,9 +8,12 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { RuntimeValue } from '@shared/types/common';
 
 export class KeyRotationService extends BaseService {
     private keyStates: Map<string, { keys: string[], currentIndex: number }> = new Map();
@@ -18,6 +21,58 @@ export class KeyRotationService extends BaseService {
     constructor(private settingsService: SettingsService) {
         super('KeyRotationService');
         this.settingsService.getSettings(); // Suppress unused error
+    }
+
+    private validateProvider(provider: RuntimeValue): string {
+        if (!provider || typeof provider !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(provider) || provider.length > 64) {
+            throw new Error('Invalid provider name');
+        }
+        return provider.trim();
+    }
+
+    @ipc('key-rotation:getCurrentKey')
+    async getCurrentKeyIpc(providerRaw: RuntimeValue): Promise<RuntimeValue> {
+        const provider = this.validateProvider(providerRaw);
+        const key = this.getCurrentKey(provider);
+        return serializeToIpc(key);
+    }
+
+    @ipc('key-rotation:rotate')
+    async rotateKeyIpc(providerRaw: RuntimeValue): Promise<RuntimeValue> {
+        const provider = this.validateProvider(providerRaw);
+        const success = this.rotateKey(provider);
+        const currentKey = this.getCurrentKey(provider);
+        return serializeToIpc({ success, currentKey });
+    }
+
+    @ipc('key-rotation:initialize')
+    async initializeProviderKeysIpc(providerRaw: RuntimeValue, keyStringRaw: RuntimeValue): Promise<RuntimeValue> {
+        const provider = this.validateProvider(providerRaw);
+        if (typeof keyStringRaw !== 'string' || keyStringRaw.length > 4096) {
+            throw new Error('Invalid key string');
+        }
+        this.initializeProviderKeys(provider, keyStringRaw.trim());
+        const currentKey = this.getCurrentKey(provider);
+        return serializeToIpc({ success: true, currentKey });
+    }
+
+    @ipc('key-rotation:getStatus')
+    async getStatusIpc(providerRaw: RuntimeValue): Promise<RuntimeValue> {
+        let safeProvider = '';
+        try {
+            safeProvider = this.validateProvider(providerRaw);
+        } catch {
+            return serializeToIpc({ provider: '', hasKey: false, currentKey: null });
+        }
+
+        const key = this.getCurrentKey(safeProvider);
+        const maskedKey = key ? (key.length > 8 ? `${key.substring(0, 8)}...` : key) : null;
+        
+        return serializeToIpc({
+            provider: safeProvider,
+            hasKey: key !== null,
+            currentKey: maskedKey
+        });
     }
 
     /**

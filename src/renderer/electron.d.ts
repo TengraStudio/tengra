@@ -14,7 +14,6 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
-import { OllamaBridge } from './main/preload/domains/ollama.preload';
 import type { IpcRendererEvent } from 'electron';
 
 import {
@@ -74,6 +73,8 @@ import {
     VoiceSettings,
     VoiceSynthesisOptions,
 } from '@/shared/types/voice';
+
+import { OllamaBridge } from './main/preload/domains/ollama.preload';
 
 export interface FileEntry {
     name: string;

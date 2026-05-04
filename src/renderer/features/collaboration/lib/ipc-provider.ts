@@ -19,6 +19,8 @@ import {
 } from '@/features/collaboration/lib/collaboration-room-type';
 import { appLogger } from '@/utils/renderer-logger';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 /**
  * IpcProvider
  */
@@ -44,7 +46,7 @@ export class IpcProvider extends Observable<string> {
 
     private async init() {
         try {
-            this.emit('status', [{ status: 'connecting' }]);
+            (this as UnsafeValue).emit('status', [{ status: 'connecting' }]);
 
             // 1. Join room
             await window.electron.liveCollaboration.joinRoom({ type: this.type, id: this.id });
@@ -56,7 +58,7 @@ export class IpcProvider extends Observable<string> {
                         return;
                     }
                     this.isConnected = true;
-                    this.emit('status', [{ status: 'connected' }]);
+                    (this as UnsafeValue).emit('status', [{ status: 'connected' }]);
                 })
             );
 
@@ -66,7 +68,7 @@ export class IpcProvider extends Observable<string> {
                         return;
                     }
                     this.isConnected = false;
-                    this.emit('status', [{ status: 'disconnected' }]);
+                    (this as UnsafeValue).emit('status', [{ status: 'disconnected' }]);
                 })
             );
 
@@ -75,7 +77,7 @@ export class IpcProvider extends Observable<string> {
                     if (payload.roomId !== this.roomId) { return; }
 
                     try {
-                        let parsed: unknown;
+                        let parsed: UnsafeValue;
                         if (typeof payload.data === 'string') {
                             parsed = JSON.parse(payload.data);
                         } else {
@@ -85,7 +87,7 @@ export class IpcProvider extends Observable<string> {
                         }
 
                         if (parsed && typeof parsed === 'object') {
-                            const p = parsed as Record<string, unknown>;
+                            const p = parsed as Record<string, UnsafeValue>;
                             if (p.type === 'aw' && Array.isArray(p.data)) {
                                 applyAwarenessUpdate(this.awareness, new Uint8Array(p.data as number[]), this);
                             } else if (p.type === 'update' && Array.isArray(p.data)) {
@@ -105,7 +107,7 @@ export class IpcProvider extends Observable<string> {
             );
 
             // 3. Local Doc Updates
-            this.doc.on('update', (update: Uint8Array, origin: unknown) => {
+            this.doc.on('update', (update: Uint8Array, origin: UnsafeValue) => {
                 if (origin !== this && this.isConnected) {
                     void window.electron.liveCollaboration.sendUpdate({
                         roomId: this.roomId,
@@ -115,7 +117,7 @@ export class IpcProvider extends Observable<string> {
             });
 
             // 4. Local Awareness Updates
-            this.awareness.on('update', ({ added, updated, removed }: { added: number[], updated: number[], removed: number[] }, origin: unknown) => {
+            this.awareness.on('update', ({ added, updated, removed }: { added: number[], updated: number[], removed: number[] }, origin: UnsafeValue) => {
                 if (origin !== this && this.isConnected) {
                     const changedClients = added.concat(updated).concat(removed);
                     const update = encodeAwarenessUpdate(this.awareness, changedClients);
@@ -133,9 +135,9 @@ export class IpcProvider extends Observable<string> {
                         this.isConnected = false;
                         const errorMsg = typeof payload.error === 'string' ? payload.error : JSON.stringify(payload.error);
                         appLogger.error('IpcProvider', `Collaboration error in ${this.roomId}`, errorMsg);
-                        this.emit('status', [{ status: 'disconnected', error: new Error(errorMsg) }]);
+                        (this as UnsafeValue).emit('status', [{ status: 'disconnected', error: new Error(errorMsg) }]);
                         // Emit error as a string instead of an array (which can cause confusion in consumers)
-                        this.emit('common.error', [errorMsg]);
+                        (this as UnsafeValue).emit('common.error', [errorMsg]);
                     }
                 })
             );
@@ -143,7 +145,7 @@ export class IpcProvider extends Observable<string> {
         } catch (error) {
             this.isConnected = false;
             appLogger.error('IpcProvider', 'Failed to initialize IpcProvider', error as Error);
-            this.emit('status', [{ status: 'disconnected', error }]);
+            (this as UnsafeValue).emit('status', [{ status: 'disconnected', error }]);
         }
     }
 

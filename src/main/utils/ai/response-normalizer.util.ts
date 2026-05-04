@@ -1,0 +1,429 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
+ * API Response Normalizer
+ * Standardizes responses from different LLM providers
+ */
+
+import { JsonObject, JsonValue } from '@shared/types/common';
+
+export interface NormalizedResponse {
+    content: string
+    role: 'assistant' | 'system' | 'user'
+    provider: string
+    model: string
+    finishReason?: 'stop' | 'length' | 'tool_calls' | 'content_filter' | 'error'
+    usage?: {
+        promptTokens: number
+        completionTokens: number
+        totalTokens: number
+    }
+    toolCalls?: NormalizedToolCall[]
+    reasoning?: string
+    images?: string[]
+    metadata?: JsonObject
+    rawResponse?: JsonValue
+}
+
+export interface NormalizedToolCall {
+    id: string
+    type: 'function'
+    function: {
+        name: string
+        arguments: string
+    }
+}
+
+export interface NormalizedStreamChunk {
+    content?: string
+    reasoning?: string
+    images?: string[]
+    toolCalls?: NormalizedToolCall[]
+    finishReason?: string
+    done: boolean
+}
+
+/**
+ * Normalize OpenAI response
+ */
+export function normalizeOpenAIResponse(response: JsonValue, model: string): NormalizedResponse {
+    const res = asObject(response) ?? {};
+    const choice = asArray(res.choices)?.[0] as JsonObject | undefined;
+    const message = asObject(choice?.message) ?? { role: 'assistant', content: '' };
+
+    return {
+        content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content ?? ''),
+        role: 'assistant',
+        provider: 'openai',
+        model,
+        finishReason: normalizeFinishReason(choice?.finish_reason as string | undefined),
+        usage: normalizeOpenAIUsage(asObject(res.usage)),
+        toolCalls: normalizeOpenAIToolCalls(message.tool_calls),
+        reasoning: (message.reasoning_content as string | undefined) ?? (message.reasoning as string | undefined),
+        metadata: extractOpenAIMetadata(res),
+        rawResponse: response
+    };
+}
+
+/**
+ * Normalizes OpenAI usage data from API response
+ * @param usage - Raw usage object from API
+ * @returns Normalized usage with token counts
+ */
+function normalizeOpenAIUsage(usage: JsonObject | null): NormalizedResponse['usage'] {
+    if (!usage) { return undefined; }
+    return {
+        promptTokens: Number(usage.prompt_tokens ?? 0),
+        completionTokens: Number(usage.completion_tokens ?? 0),
+        totalTokens: Number(usage.total_tokens ?? 0)
+    };
+}
+
+/**
+ * Normalizes OpenAI tool calls from API response
+ * @param toolCalls - Raw tool calls array from API
+ * @returns Array of normalized tool calls
+ */
+function normalizeOpenAIToolCalls(toolCalls: JsonValue | undefined): NormalizedToolCall[] | undefined {
+    if (!toolCalls) { return undefined; }
+    return (asArray(toolCalls) ?? []).map((t) => normalizeToolCall(t));
+}
+
+/**
+ * Extracts metadata from OpenAI response
+ * @param res - OpenAI response object
+ * @returns Metadata object with id, created timestamp, and system fingerprint
+ */
+function extractOpenAIMetadata(res: JsonObject): NormalizedResponse['metadata'] {
+    return {
+        id: res.id as string,
+        created: res.created as number,
+        systemFingerprint: res.system_fingerprint as string
+    };
+}
+
+/**
+ * Normalize Anthropic response
+ */
+export function normalizeAnthropicResponse(response: JsonValue, model: string): NormalizedResponse {
+    const res = asObject(response) ?? {};
+    const content = asArray(res.content) ?? [];
+    const textPart = asObject(content.find((c) => asObject(c)?.type === 'text'));
+    const textContent = (textPart?.text as string | undefined) ?? '';
+    const toolUseContent = content.filter((c) => asObject(c)?.type === 'tool_use');
+    const usage = asObject(res.usage);
+
+    return {
+        content: textContent,
+        role: 'assistant',
+        provider: 'anthropic',
+        model,
+        finishReason: normalizeFinishReason(res.stop_reason as string | undefined),
+        usage: usage ? {
+            promptTokens: Number(usage.input_tokens ?? 0),
+            completionTokens: Number(usage.output_tokens ?? 0),
+            totalTokens: Number(usage.input_tokens ?? 0) + Number(usage.output_tokens ?? 0)
+        } : undefined,
+        toolCalls: toolUseContent.map((t) => normalizeAnthropicToolCall(asObject(t) ?? {})),
+        metadata: {
+            id: res.id as string,
+            model: res.model as string
+        },
+        rawResponse: response
+    };
+}
+
+/**
+ * Normalizes Anthropic tool call from API response
+ * @param block - Tool use content block from Anthropic
+ * @returns Normalized tool call
+ */
+function normalizeAnthropicToolCall(block: JsonObject): NormalizedToolCall {
+    return {
+        id: (block.id as string | undefined) ?? `tool-${Date.now()}`,
+        type: 'function' as const,
+        function: {
+            name: (block.name as string | undefined) ?? '',
+            arguments: JSON.stringify(block.input ?? {})
+        }
+    };
+}
+
+
+
+/**
+ * Normalize Ollama response
+ */
+export function normalizeOllamaResponse(response: JsonValue, model: string): NormalizedResponse {
+    const res = asObject(response) ?? {};
+    const message = asObject(res.message);
+    const content = message ? (message.content as string | undefined) : (res.response as string | undefined);
+
+    return {
+        content: content ?? '',
+        role: 'assistant',
+        provider: 'ollama',
+        model,
+        finishReason: res.done ? 'stop' : undefined,
+        usage: normalizeOllamaUsage(res),
+        metadata: extractOllamaMetadata(res),
+        rawResponse: response
+    };
+}
+
+/**
+ * Normalizes Ollama usage data from API response
+ * @param res - Ollama response object
+ * @returns Normalized usage with token counts
+ */
+function normalizeOllamaUsage(res: JsonObject): NormalizedResponse['usage'] {
+    const evalCount = res.eval_count;
+    if (!evalCount) { return undefined; }
+    return {
+        promptTokens: Number(res.prompt_eval_count ?? 0),
+        completionTokens: Number(evalCount),
+        totalTokens: Number(res.prompt_eval_count ?? 0) + Number(evalCount)
+    };
+}
+
+/**
+ * Extracts metadata from Ollama response
+ * @param res - Ollama response object
+ * @returns Metadata with duration metrics
+ */
+function extractOllamaMetadata(res: JsonObject): NormalizedResponse['metadata'] {
+    return {
+        totalDuration: res.total_duration as number,
+        loadDuration: res.load_duration as number,
+        evalDuration: res.eval_duration as number
+    };
+}
+
+/**
+ * Normalize any provider response
+ */
+export function normalizeResponse(response: JsonValue, provider: string, model: string): NormalizedResponse {
+    const p = provider.toLowerCase();
+    if (p === 'openai' || p === 'copilot' || p === 'antigravity') {
+        return normalizeOpenAIResponse(response, model);
+    }
+    if (p === 'anthropic' || p === 'claude') {
+        return normalizeAnthropicResponse(response, model);
+    }
+    if (p === 'ollama') {
+        return normalizeOllamaResponse(response, model);
+    }
+    return normalizeFallbackResponse(response, provider, model);
+}
+
+/**
+ * Normalizes a fallback response when provider is unknown
+ * @param response - Raw response from unknown provider
+ * @param provider - Provider name
+ * @param model - Model name
+ * @returns Normalized response with fallback handling
+ */
+function normalizeFallbackResponse(response: JsonValue, provider: string, model: string): NormalizedResponse {
+    const resObj = asObject(response);
+    if (resObj && Array.isArray(resObj.choices)) {
+        return normalizeOpenAIResponse(response, model);
+    }
+    return {
+        content: typeof response === 'string' ? response : JSON.stringify(response),
+        role: 'assistant',
+        provider,
+        model,
+        rawResponse: response
+    };
+}
+
+/**
+ * Normalize stream chunk from any provider
+ */
+export function normalizeStreamChunk(chunk: JsonValue, provider: string): NormalizedStreamChunk {
+    switch (provider.toLowerCase()) {
+        case 'openai':
+        case 'copilot':
+        case 'antigravity':
+            return normalizeOpenAIStreamChunk(chunk);
+        case 'anthropic':
+        case 'claude':
+            return normalizeAnthropicStreamChunk(chunk);
+        case 'ollama':
+            return normalizeOllamaStreamChunk(chunk);
+        default:
+            return normalizeDefaultStreamChunk(chunk);
+    }
+}
+
+/**
+ * Normalizes OpenAI stream chunk from API
+ * @param chunk - Raw stream chunk data
+ * @returns Normalized chunk with content and completion status
+ */
+function normalizeOpenAIStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    const choiceObj = asArray(resObj?.choices)?.[0] as JsonObject | undefined;
+    const delta = asObject(choiceObj?.delta);
+
+    const finishReason = typeof choiceObj?.finish_reason === 'string' ? choiceObj.finish_reason : undefined;
+
+    return {
+        content: typeof delta?.content === 'string' ? delta.content : undefined,
+        reasoning: getOpenAIReasoning(delta),
+        toolCalls: delta && Array.isArray(delta.tool_calls) ? delta.tool_calls.map(normalizeToolCall) : undefined,
+        finishReason,
+        done: finishReason !== undefined
+    };
+}
+
+/**
+ * Extracts reasoning content from OpenAI delta
+ * @param delta - Delta object from stream chunk
+ * @returns Reasoning content if available
+ */
+function getOpenAIReasoning(delta: JsonObject | null): string | undefined {
+    if (typeof delta?.reasoning_content === 'string') {
+        return delta.reasoning_content;
+    }
+    return typeof delta?.reasoning === 'string' ? delta.reasoning : undefined;
+}
+
+/**
+ * Normalizes Anthropic stream chunk from API
+ * @param chunk - Raw stream chunk data
+ * @returns Normalized chunk with text delta or completion status
+ */
+function normalizeAnthropicStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    if (resObj?.type === 'content_block_delta') {
+        const delta = asObject(resObj.delta);
+        return {
+            content: typeof delta?.text === 'string' ? delta.text : undefined,
+            done: false
+        };
+    }
+    return { done: resObj?.type === 'message_stop' };
+}
+
+/**
+ * Normalizes Ollama stream chunk from API
+ * @param chunk - Raw stream chunk data
+ * @returns Normalized chunk with message content or response
+ */
+function normalizeOllamaStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    const message = resObj ? asObject(resObj.message) : null;
+    return {
+        content: typeof message?.content === 'string'
+            ? message.content
+            : (typeof resObj?.response === 'string' ? resObj.response : undefined),
+        done: typeof resObj?.done === 'boolean' ? resObj.done : false
+    };
+}
+
+/**
+ * Normalizes default/fallback stream chunk
+ * @param chunk - Raw stream chunk from unknown provider
+ * @returns Normalized chunk with best-effort content extraction
+ */
+function normalizeDefaultStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    const delta = asObject(resObj?.delta);
+    const content = getStandardContent(resObj, delta);
+    const isDone = typeof resObj?.done === 'boolean' ? resObj.done : resObj?.finish_reason !== undefined;
+
+    return {
+        content,
+        done: isDone
+    };
+}
+
+/**
+ * Extracts standard content from response or delta object
+ * @param res - Response object
+ * @param delta - Delta object
+ * @returns Content string if available
+ */
+function getStandardContent(res: JsonObject | null, delta: JsonObject | null): string | undefined {
+    if (typeof res?.content === 'string') { return res.content; }
+    if (typeof res?.text === 'string') { return res.text; }
+    return typeof delta?.content === 'string' ? delta.content : undefined;
+}
+
+/**
+ * Normalizes finish reason from various providers to standard format
+ * @param reason - Raw finish reason from API
+ * @returns Normalized finish reason
+ */
+function normalizeFinishReason(reason: string | undefined | null): NormalizedResponse['finishReason'] {
+    if (!reason) { return undefined; }
+
+    const lower = reason.toLowerCase();
+    const mapping: Record<string, NormalizedResponse['finishReason']> = {
+        stop: 'stop',
+        end_turn: 'stop',
+        stop_sequence: 'stop',
+        length: 'length',
+        max_tokens: 'length',
+        tool_calls: 'tool_calls',
+        tool_use: 'tool_calls',
+        function_call: 'tool_calls',
+        content_filter: 'content_filter',
+        safety: 'content_filter'
+    };
+
+    return mapping[lower] ?? 'stop';
+}
+
+/**
+ * Normalizes tool call from various API formats to standard format
+ * @param toolCall - Raw tool call object
+ * @returns Normalized tool call with consistent structure
+ */
+function normalizeToolCall(toolCall: JsonValue): NormalizedToolCall {
+    const tc = asObject(toolCall) ?? {};
+    const fn = asObject(tc.function) ?? {};
+
+    // Fallback logic for function details
+    const rawArgs = fn.arguments ?? tc.arguments;
+    const name = typeof fn.name === 'string' ? fn.name : (typeof tc.name === 'string' ? tc.name : '');
+    const id = typeof tc.id === 'string' ? tc.id : `tool-${Date.now()}`;
+
+    return {
+        id,
+        type: 'function',
+        function: {
+            name,
+            arguments: typeof rawArgs === 'string' ? rawArgs : JSON.stringify(rawArgs ?? {})
+        }
+    };
+}
+
+/**
+ * Safely casts value to JsonObject
+ * @param value - Value to cast
+ * @returns JsonObject if valid, null otherwise
+ */
+function asObject(value: JsonValue | undefined): JsonObject | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) { return null; }
+    return value as JsonObject;
+}
+
+/**
+ * Safely casts value to array
+ * @param value - Value to cast
+ * @returns Array if valid, null otherwise
+ */
+function asArray(value: JsonValue | undefined): JsonValue[] | null {
+    if (!Array.isArray(value)) { return null; }
+    return value;
+}

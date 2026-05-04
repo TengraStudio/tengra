@@ -8,7 +8,10 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { RuntimeValue } from '@shared/types/common';
 import {
     SessionRecoverySnapshot,
     SessionState,
@@ -106,5 +109,29 @@ export class SessionDirectoryService extends BaseService {
 
     override async cleanup(): Promise<void> {
         this.registries.clear();
+    }
+
+    // --- IPC Decorated Methods ---
+
+    @ipc('session:get-state')
+    async getSnapshotIpc(sessionId: string): Promise<RuntimeValue> {
+        const result = this.getSnapshot(sessionId);
+        return serializeToIpc(result as unknown);
+    }
+
+    @ipc('session:list')
+    async listSnapshotsIpc(): Promise<RuntimeValue> {
+        const result = this.listRecoverySnapshots();
+        return serializeToIpc(result as unknown);
+    }
+
+    @ipc('session:health')
+    async getHealthIpc(): Promise<RuntimeValue> {
+        const snapshots = this.listRecoverySnapshots();
+        const result = {
+            status: 'ready',
+            activeSessions: snapshots.length,
+        };
+        return serializeToIpc(result);
     }
 }

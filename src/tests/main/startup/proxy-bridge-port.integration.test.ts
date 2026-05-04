@@ -41,7 +41,10 @@ describe('startup proxy bridge port integration', () => {
             } as never as AuthService,
             {
                 exec: vi.fn(),
-            } as never as DatabaseService
+            } as never as DatabaseService,
+            {
+                pushLogEntry: vi.fn(),
+            } as any
         );
         Object.defineProperty(service, 'isExistingProxyHealthy', {
             value: vi.fn().mockResolvedValue(false),

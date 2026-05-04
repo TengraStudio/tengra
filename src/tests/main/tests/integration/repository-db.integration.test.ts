@@ -100,7 +100,8 @@ describe('Repository-DB Integration', () => {
         } as never;
 
 
-        dbService = new DatabaseService(dataService, mockEventBus, mockDatabaseClient);
+        dbService = new DatabaseService(dataService, mockEventBus, mockDatabaseClient, () => null);
+
         await dbService.initialize();
 
         folderRepo = new FolderRepository(dbService);

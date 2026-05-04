@@ -9,9 +9,9 @@
  */
 
 import { EmbeddingService } from '@main/services/llm/embedding.service';
-import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { OllamaService } from '@main/services/llm/ollama.service';
+import { LlamaService } from '@main/services/llm/local/llama.service';
+import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { AppSettings } from '@shared/types/settings';
 import { describe, expect, it, vi } from 'vitest';

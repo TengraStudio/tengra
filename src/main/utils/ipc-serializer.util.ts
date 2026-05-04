@@ -14,14 +14,14 @@
  */
 import { JsonObject, JsonValue } from '@shared/types/common';
 
-/**
- * Serializes a domain object (which may contain Dates, etc.) to an IPC-safe value.
- * Uses JSON round-trip to guarantee the result is a valid JsonValue.
- */
-export function serializeToIpc(value: object | object[] | null | undefined): JsonValue {
-    if (value == null) {return null;}
+export function serializeToIpc(value: unknown): JsonValue {
+    if (value === null || value === undefined) { return null; }
+    if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
+        return value;
+    }
     return JSON.parse(JSON.stringify(value)) as JsonValue;
 }
+
 
 /**
  * Converts a Zod-validated record to a JsonObject for database write operations.

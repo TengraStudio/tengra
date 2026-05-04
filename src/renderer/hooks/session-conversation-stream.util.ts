@@ -12,6 +12,8 @@ import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
 import { ChatError, Message } from '@/types';
 
+type UnsafeValue = ReturnType<typeof JSON.parse>;
+
 export interface PreparedConversationMessages {
     assistantId: string;
     assistantMessage: Message;
@@ -86,7 +88,7 @@ function buildSystemMessage(provider: string, model: string, language: string): 
     return {
         id: generateId(),
         role: 'system',
-        content: getSystemPrompt(language as any, provider, model),
+        content: getSystemPrompt(language as UnsafeValue, provider, model),
         timestamp: new Date(),
     };
 }

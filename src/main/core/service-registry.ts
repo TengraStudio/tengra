@@ -31,11 +31,11 @@ export interface ServiceMetadata {
  * Uses the Singleton pattern — access via `ServiceRegistry.getInstance()`.
  * Emits `service:registered` and `service:unregistered` events.
  *
- * Services map uses `unknown` values intentionally since this registry stores
+ * Services map uses `RuntimeValue` values intentionally since this registry stores
  * heterogeneous service types accessed via typed generic getters.
  */
 export class ServiceRegistry extends EventEmitter {
-    /** Service instances keyed by ID. Typed as unknown since registry is generic. */
+    /** Service instances keyed by ID. Typed as RuntimeValue since registry is generic. */
     private services: Map<string, RuntimeValue> = new Map();
     private metadata: Map<string, ServiceMetadata> = new Map();
 

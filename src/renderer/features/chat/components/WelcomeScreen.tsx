@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
+import logoBlack from '@assets/tengra_black.png';
+import logoWhite from '@assets/tengra_white.png';
 import { IconActivity, IconCode, IconHistory, IconSearch, IconVectorBezier2 } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
-import logoBlack from '@assets/tengra_black.png';
-import logoWhite from '@assets/tengra_white.png';
 import { Button } from '@/components/ui/button';
 import { ChatTemplate } from '@/features/chat/types';
 import { useThemeDetection } from '@/hooks/useTheme';

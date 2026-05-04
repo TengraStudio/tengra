@@ -10,7 +10,7 @@
 
 import { LinkedAccount } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { LocalImageProviders } from '@main/services/llm/local-image-providers';
+import { LocalImageProviders } from '@main/services/llm/local/local-image-providers';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SettingsService } from '@main/services/system/settings.service';

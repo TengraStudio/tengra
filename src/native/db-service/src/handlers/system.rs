@@ -27,7 +27,7 @@ use crate::types::*;
 pub async fn list_folders(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Folder>>> {
     match db.get_folders().await {
         Ok(folders) => Json(ApiResponse::success(folders)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Vec<Folder>>::error(e.to_string())),
     }
 }
 
@@ -38,7 +38,7 @@ pub async fn create_folder(
 ) -> Json<ApiResponse<Folder>> {
     match db.create_folder(req).await {
         Ok(folder) => Json(ApiResponse::success(folder)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Folder>::error(e.to_string())),
     }
 }
 
@@ -50,7 +50,7 @@ pub async fn update_folder(
 ) -> Json<ApiResponse<bool>> {
     match db.update_folder(&id, req).await {
         Ok(updated) => Json(ApiResponse::success(updated)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -61,7 +61,7 @@ pub async fn delete_folder(
 ) -> Json<ApiResponse<bool>> {
     match db.delete_folder(&id).await {
         Ok(deleted) => Json(ApiResponse::success(deleted)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -73,7 +73,7 @@ pub async fn delete_folder(
 pub async fn list_prompts(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Prompt>>> {
     match db.get_prompts().await {
         Ok(prompts) => Json(ApiResponse::success(prompts)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Vec<Prompt>>::error(e.to_string())),
     }
 }
 
@@ -84,7 +84,7 @@ pub async fn create_prompt(
 ) -> Json<ApiResponse<Prompt>> {
     match db.create_prompt(req).await {
         Ok(prompt) => Json(ApiResponse::success(prompt)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Prompt>::error(e.to_string())),
     }
 }
 
@@ -96,7 +96,7 @@ pub async fn update_prompt(
 ) -> Json<ApiResponse<bool>> {
     match db.update_prompt(&id, req).await {
         Ok(updated) => Json(ApiResponse::success(updated)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -107,7 +107,7 @@ pub async fn delete_prompt(
 ) -> Json<ApiResponse<bool>> {
     match db.delete_prompt(&id).await {
         Ok(deleted) => Json(ApiResponse::success(deleted)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<bool>::error(e.to_string())),
     }
 }
 
@@ -119,7 +119,7 @@ pub async fn delete_prompt(
 pub async fn get_stats(State(db): State<Arc<Database>>) -> Json<ApiResponse<Stats>> {
     match db.get_stats().await {
         Ok(stats) => Json(ApiResponse::success(stats)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<Stats>::error(e.to_string())),
     }
 }
 
@@ -134,6 +134,6 @@ pub async fn execute_query(
 ) -> Json<ApiResponse<QueryResponse>> {
     match db.execute_query(req).await {
         Ok(response) => Json(ApiResponse::success(response)),
-        Err(e) => Json(ApiResponse::error(e.to_string())),
+        Err(e) => Json(ApiResponse::<QueryResponse>::error(e.to_string())),
     }
 }

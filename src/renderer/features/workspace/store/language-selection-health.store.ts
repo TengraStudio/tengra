@@ -1,0 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { createComponentHealthStore } from '@/ui/store/component-health.store';
+
+const languageSelectionHealthStore = createComponentHealthStore('language-selection-prompt', 300);
+
+export const subscribeLanguageSelectionHealth = languageSelectionHealthStore.subscribe;
+export const getLanguageSelectionHealthSnapshot = languageSelectionHealthStore.getSnapshot;
+export const useLanguageSelectionHealth = languageSelectionHealthStore.useSnapshot;
+export const setLanguageSelectionUiState = languageSelectionHealthStore.setUiState;
+export const recordLanguageSelectionSuccess = languageSelectionHealthStore.recordSuccess;
+export const recordLanguageSelectionFailure = languageSelectionHealthStore.recordFailure;
+export const recordLanguageSelectionRetry = languageSelectionHealthStore.recordRetry;
+export const recordLanguageSelectionFallback = languageSelectionHealthStore.recordFallback;
+export const __resetLanguageSelectionHealthForTests = languageSelectionHealthStore.resetForTests;

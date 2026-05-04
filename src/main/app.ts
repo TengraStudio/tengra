@@ -350,7 +350,7 @@ app.whenReady().then(async () => {
     // 3. Complete full service initialization
     // PERF-010: Add a safety timeout to ensure we don't hang forever if a service init fails
     services = await Promise.race([
-        createServices(allowedFileRoots),
+        createServices(allowedFileRoots, getMainWindow),
         new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Startup Timeout: Services failed to initialize within 60s')), 60000)
         )
@@ -417,6 +417,8 @@ app.whenReady().then(async () => {
             return;
         }
         try {
+            appLogger.info('Main', 'registerIpcTask: Importing modules...');
+            const start = Date.now();
             const [
                 { McpDispatcher },
                 { ToolExecutor },
@@ -428,9 +430,12 @@ app.whenReady().then(async () => {
                 import('@main/api/api-server.service'),
                 ipcModulePromise
             ]);
+            appLogger.info('Main', `registerIpcTask: Modules imported in ${Date.now() - start}ms`);
 
+            appLogger.info('Main', 'registerIpcTask: Creating McpDispatcher...');
             const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);
 
+            appLogger.info('Main', 'registerIpcTask: Creating ToolExecutor...');
             const toolExecutor = new ToolExecutor({
                 fileSystem: services.fileSystemService,
                 eventBus: services.eventBusService,
@@ -451,7 +456,19 @@ app.whenReady().then(async () => {
                 terminal: services.terminalService,
             });
 
+            appLogger.info('Main', 'registerIpcTask: Creating ToolsService...');
+            const { ToolsService } = await import('@main/services/system/tools.service');
+            const toolsService = new ToolsService(
+                toolExecutor,
+                services.commandService,
+                services.databaseService,
+                services.advancedMemoryService
+            );
+            container.registerInstance('toolsService', toolsService);
+            services.toolsService = toolsService;
+
             // Initialize Local API Server
+            appLogger.info('Main', 'registerIpcTask: Creating ApiServerService...');
             const proxyProcessManager = services.proxyService['processManager'] as ProxyProcessManager;
             const apiServerService = new ApiServerService({
                 port: 42069,
@@ -467,15 +484,16 @@ app.whenReady().then(async () => {
             // Register main IPC handlers - THIS ALLOWS RENDERER TO PROCEED
             if (!GLOBAL_STATE.ipcRegistered) {
                 appLogger.info('Main', 'Starting full IPC registration...');
+                const startTime = Date.now();
                 
                 // CLEANUP: Remove minimal handlers before registering real ones
                 const { EarlyIpc } = await import('./startup/minimal-ipc');
                 EarlyIpc.cleanup();
                 
-                registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, mcpDispatcher, () => GLOBAL_STATE.isReady);
+                registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, () => GLOBAL_STATE.isReady);
 
                 GLOBAL_STATE.ipcRegistered = true;
-                appLogger.info('Main', 'IPC handlers registered successfully.');
+                appLogger.info('Main', `IPC handlers registered successfully in ${Date.now() - startTime}ms.`);
             } else {
                 appLogger.warn('Main', 'IPC handlers already registered, skipping.');
             }
@@ -535,7 +553,7 @@ app.whenReady().then(async () => {
     backgroundInitPromise = Promise.all([registerIpcTask, initDatabaseTask]);
 
     if (services) {
-        registerLifecycleHandlers(services.settingsService);
+        registerLifecycleHandlers(services.settingsService, isIpcRegistered);
     }
 
     // If window already exists (e.g. created during registerIpcTask), hook it now

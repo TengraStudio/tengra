@@ -14,10 +14,13 @@
 
 import { EventEmitter } from 'events';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { IpcMainInvokeEvent } from 'electron';
 
 export interface HealthStatus {
     name: string
@@ -198,6 +201,11 @@ export class HealthCheckService extends BaseService {
     /**
      * Get current health status
      */
+    @ipc('health:status')
+    getStatusIpc(_event: IpcMainInvokeEvent): HealthCheckResult {
+        return this.getStatus();
+    }
+
     getStatus(): HealthCheckResult {
         const services = Array.from(this.statuses.values());
 
@@ -228,9 +236,39 @@ export class HealthCheckService extends BaseService {
     /**
      * Check a specific service immediately
      */
+    @ipc('health:check')
+    async checkNowIpc(_event: IpcMainInvokeEvent, name: string): Promise<HealthStatus | null> {
+        return await this.checkNow(name);
+    }
+
     async checkNow(name: string): Promise<HealthStatus | null> {
         await this.runCheck(name);
         return this.statuses.get(name) ?? null;
+    }
+
+    @ipc('health:getService')
+    getServiceIpc(_event: IpcMainInvokeEvent, serviceName: string): HealthStatus | null {
+        if (!serviceName || typeof serviceName !== 'string') {
+            return null;
+        }
+        const status = this.getStatus();
+        const trimmed = serviceName.trim();
+        return status.services.find(s => s.name === trimmed) ?? null;
+    }
+
+    @ipc('health:listServices')
+    listServicesIpc(_event: IpcMainInvokeEvent): string[] {
+        try {
+            const status = this.getStatus();
+            return status.services.map(s => s.name);
+        } catch {
+            return [];
+        }
+    }
+
+    @ipc('health:memoryContext')
+    getMemoryContextStats(_event: IpcMainInvokeEvent) {
+        return MemoryContextService.getStats();
     }
 
     /**

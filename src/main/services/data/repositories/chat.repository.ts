@@ -10,12 +10,11 @@
 
 import { appLogger } from '@main/logging/logger';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { Chat, Folder, Message, Prompt, SearchChatsOptions } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
-
-import { Chat, SearchChatsOptions } from '../database.service';
 
 import { BaseRepository } from './base.repository';
 
@@ -85,6 +84,19 @@ export class ChatRepository extends BaseRepository {
         sql += ' ORDER BY updated_at DESC';
         const rows = await this.selectAllPaginated<JsonObject>(sql, params);
         return rows.map(row => this.mapRowToChat(row));
+    }
+
+    /** Alias for getChats or searchChats */
+    async list(options?: SearchChatsOptions): Promise<Chat[]> {
+        if (options && (options.query || options.folderId)) {
+            return this.searchChats(options);
+        }
+        return this.getChats();
+    }
+
+    /** Alias for getChat */
+    async get(id: string): Promise<Chat | undefined> {
+        return this.getChat(id);
     }
 
     async updateChat(id: string, updates: Partial<Chat>) {
@@ -260,8 +272,8 @@ export class ChatRepository extends BaseRepository {
     private mapRowToChat(row: JsonObject): Chat {
         return {
             id: String(row.id),
-            title: String(row.title),
-            model: row.model as string | undefined,
+            title: String(row.title ?? 'Untitled'),
+            model: String(row.model ?? ''),
             backend: row.backend as string | undefined,
             messages: [],
             createdAt: new Date(Number(row.created_at)),
@@ -660,6 +672,12 @@ export class ChatRepository extends BaseRepository {
         }
     }
 
+    /** Alias for deleteAllChats */
+    async clearHistory(): Promise<boolean> {
+        const result = await this.deleteAllChats();
+        return result.success;
+    }
+
     async deleteChatsByTitle(title: string): Promise<{ success: boolean; error?: string }> {
         try {
             const rows = await this.adapter.prepare('SELECT id FROM chats WHERE title = ?').all<{ id: string }>(title);
@@ -676,5 +694,149 @@ export class ChatRepository extends BaseRepository {
             appLogger.error('ChatRepository', `Failed to delete chats by title: ${getErrorMessage(error)}`);
             return { success: false, error: getErrorMessage(error as Error) };
         }
+    }
+
+    /** Alias for createChat */
+    async create(chat: Chat): Promise<Chat> {
+        const result = await this.createChat(chat);
+        if (!result.success) { throw new Error(result.error ?? 'Failed to create chat'); }
+        return chat;
+    }
+
+    /** Alias for updateChat */
+    async update(id: string, updates: Partial<Chat>): Promise<boolean> {
+        const result = await this.updateChat(id, updates);
+        return result.success;
+    }
+
+    /** Alias for deleteChat */
+    async delete(id: string): Promise<boolean> {
+        const result = await this.deleteChat(id);
+        return result.success;
+    }
+
+    /** Deletes multiple messages by their IDs */
+    async deleteMessages(ids: string[]): Promise<boolean> {
+        try {
+            if (ids.length === 0) {return true;}
+            const placeholders = ids.map(() => '?').join(',');
+            await this.adapter.prepare(`DELETE FROM messages WHERE id IN (${placeholders})`).run(...ids);
+            return true;
+        } catch (error) {
+            appLogger.error('ChatRepository', `Failed to delete messages: ${getErrorMessage(error as Error)}`);
+            return false;
+        }
+    }
+
+    async searchSimilarMessages(chatId: string, vector: number[], limit: number = 5): Promise<Array<{ id: string; content: string; score: number }>> {
+        try {
+            // This is a placeholder for actual vector search if supported by adapter.
+            // For now, we perform a basic query if vector is not natively supported.
+            // In a real implementation, this would use a vector index or extension.
+            const rows = await this.adapter.prepare(`
+                SELECT id, content, metadata FROM messages 
+                WHERE chat_id = ? 
+                LIMIT ?
+            `).all<JsonObject>(chatId, limit);
+
+            return rows.map(r => ({
+                id: String(r.id),
+                content: String(r.content),
+                score: 1.0 // Placeholder score
+            }));
+        } catch (error) {
+            appLogger.error('ChatRepository', `Failed to search similar messages: ${getErrorMessage(error as Error)}`);
+            return [];
+        }
+    }
+
+    async updateMessageVector(messageId: string, vector: number[]): Promise<void> {
+        try {
+            // We store the vector in the metadata if a dedicated vector column isn't available
+            const message = await this.adapter.prepare('SELECT metadata FROM messages WHERE id = ?').get<JsonObject>(messageId);
+            if (message) {
+                const metadata = this.parseJsonField(message.metadata as string | null, {} as JsonObject);
+                metadata.vector = vector;
+                await this.adapter.prepare('UPDATE messages SET metadata = ? WHERE id = ?').run(JSON.stringify(metadata), messageId);
+            }
+        } catch (error) {
+            appLogger.error('ChatRepository', `Failed to update message vector: ${getErrorMessage(error as Error)}`);
+        }
+    }
+
+    // --- Folder Operations ---
+
+    async getFolders(): Promise<Folder[]> {
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM folders ORDER BY updated_at DESC');
+        return rows.map(r => ({
+            id: String(r.id),
+            name: String(r.name),
+            color: r.color as string | undefined,
+            createdAt: Number(r.created_at),
+            updatedAt: Number(r.updated_at)
+        }));
+    }
+
+    async createFolder(folder: Folder): Promise<Folder> {
+        const id = folder.id || uuidv4();
+        const now = Date.now();
+        await this.adapter.prepare('INSERT INTO folders(id, name, color, created_at, updated_at) VALUES(?, ?, ?, ?, ?)')
+            .run(id, folder.name, folder.color ?? null, folder.createdAt ?? now, now);
+        return { ...folder, id, createdAt: folder.createdAt ?? now, updatedAt: now };
+    }
+
+    async updateFolder(id: string, updates: Partial<Folder>): Promise<boolean> {
+        const fields: string[] = [];
+        const values: SqlValue[] = [];
+        if (updates.name !== undefined) { fields.push('name = ?'); values.push(updates.name); }
+        if (updates.color !== undefined) { fields.push('color = ?'); values.push(updates.color); }
+        fields.push('updated_at = ?'); values.push(Date.now());
+        values.push(id);
+        await this.adapter.prepare(`UPDATE folders SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+        return true;
+    }
+
+    async deleteFolder(id: string): Promise<boolean> {
+        await this.adapter.prepare('DELETE FROM folders WHERE id = ?').run(id);
+        return true;
+    }
+
+    // --- Prompt Operations ---
+
+    async getPrompts(): Promise<Prompt[]> {
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM prompts ORDER BY updated_at DESC');
+        return rows.map(r => ({
+            id: String(r.id),
+            title: String(r.title),
+            content: String(r.content),
+            tags: this.parseJsonField(r.tags as string | null, []),
+            createdAt: Number(r.created_at),
+            updatedAt: Number(r.updated_at)
+        }));
+    }
+
+    async createPrompt(prompt: Prompt): Promise<Prompt> {
+        const id = prompt.id || uuidv4();
+        const now = Date.now();
+        await this.adapter.prepare('INSERT INTO prompts(id, title, content, tags, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?)')
+            .run(id, prompt.title, prompt.content, JSON.stringify(prompt.tags ?? []), prompt.createdAt ?? now, now);
+        return { ...prompt, id, createdAt: prompt.createdAt ?? now, updatedAt: now };
+    }
+
+    async updatePrompt(id: string, updates: Partial<Prompt>): Promise<boolean> {
+        const fields: string[] = [];
+        const values: SqlValue[] = [];
+        if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title); }
+        if (updates.content !== undefined) { fields.push('content = ?'); values.push(updates.content); }
+        if (updates.tags !== undefined) { fields.push('tags = ?'); values.push(JSON.stringify(updates.tags)); }
+        fields.push('updated_at = ?'); values.push(Date.now());
+        values.push(id);
+        await this.adapter.prepare(`UPDATE prompts SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+        return true;
+    }
+
+    async deletePrompt(id: string): Promise<boolean> {
+        await this.adapter.prepare('DELETE FROM prompts WHERE id = ?').run(id);
+        return true;
     }
 }

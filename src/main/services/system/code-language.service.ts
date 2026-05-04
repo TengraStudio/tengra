@@ -11,9 +11,12 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { marketplaceCodeLanguagePackSchema } from '@shared/schemas/marketplace.schema';
+import { RuntimeValue } from '@shared/types/common';
 import type { MarketplaceCodeLanguagePack } from '@shared/types/marketplace';
 
 const CODE_LANGUAGE_FILE_SUFFIX = '.code-language-pack.json';
@@ -39,6 +42,11 @@ export class CodeLanguageService extends BaseService {
 
     async reload(): Promise<void> {
         await this.loadPacks();
+    }
+
+    @ipc('code-language:runtime:getAll')
+    async getAllCodeLanguagePacksIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(await this.getAllCodeLanguagePacks());
     }
 
     async getAllCodeLanguagePacks(): Promise<MarketplaceCodeLanguagePack[]> {

@@ -62,7 +62,13 @@ describe('AuthService (New Multi-Account System)', () => {
             emit: vi.fn()
         } as never as EventBusService;
 
-        authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBusService);
+        authService = new AuthService(
+            mockDatabaseService,
+            mockSecurityService,
+            mockEventBusService,
+            { setGithubToken: vi.fn() } as any,
+            () => null
+        );
     });
 
     describe('Initialization', () => {

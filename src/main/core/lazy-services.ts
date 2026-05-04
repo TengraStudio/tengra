@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 
 /**
@@ -70,9 +71,14 @@ class LazyServiceRegistry {
 
     private async loadService<T extends object>(name: string, factory: LazyServiceFactory<T>): Promise<T> {
         const startTime = Date.now();
+        const { registerServiceIpc } = await import('@main/core/ipc-decorators');
 
         try {
             const service = await factory();
+            
+            // Automatically register @ipc decorated methods
+            registerServiceIpc(service);
+
             const loadTime = Date.now() - startTime;
             appLogger.info('LazyServices', `Loaded service '${name}' in ${loadTime}ms`);
             return service;
@@ -113,15 +119,20 @@ class LazyServiceRegistry {
     /**
      * Get a snapshot summary for diagnostics and UI indicators.
      */
+    @ipc('lazy:get-status')
     getStatus(): {
         registered: string[];
         loaded: string[];
         loading: string[];
     } {
+        const registered = this.getRegisteredServices();
+        const loaded = this.getLoadedServices();
+        const loading = this.getLoadingServices();
+
         return {
-            registered: this.getRegisteredServices(),
-            loaded: this.getLoadedServices(),
-            loading: this.getLoadingServices(),
+            registered,
+            loaded,
+            loading,
         };
     }
 }

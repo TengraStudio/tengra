@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
-
 import LogoAntigravity from '@assets/antigravity.svg?url';
 import LogoOpenAI from '@assets/chatgpt.svg?url';
 import LogoClaude from '@assets/claude.svg?url';
 import LogoCopilot from '@assets/copilot.svg?url';
 import LogoOllama from '@assets/ollama.svg?url';
+import React from 'react';
+
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 

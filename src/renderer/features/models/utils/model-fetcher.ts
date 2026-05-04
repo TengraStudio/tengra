@@ -123,7 +123,7 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
             }
             const rawProvider = (m.providerCategory || m.sourceProvider || m.provider || '') as string;
             const normalizedProvider = normalizeProviderId(rawProvider);
-            
+
             foundProviders.add(`${rawProvider} -> ${normalizedProvider}`);
 
             const modelInfo: ModelInfo = {
@@ -142,12 +142,12 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
         // 1. Primary source: The aggregated model registry which handles local (Ollama), 
         // remote (Proxy, NVIDIA, OpenCode, HuggingFace), and installed models.
         try {
-            const registryModels = await window.electron.invoke('model-registry:get-all') as ModelInfo[];
+            const registryModels = await window.electron.invoke('model-registry:getAllModels') as ModelInfo[];
             if (Array.isArray(registryModels)) {
                 addModels(registryModels, 'registry');
             }
         } catch (e) {
-            appLogger.warn('ModelFetcher', 'model-registry:get-all failed', { error: e });
+            appLogger.warn('ModelFetcher', 'model-registry:getAllModels failed', { error: e });
         }
 
         // 2. Secondary/Legacy fallback: only hit proxy directly when the registry returned nothing.

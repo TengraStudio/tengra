@@ -8,9 +8,11 @@
  * (at your option) any later version.
  */
 
+import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { ExternalMcpPlugin } from '@main/mcp/external-plugin';
 import { IMcpPlugin, NativeMcpPlugin } from '@main/mcp/plugin-base';
 import { McpDeps } from '@main/mcp/server-utils';
@@ -18,8 +20,15 @@ import { McpDispatchResult } from '@main/mcp/types';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { t } from '@main/utils/i18n.util';
-import { JsonObject } from '@shared/types/common';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
+import { JsonObject, RuntimeValue } from '@shared/types/common';
 import { McpPermission, McpPermissionProfile,MCPServerConfig } from '@shared/types/settings';
+
+const MAX_SERVICE_NAME_LENGTH = 128;
+const MAX_ACTION_NAME_LENGTH = 128;
+
+type McpActionPolicy = 'allow' | 'deny' | 'ask';
 
 const MCP_PLUGIN_MESSAGE_KEY = {
     PERMISSION_REQUEST_NOT_FOUND: 'mainProcess.mcpPlugin.permissionRequestNotFound',
@@ -57,6 +66,152 @@ export class McpPluginService extends BaseService {
         private mcpDeps: McpDeps
     ) {
         super('McpPluginService');
+    }
+
+    private validateServiceName(value: RuntimeValue): string {
+        if (typeof value !== 'string') {throw new Error('Invalid service name');}
+        const trimmed = value.trim();
+        if (!trimmed || trimmed.length > MAX_SERVICE_NAME_LENGTH) {throw new Error('Service name too long or empty');}
+        return trimmed;
+    }
+
+    private validateActionName(value: RuntimeValue): string {
+        if (typeof value !== 'string') {throw new Error('Invalid action name');}
+        const trimmed = value.trim();
+        if (!trimmed || trimmed.length > MAX_ACTION_NAME_LENGTH) {throw new Error('Action name too long or empty');}
+        return trimmed;
+    }
+
+    @ipc('mcp:list')
+    async listServicesIpc(): Promise<RuntimeValue> {
+        const plugins = await this.listPlugins();
+        const settings = this.settingsService.getSettings();
+        const disabled = settings.mcpDisabledServers ?? [];
+        const userServers = settings.mcpUserServers ?? [];
+
+        return serializeToIpc(plugins.map(p => ({
+            ...p,
+            isEnabled: !disabled.includes(p.name)
+                && (userServers.find(server => server.id === p.id || server.name === p.name)?.enabled ?? true),
+        })));
+    }
+
+    @ipc('mcp:dispatch')
+    async dispatchIpc(serviceRaw: RuntimeValue, actionRaw: RuntimeValue, argsRaw: RuntimeValue): Promise<RuntimeValue> {
+        const service = this.validateServiceName(serviceRaw);
+        const action = this.validateActionName(actionRaw);
+        const args = (argsRaw && typeof argsRaw === 'object' && !Array.isArray(argsRaw)) ? argsRaw as JsonObject : {};
+        
+        const result = await withOperationGuard('mcp', async () =>
+            this.dispatch(service, action, args)
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc('mcp:toggle')
+    async toggleServiceIpc(serviceRaw: RuntimeValue, enabledRaw: RuntimeValue): Promise<RuntimeValue> {
+        const service = this.validateServiceName(serviceRaw);
+        const enabled = enabledRaw === true;
+        
+        const settings = this.settingsService.getSettings();
+        let disabled = [...(settings.mcpDisabledServers ?? [])];
+
+        if (enabled) {
+            disabled = disabled.filter(s => s !== service);
+        } else {
+            if (!disabled.includes(service)) {
+                disabled.push(service);
+            }
+        }
+
+        await this.settingsService.saveSettings({ mcpDisabledServers: disabled });
+        return serializeToIpc({ success: true, isEnabled: enabled });
+    }
+
+    @ipc('mcp:install')
+    async installServiceIpc(config: MCPServerConfig): Promise<RuntimeValue> {
+        if (!config || typeof config !== 'object') {
+            throw new Error('Invalid MCP server config');
+        }
+        const result = await this.registerPlugin(config);
+        return serializeToIpc(result);
+    }
+
+    @ipc('mcp:uninstall')
+    async uninstallServiceIpc(nameRaw: RuntimeValue): Promise<RuntimeValue> {
+        const name = this.validateServiceName(nameRaw);
+        await this.unregisterPlugin(name);
+        return serializeToIpc({ success: true });
+    }
+
+    @ipc('mcp:debug-metrics')
+    async getDebugMetricsIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(this.getDispatchMetrics());
+    }
+
+    @ipc('mcp:permissions:list-requests')
+    async getPermissionRequestsIpc(): Promise<RuntimeValue> {
+        return serializeToIpc(this.settingsService.getSettings().mcpPermissionRequests ?? []);
+    }
+
+    @ipc('mcp:permissions:set')
+    async setActionPermissionIpc(serviceRaw: RuntimeValue, actionRaw: RuntimeValue, policyRaw: RuntimeValue): Promise<RuntimeValue> {
+        const service = this.validateServiceName(serviceRaw);
+        const action = this.validateActionName(actionRaw);
+        if (policyRaw !== 'allow' && policyRaw !== 'deny' && policyRaw !== 'ask') {
+            throw new Error('Invalid permission policy');
+        }
+
+        const settings = this.settingsService.getSettings();
+        const requestStatus = (policyRaw === 'allow' ? 'approved' : policyRaw === 'deny' ? 'denied' : 'pending') as 'approved' | 'denied' | 'pending';
+        const pendingRequests = (settings.mcpPermissionRequests ?? []).map(request => {
+            if (request.service !== service || request.action !== action || request.status !== 'pending') {
+                return request;
+            }
+            return { ...request, status: requestStatus };
+        });
+
+        await this.settingsService.saveSettings({
+            mcpActionPermissions: {
+                ...(settings.mcpActionPermissions ?? {}),
+                [`${service}:${action}`]: policyRaw as McpActionPolicy
+            },
+            mcpPermissionRequests: pendingRequests
+        });
+
+        return serializeToIpc({ success: true });
+    }
+
+    @ipc('mcp:permissions:resolve-request')
+    async resolvePermissionRequestIpc(requestIdRaw: RuntimeValue, decisionRaw: RuntimeValue): Promise<RuntimeValue> {
+        if (typeof requestIdRaw !== 'string' || requestIdRaw.trim().length === 0) {
+            throw new Error('Invalid request id');
+        }
+        if (decisionRaw !== 'approved' && decisionRaw !== 'denied') {
+            throw new Error('Invalid decision');
+        }
+
+        const settings = this.settingsService.getSettings();
+        const requests = settings.mcpPermissionRequests ?? [];
+        const request = requests.find(item => item.id === requestIdRaw);
+        if (!request) {
+            throw new Error('Permission request not found');
+        }
+
+        const nextPolicy: McpActionPolicy = decisionRaw === 'approved' ? 'allow' : 'deny';
+        await this.settingsService.saveSettings({
+            mcpActionPermissions: {
+                ...(settings.mcpActionPermissions ?? {}),
+                [`${request.service}:${request.action}`]: nextPolicy
+            },
+            mcpPermissionRequests: requests.map(item => (
+                item.id === requestIdRaw
+                    ? { ...item, status: decisionRaw as 'approved' | 'denied' }
+                    : item
+            ))
+        });
+
+        return serializeToIpc({ success: true });
     }
 
     private getStorageRootPath(): string {

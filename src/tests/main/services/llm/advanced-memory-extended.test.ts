@@ -13,7 +13,7 @@ import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.servic
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 describe('AdvancedMemoryService Extended Scenarios', () => {
     let service: AdvancedMemoryService;

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IpcRenderer } from 'electron';
+import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface SdCppBridge {
     getStatus: () => Promise<RuntimeValue>;
@@ -74,14 +74,14 @@ export function createSdCppBridge(ipc: IpcRenderer): SdCppBridge {
         getQueueStats: () => ipc.invoke('sd-cpp:getQueueStats'),
         edit: options => ipc.invoke('sd-cpp:edit', options),
         onSdCppStatus: (callback: (data: RuntimeValue) => void) => {
-            const listener = (_event: unknown, data: RuntimeValue) => callback(data);
+            const listener = (_event: IpcRendererEvent, data: RuntimeValue) => callback(data);
             ipc.on('sd-cpp:status', listener);
             return () => {
                 ipc.removeListener('sd-cpp:status', listener);
             };
         },
         onSdCppProgress: (callback: (data: RuntimeValue) => void) => {
-            const listener = (_event: unknown, data: RuntimeValue) => callback(data);
+            const listener = (_event: IpcRendererEvent, data: RuntimeValue) => callback(data);
             ipc.on('sd-cpp:progress', listener);
             return () => {
                 ipc.removeListener('sd-cpp:progress', listener);
