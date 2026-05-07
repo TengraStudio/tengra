@@ -131,20 +131,25 @@ const useGitOperations = (
         }
     }, [workspacePath, fetchGitData]);
 
-    const handlePull = useCallback(async () => {
+    const handleSync = useCallback(async () => {
         if (!workspacePath) { return; }
         setIsPulling(true);
         try {
-            const result = await window.electron.git.pull(workspacePath);
-            if (result.success) {
+            const pullResult = await window.electron.git.pull(workspacePath);
+            if (!pullResult.success && pullResult.error && !pullResult.error.includes("up to date")) {
+                setLastActionError(pullResult.error);
+                return;
+            }
+            
+            const pushResult = await window.electron.git.push(workspacePath, 'origin');
+            if (pushResult.success) {
                 setLastActionError(null);
                 await fetchGitData();
             } else {
-                setLastActionError(result.error ?? 'Failed to pull');
-                appLogger.error('useGitData', 'Failed to pull', new Error(result.error ?? 'Unknown error'));
+                setLastActionError(pushResult.error ?? 'Failed to push');
             }
         } catch (e) {
-            appLogger.error('useGitData', 'Failed to pull', e as Error);
+            appLogger.error('useGitData', 'Failed to sync', e as Error);
             setLastActionError((e as Error).message);
         } finally {
             setIsPulling(false);
@@ -164,7 +169,8 @@ const useGitOperations = (
         handleCheckout,
         handleCommit,
         handlePush,
-        handlePull
+        handlePull: handleSync, // Alias handlePull to handleSync for the rest of the app
+        handleSync
     };
 };
 
@@ -277,6 +283,7 @@ export function useGitData(workspace: Workspace) {
         handleCommit,
         handlePush,
         handlePull,
+        handleSync,
         lastActionError,
     } = useGitOperations(workspace.path, fetchGitData, selectedFile, setSelectedFile, loadFileDiff);
 
@@ -365,6 +372,7 @@ export function useGitData(workspace: Workspace) {
         handleCommit,
         handlePush,
         handlePull,
+        handleSync,
         handleCommitSelect,
         handleLoadMoreCommits
     };

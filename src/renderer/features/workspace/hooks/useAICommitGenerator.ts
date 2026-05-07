@@ -137,19 +137,15 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
             }
 
             // 5. Generate
-            const prompt = `Generate a short, conventional commit message based on the following git diff.
-Follow the format: <type>: <description>
-Examples:
-- feat: add user login validation
-- fix: resolve null pointer in auth service
-- refactor: simplify provider selection logic
+            const prompt = `You are an expert developer. Analyze the following git diff and generate a precise, descriptive commit message.
 
-Rules:
-- Keep it short and clear
-- Plain text only
-- No explanations, no extra text
+Requirements:
+1. Use the conventional commit format: <type>(<optional-scope>): <subject>
+2. The subject should be a concise summary (max 50 chars) in the imperative mood.
+3. If the changes are complex, add a blank line and provide a brief bulleted list explaining the *why* and *what* of the changes.
+4. Output ONLY the commit message. No markdown blocks, no greetings.
 
-Diff:
+Diff to analyze:
 ${diffText}`;
 
             const response = await window.electron.session.conversation.complete({
