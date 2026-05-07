@@ -134,7 +134,8 @@ export class LLMOpenAIChatService {
     async executeChat(
         messages: Array<Message | ChatMessage>,
         options: OpenAIBodyOptions,
-        requestContext: OpenAIRequestContext
+        requestContext: OpenAIRequestContext,
+        _retryAttempt = 0
     ): Promise<OpenAIResponse> {
         const { endpoint, apiKey, numCtx, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
         const body = this.buildOpenAIBody(messages, { ...options, numCtx });
@@ -162,14 +163,19 @@ export class LLMOpenAIChatService {
         );
 
         if (response.status === 429) {
-            const errorText = await response.clone().text();
-            const resetMatch = errorText.match(/reset after (\d+)s/i);
-            const waitTime = resetMatch ? parseInt(resetMatch[1], 10) * 1000 : 2000;
-            
-            appLogger.warn('LLMOpenAIChatService', `Rate limited (429). Retrying after ${waitTime}ms...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            
-            return this.executeChat(messages, options, requestContext);
+            if (_retryAttempt >= 3) {
+                appLogger.error('LLMOpenAIChatService', `Max retries (3) reached for 429 rate limit.`);
+            } else {
+                const errorText = await response.clone().text();
+                const resetMatch = errorText.match(/reset after (\d+)s/i);
+                const baseWait = Math.pow(2, _retryAttempt) * 2000;
+                const waitTime = resetMatch ? parseInt(resetMatch[1], 10) * 1000 : baseWait;
+                
+                appLogger.warn('LLMOpenAIChatService', `Rate limited (429). Retrying after ${waitTime}ms... (Attempt ${_retryAttempt + 1})`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                
+                return this.executeChat(messages, options, requestContext, _retryAttempt + 1);
+            }
         }
 
         if (!response.ok) {
@@ -189,7 +195,8 @@ export class LLMOpenAIChatService {
     async *executeChatStream(
         messages: Array<Message | ChatMessage>,
         options: OpenAIBodyOptions,
-        requestContext: OpenAIRequestContext
+        requestContext: OpenAIRequestContext,
+        _retryAttempt = 0
     ): AsyncGenerator<OpenAIStreamYield> {
         const { endpoint, apiKey, numCtx, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
         const body = this.buildOpenAIBody(messages, { ...options, numCtx });
@@ -216,15 +223,20 @@ export class LLMOpenAIChatService {
         });
 
         if (response.status === 429) {
-            const errorText = await response.clone().text();
-            const resetMatch = errorText.match(/reset after (\d+)s/i);
-            const waitTime = resetMatch ? parseInt(resetMatch[1], 10) * 1000 : 1000;
-            
-            appLogger.warn('LLMOpenAIChatService', `Rate limited (429) in stream. Retrying after ${waitTime}ms...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            
-            yield* this.executeChatStream(messages, options, requestContext);
-            return;
+            if (_retryAttempt >= 3) {
+                appLogger.error('LLMOpenAIChatService', `Max retries (3) reached for 429 rate limit in stream.`);
+            } else {
+                const errorText = await response.clone().text();
+                const resetMatch = errorText.match(/reset after (\d+)s/i);
+                const baseWait = Math.pow(2, _retryAttempt) * 2000;
+                const waitTime = resetMatch ? parseInt(resetMatch[1], 10) * 1000 : baseWait;
+                
+                appLogger.warn('LLMOpenAIChatService', `Rate limited (429) in stream. Retrying after ${waitTime}ms... (Attempt ${_retryAttempt + 1})`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                
+                yield* this.executeChatStream(messages, options, requestContext, _retryAttempt + 1);
+                return;
+            }
         }
 
         if (!response.ok) {

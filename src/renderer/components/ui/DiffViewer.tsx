@@ -61,6 +61,17 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
         editorRef.current = editor;
     };
 
+    useEffect(() => {
+        return () => {
+            if (editorRef.current) {
+                const models = editorRef.current.getModel();
+                if (models) {
+                    editorRef.current.setModel(null);
+                }
+            }
+        };
+    }, []);
+
     return (
         <div className={cn('relative w-full h-full rounded-lg border border-border/50 overflow-hidden bg-background shadow-sm', className)}>
             {isMonacoReady ? (
@@ -69,7 +80,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                     language={language}
                     original={original}
                     modified={modified}
-                    theme={isLight ? 'light' : 'vs-dark'}
+                    theme={isLight ? 'tengra-light' : 'tengra-dark'}
                     onMount={handleEditorDidMount}
                     loading={
                         <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">

@@ -675,14 +675,16 @@ const useInlineCompletions = (
         const prov = monaco.languages.registerInlineCompletionsProvider(normalizedLanguage, {
             provideInlineCompletions: async (
                 model: editor.ITextModel,
-                pos: { lineNumber: number; column: number }
+                pos: { lineNumber: number; column: number },
+                context: editor.InlineCompletionContext,
+                token: editor.CancellationToken
             ) => {
                 const requestId = latestRequestIdRef.current + 1;
                 latestRequestIdRef.current = requestId;
                 await new Promise(resolve => {
                     setTimeout(resolve, INLINE_SUGGESTION_DEBOUNCE_MS);
                 });
-                if (requestId !== latestRequestIdRef.current) {
+                if (requestId !== latestRequestIdRef.current || token.isCancellationRequested || model.isDisposed()) {
                     return { items: [] };
                 }
 
@@ -758,7 +760,7 @@ const useInlineCompletions = (
                         createdAt: Date.now(),
                     });
                     pruneInlineSuggestionCache(cacheRef.current, Date.now());
-                    if (requestId !== latestRequestIdRef.current) {
+                    if (requestId !== latestRequestIdRef.current || token.isCancellationRequested || model.isDisposed()) {
                         return { items: [] };
                     }
                     if (!response.suggestion) {
@@ -995,7 +997,21 @@ const MonacoEditorInternal: React.FC<{
     className,
     diffMode,
     originalValue,
-}) => (
+}) => {
+    const diffEditorRef = useRef<any>(null);
+
+    useEffect(() => {
+        return () => {
+            if (diffEditorRef.current) {
+                const models = diffEditorRef.current.getModel();
+                if (models) {
+                    diffEditorRef.current.setModel(null);
+                }
+            }
+        };
+    }, []);
+
+    return (
         <div className={cn('relative w-full h-full overflow-hidden', className)}>
             {diffMode ? (
                 <DiffEditor
@@ -1004,7 +1020,10 @@ const MonacoEditorInternal: React.FC<{
                     modified={value}
                     language={language}
                     theme={theme}
-                    onMount={(editor: UnsafeValue, m: UnsafeValue) => onMount(editor.getModifiedEditor(), m)}
+                    onMount={(editor: UnsafeValue, m: UnsafeValue) => {
+                        diffEditorRef.current = editor;
+                        onMount(editor.getModifiedEditor(), m);
+                    }}
                     loading={loading}
                     options={{
                         ...options,
@@ -1028,6 +1047,7 @@ const MonacoEditorInternal: React.FC<{
             )}
         </div>
     );
+};
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
     value,

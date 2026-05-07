@@ -30,10 +30,20 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
 
         try {
             // 1. Get Staged Diff
-            const diffResult = await window.electron.git.getStagedDiff(workspacePath);
-            if (!diffResult.success || !diffResult.diff.trim()) {
+            let diffResult = await window.electron.git.getStagedDiff(workspacePath);
+            let diffText = diffResult.success ? diffResult.diff.trim() : '';
+
+            if (!diffText) {
+                // Fallback to unstaged changes (git diff HEAD) if nothing is staged
+                const headDiff = await window.electron.git.runControlledOperation(workspacePath, 'git diff HEAD', 'diff-head-' + Date.now(), 5000);
+                if (headDiff.success && headDiff.stdout) {
+                    diffText = headDiff.stdout.trim();
+                }
+            }
+
+            if (!diffText) {
                 setIsGenerating(false);
-                return null;
+                return "No changes found to generate a commit message.";
             }
 
             // 2. Fetch Models and Quotas
@@ -83,7 +93,7 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
 
             // Priority 2: API Keys (openai, etc.)
             if (!selectedProvider) {
-                const apiProviders = ['openai', 'google', 'anthropic']; // Simple check for API providers
+                const apiProviders = ['antigravity', 'proxy', 'openai', 'google', 'anthropic']; // Simple check for API providers
                 for (const p of apiProviders) {
                    const providerModels = allModels.filter(m => getSelectableProviderId(m) === p);
                    if (providerModels.length > 0) {
@@ -140,7 +150,7 @@ Rules:
 - No explanations, no extra text
 
 Diff:
-${diffResult.diff}`;
+${diffText}`;
 
             const response = await window.electron.session.conversation.complete({
                 messages: [{ role: 'user', content: prompt, id: 'commit-gen-' + Date.now(), timestamp: new Date() }],
@@ -157,7 +167,7 @@ ${diffResult.diff}`;
 
         } catch (e) {
             appLogger.error('useAICommitGenerator', 'Generation failed', e as Error);
-            return null;
+            return `Generation failed: ${(e as Error).message}`;
         } finally {
             setIsGenerating(false);
         }

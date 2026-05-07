@@ -278,9 +278,10 @@ export class ModelRegistryService extends BaseService {
         output: number;
     }> = [
             { match: /big[\s-_]?pickle/i, input: 0, output: 0 },
-            { match: /minimax[\s-_]?m2\.5[\s-_]?free/i, input: 0, output: 0 },
-            { match: /gpt[\s-_]?5[\s-_]?nano/i, input: 0, output: 0 },
-            { match: /minimax[\s-_]?m2\.5(?![\s-_]?free)/i, input: 0.30, output: 1.20 },
+            { match: /minimax[\s-_]?m2\.5/i, input: 0, output: 0 },
+            { match: /ling[\s-_]?2\.6[\s-_]?flash/i, input: 0, output: 0 },
+            { match: /hy3[\s-_]?preview/i, input: 0, output: 0 },
+            { match: /nemotron[\s-_]?3[\s-_]?super/i, input: 0, output: 0 },
             { match: /minimax[\s-_]?m2\.1/i, input: 0.30, output: 1.20 },
             { match: /glm[\s-_]?5/i, input: 1.00, output: 3.20 },
             { match: /glm[\s-_]?4\.7/i, input: 0.60, output: 2.20 },

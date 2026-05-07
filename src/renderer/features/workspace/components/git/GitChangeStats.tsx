@@ -148,9 +148,19 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
                 <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
                         <span className="typo-overline font-bold text-muted-foreground/40 uppercase ">Staged Changes</span>
-                        <Badge variant="outline" className="h-4 px-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-500 typo-overline font-bold">
-                            {gitData.stagedFiles.length}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-5 px-2 text-[10px] uppercase font-bold text-muted-foreground hover:text-primary"
+                                onClick={() => void handleUnstageFile('.')}
+                            >
+                                Unstage All
+                            </Button>
+                            <Badge variant="outline" className="h-4 px-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-500 typo-overline font-bold">
+                                {gitData.stagedFiles.length}
+                            </Badge>
+                        </div>
                     </div>
                     <div className="border border-border/40 rounded-xl overflow-hidden bg-card/60">
                         {gitData.stagedFiles.map((file, i) => (
@@ -174,9 +184,19 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
                 <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
                         <span className="typo-overline font-bold text-muted-foreground/40 uppercase ">Untracked Changes</span>
-                        <Badge variant="outline" className="h-4 px-1.5 border-amber-500/20 bg-amber-500/10 text-amber-500 typo-overline font-bold">
-                            {gitData.unstagedFiles.length}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-5 px-2 text-[10px] uppercase font-bold text-muted-foreground hover:text-primary"
+                                onClick={() => void handleStageFile('.')}
+                            >
+                                Stage All
+                            </Button>
+                            <Badge variant="outline" className="h-4 px-1.5 border-amber-500/20 bg-amber-500/10 text-amber-500 typo-overline font-bold">
+                                {gitData.unstagedFiles.length}
+                            </Badge>
+                        </div>
                     </div>
                     <div className="border border-border/40 rounded-xl overflow-hidden bg-card/60">
                         {gitData.unstagedFiles.map((file, i) => (

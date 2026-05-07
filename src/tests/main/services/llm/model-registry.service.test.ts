@@ -231,9 +231,11 @@ describe('ModelRegistryService', () => {
                 json: vi.fn().mockResolvedValue({
                     data: [
                         { id: 'big-pickle', name: 'Big Pickle' },
-                        { id: 'minimax-m2.5-free', name: 'MiniMax M2.5 Free' },
-                        { id: 'gpt-5-nano', name: 'GPT 5 Nano' },
-                        { id: 'minimax-m2.5', name: 'MiniMax M2.5' }
+                        { id: 'minimax-m2.5', name: 'MiniMax M2.5' },
+                        { id: 'ling-2.6-flash', name: 'Ling 2.6 Flash' },
+                        { id: 'hy3-preview', name: 'Hy3 Preview' },
+                        { id: 'nemotron-3-super', name: 'Nemotron 3 Super' },
+                        { id: 'gpt-5-nano', name: 'GPT 5 Nano' }
                     ]
                 }),
             } as never);
@@ -241,19 +243,25 @@ describe('ModelRegistryService', () => {
             const models = await service.getRemoteModels();
             const opencodeModels = models.filter(model => model.provider === 'opencode');
 
-            expect(opencodeModels).toHaveLength(3);
+            expect(opencodeModels).toHaveLength(5);
             expect(opencodeModels.map(model => model.id)).toEqual([
                 'big-pickle',
-                'minimax-m2.5-free',
-                'gpt-5-nano'
+                'minimax-m2.5',
+                'ling-2.6-flash',
+                'hy3-preview',
+                'nemotron-3-super'
             ]);
             const bigPickle = opencodeModels.find(model => model.id === 'big-pickle');
-            const minimaxFree = opencodeModels.find(model => model.id === 'minimax-m2.5-free');
-            const gptNano = opencodeModels.find(model => model.id === 'gpt-5-nano');
+            const minimax = opencodeModels.find(model => model.id === 'minimax-m2.5');
+            const ling = opencodeModels.find(model => model.id === 'ling-2.6-flash');
+            const hy3 = opencodeModels.find(model => model.id === 'hy3-preview');
+            const nemotron = opencodeModels.find(model => model.id === 'nemotron-3-super');
 
             expect(bigPickle?.pricing).toEqual({ input: 0, output: 0 });
-            expect(minimaxFree?.pricing).toEqual({ input: 0, output: 0 });
-            expect(gptNano?.pricing).toEqual({ input: 0, output: 0 });
+            expect(minimax?.pricing).toEqual({ input: 0, output: 0 });
+            expect(ling?.pricing).toEqual({ input: 0, output: 0 });
+            expect(hy3?.pricing).toEqual({ input: 0, output: 0 });
+            expect(nemotron?.pricing).toEqual({ input: 0, output: 0 });
         });
 
         it('should include gpt-image-1 when an OpenAI account is linked', async () => {
