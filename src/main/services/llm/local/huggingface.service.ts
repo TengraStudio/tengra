@@ -22,6 +22,7 @@ import {
 } from '@main/services/llm/local/local-runtime.types';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { t } from '@main/utils/i18n.util';
+import { HF_CHANNELS, HF_FINETUNE_CHANNELS, HF_VERSIONS_CHANNELS } from '@shared/constants/ipc-channels';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow } from 'electron';
 
@@ -324,7 +325,7 @@ export class HuggingFaceService extends BaseService {
      * Searches for GGUF models on HuggingFace.
      * Implements local caching and uses HttpService for requests.
      */
-    @ipc('hf:search-models')
+    @ipc(HF_CHANNELS.SEARCH_MODELS)
     async searchModels(
         query: string = '',
         limit: number = 20,
@@ -340,7 +341,6 @@ export class HuggingFaceService extends BaseService {
         const cached = this.searchCache.get(cacheKey);
 
         if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
-            appLogger.debug('HuggingFaceService', `Returning cached results for: ${query}`);
             return cached.data;
         }
 
@@ -408,7 +408,7 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
-    @ipc('hf:get-recommendations')
+    @ipc(HF_CHANNELS.GET_RECOMMENDATIONS)
     async getRecommendations(limit: number = 10, query: string = ''): Promise<HFModel[]> {
         const validatedLimit = this.validateLimit(limit);
         const validatedQuery = this.validateQuery(query);
@@ -421,7 +421,7 @@ export class HuggingFaceService extends BaseService {
     /**
      * Fetches file tree for a specific model hub repository.
      */
-    @ipc('hf:get-files')
+    @ipc(HF_CHANNELS.GET_FILES)
     async getModelFiles(modelId: string): Promise<HFModelFile[]> {
         const sanitizedId = this.sanitizeModelId(modelId);
         try {
@@ -455,7 +455,7 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
-    @ipc('hf:validate-compatibility')
+    @ipc(HF_CHANNELS.VALIDATE_COMPATIBILITY)
     async validateModelCompatibility(
         file: HFModelFile,
         availableRamGB: number = 16,
@@ -521,7 +521,7 @@ export class HuggingFaceService extends BaseService {
         return 0;
     }
 
-    @ipc('hf:get-model-preview')
+    @ipc(HF_CHANNELS.GET_MODEL_PREVIEW)
     async getModelPreview(modelId: string): Promise<HFModelPreview | null> {
         const sanitizedId = this.sanitizeModelId(modelId);
         const details = await this.fetchModelDetails(sanitizedId);
@@ -531,7 +531,7 @@ export class HuggingFaceService extends BaseService {
         return this.mapDetailsToPreview(details);
     }
 
-    @ipc('hf:compare-models')
+    @ipc(HF_CHANNELS.COMPARE_MODELS)
     async compareModels(modelIds: string[]): Promise<HFModelComparison> {
         const previews = (await Promise.all(modelIds.map(id => this.getModelPreview(id))))
             .filter((p): p is HFModelPreview => p !== null);
@@ -584,7 +584,7 @@ export class HuggingFaceService extends BaseService {
     /**
      * Advanced download manager with queueing, scheduling, disk validation and hash verification.
      */
-    @ipc('hf:download-file')
+    @ipc(HF_CHANNELS.DOWNLOAD_FILE)
     async downloadFileIpc(params: {
         url: string;
         outputPath: string;
@@ -617,7 +617,7 @@ export class HuggingFaceService extends BaseService {
         });
     }
 
-    @ipc('hf:cancel-download')
+    @ipc(HF_CHANNELS.CANCEL_DOWNLOAD)
     async cancelPendingDownloads(): Promise<number> {
         const pending = this.downloadQueue.length;
         while (this.downloadQueue.length > 0) {
@@ -665,19 +665,19 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
-    @ipc('hf:watchlist:get')
+    @ipc(HF_CHANNELS.GET_WATCHLIST)
     async getWatchlist(): Promise<string[]> {
         return [...this.watchlist].sort();
     }
 
-    @ipc('hf:watchlist:add')
+    @ipc(HF_CHANNELS.ADD_TO_WATCHLIST)
     async addToWatchlist(modelId: string): Promise<boolean> {
         this.watchlist.add(modelId);
         await this.persistWatchlist();
         return true;
     }
 
-    @ipc('hf:watchlist:remove')
+    @ipc(HF_CHANNELS.REMOVE_FROM_WATCHLIST)
     async removeFromWatchlist(modelId: string): Promise<boolean> {
         const removed = this.watchlist.delete(modelId);
         if (removed) {
@@ -686,7 +686,7 @@ export class HuggingFaceService extends BaseService {
         return removed;
     }
 
-    @ipc('hf:cache-stats')
+    @ipc(HF_CHANNELS.CACHE_STATS)
     async getCacheStats(): Promise<{ size: number; maxSize: number; ttlMs: number; oldestAgeMs: number; watchlistSize: number }> {
         let oldestAgeMs = 0;
         for (const entry of this.searchCache.values()) {
@@ -701,14 +701,14 @@ export class HuggingFaceService extends BaseService {
         };
     }
 
-    @ipc('hf:cache-clear')
+    @ipc(HF_CHANNELS.CACHE_CLEAR)
     async clearCache(): Promise<{ success: boolean; removed: number }> {
         const removed = this.searchCache.size;
         this.searchCache.clear();
         return { success: true, removed };
     }
 
-    @ipc('hf:get-conversion-presets')
+    @ipc(HF_CHANNELS.GET_CONVERSION_PRESETS)
     getConversionPresets(): HFConversionPreset[] {
         return [
             { id: 'balanced', quantization: 'Q4_K_M', description: t('auto.bestDefaultForQualityperformanceBalance') },
@@ -718,7 +718,7 @@ export class HuggingFaceService extends BaseService {
         ];
     }
 
-    @ipc('hf:validate-conversion')
+    @ipc(HF_CHANNELS.VALIDATE_CONVERSION)
     validateConversionOptions(options: HFConversionOptions): { valid: boolean; errors: string[] } {
         const errors: string[] = [];
         if (!options.sourcePath || options.sourcePath.trim().length < 3) {
@@ -737,7 +737,7 @@ export class HuggingFaceService extends BaseService {
         return { valid: errors.length === 0, errors };
     }
 
-    @ipc('hf:get-optimization-suggestions')
+    @ipc(HF_CHANNELS.GET_OPTIMIZATION_SUGGESTIONS)
     getOptimizationSuggestions(options: HFConversionOptions): string[] {
         const validatedOptions = {
             ...options,
@@ -763,7 +763,7 @@ export class HuggingFaceService extends BaseService {
      * Converts a model to GGUF format and quantizes it.
      * Note: This implementation is currently a placeholder to satisfy the interface.
      */
-    @ipc('hf:convert-model')
+    @ipc(HF_CHANNELS.CONVERT_MODEL)
     async convertModelToGGUF(
         options: HFConversionOptions
     ): Promise<{ success: boolean; error?: string; outputPath?: string }> {
@@ -806,7 +806,7 @@ export class HuggingFaceService extends BaseService {
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }
-    @ipc('hf:test-downloaded-model')
+    @ipc(HF_CHANNELS.TEST_DOWNLOADED_MODEL)
     async testDownloadedModel(filePath: string): Promise<{ success: boolean; error?: string; metadata?: { architecture?: string; contextLength?: number } }> {
         try {
             const fs = await import('fs/promises');
@@ -830,7 +830,7 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
-    @ipc('hf:versions:register')
+    @ipc(HF_VERSIONS_CHANNELS.REGISTER)
     async registerModelVersion(modelId: string, filePath: string, notes?: string): Promise<HFModelVersionRecord> {
         const metadataRaw = (await this.getGGUFMetadata(filePath).catch(() => ({}))) as {
             architecture?: RuntimeValue;
@@ -855,7 +855,7 @@ export class HuggingFaceService extends BaseService {
         return record;
     }
 
-    @ipc('hf:versions:list')
+    @ipc(HF_VERSIONS_CHANNELS.LIST)
     async getModelVersions(modelId: string): Promise<HFModelVersionRecord[]> {
         return this.modelVersions
             .filter(v => v.modelId === modelId)
@@ -907,7 +907,7 @@ export class HuggingFaceService extends BaseService {
         return installed;
     }
 
-    @ipc('hf:versions:compare')
+    @ipc(HF_VERSIONS_CHANNELS.COMPARE)
     async compareModelVersions(modelId: string, leftVersionId: string, rightVersionId: string): Promise<HFVersionComparison> {
         const versions = await this.getModelVersions(modelId);
         const left = versions.find(v => v.versionId === leftVersionId);
@@ -929,7 +929,7 @@ export class HuggingFaceService extends BaseService {
         return comparison;
     }
 
-    @ipc('hf:versions:rollback')
+    @ipc(HF_VERSIONS_CHANNELS.ROLLBACK)
     async rollbackModelVersion(modelId: string, versionId: string, targetPath: string): Promise<{ success: boolean; error?: string }> {
         const fs = await import('fs/promises');
         const version = this.modelVersions.find(v => v.modelId === modelId && v.versionId === versionId);
@@ -945,7 +945,7 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
-    @ipc('hf:versions:pin')
+    @ipc(HF_VERSIONS_CHANNELS.PIN)
     async pinModelVersion(modelId: string, versionId: string, pinned: boolean): Promise<{ success: boolean }> {
         let changed = false;
         this.modelVersions = this.modelVersions.map(v => {
@@ -966,7 +966,7 @@ export class HuggingFaceService extends BaseService {
     /**
      * Deletes a model and all its versions/files.
      */
-    @ipc('hf:delete-model')
+    @ipc(HF_CHANNELS.DELETE_MODEL)
     async deleteModel(modelId: string): Promise<{ success: boolean; error?: string }> {
         const fs = await import('fs/promises');
         try {
@@ -990,7 +990,7 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
-    @ipc('hf:versions:notifications')
+    @ipc(HF_VERSIONS_CHANNELS.NOTIFICATIONS)
     async getVersionNotifications(modelId: string): Promise<string[]> {
         const versions = await this.getModelVersions(modelId);
         if (versions.length === 0) {
@@ -1011,7 +1011,7 @@ export class HuggingFaceService extends BaseService {
         return messages.length > 0 ? messages : ['Version state is healthy'];
     }
 
-    @ipc('hf:finetune:prepare-dataset')
+    @ipc(HF_FINETUNE_CHANNELS.PREPARE_DATASET)
     async prepareFineTuneDataset(
         inputPath: string,
         outputPath: string
@@ -1043,7 +1043,7 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
-    @ipc('hf:get-bulk-model-previews')
+    @ipc(HF_CHANNELS.GET_BULK_MODEL_PREVIEWS)
     async getBulkModelPreviews(modelIds: string[]): Promise<Record<string, HFModelPreview>> {
         const previews: Record<string, HFModelPreview> = {};
         for (const id of modelIds) {
@@ -1180,7 +1180,7 @@ export class HuggingFaceService extends BaseService {
         return null;
     }
 
-    @ipc('hf:finetune:start')
+    @ipc(HF_FINETUNE_CHANNELS.START)
     async startFineTuneIpc(modelId: string, datasetPath: string, outputPath: string, options?: { epochs?: number; learningRate?: number }): Promise<HFFineTuneJob> {
         return this.startFineTune(modelId, datasetPath, outputPath, {
             ...options,
@@ -1235,13 +1235,13 @@ export class HuggingFaceService extends BaseService {
         return job;
     }
 
-    @ipc('hf:finetune:get')
+    @ipc(HF_FINETUNE_CHANNELS.GET)
     async getFineTuneJob(jobId: string): Promise<HFFineTuneJob | null> {
         const job = this.fineTuneJobs.get(jobId);
         return job ? { ...job } : null;
     }
 
-    @ipc('hf:finetune:list')
+    @ipc(HF_FINETUNE_CHANNELS.LIST)
     async listFineTuneJobs(modelId?: string): Promise<HFFineTuneJob[]> {
         const jobs = [...this.fineTuneJobs.values()].map(j => ({ ...j }));
         if (!modelId) {
@@ -1250,7 +1250,7 @@ export class HuggingFaceService extends BaseService {
         return jobs.filter(j => j.modelId === modelId).sort((a, b) => b.updatedAt - a.updatedAt);
     }
 
-    @ipc('hf:finetune:cancel')
+    @ipc(HF_FINETUNE_CHANNELS.CANCEL)
     async cancelFineTuneJob(jobId: string): Promise<{ success: boolean }> {
         const timer = this.fineTuneTimers.get(jobId);
         if (timer) {
@@ -1267,7 +1267,7 @@ export class HuggingFaceService extends BaseService {
         return { success: true };
     }
 
-    @ipc('hf:finetune:evaluate')
+    @ipc(HF_FINETUNE_CHANNELS.EVALUATE)
     async evaluateFineTuneJob(jobId: string): Promise<{ success: boolean; metrics?: Record<string, number>; error?: string }> {
         const job = this.fineTuneJobs.get(jobId);
         if (!job) {
@@ -1284,7 +1284,7 @@ export class HuggingFaceService extends BaseService {
         };
     }
 
-    @ipc('hf:finetune:export')
+    @ipc(HF_FINETUNE_CHANNELS.EXPORT)
     async exportFineTunedModel(jobId: string, exportPath: string): Promise<{ success: boolean; error?: string }> {
         const fs = await import('fs/promises');
         const job = this.fineTuneJobs.get(jobId);
@@ -1789,3 +1789,4 @@ export class HuggingFaceService extends BaseService {
         );
     }
 }
+

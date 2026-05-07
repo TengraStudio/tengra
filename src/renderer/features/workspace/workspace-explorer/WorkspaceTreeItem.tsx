@@ -17,6 +17,7 @@ import { joinPath, sortNodes } from '@/features/workspace/utils/workspaceUtils';
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
+import { appLogger } from '@main/logging/logger';
 
 export interface FileNode {
     name: string;
@@ -146,6 +147,15 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
             return;
         }
         try {
+            if (!node.path) {
+                appLogger.error('WorkspaceTreeItem', 'loadChildren called with missing node.path', { 
+                    name: node.name,
+                    mountId: mount.id 
+                });
+                setLoading(false);
+                return;
+            }
+
             const result =
                 mount.type === 'local'
                     ? await window.electron.files.listDirectory(node.path)
@@ -329,3 +339,4 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
         </div>
     );
 };
+

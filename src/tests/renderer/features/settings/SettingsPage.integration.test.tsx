@@ -142,3 +142,4 @@ describe('SettingsPage integration', () => {
         expect(screen.queryByTestId('settings-tab-content')).not.toBeInTheDocument();
     });
 });
+

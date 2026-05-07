@@ -16,7 +16,7 @@ import type {
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
-    InlineSuggestionTelemetry,
+    InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 import type { IpcRendererEvent } from 'electron';
 
@@ -155,7 +155,7 @@ export interface ElectronAPI {
     };
 
     // Auth
-    githubLogin: (appId?: 'profile' | 'copilot') => Promise<{
+    githubLogin: (appId?: 'copilot') => Promise<{
         device_code: string;
         user_code: string;
         verification_uri: string;
@@ -165,7 +165,7 @@ export interface ElectronAPI {
     pollToken: (
         deviceCode: string,
         interval: number,
-        appId?: 'profile' | 'copilot'
+        appId?: 'copilot'
     ) => Promise<{
         success: boolean;
         account?: {
@@ -983,8 +983,8 @@ export interface ElectronAPI {
         applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
         getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
-        trackInlineSuggestionTelemetry: (
-            event: InlineSuggestionTelemetry
+        trackInlineSuggestionStats: (
+            event: InlineSuggestionUsageStats
         ) => Promise<{ success: boolean }>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
         uploadLogo: (workspacePath: string) => Promise<string | null>;
@@ -1273,3 +1273,4 @@ export interface ElectronAPI {
     };
     liveCollaboration: ElectronAPI['userCollaboration'];
 }
+

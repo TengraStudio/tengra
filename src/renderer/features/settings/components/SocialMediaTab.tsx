@@ -10,7 +10,7 @@
 
 import type { AppSettings, CronJobEntry } from '@shared/types/settings';
 import { IconAlertCircle, IconCalendar, IconClock, IconMessage, IconPlus, IconRobot, IconSend, IconShield, IconTrash } from '@tabler/icons-react';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -71,6 +71,14 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
     const [telegramToken, setTelegramToken] = useState(telegramConfig.token ?? '');
     const [showNewCronForm, setShowNewCronForm] = useState(false);
     const [newCronDraft, setNewCronDraft] = useState<CronJobEntry>(createEmptyCronJob);
+
+    useEffect(() => {
+        setTelegramToken(telegramConfig.token ?? '');
+    }, [telegramConfig.token]);
+
+    useEffect(() => {
+        setDiscordToken(discordConfig.token ?? '');
+    }, [discordConfig.token]);
 
     const handleDiscordUpdate = (patch: Partial<NonNullable<AppSettings['remoteAccounts']>['discord']>) => {
         void updateRemoteAccounts({ discord: { ...discordConfig, ...patch } });
@@ -153,8 +161,11 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                             <Input
                                 type="password"
                                 value={telegramToken}
-                                onChange={e => setTelegramToken(e.target.value)}
-                                onBlur={() => handleTelegramUpdate({ token: telegramToken })}
+                                onChange={e => {
+                                    const nextToken = e.target.value;
+                                    setTelegramToken(nextToken);
+                                    handleTelegramUpdate({ token: nextToken });
+                                }}
                                 className={SettingsInputClassName}
                                 placeholder={t('frontend.settings.socialMedia.telegram.botTokenPlaceholder')}
                             />
@@ -222,8 +233,11 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                             <Input
                                 type="password"
                                 value={discordToken}
-                                onChange={e => setDiscordToken(e.target.value)}
-                                onBlur={() => handleDiscordUpdate({ token: discordToken })}
+                                onChange={e => {
+                                    const nextToken = e.target.value;
+                                    setDiscordToken(nextToken);
+                                    handleDiscordUpdate({ token: nextToken });
+                                }}
                                 className={SettingsInputClassName}
                                 placeholder={t('frontend.settings.socialMedia.discord.botTokenPlaceholder')}
                             />
@@ -461,3 +475,4 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
         </div>
     );
 };
+

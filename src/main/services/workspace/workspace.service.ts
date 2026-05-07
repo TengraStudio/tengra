@@ -13,6 +13,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -29,13 +30,15 @@ import {
     type WorkspaceIgnoreMatcher
 } from '@main/services/workspace/workspace-ignore.util';
 import { t } from '@main/utils/i18n.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
+import { WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     WorkspaceEnvKeySchema,
     WorkspaceEnvVarsSchema,
     WorkspaceRootPathSchema
 } from '@shared/schemas/service-hardening.schema';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, RuntimeValue } from '@shared/types/common';
 import type {
     CodeAnnotation,
     WorkspaceAnalysis,
@@ -446,6 +449,31 @@ export class WorkspaceService extends BaseService {
 
         const previousRootPath = this.activeWorkspaceRootPath;
         this.activeWorkspaceRootPath = nextRootPath;
+        if (this.allowedFileRoots) {
+            if (nextRootPath) {
+                appLogger.info('Workspace', `Registering active workspace root as allowed`, { path: nextRootPath });
+                this.allowedFileRoots.add(nextRootPath);
+
+                // Also register all mount roots
+                if (this.databaseService) {
+                    const workspaces = await this.databaseService.workspaces.getWorkspaces();
+                    const activeWorkspace = workspaces.find(w => 
+                        w.path === rootPath || 
+                        this.resolveAndValidateRootPath(w.path) === nextRootPath
+                    );
+                    
+                    if (activeWorkspace?.mounts) {
+                        activeWorkspace.mounts.forEach((mount: any) => {
+                            if (mount.rootPath) {
+                                const resolvedMountPath = path.resolve(mount.rootPath);
+                                appLogger.info('Workspace', `Registering mount root as allowed`, { path: resolvedMountPath });
+                                this.allowedFileRoots!.add(resolvedMountPath);
+                            }
+                        });
+                    }
+                }
+            }
+        }
 
         if (previousRootPath) {
             this.closeWorkspaceWatcher(previousRootPath);
@@ -468,6 +496,85 @@ export class WorkspaceService extends BaseService {
 
     getActiveWorkspace(): string | null {
         return this.activeWorkspaceRootPath;
+    }
+
+    // --- IPC Handlers ---
+
+    @ipc(WORKSPACE_CHANNELS.WATCH)
+    async watchWorkspaceIpc(rootPath: string): Promise<RuntimeValue> {
+        await this.watchWorkspace(rootPath, () => { });
+        return serializeToIpc(void 0);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.UNWATCH)
+    async unwatchIpc(rootPath: string): Promise<RuntimeValue> {
+        await this.stopWatch(rootPath);
+        return serializeToIpc(void 0);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.SET_ACTIVE)
+    async setActiveWorkspaceIpc(rootPath: string | null): Promise<RuntimeValue> {
+        await this.setActiveWorkspace(rootPath);
+        return serializeToIpc(void 0);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.CLEAR_ACTIVE)
+    async clearActiveWorkspaceIpc(rootPath?: string): Promise<RuntimeValue> {
+        await this.clearActiveWorkspace(rootPath);
+        return serializeToIpc(void 0);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.ANALYZE)
+    async analyzeWorkspaceIpc(rootPath: string): Promise<RuntimeValue> {
+        const result = await this.analyzeWorkspace(rootPath);
+        return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.ANALYZE_SUMMARY)
+    async analyzeWorkspaceSummaryIpc(rootPath: string): Promise<RuntimeValue> {
+        const result = await this.analyzeWorkspaceSummary(rootPath);
+        return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.GET_FILE_DIAGNOSTICS)
+    async getFileDiagnosticsIpc(rootPath: string, filePath: string, content: string): Promise<RuntimeValue> {
+        const result = await this.getFileDiagnostics(rootPath, filePath, content);
+        return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.ANALYZE_DIRECTORY)
+    async analyzeDirectoryIpc(dirPath: string): Promise<RuntimeValue> {
+        const result = await this.analyzeDirectory(dirPath);
+        return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.GET_FILE_DEFINITION)
+    async getFileDefinitionIpc(
+        rootPath: string,
+        filePath: string,
+        content: string,
+        position: { line: number; column: number }
+    ): Promise<RuntimeValue> {
+        const result = await this.getFileDefinition(
+            rootPath,
+            filePath,
+            content,
+            position.line,
+            position.column
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.GET_ENV)
+    async getEnvVarsIpc(rootPath: string): Promise<RuntimeValue> {
+        const result = await this.getEnvVars(rootPath);
+        return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.SAVE_ENV)
+    async saveEnvVarsIpc(rootPath: string, vars: Record<string, string>): Promise<RuntimeValue> {
+        await this.saveEnvVars(rootPath, vars);
+        return serializeToIpc(void 0);
     }
 
     private trackChangedPath(rootPath: string, changedPath: string): void {
@@ -1016,11 +1123,23 @@ export class WorkspaceService extends BaseService {
 
     private emitWorkspaceChange(rootPath: string, event: string, absolutePath: string): void {
         const callbacks = this.watchCallbacks.get(rootPath);
-        if (!callbacks || callbacks.size === 0) {
-            return;
+        if (callbacks && callbacks.size > 0) {
+            for (const callback of callbacks) {
+                try {
+                    callback(event, absolutePath);
+                } catch (err) {
+                    this.logWarn(`Error in watch callback for ${rootPath}:`, err as Error);
+                }
+            }
         }
-        for (const callback of callbacks) {
-            callback(event, absolutePath);
+
+        const mainWindow = this.mainWindowProvider?.();
+        if (mainWindow) {
+            mainWindow.webContents.send(WORKSPACE_CHANNELS.FILE_CHANGE_EVENT, {
+                event,
+                path: absolutePath,
+                rootPath
+            });
         }
     }
 
@@ -1496,7 +1615,7 @@ export class WorkspaceService extends BaseService {
         try {
             const packageJsonPath = path.join(rootPath, 'package.json');
             const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
-            const parsed = safeJsonParse<{ eslintConfig?: unknown }>(packageJsonContent, {});
+            const parsed = safeJsonParse<{ eslintConfig?: RuntimeValue }>(packageJsonContent, {});
             return parsed.eslintConfig !== undefined;
         } catch {
             return false;
@@ -1827,10 +1946,10 @@ export class WorkspaceService extends BaseService {
 
     private async readLanguageWeight(filePath: string): Promise<number> {
         try {
-            const stat = await fs.stat(filePath);
-            return Math.max(1, Math.trunc(stat.size));
+            const content = await fs.readFile(filePath, 'utf-8');
+            return Math.max(1, content.split(/\r?\n/).length);
         } catch (error) {
-            appLogger.debug(LOG_CONTEXT, `Failed to stat language file ${filePath}:`, getErrorMessage(error as Error));
+            appLogger.debug(LOG_CONTEXT, `Failed to read language file ${filePath}:`, getErrorMessage(error as Error));
             return 1;
         }
     }
@@ -2019,12 +2138,12 @@ export class WorkspaceService extends BaseService {
         return Boolean(this.utilityProcessService && !this.workerDisabled);
     }
 
-    private isScanResult(value: unknown): value is FileScanResult {
+    private isScanResult(value: RuntimeValue): value is FileScanResult {
         if (value === null || typeof value !== 'object') {
             return false;
         }
 
-        const candidate = value as Record<string, unknown>;
+        const candidate = value as Record<string, RuntimeValue>;
         return (
             Array.isArray(candidate.files) &&
             typeof candidate.complete === 'boolean'
@@ -2490,6 +2609,9 @@ export class WorkspaceService extends BaseService {
         const topFilesByLoc: Array<{ path: string; loc: number }> = [];
         topFilesBySize.sort((a, b) => b.size - a.size);
         for (const file of topFilesBySize.slice(0, 10)) {
+            if (this.isBinaryFile(file.path)) {
+                continue;
+            }
             try {
                 const content = await fs.readFile(file.path, 'utf-8');
                 const lines = content.split('\n').length;
@@ -2503,6 +2625,9 @@ export class WorkspaceService extends BaseService {
         }
 
         for (const file of sampledFiles) {
+            if (this.isBinaryFile(file)) {
+                continue;
+            }
             try {
                 const stat = await fs.stat(file);
                 totalBytes += stat.size;
@@ -2675,4 +2800,19 @@ export class WorkspaceService extends BaseService {
         }
         return path.resolve(parsedPath.data);
     }
+
+    private isBinaryFile(filePath: string): boolean {
+        const lowerName = path.basename(filePath).toLowerCase();
+        const binaryExtensions = [
+            '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.o', '.a', '.lib',
+            '.pyc', '.pyo', '.pyd', '.class', '.jar', '.war', '.ear',
+            '.zip', '.tar', '.gz', '.7z', '.rar',
+            '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.svg',
+            '.mp3', '.mp4', '.wav', '.mov', '.pdf', '.doc', '.docx',
+            '.pdb', '.ilk', '.tlog', '.idb', '.ipdb', '.iobj', '.pch', '.sdf',
+            '.opensdf', '.cache', '.bmp', '.depend'
+        ];
+        return binaryExtensions.some(ext => lowerName.endsWith(ext));
+    }
 }
+

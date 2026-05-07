@@ -17,3 +17,4 @@ export interface ChatTemplate {
     prompt?: string;
     systemPrompt?: string;
 }
+

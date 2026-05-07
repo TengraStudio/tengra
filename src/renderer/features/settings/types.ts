@@ -32,7 +32,7 @@ export type SettingsCategory =
 export type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
 export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; ollama: boolean; copilot?: boolean }
 export type BrowserOAuthProvider = 'codex' | 'claude' | 'antigravity' | 'ollama'
-export type DeviceAuthProvider = 'github' | 'copilot'
+export type DeviceAuthProvider = 'copilot'
 export type SettingsAuthProvider = BrowserOAuthProvider | DeviceAuthProvider
 export interface AuthBusyState {
     provider: SettingsAuthProvider
@@ -114,3 +114,4 @@ export interface ImageWorkflowTemplateEntry {
 }
 
 export * from './types/props';
+

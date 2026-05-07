@@ -162,3 +162,4 @@ export function findSettingsNavigationItem(
 ): SettingsNavigationItem | null {
     return items.find(item => item.id === category) ?? null;
 }
+

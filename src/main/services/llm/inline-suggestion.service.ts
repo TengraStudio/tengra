@@ -14,10 +14,11 @@ import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.servic
 import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
-    InlineSuggestionTelemetry,
+    InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 
 interface InlineSuggestionRoute {
@@ -53,14 +54,14 @@ export class InlineSuggestionService extends BaseService {
     private readonly llmService: LLMService;
     private readonly authService: AuthService;
     private readonly memoryContext: MemoryContextService;
-    private readonly telemetry = {
+    private readonly usageStats = {
         request: 0,
         show: 0,
         accept: 0,
         reject: 0,
         cache_hit: 0,
         error: 0,
-    } as Record<InlineSuggestionTelemetry['event'], number>;
+    } as Record<InlineSuggestionUsageStats['event'], number>;
 
     constructor(deps: InlineSuggestionServiceDeps) {
         super('InlineSuggestionService');
@@ -121,9 +122,9 @@ ${suffixSection}`;
         return normalized;
     }
 
-    private recordTelemetry(event: InlineSuggestionTelemetry): void {
-        this.telemetry[event.event] += 1;
-        this.logDebug('Inline suggestion telemetry', {
+    private recordUsageStats(event: InlineSuggestionUsageStats): void {
+        this.usageStats[event.event] += 1;
+        this.logDebug('Inline suggestion usageStats', {
             event: event.event,
             source: event.source,
             provider: event.provider,
@@ -133,7 +134,7 @@ ${suffixSection}`;
             acceptedChars: event.acceptedChars,
             cacheKey: event.cacheKey,
             reason: event.reason,
-            totals: { ...this.telemetry },
+            totals: { ...this.usageStats },
         });
     }
 
@@ -175,7 +176,7 @@ ${suffixSection}`;
         }
     }
 
-    @ipc('workspace:getInlineSuggestion')
+    @ipc(WORKSPACE_CHANNELS.GET_INLINE_SUGGESTION)
     async getInlineSuggestion(
         request: InlineSuggestionRequest
     ): Promise<InlineSuggestionResponse> {
@@ -250,7 +251,7 @@ ${suffixSection}`;
         }
     }
 
-    @ipc('workspace:getCompletion')
+    @ipc(WORKSPACE_CHANNELS.GET_COMPLETION)
     async getCompletion(text: string): Promise<string> {
         const lines = text.split(/\r?\n/u);
         const lastLine = lines.at(-1) ?? '';
@@ -265,9 +266,9 @@ ${suffixSection}`;
         return response.suggestion ?? '';
     }
 
-    @ipc('workspace:trackInlineSuggestionTelemetry')
-    async trackTelemetry(event: InlineSuggestionTelemetry): Promise<{ success: boolean }> {
-        this.recordTelemetry(event);
+    @ipc(WORKSPACE_CHANNELS.TRACK_INLINE_SUGGESTION_usageStats)
+    async trackUsageStats(event: InlineSuggestionUsageStats): Promise<{ success: boolean }> {
+        this.recordUsageStats(event);
         return { success: true };
     }
 
@@ -290,3 +291,4 @@ ${suffixSection}`;
     }
 
 }
+

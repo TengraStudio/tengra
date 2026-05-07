@@ -224,3 +224,4 @@ describe('AccountRow', () => {
         expect(onCreditUsageModeChange).toHaveBeenCalledWith('account-1', 'ask-every-time');
     });
 });
+

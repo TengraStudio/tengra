@@ -27,3 +27,4 @@ export interface SessionCanvasEdgeRecord {
     sourceHandle?: string;
     targetHandle?: string;
 }
+

@@ -106,3 +106,4 @@ export interface HFFile {
         estimatedVramGB: number
     }
 }
+

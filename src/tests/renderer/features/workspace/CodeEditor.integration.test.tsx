@@ -32,3 +32,4 @@ describe('Workspace CodeEditor integration', () => {
         expect(screen.getByText('common.loading')).toBeInTheDocument();
     });
 });
+

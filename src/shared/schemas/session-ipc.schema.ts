@@ -25,3 +25,4 @@ export const sessionHealthResponseSchema = z.object({
     status: z.literal('ready'),
     activeSessions: z.number().int().nonnegative(),
 });
+

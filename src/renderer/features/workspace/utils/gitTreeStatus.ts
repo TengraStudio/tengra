@@ -76,8 +76,7 @@ export async function applyGitTreeStatus(
 
     let response: GitTreeStatusPreviewResponse;
     try {
-        response = await window.electron.ipcRenderer.invoke(
-            'git:getTreeStatusPreview',
+        response = await window.electron.git.getTreeStatusPreview(
             cwd,
             directoryPath
         ) as GitTreeStatusPreviewResponse;
@@ -129,3 +128,4 @@ function applyPreviewEntries(
         };
     });
 }
+

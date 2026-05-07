@@ -36,3 +36,4 @@ export const recordDatabaseFailure = databaseHealthStore.recordFailure;
 export const recordDatabaseRetry = databaseHealthStore.recordRetry;
 export const recordDatabaseFallback = databaseHealthStore.recordFallback;
 export const __resetDatabaseHealthForTests = databaseHealthStore.resetForTests;
+

@@ -197,7 +197,7 @@ describe('CodeEditor inline suggestions', () => {
                     getInlineSuggestion: vi.fn(),
                     getFileDiagnostics: vi.fn().mockResolvedValue([]),
                     getFileDefinition: vi.fn().mockResolvedValue([]),
-                    trackInlineSuggestionTelemetry: vi.fn().mockResolvedValue({ success: true }),
+                    trackInlineSuggestionStats: vi.fn().mockResolvedValue({ success: true }),
                 },
                 code: {
                     findDefinition: vi.fn().mockResolvedValue(null),
@@ -284,7 +284,7 @@ describe('CodeEditor inline suggestions', () => {
                     getInlineSuggestion: vi.fn(),
                     getFileDiagnostics: getFileDiagnosticsMock,
                     getFileDefinition: vi.fn().mockResolvedValue([]),
-                    trackInlineSuggestionTelemetry: vi.fn().mockResolvedValue({ success: true }),
+                    trackInlineSuggestionStats: vi.fn().mockResolvedValue({ success: true }),
                 },
                 code: {
                     findDefinition: vi.fn().mockResolvedValue(null),
@@ -392,3 +392,4 @@ describe('CodeEditor inline suggestions', () => {
         });
     });
 });
+

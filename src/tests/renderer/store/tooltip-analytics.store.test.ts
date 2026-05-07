@@ -8,14 +8,13 @@
  * (at your option) any later version.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
 import {
     __resetTooltipAnalyticsForTests,
     getTooltipAnalyticsSnapshot,
     trackTooltipHidden,
     trackTooltipShown,
-} from '@/ui/store/tooltip-analytics.store';
+} from '@ui/store/tooltip-analytics.store';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('tooltip analytics store', () => {
     let setItemSpy: ReturnType<typeof vi.spyOn>;
@@ -56,3 +55,4 @@ describe('tooltip analytics store', () => {
         expect(getTooltipAnalyticsSnapshot().totals.shown).toBe(0);
     });
 });
+

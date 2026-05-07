@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { MEMORY_CHANNELS } from '@shared/constants/ipc-channels';
 import { EntityKnowledge, EpisodicMemory, SemanticFragment } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -31,12 +32,13 @@ export interface MemoryBridge {
 
 export function createMemoryBridge(ipc: IpcRenderer): MemoryBridge {
     return {
-        getAll: () => ipc.invoke('memory:getAll'),
-        addFact: (content, tags) => ipc.invoke('memory:addFact', content, tags),
-        deleteFact: id => ipc.invoke('memory:deleteFact', id),
-        deleteEntity: id => ipc.invoke('memory:deleteEntity', id),
+        getAll: () => ipc.invoke(MEMORY_CHANNELS.GET_ALL),
+        addFact: (content, tags) => ipc.invoke(MEMORY_CHANNELS.ADD_FACT, content, tags),
+        deleteFact: id => ipc.invoke(MEMORY_CHANNELS.DELETE_FACT, id),
+        deleteEntity: id => ipc.invoke(MEMORY_CHANNELS.DELETE_ENTITY, id),
         setEntityFact: (entityType, entityName, key, value) =>
-            ipc.invoke('memory:setEntityFact', entityType, entityName, key, value),
-        search: query => ipc.invoke('memory:search', query),
+            ipc.invoke(MEMORY_CHANNELS.SET_ENTITY_FACT, entityType, entityName, key, value),
+        search: query => ipc.invoke(MEMORY_CHANNELS.SEARCH, query),
     };
 }
+

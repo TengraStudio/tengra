@@ -34,3 +34,4 @@ export type ResolvedTerminalAppearance = {
     lineHeight: number;
 };
 
+

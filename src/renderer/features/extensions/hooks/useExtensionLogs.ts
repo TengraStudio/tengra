@@ -24,9 +24,8 @@ export function useExtensionLogs(extensionId?: string) {
     const [logs, setLogs] = useState<ExtensionLogEntry[]>([]);
 
     useEffect(() => {
-        const removeListener = window.electron.ipcRenderer.on(
-            'extension:log-update',
-            (_event, log: ExtensionLogEntry) => {
+        const removeListener = window.electron.extension.onLogUpdate(
+            (log: ExtensionLogEntry) => {
                 if (extensionId && log.extensionId !== extensionId) {
                     return;
                 }
@@ -47,3 +46,4 @@ export function useExtensionLogs(extensionId?: string) {
 
     return { logs, clearLogs };
 }
+

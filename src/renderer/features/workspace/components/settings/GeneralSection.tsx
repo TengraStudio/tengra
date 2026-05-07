@@ -213,3 +213,4 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
         </div>
     </div>
 );
+

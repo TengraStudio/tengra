@@ -101,7 +101,7 @@ export type StreamItemContent = {
 
 export type StreamPayload = OpenAIStreamPayload & {
     type?: string;
-    data?: unknown;
+    data?: RuntimeValue;
     delta?: string | { text?: string };
     message?: string;
     text?: string;
@@ -131,9 +131,20 @@ export type StreamPayload = OpenAIStreamPayload & {
     tool_id?: string;
 };
 
-export type RuntimeValue = unknown;
+type RuntimePrimitive = string | number | boolean | null | undefined;
+type RuntimeCollection = { [key: string]: RuntimeValue } | RuntimeValue[];
+type RuntimeCallable = (...args: RuntimeValue[]) => RuntimeValue;
+export type RuntimeValue =
+    | RuntimePrimitive
+    | RuntimeCollection
+    | Response
+    | ReadableStream<Uint8Array>
+    | AsyncIterable<Uint8Array>
+    | Uint8Array
+    | RuntimeCallable;
 
 export interface IStreamParserStrategy {
-    parse(json: StreamPayload, state: unknown, interceptorState: InterceptorState): Generator<StreamChunk>;
+    parse(json: StreamPayload, state: any, interceptorState: InterceptorState): Generator<StreamChunk>;
 }
     
+

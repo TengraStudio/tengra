@@ -17,3 +17,4 @@ export type { WorkspaceCardSurfaceProviderProps } from '@/features/workspace/wor
 
 export const WorkspaceCard = CanonicalWorkspaceCard;
 export const WorkspaceCardSurfaceProvider = CanonicalWorkspaceCardSurfaceProvider;
+

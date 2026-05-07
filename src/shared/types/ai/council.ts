@@ -190,8 +190,8 @@ export type CouncilState = {
 
 export type WorkspaceState = CouncilState;
 
-/** Telemetry events for council monitoring */
-export enum CouncilTelemetryEvent {
+/** usageStats events for council monitoring */
+export enum CouncilUsageStatsEvent {
     MODEL_ROUTED = 'council_model_routed',
     PLAN_PROPOSED = 'council_plan_proposed',
     EXECUTION_STARTED = 'council_execution_started',
@@ -204,3 +204,4 @@ export const COUNCIL_PERFORMANCE_BUDGETS = {
     ROUTE_MODEL_MS: 100,
     INITIALIZE_MS: 1000
 } as const;
+

@@ -34,3 +34,4 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, }) =
         </div>
     );
 };
+

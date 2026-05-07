@@ -50,3 +50,4 @@ export function useEditorRename({ workspacePath }: UseEditorRenameParams) {
         previewRename,
     };
 }
+

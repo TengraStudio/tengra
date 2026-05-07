@@ -63,3 +63,4 @@ export const normalizeAgentEventPayload = (payload: RendererDataValue): Normaliz
     const parsed = agentEventEnvelopeSchema.safeParse(payload);
     return parsed.success ? parsed.data : null;
 };
+

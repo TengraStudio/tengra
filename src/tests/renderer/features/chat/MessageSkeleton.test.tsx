@@ -31,3 +31,4 @@ describe('MessageSkeleton', () => {
         expect(skeletonLines.length).toBeGreaterThanOrEqual(4);
     });
 });
+

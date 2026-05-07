@@ -22,6 +22,12 @@ import { appLogger } from '@/utils/renderer-logger';
 import { type DownloadHistoryItem, DownloadHistoryList } from './models/DownloadHistoryList';
 import { InstalledModelsList } from './models/InstalledModelsList';
 import { ModelGovernancePanel } from './models/ModelGovernancePanel';
+import {
+    SETTINGS_SEGMENTED_CONTROL_CLASS,
+    SettingsPanel,
+    SettingsTabHeader,
+    SettingsTabLayout,
+} from './SettingsPrimitives';
 
 /* Batch-02: Extracted Long Classes */
 const C_MODELSTAB_1 = "group flex h-10 items-center gap-3 rounded-2xl border-border/30 bg-background px-6 typo-body font-bold text-muted-foreground hover:bg-muted/40 hover:text-foreground shadow-sm sm:gap-4";
@@ -32,7 +38,6 @@ interface ModelsTabProps {
     installedModels: ModelInfo[];
     proxyModels?: ModelInfo[];
     setSettings: (s: AppSettings) => void;
-    handleSave: (s?: AppSettings) => void;
     onRefreshModels: (bypassCache?: boolean) => void;
     t: (key: string) => string;
 }
@@ -44,7 +49,6 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     installedModels,
     proxyModels,
     setSettings,
-    handleSave,
     onRefreshModels,
     t,
 }) => {
@@ -59,7 +63,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
 
     const fetchHistory = React.useCallback(async () => {
         try {
-            const res = await window.electron.invoke('model-downloader:history', 1000);
+            const res = await window.electron.modelDownloader.history(1000);
             if (res.success) {
                 setDownloadHistory((res.items || []) as DownloadHistoryItem[]);
             }
@@ -162,7 +166,6 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
             general: { ...settings.general, hiddenModels: nextHidden },
         };
         setSettings(updated);
-        handleSave(updated);
     };
 
     const setDefault = (modelId: string, provider: string) => {
@@ -175,7 +178,6 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
             },
         };
         setSettings(updated);
-        handleSave(updated);
     };
 
     const handleDeleteModel = (modelId: string, provider: string) => {
@@ -192,9 +194,9 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
         try {
             let res;
             if (provider === 'ollama') {
-                res = await window.electron.invoke('ollama:deleteModel', modelId);
+                res = await window.electron.ollama.deleteModel(modelId);
             } else if (provider === 'huggingface') {
-                res = await window.electron.invoke('hf:delete-model', modelId);
+                res = await window.electron.huggingface.deleteModel(modelId);
             }
 
             if (res?.success) {
@@ -208,72 +210,64 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     };
 
     return (
-        <div className="mx-auto max-w-5xl space-y-10 pb-10">
-            <div className="flex flex-col justify-between gap-6 px-1 md:flex-row md:items-start">
-                <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
-                        <div className="text-2xl font-bold text-primary leading-none">
-                            {subTab === 'installed' ? availableModels.length : downloadHistory.length}
+        <SettingsTabLayout>
+            <SettingsTabHeader
+                title={subTab === 'installed' ? t('frontend.workspaces.myModels') : t('frontend.modelsPage.downloadHistory')}
+                description={
+                    subTab === 'installed'
+                        ? `${availableModels.length} ${t('frontend.modelsPage.modelsCount')}`
+                        : `${downloadHistory.length} ${t('frontend.modelsPage.historyItems')}`
+                }
+                icon={subTab === 'installed' ? IconDatabase : IconHistory}
+                actions={(
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className={SETTINGS_SEGMENTED_CONTROL_CLASS}>
+                            <button
+                                onClick={() => setSubTab('installed')}
+                                className={cn(
+                                    'flex h-10 items-center gap-3 rounded-xl px-5 text-sm font-semibold transition-all whitespace-nowrap',
+                                    subTab === 'installed'
+                                        ? 'border border-border/40 bg-background text-foreground shadow-sm'
+                                        : 'text-muted-foreground/60 hover:text-foreground'
+                                )}
+                            >
+                                <IconDatabase className="h-4 w-4" />
+                                {t('common.installed')}
+                            </button>
+                            <button
+                                onClick={() => setSubTab('history')}
+                                className={cn(
+                                    'flex h-10 items-center gap-3 rounded-xl px-5 text-sm font-semibold transition-all whitespace-nowrap',
+                                    subTab === 'history'
+                                        ? 'border border-border/40 bg-background text-foreground shadow-sm'
+                                        : 'text-muted-foreground/60 hover:text-foreground'
+                                )}
+                            >
+                                <IconHistory className="h-4 w-4" />
+                                {t('frontend.modelsPage.history')}
+                            </button>
                         </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                if (subTab === 'installed') {
+                                    onRefreshModels(true);
+                                } else {
+                                    void fetchHistory();
+                                }
+                            }}
+                            className={C_MODELSTAB_1}
+                        >
+                            <IconRefresh className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" />
+                            {t('frontend.modelsPage.refresh')}
+                        </Button>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-semibold text-foreground">
-                            {subTab === 'installed' ? t('frontend.workspaces.myModels') : t('frontend.modelsPage.downloadHistory')}
-                        </h2>
-                        <div className="mt-1 text-sm text-muted-foreground/70">
-                            {subTab === 'installed'
-                                ? `${availableModels.length} ${t('frontend.modelsPage.modelsCount')}`
-                                : `${downloadHistory.length} ${t('frontend.modelsPage.historyItems')}`
-                            }
-                        </div>
-                    </div>
-                </div>
+                )}
+            />
 
-                <div className="flex flex-wrap items-center gap-3 bg-muted/20 p-1.5 rounded-2xl border border-border/20">
-                    <button
-                        onClick={() => setSubTab('installed')}
-                        className={cn(
-                            "flex h-10 items-center gap-3 rounded-xl px-5 typo-body font-bold transition-all whitespace-nowrap",
-                            subTab === 'installed'
-                                ? "bg-background text-foreground shadow-sm border border-border/40"
-                                : "text-muted-foreground/60 hover:text-foreground"
-                        )}
-                    >
-                        <IconDatabase className="h-4 w-4" />
-                        {t('common.installed')}
-                    </button>
-                    <button
-                        onClick={() => setSubTab('history')}
-                        className={cn(
-                            "flex h-10 items-center gap-3 rounded-xl px-5 typo-body font-bold transition-all whitespace-nowrap",
-                            subTab === 'history'
-                                ? "bg-background text-foreground shadow-sm border border-border/40"
-                                : "text-muted-foreground/60 hover:text-foreground"
-                        )}
-                    >
-                        <IconHistory className="h-4 w-4" />
-                        {t('frontend.modelsPage.history')}
-                    </button>
-                </div>
-
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        if (subTab === 'installed') {
-                            onRefreshModels(true);
-                        } else {
-                            void fetchHistory();
-                        }
-                    }}
-                    className={C_MODELSTAB_1}
-                >
-                    <IconRefresh className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" />
-                    {t('frontend.modelsPage.refresh')}
-                </Button>
-            </div>
-
-            <div className="space-y-8 min-h-400">
+            <SettingsPanel title={t('frontend.workspaces.myModels')} icon={IconDatabase}>
+                <div className="space-y-8 min-h-400">
                 {subTab === 'installed' ? (
                     <InstalledModelsList
                         filtered={filtered}
@@ -302,10 +296,10 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                     settings={settings}
                     allModelIds={allModelIds}
                     setSettings={setSettings}
-                    handleSave={handleSave}
                     t={t}
                 />
-            </div>
+                </div>
+            </SettingsPanel>
 
             <ConfirmationModal
                 isOpen={isConfirmDeleteOpen}
@@ -315,6 +309,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                 message={t('frontend.modelsPage.confirmDelete')}
                 variant="danger"
             />
-        </div>
+        </SettingsTabLayout>
     );
 };
+

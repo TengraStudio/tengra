@@ -582,7 +582,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                         </div>
                         <div className="mt-1 typo-caption text-muted-foreground">
                             {runtime.chairman?.provider ?? session.strategy} ·{' '}
-                            {runtime.chairman?.model ?? session.contextTelemetry?.model ?? t('frontend.workspaceAgent.sessionFallback')}
+                            {runtime.chairman?.model ?? session.usageStats?.model ?? t('frontend.workspaceAgent.sessionFallback')}
                         </div>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -695,4 +695,5 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
         </div>
     );
 };
+
 

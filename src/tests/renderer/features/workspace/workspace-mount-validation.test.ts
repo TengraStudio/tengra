@@ -106,3 +106,4 @@ describe('workspace mount validation', () => {
         expect(result.uiState).toBe('ready');
     });
 });
+

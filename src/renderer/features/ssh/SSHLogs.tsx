@@ -107,3 +107,4 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
         </div>
     );
 };
+

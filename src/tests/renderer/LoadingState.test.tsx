@@ -75,3 +75,4 @@ describe('LoadingState', () => {
         expect(snapshot.history[0]?.status).toBe('completed');
     });
 });
+

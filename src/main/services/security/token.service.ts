@@ -24,7 +24,7 @@ export class TokenService extends BaseService {
         failure: 'serviceHealth.token.failure',
     } as const;
 
-    private telemetry = {
+    private usageStats = {
         refreshAttempts: 0,
         refreshFailures: 0,
         lastRefreshAt: 0,
@@ -120,27 +120,27 @@ export class TokenService extends BaseService {
     }
 
     getHealthMetrics() {
-        const uiState = this.telemetry.refreshFailures > 0
+        const uiState = this.usageStats.refreshFailures > 0
             ? 'failure'
-            : this.telemetry.refreshAttempts === 0
+            : this.usageStats.refreshAttempts === 0
                 ? 'empty'
                 : 'ready';
         return {
-            status: (this.telemetry.refreshFailures > 0 ? 'degraded' : 'healthy') as 'healthy' | 'degraded',
+            status: (this.usageStats.refreshFailures > 0 ? 'degraded' : 'healthy') as 'healthy' | 'degraded',
             uiState: uiState as 'ready' | 'empty' | 'failure',
             messageKey: TokenService.UI_MESSAGE_KEYS[uiState as keyof typeof TokenService.UI_MESSAGE_KEYS],
             performanceBudget: TokenService.PERFORMANCE_BUDGET,
-            refreshAttempts: this.telemetry.refreshAttempts,
-            refreshFailures: this.telemetry.refreshFailures,
-            lastRefreshAt: this.telemetry.lastRefreshAt,
-            lastRefreshSuccessAt: this.telemetry.lastRefreshSuccessAt,
-            lastError: this.telemetry.lastError,
+            refreshAttempts: this.usageStats.refreshAttempts,
+            refreshFailures: this.usageStats.refreshFailures,
+            lastRefreshAt: this.usageStats.lastRefreshAt,
+            lastRefreshSuccessAt: this.usageStats.lastRefreshSuccessAt,
+            lastError: this.usageStats.lastError,
         };
     }
 
     private async syncTokensFromProxy(provider?: string): Promise<void> {
-        this.telemetry.refreshAttempts += 1;
-        this.telemetry.lastRefreshAt = Date.now();
+        this.usageStats.refreshAttempts += 1;
+        this.usageStats.lastRefreshAt = Date.now();
         try {
             const dbAccounts = provider
                 ? await this.databaseService.getLinkedAccounts(provider)
@@ -183,14 +183,14 @@ export class TokenService extends BaseService {
                 changed = true;
             }
 
-            this.telemetry.lastRefreshSuccessAt = Date.now();
-            this.telemetry.lastError = null;
+            this.usageStats.lastRefreshSuccessAt = Date.now();
+            this.usageStats.lastError = null;
             if (changed) {
                 await this.authService.reloadLinkedAccountsCache();
             }
         } catch (error) {
-            this.telemetry.refreshFailures += 1;
-            this.telemetry.lastError = error instanceof Error ? error.message : String(error);
+            this.usageStats.refreshFailures += 1;
+            this.usageStats.lastError = error instanceof Error ? error.message : String(error);
             throw error;
         }
     }
@@ -278,3 +278,4 @@ export class TokenService extends BaseService {
         );
     }
 }
+

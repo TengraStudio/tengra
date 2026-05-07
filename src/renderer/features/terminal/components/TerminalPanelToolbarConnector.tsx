@@ -149,3 +149,4 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
         />
     );
 };
+

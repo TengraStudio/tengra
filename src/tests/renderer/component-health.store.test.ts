@@ -30,3 +30,4 @@ describe('component health store', () => {
         expect(snapshot.lastErrorCode).toBe('TEST_FAILURE');
     });
 });
+

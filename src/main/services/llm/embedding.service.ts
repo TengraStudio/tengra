@@ -15,6 +15,7 @@ import { LlamaService } from '@main/services/llm/local/llama.service';
 import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withRetry } from '@main/utils/retry.util';
+import { EMBEDDING_CHANNELS } from '@shared/constants/ipc-channels';
 import { EmbeddingTextInputSchema } from '@shared/schemas/service-hardening.schema';
 import { createHash } from 'node:crypto';
 
@@ -129,7 +130,7 @@ export class EmbeddingService {
         return settings.embeddings.provider;
     }
 
-    @ipc('embedding:generate')
+    @ipc(EMBEDDING_CHANNELS.GENERATE)
     async generateEmbedding(text: string): Promise<number[]> {
         const startedAt = Date.now();
         // Always check latest settings before generating
@@ -193,7 +194,7 @@ export class EmbeddingService {
         return vector;
     }
 
-    @ipc('embedding:get-analytics')
+    @ipc(EMBEDDING_CHANNELS.GET_ANALYTICS)
     getAnalytics(): EmbeddingAnalytics {
         return {
             ...this.analytics,
@@ -202,7 +203,7 @@ export class EmbeddingService {
         };
     }
 
-    @ipc('embedding:get-health')
+    @ipc(EMBEDDING_CHANNELS.GET_HEALTH)
     getHealthStatus(): EmbeddingHealthSnapshot {
         const totalRequests = this.analytics.totalRequests;
         const failedRequests = Object.values(this.analytics.providerFailures)
@@ -362,3 +363,4 @@ export class EmbeddingService {
 
     // Indexing and Search moved to CodeIntelligenceService / RAGService
 }
+

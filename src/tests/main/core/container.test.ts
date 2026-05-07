@@ -101,3 +101,4 @@ describe('Container', () => {
         expect(callOrder).toEqual(['service2', 'service1']);
     });
 });
+

@@ -112,3 +112,4 @@ export const textareaStory: ComponentStory = {
     { name: 'showcase.variants.disabled', props: { placeholder: 'showcase.textarea.placeholders.cannotEdit', disabled: true } },
   ],
 };
+

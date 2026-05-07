@@ -8,15 +8,23 @@
  * (at your option) any later version.
  */
 
+import { LOCALE_CHANNELS } from '@shared/constants/ipc-channels';
 import { LocalePack } from '@shared/types/locale';
 import { IpcRenderer } from 'electron';
 
 export interface LocaleBridge {
     getAll: () => Promise<LocalePack[]>;
+    onRuntimeUpdated: (callback: () => void) => () => void;
 }
 
 export function createLocaleBridge(ipc: IpcRenderer): LocaleBridge {
     return {
-        getAll: () => ipc.invoke('locale:runtime:getAll'),
+        getAll: () => ipc.invoke(LOCALE_CHANNELS.RUNTIME_GET_ALL),
+        onRuntimeUpdated: callback => {
+            const listener = () => callback();
+            ipc.on(LOCALE_CHANNELS.RUNTIME_UPDATED, listener);
+            return () => ipc.removeListener(LOCALE_CHANNELS.RUNTIME_UPDATED, listener);
+        },
     };
 }
+

@@ -57,3 +57,4 @@ export const StatsPanel = ({ stats }: { stats: MemoryStatistics }) => {
         </div>
     );
 };
+

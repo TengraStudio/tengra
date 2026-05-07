@@ -147,3 +147,4 @@ describe('createLazyServiceProxy', () => {
         expect(resolved.name).toBe('awaited');
     });
 });
+

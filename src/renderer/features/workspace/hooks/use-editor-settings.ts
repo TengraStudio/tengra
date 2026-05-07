@@ -56,3 +56,4 @@ export function useEditorSettings({ workspaceKey, contentLength }: UseEditorSett
         performanceMode,
     };
 }
+

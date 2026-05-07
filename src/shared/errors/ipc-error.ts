@@ -35,3 +35,4 @@ export class IpcError extends AppError {
     this.channel = channel;
   }
 }
+

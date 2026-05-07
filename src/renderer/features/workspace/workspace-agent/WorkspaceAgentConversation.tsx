@@ -11,7 +11,7 @@
 import type { AgentEventRecord } from '@shared/types/agent-state';
 import type { WorkspaceStep } from '@shared/types/council';
 import type {
-    WorkspaceAgentContextTelemetry,
+    WorkspaceAgentUsageStats,
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionSummary,
 } from '@shared/types/workspace-agent-session';
@@ -48,12 +48,12 @@ interface WorkspaceAgentConversationProps {
     t: (key: string) => string;
 }
 
-function TelemetryCard({
-    telemetry,
+function UsageStatsCard({
+    stats,
 }: {
-    telemetry: WorkspaceAgentContextTelemetry;
+    stats: WorkspaceAgentUsageStats;
 }): JSX.Element | null {
-    if (telemetry.handoffCount === 0 && telemetry.pressureState === 'low') {
+    if (stats.handoffCount === 0 && stats.pressureState === 'low') {
         return null;
     }
 
@@ -64,16 +64,16 @@ function TelemetryCard({
                     Active model
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    {Math.round(telemetry.usagePercent)}%
+                    {Math.round(stats.usagePercent)}%
                 </div>
             </div>
             <div className="mt-1 text-sm text-foreground">
-                {telemetry.provider} / {telemetry.model}
+                {stats.provider} / {stats.model}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-                Context {telemetry.usedTokens} / {telemetry.contextWindow} · {telemetry.pressureState}
-                {telemetry.handoffCount > 0
-                    ? ` · handoffs ${telemetry.handoffCount}`
+                Context {stats.usedTokens} / {stats.contextWindow} · {stats.pressureState}
+                {stats.handoffCount > 0
+                    ? ` · handoffs ${stats.handoffCount}`
                     : ''}
             </div>
         </div>
@@ -269,8 +269,8 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
                     </div>
                 ) : (
                     <div className="flex h-full min-h-0 flex-col gap-4">
-                        {session?.contextTelemetry && (
-                            <TelemetryCard telemetry={session.contextTelemetry} />
+                        {session?.usageStats && (
+                            <UsageStatsCard stats={session.usageStats} />
                         )}
 
                         <div className="min-h-0 flex-1 p-0">
@@ -350,4 +350,5 @@ function currentEmptyDescription(modes: WorkspaceAgentSessionModes): string {
     }
     return 'Send a question to inspect code, explain files, or prepare a task for this workspace.';
 }
+
 

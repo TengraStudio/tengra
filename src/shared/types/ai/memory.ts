@@ -46,3 +46,4 @@ export interface EntityKnowledge {
     source: string;
     updatedAt: number;
 }
+

@@ -30,7 +30,7 @@ class ThemeStore {
         currentTheme: 'tengra-white',
         customThemes: [],
         favorites: [],
-        history: [''],
+        history: ['tengra-white'],
         preset: null
     };
 
@@ -57,14 +57,14 @@ class ThemeStore {
                 currentTheme: 'tengra-white',
                 customThemes: [],
                 favorites: [],
-                history: [''],
+                history: ['tengra-white'],
                 preset: null
             });
             return { ...loaded };
         } catch {
             appLogger.warn('ThemeStore', 'Failed to load, using defaults');
         }
-        return { currentTheme: 'tengra-white', customThemes: [], favorites: [], history: [''], preset: null };
+        return { currentTheme: 'tengra-white', customThemes: [], favorites: [], history: ['tengra-white'], preset: null };
     }
 
     private async saveStore(): Promise<void> {
@@ -170,7 +170,7 @@ class ThemeStore {
         this.store.customThemes.splice(index, 1);
 
         if (this.store.currentTheme === id) {
-            await this.setTheme('graphite');
+            await this.setTheme('tengra-black');
         }
 
         await this.saveStore();
@@ -309,3 +309,4 @@ const themeStoreProxy = new Proxy({} as ThemeStore, {
 });
 
 export const themeStore = themeStoreProxy; 
+

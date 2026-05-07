@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { CODE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     FileSearchResult,
     TodoItem,
@@ -138,30 +139,31 @@ export interface CodeBridge {
 
 export function createCodeBridge(ipc: IpcRenderer): CodeBridge {
     return {
-        scanTodos: rootPath => ipc.invoke('code:scanTodos', rootPath),
-        findSymbols: (rootPath, query) => ipc.invoke('code:findSymbols', rootPath, query),
-        findDefinition: (rootPath, symbol) => ipc.invoke('code:findDefinition', rootPath, symbol),
-        findReferences: (rootPath, symbol) => ipc.invoke('code:findReferences', rootPath, symbol),
+        scanTodos: rootPath => ipc.invoke(CODE_CHANNELS.SCAN_TODOS, rootPath),
+        findSymbols: (rootPath, query) => ipc.invoke(CODE_CHANNELS.FIND_SYMBOLS, rootPath, query),
+        findDefinition: (rootPath, symbol) => ipc.invoke(CODE_CHANNELS.FIND_DEFINITION, rootPath, symbol),
+        findReferences: (rootPath, symbol) => ipc.invoke(CODE_CHANNELS.FIND_REFERENCES, rootPath, symbol),
         findImplementations: (rootPath, symbol) =>
-            ipc.invoke('code:findImplementations', rootPath, symbol),
+            ipc.invoke(CODE_CHANNELS.FIND_IMPLEMENTATIONS, rootPath, symbol),
         getSymbolRelationships: (rootPath, symbol, maxItems) =>
-            ipc.invoke('code:getSymbolRelationships', rootPath, symbol, maxItems),
-        getFileOutline: filePath => ipc.invoke('code:getFileOutline', filePath),
+            ipc.invoke(CODE_CHANNELS.GET_SYMBOL_RELATIONSHIPS, rootPath, symbol, maxItems),
+        getFileOutline: filePath => ipc.invoke(CODE_CHANNELS.GET_FILE_OUTLINE, filePath),
         previewRenameSymbol: (rootPath, symbol, newSymbol, maxFiles) =>
-            ipc.invoke('code:previewRenameSymbol', rootPath, symbol, newSymbol, maxFiles),
+            ipc.invoke(CODE_CHANNELS.PREVIEW_RENAME_SYMBOL, rootPath, symbol, newSymbol, maxFiles),
         applyRenameSymbol: (rootPath, symbol, newSymbol, maxFiles) =>
-            ipc.invoke('code:applyRenameSymbol', rootPath, symbol, newSymbol, maxFiles),
+            ipc.invoke(CODE_CHANNELS.APPLY_RENAME_SYMBOL, rootPath, symbol, newSymbol, maxFiles),
         generateFileDocumentation: (filePath, format) =>
-            ipc.invoke('code:generateFileDocumentation', filePath, format),
+            ipc.invoke(CODE_CHANNELS.GENERATE_FILE_DOCUMENTATION, filePath, format),
         generateWorkspaceDocumentation: (rootPath, maxFiles) =>
-            ipc.invoke('code:generateWorkspaceDocumentation', rootPath, maxFiles),
-        analyzeQuality: (rootPath, maxFiles) => ipc.invoke('code:analyzeQuality', rootPath, maxFiles),
+            ipc.invoke(CODE_CHANNELS.GENERATE_WORKSPACE_DOCUMENTATION, rootPath, maxFiles),
+        analyzeQuality: (rootPath, maxFiles) => ipc.invoke(CODE_CHANNELS.ANALYZE_QUALITY, rootPath, maxFiles),
         searchFiles: (rootPath, query, workspaceId, isRegex) =>
-            ipc.invoke('code:searchFiles', rootPath, query, workspaceId, isRegex),
-        indexWorkspace: (rootPath, workspaceId) => ipc.invoke('code:indexWorkspace', rootPath, workspaceId),
-        queryIndexedSymbols: query => ipc.invoke('code:queryIndexedSymbols', query),
-        getSymbolAnalytics: rootPath => ipc.invoke('code:getSymbolAnalytics', rootPath),
-        getWorkspaceDependencyGraph: rootPath => ipc.invoke('code:getWorkspaceDependencyGraph', rootPath),
-        getWorkspaceCodeMap: rootPath => ipc.invoke('code:getWorkspaceCodeMap', rootPath),
+            ipc.invoke(CODE_CHANNELS.SEARCH_FILES, rootPath, query, workspaceId, isRegex),
+        indexWorkspace: (rootPath, workspaceId) => ipc.invoke(CODE_CHANNELS.INDEX_WORKSPACE, rootPath, workspaceId),
+        queryIndexedSymbols: query => ipc.invoke(CODE_CHANNELS.QUERY_INDEXED_SYMBOLS, query),
+        getSymbolAnalytics: rootPath => ipc.invoke(CODE_CHANNELS.GET_SYMBOL_ANALYTICS, rootPath),
+        getWorkspaceDependencyGraph: rootPath => ipc.invoke(CODE_CHANNELS.GET_WORKSPACE_DEPENDENCY_GRAPH, rootPath),
+        getWorkspaceCodeMap: rootPath => ipc.invoke(CODE_CHANNELS.GET_WORKSPACE_CODE_MAP, rootPath),
     };
 }
+

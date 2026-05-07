@@ -47,6 +47,10 @@ function getNativeTargetReleaseDir() {
     return path.resolve(__dirname, '..', 'src', 'native', 'target', 'release');
 }
 
+function getAssetsBinDir() {
+    return path.resolve(__dirname, '..', 'assets', 'bin');
+}
+
 function getManagedRuntimeBinDir() {
     return ensureDirectory(path.join(getManagedRuntimeRoot(), 'bin'));
 }
@@ -59,20 +63,16 @@ function getManagedRuntimeTempDir() {
     return ensureDirectory(path.join(getManagedRuntimeCacheRoot(), 'temp'));
 }
 
-function getBuildBinDir() {
-    return ensureDirectory(path.join(__dirname, '../bin', process.platform));
-}
-
 function getExecutableName(baseName) {
     return process.platform === 'win32' ? `${baseName}.exe` : baseName;
 }
 
 module.exports = {
     getExecutableName,
+    getAssetsBinDir,
     getManagedRuntimeBinDir,
     getManagedRuntimeModelsDir,
     getManagedRuntimeRoot,
     getManagedRuntimeTempDir,
-    getBuildBinDir,
     getNativeTargetReleaseDir
 };

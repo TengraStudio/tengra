@@ -75,3 +75,4 @@ describe('TaskExecutionSessionModule', () => {
         expect(eventBus.emit).not.toHaveBeenCalledWith('notification:task-completed', expect.anything());
     });
 });
+

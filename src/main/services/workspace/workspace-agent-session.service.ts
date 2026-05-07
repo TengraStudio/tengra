@@ -30,7 +30,7 @@ import type {
     CouncilRunConfig,
     CouncilSubagentRuntime,
     CouncilSubagentWorkspaceDraft,
-    WorkspaceAgentContextTelemetry,
+    WorkspaceAgentUsageStats,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSession,
     WorkspaceAgentSessionListResponse,
@@ -76,7 +76,7 @@ interface WorkspaceAgentChatMetadata extends JsonObject {
     permissionPolicy?: WorkspaceAgentPermissionPolicy;
     background?: boolean;
     archived?: boolean;
-    contextTelemetry?: WorkspaceAgentContextTelemetry;
+    usageStats?: WorkspaceAgentUsageStats;
     councilConfig?: CouncilRunConfig;
     council?: {
         chairman?: CouncilSubagentRuntime;
@@ -208,11 +208,11 @@ function toUnixTime(value: Date | number | string | undefined): number {
     return Date.now();
 }
 
-async function buildContextTelemetry(
+async function buildUsageStats(
     chat: StoredChat,
     databaseService: DatabaseService,
     modelRegistryService?: ModelRegistryService
-): Promise<WorkspaceAgentContextTelemetry> {
+): Promise<WorkspaceAgentUsageStats> {
     const sessionMetadata = getSessionMetadata(chat);
     const messages = await databaseService.getMessages(chat.id);
     const usedTokens = estimateTokens(listTextMessages(messages));
@@ -231,7 +231,7 @@ async function buildContextTelemetry(
     const usagePercent = Math.min(100, (usedTokens / contextWindow) * 100);
     const pressureState =
         usagePercent >= 85 ? 'high' : usagePercent >= 60 ? 'medium' : 'low';
-    const currentTelemetry = sessionMetadata.contextTelemetry;
+    const currentStats = sessionMetadata.usageStats;
 
     return {
         model,
@@ -242,9 +242,9 @@ async function buildContextTelemetry(
         remainingTokens,
         usagePercent,
         pressureState,
-        handoffCount: currentTelemetry?.handoffCount ?? 0,
-        lastHandoffAt: currentTelemetry?.lastHandoffAt,
-        lastHandoffLabel: currentTelemetry?.lastHandoffLabel,
+        handoffCount: currentStats?.handoffCount ?? 0,
+        lastHandoffAt: currentStats?.lastHandoffAt,
+        lastHandoffLabel: currentStats?.lastHandoffLabel,
     };
 }
 
@@ -255,9 +255,9 @@ async function toWorkspaceAgentSession(
 ): Promise<WorkspaceAgentSession> {
     const messages = await databaseService.getMessages(chat.id);
     const sessionMetadata = getSessionMetadata(chat);
-    const contextTelemetry =
-        sessionMetadata.contextTelemetry ??
-        (await buildContextTelemetry(chat, databaseService, modelRegistryService));
+    const usageStats =
+        sessionMetadata.usageStats ??
+        (await buildUsageStats(chat, databaseService, modelRegistryService));
 
     return {
         id: chat.id,
@@ -275,13 +275,13 @@ async function toWorkspaceAgentSession(
         modes: normalizeModes(sessionMetadata.modes),
         strategy: sessionMetadata.strategy ?? 'reasoning-first',
         permissionPolicy: sessionMetadata.permissionPolicy ?? DEFAULT_PERMISSION_POLICY,
-        contextTelemetry,
+        usageStats,
         councilConfig: sessionMetadata.councilConfig ?? DEFAULT_COUNCIL_CONFIG,
         background: Boolean(sessionMetadata.background),
         archived: Boolean(sessionMetadata.archived || chat.metadata?.isArchived),
         metadata: mergeSessionMetadata(chat, {
             ...sessionMetadata,
-            contextTelemetry,
+            usageStats,
         }),
         council: {
             chairman: sessionMetadata.council?.chairman,
@@ -629,10 +629,10 @@ export class WorkspaceAgentSessionService extends BaseService {
         ));
     }
 
-    @ipc(WORKSPACE_AGENT_SESSION_CHANNELS.GET_CONTEXT_TELEMETRY)
-    async getWorkspaceSessionContextTelemetryIpc(payload: { sessionId: string }): Promise<RuntimeValue> {
+    @ipc(WORKSPACE_AGENT_SESSION_CHANNELS.GET_CONTEXT_STATS)
+    async getWorkspaceSessionContextStatsIpc(payload: { sessionId: string }): Promise<RuntimeValue> {
         const chat = await requireChat(payload.sessionId, this.databaseService);
-        return serializeToIpc(await buildContextTelemetry(chat, this.databaseService, this.modelRegistryService));
+        return serializeToIpc(await buildUsageStats(chat, this.databaseService, this.modelRegistryService));
     }
 
     @ipc(WORKSPACE_AGENT_SESSION_CHANNELS.ARCHIVE)
@@ -715,3 +715,4 @@ export class WorkspaceAgentSessionService extends BaseService {
         return serializeToIpc(nextPersistence);
     }
 }
+

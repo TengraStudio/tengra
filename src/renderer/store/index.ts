@@ -65,15 +65,8 @@ export {
     toggleSidebarCollapsed,
     useSidebarStore
 } from './sidebar.store';
-export type { ThemeLoadStatus } from './theme.store';
-export {
-    getThemeSnapshot,
-    resetTheme,
-    setTheme,
-    subscribeTheme,
-    toggleTheme,
-    useThemeStore
-} from './theme.store';
+// Theme management is handled via ThemeContext.tsx
+
 export {
     getTooltipAnalyticsSnapshot,
     trackTooltipHidden,
@@ -90,3 +83,4 @@ export {
     subscribeUiLayout,
     useUiLayoutStore
 } from './ui-layout.store';
+

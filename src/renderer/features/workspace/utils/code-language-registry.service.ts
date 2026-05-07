@@ -8,11 +8,9 @@
  * (at your option) any later version.
  */
 
+import { clearRuntimeLanguageContributions, registerRuntimeLanguageContributions } from '@common/utils/language-map';
 import type { MarketplaceCodeLanguagePack } from '@shared/types/data/marketplace';
-
-import { clearRuntimeLanguageContributions, registerRuntimeLanguageContributions } from '@/common/utils/language-map';
-import { codeLanguageIpc } from '@/features/workspace/utils/code-language-ipc.util';
-import { appLogger } from '@/system/utils/renderer-logger';
+import { appLogger } from '@system/utils/renderer-logger';
 
 type Listener = () => void;
 
@@ -22,8 +20,8 @@ export class CodeLanguageRegistryService {
     private isLoaded = false;
 
     constructor() {
-        if (window.electron?.ipcRenderer) {
-            window.electron.ipcRenderer.on('code-language:runtime:updated', () => {
+        if (window.electron?.codeLanguages) {
+            window.electron.codeLanguages.onRuntimeUpdated(() => {
                 void this.reloadCodeLanguagePacks();
             });
         }
@@ -31,7 +29,7 @@ export class CodeLanguageRegistryService {
 
     async loadCodeLanguagePacks(): Promise<void> {
         try {
-            const packs = await codeLanguageIpc.getAllCodeLanguagePacks();
+            const packs = await window.electron.codeLanguages.getAll();
             this.runtimePacks.clear();
             for (const pack of packs) {
                 this.runtimePacks.set(pack.id, pack);
@@ -80,3 +78,4 @@ export class CodeLanguageRegistryService {
 }
 
 export const codeLanguageRegistry = new CodeLanguageRegistryService();
+

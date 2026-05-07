@@ -344,7 +344,7 @@ class AppLogger {
 
     private sampleCounters = new Map<string, number>();
     private readonly NOISY_CONTEXTS = new Set([
-        'TerminalService', 'FileWatcherService', 'TelemetryService', 
+        'TerminalService', 'FileWatcherService', 
         'code-intelligence.service', 'AdvancedMemoryService', 'WorkspaceService'
     ]);
 
@@ -883,3 +883,4 @@ function isAppError(value: RuntimeValue): value is AppError {
 function sanitize(message: string): string {
     return String(message).replace(/\r?\n/g, '\\n');
 }
+

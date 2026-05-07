@@ -297,3 +297,4 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
         />
     );
 };
+

@@ -113,3 +113,4 @@ describe('useExtensionLogs', () => {
         expect(removeListener).toHaveBeenCalled();
     });
 });
+

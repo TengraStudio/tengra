@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { PROMPT_TEMPLATES_CHANNELS } from '@shared/constants/ipc-channels';
 import { PromptTemplate } from '@shared/types/templates';
 import { IpcRenderer } from 'electron';
 
@@ -24,13 +25,14 @@ export interface PromptTemplatesBridge {
 export function createPromptTemplatesBridge(ipc: IpcRenderer): { promptTemplates: PromptTemplatesBridge } {
     return {
         promptTemplates: {
-            getAll: () => ipc.invoke('prompt-templates:getAll'),
-            search: (query: string) => ipc.invoke('prompt-templates:search', query),
-            get: (id: string) => ipc.invoke('prompt-templates:get', id),
-            create: (template) => ipc.invoke('prompt-templates:create', template),
-            update: (id, updates) => ipc.invoke('prompt-templates:update', id, updates),
-            delete: (id: string) => ipc.invoke('prompt-templates:delete', id),
-            getCategories: () => ipc.invoke('prompt-templates:getCategories'),
+            getAll: () => ipc.invoke(PROMPT_TEMPLATES_CHANNELS.GET_ALL),
+            search: (query: string) => ipc.invoke(PROMPT_TEMPLATES_CHANNELS.SEARCH, query),
+            get: (id: string) => ipc.invoke(PROMPT_TEMPLATES_CHANNELS.GET, id),
+            create: (template) => ipc.invoke(PROMPT_TEMPLATES_CHANNELS.CREATE, template),
+            update: (id, updates) => ipc.invoke(PROMPT_TEMPLATES_CHANNELS.UPDATE, id, updates),
+            delete: (id: string) => ipc.invoke(PROMPT_TEMPLATES_CHANNELS.DELETE, id),
+            getCategories: () => ipc.invoke(PROMPT_TEMPLATES_CHANNELS.GET_CATEGORIES),
         }
     };
 }
+

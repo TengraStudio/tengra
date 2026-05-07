@@ -56,7 +56,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
     // Wrapper for backward compatibility
     const setSettings = useCallback(async (newSettings: AppSettings | null) => {
         if (newSettings) {
-            await updateSettings(newSettings, true);
+            await updateSettings(newSettings, false);
         }
     }, [updateSettings]);
 
@@ -107,8 +107,6 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
             onRefreshModels?.(true);
             setSettingsUiState('ready');
             setLastErrorCode(null);
-            setStatusMessage('common.success');
-            setTimeout(() => setStatusMessage(''), 2000);
             recordSettingsPageHealthEvent({
                 channel: 'settings.save',
                 status: 'success',
@@ -146,7 +144,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
 
         try {
-            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            await withRetry(() => updateSettings(updated, false), SETTINGS_RETRY_ATTEMPTS);
             setSettingsUiState('ready');
             setLastErrorCode(null);
             recordSettingsPageHealthEvent({
@@ -183,7 +181,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
 
         try {
-            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            await withRetry(() => updateSettings(updated, false), SETTINGS_RETRY_ATTEMPTS);
             setSettingsUiState('ready');
             setLastErrorCode(null);
             recordSettingsPageHealthEvent({
@@ -220,7 +218,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
 
         try {
-            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            await withRetry(() => updateSettings(updated, false), SETTINGS_RETRY_ATTEMPTS);
             setSettingsUiState('ready');
             setLastErrorCode(null);
             recordSettingsPageHealthEvent({
@@ -263,7 +261,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
 
         try {
-            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            await withRetry(() => updateSettings(updated, false), SETTINGS_RETRY_ATTEMPTS);
             setSettingsUiState('ready');
             setLastErrorCode(null);
             recordSettingsPageHealthEvent({
@@ -306,7 +304,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
 
         try {
-            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            await withRetry(() => updateSettings(updated, false), SETTINGS_RETRY_ATTEMPTS);
             setSettingsUiState('ready');
             setLastErrorCode(null);
             recordSettingsPageHealthEvent({
@@ -364,7 +362,6 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         startOllama: auth.startOllama,
         checkOllama: auth.checkOllama,
         refreshAuthStatus: auth.refreshAuthStatus,
-        connectGitHubProfile: auth.connectGitHubProfile,
         connectCopilot: auth.connectCopilot,
         connectBrowserProvider: auth.connectBrowserProvider,
         cancelAuthFlow: auth.cancelAuthFlow,
@@ -402,3 +399,4 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         stats, benchmarkResult, isBenchmarking, handleRunBenchmark
     ]);
 }
+

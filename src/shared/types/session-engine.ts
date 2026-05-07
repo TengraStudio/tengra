@@ -179,3 +179,4 @@ export interface SessionCouncilQuotaInterruptEvent {
     emittedAt: number;
     v: 'v1';
 }
+

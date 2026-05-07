@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
+import { appLogger } from '@system/utils/renderer-logger';
 import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { VirtualizedWorkspaceGrid } from '@/features/workspace/workspace-layout/VirtualizedWorkspaceGrid';
-import { appLogger } from '@/system/utils/renderer-logger';
 import { Workspace } from '@/types';
 
 vi.mock('react-virtuoso', () => ({
@@ -45,7 +45,7 @@ function createWorkspace(index: number): Workspace {
     };
 }
 
-describe('VirtualizedWorkspaceGrid telemetry', () => {
+describe('VirtualizedWorkspaceGrid Stats', () => {
     afterEach(() => {
         vi.restoreAllMocks();
     });
@@ -111,3 +111,4 @@ describe('VirtualizedWorkspaceGrid telemetry', () => {
         });
     });
 });
+

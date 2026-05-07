@@ -157,10 +157,10 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
     };
 
     const pickKeyFile = async () => {
-        const result = await (window.electron.ipcRenderer.invoke('files:selectFile', {
+        const result = await window.electron.files.selectFile({
             title: t('frontend.workspaceModals.selectPrivateKey'),
             filters: [{ name: t('common.privateKey'), extensions: ['*', 'pem', 'key'] }]
-        }) as Promise<{ success: boolean; path?: string }>);
+        });
         if (result.success && result.path) {
             setMountForm(prev => ({ ...prev, privateKey: result.path || '' }));
         }
@@ -569,3 +569,4 @@ export const WorkspaceMountModals: React.FC<WorkspaceModalsProps> = ({
         </>
     );
 };
+

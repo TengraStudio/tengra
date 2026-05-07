@@ -34,6 +34,7 @@ import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { BRAIN_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -90,7 +91,7 @@ export class BrainService {
     /**
      * Learn a fact about the user
      */
-    @ipc('brain:learn')
+    @ipc(BRAIN_CHANNELS.LEARN)
     async learnUserFactIpc(category: UserFact['category'], content: string, confidence: number = 0.8): Promise<RuntimeValue> {
         const result = await this.learnUserFact(category, content, confidence);
         return serializeToIpc(result);
@@ -143,7 +144,7 @@ export class BrainService {
     /**
      * Recall relevant user facts for a given query/context
      */
-    @ipc('brain:recall')
+    @ipc(BRAIN_CHANNELS.RECALL)
     async recallUserFactsIpc(query: string, limit: number = 5): Promise<RuntimeValue> {
         const result = await this.recallUserFacts(query, limit);
         return serializeToIpc(result);
@@ -162,7 +163,7 @@ export class BrainService {
     /**
      * Get all facts by category
      */
-    @ipc('brain:get-by-category')
+    @ipc(BRAIN_CHANNELS.GET_BY_CATEGORY)
     async getUserFactsByCategoryIpc(category: UserFact['category']): Promise<RuntimeValue> {
         const result = await this.getUserFactsByCategory(category);
         return serializeToIpc(result);
@@ -182,7 +183,7 @@ export class BrainService {
     /**
      * Get structured brain context for AI injection
      */
-    @ipc('brain:get-context')
+    @ipc(BRAIN_CHANNELS.GET_CONTEXT)
     async getBrainContextIpc(query?: string): Promise<RuntimeValue> {
         const result = await this.getBrainContext(query);
         return serializeToIpc(result);
@@ -241,7 +242,7 @@ export class BrainService {
     /**
      * Auto-extract user facts from conversation
      */
-    @ipc('brain:extract-from-message')
+    @ipc(BRAIN_CHANNELS.EXTRACT_FROM_MESSAGE)
     async extractUserFactsFromMessageIpc(message: string, userId: string = this.userId): Promise<RuntimeValue> {
         const result = await this.extractUserFactsFromMessage(message, userId);
         return serializeToIpc(result);
@@ -319,7 +320,7 @@ If NO user facts found, return: []`;
     /**
      * Forget a user fact
      */
-    @ipc('brain:forget')
+    @ipc(BRAIN_CHANNELS.FORGET)
     async forgetUserFactIpc(factId: string): Promise<boolean> {
         await this.forgetUserFact(factId);
         return true;
@@ -333,7 +334,7 @@ If NO user facts found, return: []`;
     /**
      * Update fact confidence (e.g., when user corrects it)
      */
-    @ipc('brain:update-confidence')
+    @ipc(BRAIN_CHANNELS.UPDATE_CONFIDENCE)
     async updateFactConfidenceIpc(factId: string, confidence: number): Promise<boolean> {
         await this.updateFactConfidence(factId, confidence);
         return true;
@@ -437,7 +438,7 @@ If NO user facts found, return: []`;
     /**
      * Get brain summary stats
      */
-    @ipc('brain:get-stats')
+    @ipc(BRAIN_CHANNELS.GET_STATS)
     async getBrainStatsIpc(): Promise<RuntimeValue> {
         const result = await this.getBrainStats();
         return serializeToIpc(result);
@@ -478,3 +479,4 @@ If NO user facts found, return: []`;
         };
     }
 }
+

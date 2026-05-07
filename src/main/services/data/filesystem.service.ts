@@ -18,14 +18,14 @@ import * as path from 'path';
 
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
-import { JsonObject } from '@shared/types/common';
+import type { AuditLogService } from '@main/services/system/audit-log.service';
+import { FILES_CHANNELS } from '@shared/constants/ipc-channels';
+import { JsonObject, RuntimeValue } from '@shared/types/common';
 import { AISystemType, DiffStats } from '@shared/types/file-diff';
 import { ServiceResponse } from '@shared/types/index';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, dialog, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
-
-import type { AuditLogService } from '../system/audit-log.service';
 
 import type { FileChangeTracker } from './file-change-tracker.service';
 
@@ -34,14 +34,13 @@ const MAX_PATH_LENGTH = 4096;
 const MAX_CONTENT_SIZE = 50 * 1024 * 1024;
 const MAX_PATTERN_LENGTH = 256;
 const MAX_JOB_ID_LENGTH = 64;
-const MAX_FILE_TELEMETRY_EVENTS = 200;
+const MAX_FILE_usageStats_EVENTS = 200;
 
 // --- Schemas ---
 const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
 const ContentSchema = z.string().max(MAX_CONTENT_SIZE);
 const PatternSchema = z.string().min(1).max(MAX_PATTERN_LENGTH).trim();
 const JobIdSchema = z.string().min(1).max(MAX_JOB_ID_LENGTH).regex(/^[\w-]+$/).trim();
-const DiffIdSchema = z.string().min(1).max(128).trim();
 
 const WriteContextSchema = z.object({
     aiSystem: z.enum(['chat', 'workspace', 'council']).optional(),
@@ -73,7 +72,7 @@ type PdfParseFunction = (dataBuffer: Buffer) => Promise<PdfParseResult>;
 
 export class FileSystemService {
     private static readonly MAX_SEARCH_DIRECTORIES = 100000;
-    private allowedRoots: string[] = [];
+    private allowedRoots: Set<string> = new Set();
     private readonly allowedDownloadHosts = new Set([
         'github.com',
         'raw.githubusercontent.com',
@@ -83,7 +82,7 @@ export class FileSystemService {
     private fileChangeTracker?: FileChangeTracker;
     private auditLogService?: AuditLogService;
 
-    private telemetry = {
+    private usageStats = {
         totalCalls: 0,
         totalFailures: 0,
         validationFailures: 0,
@@ -100,20 +99,22 @@ export class FileSystemService {
     };
 
     constructor(
-        allowedRoots?: string[],
+        allowedRoots?: string[] | Set<string>,
         fileChangeTracker?: FileChangeTracker,
         auditLogService?: AuditLogService
     ) {
-        if (allowedRoots) {
-            this.allowedRoots = allowedRoots.map(r => path.resolve(r));
+        if (allowedRoots instanceof Set) {
+            this.allowedRoots = allowedRoots;
+        } else if (Array.isArray(allowedRoots)) {
+            allowedRoots.forEach(r => this.allowedRoots.add(path.resolve(r)));
         }
         this.fileChangeTracker = fileChangeTracker;
         this.auditLogService = auditLogService;
     }
 
     private getChannelMetric(channel: string) {
-        if (!this.telemetry.channels[channel]) {
-            this.telemetry.channels[channel] = {
+        if (!this.usageStats.channels[channel]) {
+            this.usageStats.channels[channel] = {
                 calls: 0,
                 failures: 0,
                 validationFailures: 0,
@@ -121,34 +122,34 @@ export class FileSystemService {
                 budgetExceededCount: 0
             };
         }
-        return this.telemetry.channels[channel];
+        return this.usageStats.channels[channel];
     }
 
     private trackFileEvent(channel: string, event: string, details: { durationMs?: number; code?: string } = {}) {
-        this.telemetry.events = [...this.telemetry.events, {
+        this.usageStats.events = [...this.usageStats.events, {
             channel,
             event,
             timestamp: Date.now(),
             durationMs: details.durationMs,
             code: details.code
-        }].slice(-MAX_FILE_TELEMETRY_EVENTS);
+        }].slice(-MAX_FILE_usageStats_EVENTS);
     }
 
     private getBudgetForChannel(channel: string): number {
-        if (channel === 'files:exists') {return FILE_PERFORMANCE_BUDGET_MS.EXISTS;}
-        if (channel === 'files:writeFile') {return FILE_PERFORMANCE_BUDGET_MS.WRITE;}
-        if (channel === 'files:searchFiles') {return FILE_PERFORMANCE_BUDGET_MS.SEARCH;}
+        if (channel === 'files:exists') { return FILE_PERFORMANCE_BUDGET_MS.EXISTS; }
+        if (channel === 'files:writeFile') { return FILE_PERFORMANCE_BUDGET_MS.WRITE; }
+        if (channel === 'files:searchFiles') { return FILE_PERFORMANCE_BUDGET_MS.SEARCH; }
         return FILE_PERFORMANCE_BUDGET_MS.SEARCH;
     }
 
     private trackSuccessMetrics(channel: string, durationMs: number) {
         const channelMetric = this.getChannelMetric(channel);
-        this.telemetry.totalCalls += 1;
+        this.usageStats.totalCalls += 1;
         channelMetric.calls += 1;
         channelMetric.lastDurationMs = durationMs;
         const budgetMs = this.getBudgetForChannel(channel);
         if (durationMs > budgetMs) {
-            this.telemetry.budgetExceededCount += 1;
+            this.usageStats.budgetExceededCount += 1;
             channelMetric.budgetExceededCount += 1;
         }
         this.trackFileEvent(channel, 'success', { durationMs });
@@ -156,13 +157,13 @@ export class FileSystemService {
 
     private trackFailureMetrics(channel: string, code: string, eventName: 'failure' | 'validation-failure') {
         const channelMetric = this.getChannelMetric(channel);
-        this.telemetry.totalCalls += 1;
-        this.telemetry.totalFailures += 1;
+        this.usageStats.totalCalls += 1;
+        this.usageStats.totalFailures += 1;
         channelMetric.calls += 1;
         channelMetric.failures += 1;
-        this.telemetry.lastErrorCode = code;
+        this.usageStats.lastErrorCode = code;
         if (eventName === 'validation-failure') {
-            this.telemetry.validationFailures += 1;
+            this.usageStats.validationFailures += 1;
             channelMetric.validationFailures += 1;
         }
         this.trackFileEvent(channel, eventName, { code });
@@ -176,8 +177,8 @@ export class FileSystemService {
         this.fileChangeTracker = tracker;
     }
 
-    @ipc('files:exists')
-    async existsIpc(_event: IpcMainInvokeEvent, filePath: string) {
+    @ipc(FILES_CHANNELS.EXISTS)
+    async existsIpc(filePath: string) {
         const startedAt = Date.now();
         const channel = 'files:exists';
         try {
@@ -202,7 +203,7 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:selectDirectory')
+    @ipc({ channel: FILES_CHANNELS.SELECT_DIRECTORY, withEvent: true })
     async selectDirectoryIpc(event: IpcMainInvokeEvent) {
         const startedAt = Date.now();
         const channel = 'files:selectDirectory';
@@ -228,16 +229,13 @@ export class FileSystemService {
         const chosenPath = result.filePaths[0];
         if (chosenPath) {
             const resolved = path.resolve(chosenPath);
-            if (!this.allowedRoots.includes(resolved)) {
-                this.allowedRoots.push(resolved);
-                this.updateAllowedRoots(this.allowedRoots);
-            }
+            this.allowedRoots.add(resolved);
         }
         this.trackSuccessMetrics(channel, Date.now() - startedAt);
         return { success: true, path: chosenPath };
     }
 
-    @ipc('files:selectFile')
+    @ipc({ channel: FILES_CHANNELS.SELECT_FILE, withEvent: true })
     async selectFileIpc(event: IpcMainInvokeEvent, options?: { title?: string, filters?: { name: string, extensions: string[] }[] }) {
         const startedAt = Date.now();
         const channel = 'files:selectFile';
@@ -265,17 +263,18 @@ export class FileSystemService {
         const chosenPath = result.filePaths[0];
         if (chosenPath) {
             const resolved = path.resolve(chosenPath);
-            if (!this.allowedRoots.includes(resolved)) {
-                this.allowedRoots.push(resolved);
-                this.updateAllowedRoots(this.allowedRoots);
-            }
+            this.allowedRoots.add(resolved);
         }
         this.trackSuccessMetrics(channel, Date.now() - startedAt);
         return { success: true, path: chosenPath };
     }
 
-    updateAllowedRoots(allowedRoots: string[]) {
-        this.allowedRoots = allowedRoots.map(r => path.resolve(r));
+    updateAllowedRoots(allowedRoots: string[] | Set<string>) {
+        if (Array.isArray(allowedRoots)) {
+            allowedRoots.forEach(r => this.allowedRoots.add(path.resolve(r)));
+        } else {
+            allowedRoots.forEach(r => this.allowedRoots.add(path.resolve(r)));
+        }
     }
 
     private isPathAllowed(filePath: string): boolean {
@@ -286,11 +285,22 @@ export class FileSystemService {
         };
         const normalizedPath = normalizeForComparison(filePath);
 
-        return this.allowedRoots.some(root => {
+        const allowed = Array.from(this.allowedRoots).some(root => {
             const normalizedRoot = normalizeForComparison(root);
             const relativePath = path.relative(normalizedRoot, normalizedPath);
-            return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+            const isAllowed = relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+
+            appLogger.debug('FileSystem', `Checking path permission`, {
+                root: normalizedRoot,
+                path: normalizedPath,
+                relative: relativePath,
+                isAllowed
+            });
+
+            return isAllowed;
         });
+
+        return allowed;
     }
 
     /**
@@ -369,46 +379,73 @@ export class FileSystemService {
     updateIgnorePatterns(patterns: string[]) {
         this.ignorePatterns = [...new Set([...this.ignorePatterns, ...patterns])];
     }
-
     private shouldIgnore(filePath: string): boolean {
         if (this.ignorePatterns.length === 0) {
             return false;
         }
 
         const normalizedPath = filePath.replace(/\\/g, '/');
-        return this.ignorePatterns.some(pattern => {
-            const normalizedPattern = pattern.replace(/\\/g, '/');
-            // If the pattern starts with /, check for absolute prefix match
+        const segments = normalizedPath.split('/');
+
+        const ignored = this.ignorePatterns.some(pattern => {
+            let normalizedPattern = pattern.replace(/\\/g, '/');
+
+            // If the pattern starts with /, it's an absolute-style match
             if (normalizedPattern.startsWith('/')) {
                 return normalizedPath.includes(normalizedPattern);
             }
-            // Otherwise check for segment match (e.g. "node_modules")
-            return normalizedPath.split('/').includes(normalizedPattern) ||
-                   normalizedPath.includes(`/${normalizedPattern}/`) ||
-                   normalizedPath.endsWith(`/${normalizedPattern}`);
+
+            // Handle trailing slash (directory pattern)
+            if (normalizedPattern.endsWith('/')) {
+                normalizedPattern = normalizedPattern.slice(0, -1);
+            }
+
+            // Check if any segment matches the pattern exactly
+            return segments.includes(normalizedPattern);
         });
+
+        if (ignored) {
+            appLogger.debug('FileSystem', `Ignoring path`, {
+                path: filePath,
+                patterns: this.ignorePatterns.length
+            });
+        }
+
+        return ignored;
     }
 
     // --- Core Operations ---
 
-    @ipc('files:listDirectory')
-    async listDirectoryIpc(_event: IpcMainInvokeEvent, dirPath: string) {
+    @ipc(FILES_CHANNELS.LIST_DIRECTORY)
+    async listDirectoryIpc(dirPath: string) {
         const startedAt = Date.now();
         const channel = 'files:listDirectory';
+        appLogger.debug('FileSystem', `IPC Request: listDirectory`, { dirPath });
+        if (typeof dirPath !== 'string' || dirPath.trim().length === 0) {
+            this.trackFailureMetrics(channel, FILE_IPC_ERROR_CODE.VALIDATION, 'validation-failure');
+            return { success: false, data: [], error: 'Invalid directory path' };
+        }
+        appLogger.info('FileSystem', `IPC Request: listDirectory`, { dirPath });
         try {
             PathSchema.parse(dirPath);
             const result = await this.listDirectory(dirPath);
+            appLogger.info('FileSystem', `IPC Response: listDirectory`, {
+                dirPath,
+                success: result.success,
+                entries: (result.success && result.data) ? result.data.length : 0
+            });
             this.trackSuccessMetrics(channel, Date.now() - startedAt);
             return result;
         } catch (error) {
+            appLogger.error('FileSystem', `IPC Error: listDirectory`, { dirPath, error: getErrorMessage(error as Error) });
             const isValidation = error instanceof z.ZodError;
             this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
             return { success: false, data: [], error: getErrorMessage(error as Error) };
         }
     }
 
-    @ipc('files:readFile')
-    async readFileIpc(_event: IpcMainInvokeEvent, filePath: string) {
+    @ipc(FILES_CHANNELS.READ_FILE)
+    async readFileIpc(filePath: string) {
         const startedAt = Date.now();
         const channel = 'files:readFile';
         try {
@@ -423,8 +460,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:readImage')
-    async readImageIpc(_event: IpcMainInvokeEvent, filePath: string) {
+    @ipc(FILES_CHANNELS.READ_IMAGE)
+    async readImageIpc(filePath: string) {
         const startedAt = Date.now();
         const channel = 'files:readImage';
         try {
@@ -439,8 +476,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:readPdf')
-    async readPdfIpc(_event: IpcMainInvokeEvent, filePath: string) {
+    @ipc(FILES_CHANNELS.READ_PDF)
+    async readPdfIpc(filePath: string) {
         const startedAt = Date.now();
         const channel = 'files:readPdf';
         try {
@@ -483,7 +520,7 @@ export class FileSystemService {
         try {
             const expandedPath = this.expandEnvVars(filePath);
             this.validatePath(expandedPath);
-            const absolutePath = path.resolve(expandedPath); 
+            const absolutePath = path.resolve(expandedPath);
             const buffer = await fs.readFile(absolutePath);
             const base64 = buffer.toString('base64');
 
@@ -552,15 +589,15 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:writeFile')
-    async writeFileIpc(_event: IpcMainInvokeEvent, filePath: string, content: string, context?: unknown) {
+    @ipc(FILES_CHANNELS.WRITE_FILE)
+    async writeFileIpc(filePath: string, content: string, context?: RuntimeValue) {
         const startedAt = Date.now();
         const channel = 'files:writeFile';
         try {
             PathSchema.parse(filePath);
             ContentSchema.parse(content);
             const parsedContext = WriteContextSchema.parse(context);
-            
+
             const aiSystem = parsedContext?.aiSystem;
             let writeResult;
             if (aiSystem) {
@@ -600,8 +637,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:createDirectory')
-    async createDirectoryIpc(_event: IpcMainInvokeEvent, dirPath: string) {
+    @ipc(FILES_CHANNELS.CREATE_DIRECTORY)
+    async createDirectoryIpc(dirPath: string) {
         const startedAt = Date.now();
         const channel = 'files:createDirectory';
         try {
@@ -616,8 +653,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:deleteFile')
-    async deleteFileIpc(_event: IpcMainInvokeEvent, filePath: string) {
+    @ipc(FILES_CHANNELS.DELETE_FILE)
+    async deleteFileIpc(filePath: string) {
         const startedAt = Date.now();
         const channel = 'files:deleteFile';
         try {
@@ -632,8 +669,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:deleteDirectory')
-    async deleteDirectoryIpc(_event: IpcMainInvokeEvent, dirPath: string) {
+    @ipc(FILES_CHANNELS.DELETE_DIRECTORY)
+    async deleteDirectoryIpc(dirPath: string) {
         const startedAt = Date.now();
         const channel = 'files:deleteDirectory';
         try {
@@ -648,8 +685,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:copyPath')
-    async copyPathIpc(_event: IpcMainInvokeEvent, sourcePath: string, destinationPath: string) {
+    @ipc(FILES_CHANNELS.COPY_PATH)
+    async copyPathIpc(sourcePath: string, destinationPath: string) {
         const startedAt = Date.now();
         const channel = 'files:copyPath';
         try {
@@ -665,8 +702,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:renamePath')
-    async renamePathIpc(_event: IpcMainInvokeEvent, oldPath: string, newPath: string) {
+    @ipc(FILES_CHANNELS.RENAME_PATH)
+    async renamePathIpc(oldPath: string, newPath: string) {
         const startedAt = Date.now();
         const channel = 'files:renamePath';
         try {
@@ -1253,8 +1290,8 @@ export class FileSystemService {
         });
     }
 
-    @ipc('files:searchFiles')
-    async searchFilesIpc(_event: IpcMainInvokeEvent, dirPath: string, pattern: string) {
+    @ipc(FILES_CHANNELS.SEARCH_FILES)
+    async searchFilesIpc(dirPath: string, pattern: string) {
         const startedAt = Date.now();
         const channel = 'files:searchFiles';
         try {
@@ -1281,7 +1318,7 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:searchFilesStream')
+    @ipc({ channel: FILES_CHANNELS.SEARCH_FILES_STREAM, withEvent: true })
     async searchFilesStreamIpc(event: IpcMainInvokeEvent, dirPath: string, pattern: string, jobId: string) {
         const startedAt = Date.now();
         const channel = 'files:searchFilesStream';
@@ -1299,8 +1336,8 @@ export class FileSystemService {
         }
     }
 
-    @ipc('files:health')
-    async healthIpc(_event: IpcMainInvokeEvent) {
+    @ipc(FILES_CHANNELS.HEALTH)
+    async healthIpc() {
         return {
             success: true,
             data: this.getFilesHealthSummary()
@@ -1308,8 +1345,8 @@ export class FileSystemService {
     }
 
     private getFilesHealthSummary() {
-        const errorRate = this.telemetry.totalCalls === 0 ? 0 : this.telemetry.totalFailures / this.telemetry.totalCalls;
-        const status = errorRate > 0.05 || this.telemetry.budgetExceededCount > 0 ? 'degraded' : 'healthy';
+        const errorRate = this.usageStats.totalCalls === 0 ? 0 : this.usageStats.totalFailures / this.usageStats.totalCalls;
+        const status = errorRate > 0.05 || this.usageStats.budgetExceededCount > 0 ? 'degraded' : 'healthy';
         return {
             status,
             uiState: status === 'healthy' ? 'ready' : 'failure',
@@ -1319,7 +1356,7 @@ export class FileSystemService {
                 searchMs: FILE_PERFORMANCE_BUDGET_MS.SEARCH
             },
             metrics: {
-                ...this.telemetry,
+                ...this.usageStats,
                 errorRate
             }
         };
@@ -1370,8 +1407,8 @@ export class FileSystemService {
         for (
             let visitedDirectories = 0;
             directories.length > 0 &&
-                visitedDirectories < FileSystemService.MAX_SEARCH_DIRECTORIES &&
-                resultCount < resultLimit;
+            visitedDirectories < FileSystemService.MAX_SEARCH_DIRECTORIES &&
+            resultCount < resultLimit;
             visitedDirectories += 1
         ) {
             const dir = directories.pop();
@@ -1450,4 +1487,5 @@ export class FileSystemService {
         }
     }
 }
+
 

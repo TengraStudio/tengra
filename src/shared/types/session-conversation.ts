@@ -57,3 +57,4 @@ export interface SessionConversationApi {
         callback: (data: SessionConversationGenerationStatus) => void
     ) => () => void;
 }
+

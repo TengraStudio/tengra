@@ -122,3 +122,4 @@ export const badgeStory: ComponentStory = {
     { name: 'showcase.variants.outline', props: { variant: 'outline', children: 'showcase.badge.text.outline' } },
   ],
 };
+

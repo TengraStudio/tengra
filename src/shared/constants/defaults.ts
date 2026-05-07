@@ -43,10 +43,11 @@ export const SERVICE_DEFAULTS = {
     EVENT_BUS_MAX_LISTENERS: 60,
     /** Event history buffer size */
     EVENT_HISTORY_SIZE: 100,
-    /** Telemetry max queue size */
-    TELEMETRY_MAX_QUEUE: 1000,
+    /** usageStats max queue size */
+    usageStats_MAX_QUEUE: 1000,
     /** Default reconnect delay (ms) */
     RECONNECT_DELAY_MS: 1000,
     /** Maximum reconnect attempts */
     MAX_RECONNECT_ATTEMPTS: 3,
 } as const;
+

@@ -12,6 +12,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service';
 import { AdvancedMemoryService, PersonalitySettings, SummarizationResult } from '@main/services/llm/advanced-memory.service';
+import { MEMORY_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
@@ -30,26 +31,26 @@ export class MemoryService {
         return this.advancedMemory.initialize();
     }
 
-    @ipc('memory:getAll')
+    @ipc(MEMORY_CHANNELS.GET_ALL)
     async getAllMemoriesIpc(_event: IpcMainInvokeEvent) {
         return await this.getAllMemories();
     }
 
-    @ipc('memory:deleteFact')
+    @ipc(MEMORY_CHANNELS.DELETE_FACT)
     async deleteFactIpc(_event: IpcMainInvokeEvent, factId: string) {
         const validatedId = MemoryIdSchema.parse(factId);
         const success = await this.forgetFact(validatedId);
         return { success };
     }
 
-    @ipc('memory:deleteEntity')
+    @ipc(MEMORY_CHANNELS.DELETE_ENTITY)
     async deleteEntityIpc(_event: IpcMainInvokeEvent, entityId: string) {
         const validatedId = MemoryIdSchema.parse(entityId);
         const success = await this.removeEntityFact(validatedId);
         return { success };
     }
 
-    @ipc('memory:addFact')
+    @ipc(MEMORY_CHANNELS.ADD_FACT)
     async addFactIpc(_event: IpcMainInvokeEvent, content: string, tags: string[]) {
         const validatedContent = MemoryContentSchema.parse(content);
         const validatedTags = MemoryTagsSchema.parse(tags);
@@ -57,7 +58,7 @@ export class MemoryService {
         return { success: true, id: fragment.id };
     }
 
-    @ipc('memory:setEntityFact')
+    @ipc(MEMORY_CHANNELS.SET_ENTITY_FACT)
     async setEntityFactIpc(
         _event: IpcMainInvokeEvent,
         entityType: string,
@@ -73,7 +74,7 @@ export class MemoryService {
         return { success: true, id: knowledge.id };
     }
 
-    @ipc('memory:search')
+    @ipc(MEMORY_CHANNELS.SEARCH)
     async searchIpc(_event: IpcMainInvokeEvent, query: string) {
         const validatedQuery = MemoryQuerySchema.parse(query);
         const facts = await this.recallRelevantFacts(validatedQuery, 10);
@@ -183,4 +184,5 @@ export class MemoryService {
         return [];
     }
 }
+
 

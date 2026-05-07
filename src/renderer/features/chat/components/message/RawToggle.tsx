@@ -44,3 +44,4 @@ export const RawToggle = memo(({ active, onClick, t }: RawToggleProps) => (
 ));
 
 RawToggle.displayName = 'RawToggle';
+

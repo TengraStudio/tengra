@@ -54,16 +54,19 @@ export type RuntimeValue =
     | string
     | number
     | boolean
+    | bigint
+    | symbol
+    | void
     | null
     | undefined
+    | object
     | RuntimeObject
     | RuntimeArray
-    | Record<string, unknown>
-    | Uint8Array
-    | unknown[];
+    | Uint8Array;
 
 export interface RuntimeObject {
     [key: string]: RuntimeValue;
 }
 
 export type RuntimeArray = Array<RuntimeValue>;
+

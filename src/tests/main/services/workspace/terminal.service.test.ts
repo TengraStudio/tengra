@@ -217,3 +217,4 @@ describe('TerminalService', () => {
         expect(app.getPath).toHaveBeenCalledWith('userData');
     });
 });
+

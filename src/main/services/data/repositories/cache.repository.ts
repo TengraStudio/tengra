@@ -79,3 +79,4 @@ export class CacheRepository extends BaseRepository {
         return rows.rows;
     }
 }
+

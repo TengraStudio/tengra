@@ -125,3 +125,4 @@ export const SkeletonCard: React.FC<{
 });
 
 SkeletonCard.displayName = 'SkeletonCard';
+

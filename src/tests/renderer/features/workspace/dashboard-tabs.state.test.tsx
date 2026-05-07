@@ -70,3 +70,4 @@ describe('DashboardTabs state transitions', () => {
         expect(gitButton.className).toContain('bg-primary');
     });
 });
+

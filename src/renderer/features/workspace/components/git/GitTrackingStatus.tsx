@@ -59,3 +59,4 @@ export const GitTrackingStatus: React.FC<TrackingStatusProps> = ({ trackingInfo 
         </div>
     );
 };
+

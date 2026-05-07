@@ -71,3 +71,4 @@ export class AdvancedMemoryPersistenceAdapter {
         return this.db.getSharedMemoryConflictCount(namespaceId);
     }
 }
+

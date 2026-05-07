@@ -48,3 +48,4 @@ describe('fetchModels in-flight dedupe', () => {
         expect(first[0]?.provider).toBe('openai');
     });
 });
+

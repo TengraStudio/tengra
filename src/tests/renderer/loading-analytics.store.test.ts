@@ -74,3 +74,4 @@ describe('loading analytics store', () => {
         expect(snapshot.history[0]?.progress).toBe(25);
     });
 });
+

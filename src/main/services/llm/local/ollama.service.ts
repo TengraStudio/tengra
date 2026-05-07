@@ -9,23 +9,26 @@
  */
 
 // Ollama service using Node http module with forced IPv4
+import { exec } from 'child_process';
 import * as crypto from 'crypto';
 import { EventEmitter } from 'events';
 import * as http from 'http';
 
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
-import { LocalAIService } from '@main/services/llm/local/local-ai.service';
 import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data.ts';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { JsonToolParser } from '@main/utils/ai/json-tool-parser.util';
+import { XmlToolParser } from '@main/utils/ai/xml-tool-parser.util';
 import { t } from '@main/utils/i18n.util';
 import { withRetry } from '@main/utils/retry.util';
 import { SERVICE_DEFAULTS } from '@shared/constants/defaults';
 import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
+import { OLLAMA_CHANNELS } from '@shared/constants/ipc-channels';
 import { ToolCall } from '@shared/types/chat';
-import { JsonObject, JsonValue } from '@shared/types/common';
+import { JsonObject, JsonValue, RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import axios from 'axios';
@@ -174,18 +177,15 @@ export class OllamaService {
     private lastGPUCheck: Date = new Date();
     private gpuMonitoringInterval: NodeJS.Timeout | null = null;
     private eventBusService: EventBusService;
-    private localAIService: LocalAIService;
     private authService: AuthService;
 
     constructor(
         settingsService: SettingsService,
         eventBusService: EventBusService,
-        localAIService: LocalAIService,
         authService: AuthService
     ) {
         this.settingsService = settingsService;
         this.eventBusService = eventBusService;
-        this.localAIService = localAIService;
         this.authService = authService;
         const settings = this.settingsService.getSettings();
         if (settings.ollama.url) {
@@ -210,8 +210,8 @@ export class OllamaService {
         });
     }
 
-    @ipc('ollama:abort')
-    @ipc('ollama:abortPull')
+    @ipc(OLLAMA_CHANNELS.ABORT)
+    @ipc(OLLAMA_CHANNELS.ABORT_PULL)
     abort() {
         if (this.currentRequest) {
             this.currentRequest.destroy();
@@ -353,7 +353,7 @@ export class OllamaService {
         return settings.ollama.numCtx || 32768; // Default to 32k instead of 16k
     }
 
-    @ipc('ollama:chat')
+    @ipc(OLLAMA_CHANNELS.CHAT)
     async chatIpc(messagesRaw: RuntimeValue, modelRaw: RuntimeValue): Promise<OllamaResponse> {
         const messages = this.validateMessages(messagesRaw);
         const model = this.validateModel(modelRaw);
@@ -428,9 +428,67 @@ export class OllamaService {
         completionTokens: number;
     }> {
         let fullResponse = '';
-        let toolCalls: ToolCall[] = [];
+        const toolCalls: ToolCall[] = [];
+        let contentBuffer = '';
         let promptTokens = 0;
         let completionTokens = 0;
+
+        const appendToolCalls = (incoming: ToolCall[] | undefined): void => {
+            if (!Array.isArray(incoming) || incoming.length === 0) {
+                return;
+            }
+
+            const seen = new Set(toolCalls.map(call => `${call.id}:${call.function.name}:${call.function.arguments}`));
+            for (const toolCall of incoming) {
+                const key = `${toolCall.id}:${toolCall.function.name}:${toolCall.function.arguments}`;
+                if (seen.has(key)) {
+                    continue;
+                }
+                toolCalls.push(toolCall);
+                seen.add(key);
+            }
+        };
+
+        const flushPlainContent = (content: string): void => {
+            if (!content) {
+                return;
+            }
+            fullResponse += content;
+            onChunk?.(content);
+        };
+
+        const processEmbeddedToolCalls = (incomingContent: string, forceFlush = false): void => {
+            if (!incomingContent) {
+                return;
+            }
+
+            contentBuffer += incomingContent;
+
+            const { toolCalls: jsonCalls, cleanedText: afterJson } = JsonToolParser.parse(contentBuffer, { trim: false });
+            appendToolCalls(jsonCalls);
+            contentBuffer = afterJson;
+
+            const { toolCalls: xmlCalls, cleanedText: afterXml } = XmlToolParser.parse(contentBuffer, { trim: false });
+            appendToolCalls(xmlCalls);
+            contentBuffer = afterXml;
+
+            const hasPotentialXml = XmlToolParser.hasPotentialXmlCall(contentBuffer);
+            const hasPotentialJson = JsonToolParser.hasPotentialJsonCall(contentBuffer);
+
+            if (hasPotentialXml) {
+                const { content, buffered } = XmlToolParser.stripIncompleteTags(contentBuffer);
+                flushPlainContent(content);
+                contentBuffer = buffered;
+                return;
+            }
+
+            if (hasPotentialJson && !forceFlush) {
+                return;
+            }
+
+            flushPlainContent(contentBuffer);
+            contentBuffer = '';
+        };
 
         try {
             await this.httpStreamRequest({
@@ -450,11 +508,10 @@ export class OllamaService {
                         try {
                             const data = safeJsonParse<OllamaResponse>(line, {} as OllamaResponse);
                             if (data.message.content) {
-                                fullResponse += data.message.content;
-                                onChunk?.(data.message.content);
+                                processEmbeddedToolCalls(data.message.content);
                             }
                             if (data.message.tool_calls) {
-                                toolCalls = data.message.tool_calls;
+                                appendToolCalls(data.message.tool_calls);
                             }
                             if (data.done) {
                                 if (data.prompt_eval_count) { promptTokens = data.prompt_eval_count; }
@@ -468,6 +525,9 @@ export class OllamaService {
             });
 
             this.currentRequest = null;
+            if (contentBuffer.length > 0) {
+                processEmbeddedToolCalls('', true);
+            }
 
             return {
                 content: fullResponse,
@@ -500,7 +560,7 @@ export class OllamaService {
         }
     }
 
-    @ipc('ollama:pull')
+    @ipc(OLLAMA_CHANNELS.PULL)
     async pullModelIpc(modelNameRaw: RuntimeValue): Promise<{ success: boolean; error?: string }> {
         const modelName = this.validateModel(modelNameRaw);
         if (!modelName) {
@@ -552,7 +612,7 @@ export class OllamaService {
         }
     }
 
-    @ipc('ollama:deleteModel')
+    @ipc(OLLAMA_CHANNELS.DELETE_MODEL)
     async deleteModelIpc(modelNameRaw: RuntimeValue): Promise<{ success: boolean; error?: string }> {
         const modelName = this.validateModel(modelNameRaw);
         if (!modelName) {
@@ -581,7 +641,7 @@ export class OllamaService {
         }
     }
 
-    @ipc('ollama:getLibraryModels')
+    @ipc(OLLAMA_CHANNELS.GET_LIBRARY_MODELS)
     async getLibraryModels(): Promise<LibraryModel[]> {
         const staticList: LibraryModel[] = [
             { name: 'llama2', description: 'Meta\'s Llama 2 model', tags: ['7b', '13b', '70b'] },
@@ -653,7 +713,7 @@ export class OllamaService {
     /**
      * Check health status of a specific model
      */
-    @ipc('ollama:checkModelHealth')
+    @ipc(OLLAMA_CHANNELS.CHECK_MODEL_HEALTH)
     async checkModelHealth(modelName: string): Promise<ModelHealthStatus> {
         const startTime = Date.now();
         try {
@@ -712,7 +772,7 @@ export class OllamaService {
     /**
      * Check health status of all installed models
      */
-    @ipc('ollama:checkAllModelsHealth')
+    @ipc(OLLAMA_CHANNELS.CHECK_ALL_MODELS_HEALTH)
     async checkAllModelsHealth(): Promise<ModelHealthStatus[]> {
         const models = await this.getModels();
         const healthChecks: ModelHealthStatus[] = [];
@@ -728,7 +788,7 @@ export class OllamaService {
     /**
      * Get model recommendations based on use case
      */
-    @ipc('ollama:getModelRecommendations')
+    @ipc(OLLAMA_CHANNELS.GET_MODEL_RECOMMENDATIONS)
     async getModelRecommendations(
         category?: 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal'
     ): Promise<ModelRecommendation[]> {
@@ -864,7 +924,7 @@ export class OllamaService {
     /**
      * Get recommended model for a specific task
      */
-    @ipc('ollama:getRecommendedModelForTask')
+    @ipc(OLLAMA_CHANNELS.GET_RECOMMENDED_MODEL_FOR_TASK)
     async getRecommendedModelForTask(task: string): Promise<ModelRecommendation | null> {
         const taskLower = task.toLowerCase();
 
@@ -907,7 +967,7 @@ export class OllamaService {
     /**
      * Get current connection status
      */
-    @ipc('ollama:getConnectionStatus')
+    @ipc(OLLAMA_CHANNELS.GET_CONNECTION_STATUS)
     async getConnectionStatus(): Promise<ConnectionStatus> {
         const startTime = Date.now();
         let isConnected = false;
@@ -937,7 +997,7 @@ export class OllamaService {
     /**
      * Test connection with detailed diagnostics
      */
-    @ipc('ollama:testConnection')
+    @ipc(OLLAMA_CHANNELS.TEST_CONNECTION)
     async testConnection(): Promise<{
         success: boolean;
         latency: number;
@@ -985,7 +1045,7 @@ export class OllamaService {
     /**
      * Attempt to reconnect with exponential backoff
      */
-    @ipc('ollama:reconnect')
+    @ipc(OLLAMA_CHANNELS.RECONNECT)
     async reconnect(): Promise<boolean> {
         this.reconnectAttempts = 0;
         try {
@@ -1024,7 +1084,7 @@ export class OllamaService {
     /**
      * Get GPU information from Ollama
      */
-    @ipc('ollama:getGPUInfo')
+    @ipc(OLLAMA_CHANNELS.GET_GPU_INFO)
     async getGPUInfo(): Promise<GPUStatus> {
         const warnings: string[] = [];
         const gpus: GPUInfo[] = [];
@@ -1099,7 +1159,7 @@ export class OllamaService {
     /**
      * Start continuous GPU monitoring
      */
-    @ipc('ollama:startGPUMonitoring')
+    @ipc(OLLAMA_CHANNELS.START_GPU_MONITORING)
     startGPUMonitoring(intervalMs: number = 10000): void {
         if (this.gpuMonitoringInterval) {
             this.stopGPUMonitoring();
@@ -1138,7 +1198,7 @@ export class OllamaService {
     /**
      * Stop GPU monitoring
      */
-    @ipc('ollama:stopGPUMonitoring')
+    @ipc(OLLAMA_CHANNELS.STOP_GPU_MONITORING)
     stopGPUMonitoring(): void {
         if (this.gpuMonitoringInterval) {
             clearInterval(this.gpuMonitoringInterval);
@@ -1166,7 +1226,7 @@ export class OllamaService {
     /**
      * Set GPU alert thresholds
      */
-    @ipc('ollama:setGPUAlertThresholds')
+    @ipc(OLLAMA_CHANNELS.SET_GPU_ALERT_THRESHOLDS)
     setGPUAlertThresholds(thresholds: Partial<typeof OllamaService.prototype.gpuAlertThresholds>): void {
         this.gpuAlertThresholds = {
             ...this.gpuAlertThresholds,
@@ -1178,7 +1238,7 @@ export class OllamaService {
     /**
      * Get current GPU alert thresholds
      */
-    @ipc('ollama:getGPUAlertThresholds')
+    @ipc(OLLAMA_CHANNELS.GET_GPU_ALERT_THRESHOLDS)
     getGPUAlertThresholds(): typeof OllamaService.prototype.gpuAlertThresholds {
         return { ...this.gpuAlertThresholds };
     }
@@ -1200,8 +1260,8 @@ export class OllamaService {
             privateKeyEncoding: { type: 'pkcs8', format: 'der' },
         });
         return {
-            publicKeyB64:  (publicKey  as unknown as Buffer).toString('base64'),
-            privateKeyB64: (privateKey as unknown as Buffer).toString('base64'),
+            publicKeyB64: Buffer.from(publicKey).toString('base64'),
+            privateKeyB64: Buffer.from(privateKey).toString('base64'),
         };
     }
 
@@ -1214,7 +1274,7 @@ export class OllamaService {
      *
      * @param publicKeyB64 - Base64-encoded DER public key from `generateEd25519KeyPair()`.
      */
-    @ipc('ollama:initiate-connect')
+    @ipc(OLLAMA_CHANNELS.INITIATE_CONNECT)
     async initiateOllamaConnect(publicKeyB64: string): Promise<{
         code: string;
         expiresAt: number;
@@ -1260,7 +1320,7 @@ export class OllamaService {
      * @param timeoutMs    - Maximum polling duration (default 5 min).
      * @param intervalMs   - Polling interval (default 3 s).
      */
-    @ipc('ollama:poll-connect-status')
+    @ipc(OLLAMA_CHANNELS.POLL_CONNECT_STATUS)
     async pollOllamaConnectStatus(
         code: string,
         privateKeyB64: string,
@@ -1360,19 +1420,36 @@ export class OllamaService {
     destroy(): void {
         void this.cleanup();
     }
-    @ipc('ollama:checkCuda')
+    @ipc(OLLAMA_CHANNELS.CHECK_CUDA)
     async checkCuda(): Promise<boolean> {
-        const support = await this.localAIService.checkCudaSupport();
+        const support = await this.checkCudaSupport();
         return support.hasCuda;
     }
 
-    @ipc('ollama:get-ollama-accounts')
-    async getOllamaAccounts(): Promise<unknown[]> {
+    private async checkCudaSupport(): Promise<{ hasCuda: boolean; detail?: string }> {
+        return new Promise((resolve) => {
+            exec('nvidia-smi', (_error: Error | null, stdout: string) => {
+                if (_error) {
+                    resolve({ hasCuda: false, detail: 'nvidia-smi not found or failed' });
+                } else {
+                    resolve({ hasCuda: true, detail: stdout.split('\n')[0] });
+                }
+            });
+        });
+    }
+
+    @ipc(OLLAMA_CHANNELS.GET_OLLAMA_ACCOUNTS)
+    async getOllamaAccounts(): Promise<RuntimeValue[]> {
         return this.authService.getAccountsByProvider('ollama');
     }
 
     @ipc({ channel: 'ollama:start', withEvent: true })
-    async startIpc(event: IpcMainInvokeEvent): Promise<unknown> {
+    async startIpc(event: IpcMainInvokeEvent): Promise<{
+        success: boolean;
+        message: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const { startOllama } = await import('@main/startup/ollama');
         const getWin = () => BrowserWindow.fromWebContents(event.sender);
         return await startOllama(getWin, true);
@@ -1408,3 +1485,4 @@ export class OllamaService {
         );
     }
 }
+

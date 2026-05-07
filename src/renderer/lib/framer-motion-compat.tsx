@@ -87,3 +87,4 @@ export const AnimatePresence: FC<AnimatePresenceProps> = memo(({ children, mode:
 AnimatePresence.displayName = 'AnimatePresence';
 
 export default { motion, AnimatePresence };
+

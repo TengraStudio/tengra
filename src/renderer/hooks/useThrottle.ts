@@ -47,3 +47,4 @@ export function useThrottle<T>(value: T, limit: number = 100): T {
 
     return throttledValue;
 }
+

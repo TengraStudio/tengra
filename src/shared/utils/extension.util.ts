@@ -439,3 +439,4 @@ export class ExtensionAPIImpl {
 }
 
 export type { ExtensionAPIImpl as ExtensionAPI };
+

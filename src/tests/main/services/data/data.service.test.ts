@@ -37,12 +37,11 @@ vi.mock('fs/promises', () => ({
 import * as fsp from 'fs/promises';
 import * as path from 'path';
 
-import type { TelemetryService } from '@main/services/analysis/telemetry.service';
+
 import {
     DATA_SERVICE_PERFORMANCE_BUDGETS,
     DataService,
     DataServiceErrorCode,
-    DataServiceTelemetryEvent,
     DataType
 } from '@main/services/data/data.service';
 
@@ -247,66 +246,7 @@ describe('DataService', () => {
         });
     });
 
-    describe('telemetry integration (B-0485)', () => {
-        it('should accept telemetry service via setTelemetryService', () => {
-            const mockTelemetry = { track: vi.fn().mockReturnValue({ success: true }) };
-            expect(() => {
-                service.setTelemetryService(mockTelemetry as never as TelemetryService);
-            }).not.toThrow();
-        });
 
-        it('should track INITIALIZE_START and INITIALIZE_COMPLETE on success', async () => {
-            const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
-
-            await service.initialize();
-
-            const eventNames = trackFn.mock.calls.map((c: TestValue[]) => c[0]);
-            expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_START);
-            expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_COMPLETE);
-        });
-
-        it('should track INITIALIZE_ERROR on failure', async () => {
-            const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
-            vi.mocked(fsp.mkdir).mockRejectedValueOnce(new Error('fail'));
-
-            await expect(service.initialize()).rejects.toThrow();
-
-            const eventNames = trackFn.mock.calls.map((c: TestValue[]) => c[0]);
-            expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_ERROR);
-        });
-
-        it('should track PATH_ACCESSED when getPath is called', () => {
-            const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
-
-            service.getPath('db');
-
-            const pathCalls = trackFn.mock.calls.filter(
-                (c: TestValue[]) => c[0] === DataServiceTelemetryEvent.PATH_ACCESSED
-            );
-            expect(pathCalls.length).toBe(1);
-            expect((pathCalls[0][1] as Record<string, TestValue>).type).toBe('db');
-        });
-
-        it('should track DIRECTORY_CREATED events during initialization', async () => {
-            const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
-
-            await service.initialize();
-
-            const dirEvents = trackFn.mock.calls.filter(
-                (c: TestValue[]) => c[0] === DataServiceTelemetryEvent.DIRECTORY_CREATED
-            );
-            expect(dirEvents.length).toBeGreaterThan(0);
-        });
-
-        it('should not throw when telemetry service is not set', async () => {
-            await expect(service.initialize()).resolves.toBeUndefined();
-            expect(() => service.getPath('db')).not.toThrow();
-        });
-    });
 
     describe('migrate (B-0481/B-0482)', () => {
         it('should skip migrations when old paths do not exist', async () => {
@@ -417,3 +357,4 @@ describe('DataService', () => {
         });
     });
 });
+

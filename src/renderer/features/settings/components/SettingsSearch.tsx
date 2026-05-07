@@ -75,3 +75,4 @@ export const SettingsSearch: React.FC<SettingsSearchProps> = ({
         </div>
     );
 };
+

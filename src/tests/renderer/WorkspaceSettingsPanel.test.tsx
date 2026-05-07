@@ -111,3 +111,4 @@ describe('WorkspaceSettingsPanel', () => {
         expect(screen.getByText('advanced-section')).toBeInTheDocument();
     });
 });
+

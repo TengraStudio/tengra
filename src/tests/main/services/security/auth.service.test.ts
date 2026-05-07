@@ -509,3 +509,4 @@ describe('AuthService - Master Key Backup', () => {
         await expect(authService.restoreMasterKeyBackup('bad-backup', 'passphrase')).rejects.toThrow();
     });
 });
+

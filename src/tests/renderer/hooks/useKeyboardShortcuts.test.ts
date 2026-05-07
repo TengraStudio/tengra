@@ -139,3 +139,4 @@ describe('useKeyboardShortcuts', () => {
         expect(removeSpy).toHaveBeenCalledWith('keydown', expect.anything());
     });
 });
+

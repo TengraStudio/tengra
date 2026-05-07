@@ -41,3 +41,4 @@ export function toSessionConversationGenerationStatus(
         isGenerating: GENERATING_STATUSES.has(status),
     };
 }
+

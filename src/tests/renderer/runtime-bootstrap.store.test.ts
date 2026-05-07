@@ -164,3 +164,4 @@ describe('runtime-bootstrap.store', () => {
         expect(hasBlockingRuntimeIssue(READY_STATUS)).toBe(false);
     });
 });
+

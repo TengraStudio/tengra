@@ -176,3 +176,4 @@ export const ModelCard = memo(({
 });
 
 ModelCard.displayName = 'ModelCard';
+

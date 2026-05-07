@@ -89,3 +89,4 @@ describe('runtime startup gate', () => {
         expect(decisions.embeddedProxy.reason).toBe('unmanaged');
     });
 });
+

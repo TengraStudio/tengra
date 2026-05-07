@@ -14,7 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import { TelemetryService } from '@main/services/analysis/telemetry.service';
+
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { getManagedRuntimeRoot, getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -31,7 +31,6 @@ const DEFAULT_SDCPP_MODEL_URL =
 interface SdCppDeps {
     settingsService: SettingsService;
     eventBusService?: EventBusService;
-    telemetryService?: TelemetryService;
 }
 
 /** Manages SD-CPP binary installation, runtime, and image generation. */
@@ -52,7 +51,6 @@ export class SdCppManager {
         let status = 'notConfigured';
         if (this.sdCppRuntimePromise) {
             status = 'installing';
-            this.trackMetric('sd-cpp-status-checked', { status });
             return status;
         }
 
@@ -64,7 +62,6 @@ export class SdCppManager {
         } else if (binaryPath || modelPath) {
             status = 'failed';
         }
-        this.trackMetric('sd-cpp-status-checked', { status });
         return status;
     }
 
@@ -140,10 +137,8 @@ export class SdCppManager {
             if (!fs.existsSync(outputPath)) {
                 throw new Error('stable-diffusion.cpp finished but did not produce an output file.');
             }
-            this.trackMetric('sd-cpp-generation-success', { prompt: options.prompt });
             return outputPath;
         } catch (error) {
-            this.trackMetric('sd-cpp-generation-failure', { error: getErrorMessage(error as Error) });
             throw error;
         }
     }
@@ -186,20 +181,13 @@ export class SdCppManager {
             if (!fs.existsSync(outputPath)) {
                 throw new Error('stable-diffusion.cpp finished but did not produce an edited output file.');
             }
-            this.trackMetric('sd-cpp-edit-success', { prompt: options.prompt, mode: options.mode });
             return outputPath;
         } catch (error) {
-            this.trackMetric('sd-cpp-edit-failure', { error: getErrorMessage(error as Error), mode: options.mode });
             throw error;
         }
     }
 
-    /** Track a telemetry metric. */
-    trackMetric(name: string, properties?: Record<string, RuntimeValue>): void {
-        if (this.deps.telemetryService) {
-            this.deps.telemetryService.track(name, { provider: 'sd-cpp', ...properties });
-        }
-    }
+
 
     private buildArgs(
         runtime: { binaryPath: string; modelPath: string },
@@ -652,3 +640,4 @@ export class SdCppManager {
         }
     }
 }
+

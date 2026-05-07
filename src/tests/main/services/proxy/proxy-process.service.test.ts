@@ -328,3 +328,4 @@ describe('ProxyProcessManager runtime launch configuration', () => {
         expect(resolved ? normalizeSlashes(resolved) : resolved).toBe('"C:\\Users\\mockuser\\.cargo\\bin\\cargo.exe"');
     });
 });
+

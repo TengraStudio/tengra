@@ -805,3 +805,4 @@ function getMemoryBytes(model: MarketplaceModel): number {
 function getStorageBytes(model: MarketplaceModel): number {
     return model.performance?.estimatedDiskBytes ?? 0;
 }
+

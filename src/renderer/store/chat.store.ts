@@ -73,6 +73,9 @@ export function setCurrentChatId(id: string | null): void {
     if (id === state.currentChatId) {return;}
     state = { ...state, currentChatId: id };
     emit();
+    if (id !== null) {
+        window.dispatchEvent(new CustomEvent('app:navigate-view', { detail: 'chat' }));
+    }
 }
 
 export function updateChatInStore(chatId: string, updater: Partial<Chat> | ((prev: Chat) => Partial<Chat>)): void {
@@ -147,3 +150,4 @@ export function clearAllChats(): void {
     state = { ...state, chats: [], currentChatId: null, streamingStates: {} };
     emit();
 }
+

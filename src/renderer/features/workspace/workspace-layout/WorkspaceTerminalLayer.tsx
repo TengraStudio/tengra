@@ -182,3 +182,4 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
         </AnimatePresence>
     );
 };
+

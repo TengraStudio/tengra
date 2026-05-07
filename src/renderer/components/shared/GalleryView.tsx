@@ -478,3 +478,4 @@ export function GalleryView({ language }: GalleryViewProps) {
         </div>
     );
 }
+

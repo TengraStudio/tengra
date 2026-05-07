@@ -37,3 +37,4 @@ export const ModelLifecycleBadge: React.FC<ModelLifecycleBadgeProps> = ({ model 
         </span>
     );
 };
+

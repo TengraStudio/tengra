@@ -8,15 +8,23 @@
  * (at your option) any later version.
  */
 
+import { CODE_LANGUAGE_CHANNELS } from '@shared/constants/ipc-channels';
 import { MarketplaceCodeLanguagePack } from '@shared/types/marketplace';
 import { IpcRenderer } from 'electron';
 
 export interface CodeLanguageBridge {
     getAll: () => Promise<MarketplaceCodeLanguagePack[]>;
+    onRuntimeUpdated: (callback: () => void) => () => void;
 }
 
 export function createCodeLanguageBridge(ipc: IpcRenderer): CodeLanguageBridge {
     return {
-        getAll: () => ipc.invoke('code-language:runtime:getAll'),
+        getAll: () => ipc.invoke(CODE_LANGUAGE_CHANNELS.RUNTIME_GET_ALL),
+        onRuntimeUpdated: callback => {
+            const listener = () => callback();
+            ipc.on(CODE_LANGUAGE_CHANNELS.RUNTIME_UPDATED, listener);
+            return () => ipc.removeListener(CODE_LANGUAGE_CHANNELS.RUNTIME_UPDATED, listener);
+        },
     };
 }
+

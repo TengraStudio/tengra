@@ -62,3 +62,4 @@ export interface SettingsSectionProps {
     settings?: AppSettings
     groupedModels?: GroupedModels | null
 }
+

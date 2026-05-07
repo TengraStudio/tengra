@@ -76,3 +76,4 @@ export function formatRelativeTime(date: Date | number, locale: string): string 
 
     return rtf.format(Math.round(diffSeconds / 31536000), 'year');
 }
+

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { appLogger } from '@/system/utils/renderer-logger';
+import { appLogger } from '@system/utils/renderer-logger';
 
 /**
  * Performance monitoring utility for tracking app startup and render times
@@ -134,3 +134,4 @@ if (typeof window !== 'undefined') {
         getReport: () => performanceMonitor.getReport(),
     };
 }
+

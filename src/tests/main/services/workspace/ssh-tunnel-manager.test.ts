@@ -74,3 +74,4 @@ describe('SSHTunnelManager', () => {
         expect(manager.getAllPortForwards()).toEqual([]);
     });
 });
+

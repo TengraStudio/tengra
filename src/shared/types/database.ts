@@ -44,3 +44,4 @@ export interface DatabaseAdapter {
      */
     transaction<T>(fn: (tx: DatabaseAdapter) => Promise<T>): Promise<T>
 }
+

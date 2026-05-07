@@ -10,8 +10,6 @@
 
 import * as fs from 'fs';
 
-import { TelemetryService } from '@main/services/analysis/telemetry.service';
-
 import type {
     ComfyWorkflowTemplate,
     ImageComparisonResult,
@@ -19,19 +17,14 @@ import type {
     ImageGenerationPreset,
     ImageGenerationRecord,
 } from './local-image.types';
+import type { RuntimeValue } from '@shared/types/common';
 
-interface AnalyticsDeps {
-    telemetryService?: TelemetryService;
-}
+
 
 /** Analytics, comparison, and export utilities for image generation data. */
 export class LocalImageAnalytics {
     private generationDurationsMs: number[] = [];
-    private readonly deps: AnalyticsDeps;
-
-    constructor(deps: AnalyticsDeps) {
-        this.deps = deps;
-    }
+    constructor() {}
 
     /** Record a generation duration for averaging. */
     recordDuration(durationMs: number): void {
@@ -155,8 +148,6 @@ export class LocalImageAnalytics {
         const averageFileSizeBytes = Math.round(entries.reduce((s, e) => s + e.fileSizeBytes, 0) / entries.length);
         const averageBytesPerPixel = Number((entries.reduce((s, e) => s + e.bytesPerPixel, 0) / entries.length).toFixed(4));
 
-        this.trackMetric('image-comparison-run', { comparedCount: entries.length, averageFileSizeBytes, averageBytesPerPixel });
-
         return {
             ids: records.map(r => r.id),
             comparedAt: Date.now(),
@@ -250,10 +241,5 @@ export class LocalImageAnalytics {
         if (lower.startsWith('image to image:')) { return 'img2img'; }
         return null;
     }
-
-    private trackMetric(name: string, properties?: Record<string, RuntimeValue>): void {
-        if (this.deps.telemetryService) {
-            this.deps.telemetryService.track(name, { provider: 'sd-cpp', ...properties });
-        }
-    }
 }
+

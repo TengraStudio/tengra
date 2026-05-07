@@ -316,3 +316,4 @@ function getAntigravityPercent(model: ModelListItem): number {
     }
     return 0;
 }
+

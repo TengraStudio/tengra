@@ -43,3 +43,4 @@ export const LocalizedImageSkeleton = () => {
     return <ImageSkeleton t={t} />;
 };
 
+

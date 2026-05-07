@@ -731,3 +731,4 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         ]);
     });
 });
+

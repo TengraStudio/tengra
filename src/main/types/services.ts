@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ProcessMetric, ServiceResponse,StartupMetrics, SystemInfo } from '@shared/types';
+import { ServiceResponse, SystemInfo } from '@shared/types';
 import { JsonObject } from '@shared/types/common';
 import type { MarketplaceGpuDevice } from '@shared/types/marketplace';
 
@@ -59,24 +59,4 @@ export interface INetworkService {
     getNetworkInterfaces(): Promise<ServiceResponse<JsonObject>>;
     getPublicIP(): Promise<ServiceResponse<{ ip: string }>>;
 }
-export interface IPerformanceService {
-    getMemoryStats(): ServiceResponse<{
-        main: NodeJS.MemoryUsage;
-        timestamp: number;
-    }>;
-    detectLeak(): Promise<ServiceResponse<{ isPossibleLeak: boolean; trend: number[] }>>;
-    triggerGC(): ServiceResponse<{ success: boolean }>;
-    getProcessMetrics(): Promise<ServiceResponse<ProcessMetric[]>>;
-    getStartupMetrics(): ServiceResponse<StartupMetrics>;
-    recordStartupEvent(event: keyof StartupMetrics): void;
-    getDashboard(): ServiceResponse<{
-        memory: {
-            latestRss: number;
-            latestHeapUsed: number;
-            sampleCount: number;
-        };
-        processes: ProcessMetric[];
-        startup: StartupMetrics;
-        alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }>;
-    }>;
-}
+

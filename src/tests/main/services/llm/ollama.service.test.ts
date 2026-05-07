@@ -49,16 +49,12 @@ describe('OllamaService', () => {
             emit: vi.fn(),
             emitCustom: vi.fn()
         };
-        const mockLocalAIService = {
-            checkCudaSupport: vi.fn()
-        };
         const mockAuthService = {
             getAccountsByProvider: vi.fn()
         };
         service = new OllamaService(
             mockSettingsService as never as SettingsService,
             mockEventBusService as never as EventBusService,
-            mockLocalAIService as never as any,
             mockAuthService as never as any
         );
     });
@@ -117,3 +113,4 @@ describe('OllamaService', () => {
         });
     });
 });
+

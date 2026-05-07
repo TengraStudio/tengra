@@ -12,7 +12,7 @@ import type { IpcContractVersionInfo } from '@shared/constants/ipc-contract';
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
-    InlineSuggestionTelemetry,
+    InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 import type { IpcRendererEvent } from 'electron';
 
@@ -187,6 +187,17 @@ export interface ElectronAPI {
     getSettings: () => Promise<AppSettings | ServiceResponse<AppSettings>>;
     saveSettings: (settings: AppSettings) => Promise<AppSettings | ServiceResponse<AppSettings>>;
 
+    isOllamaRunning: () => Promise<boolean>;
+    startOllama: () => Promise<{
+        success: boolean;
+        message: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }>;
+    getOllamaHealthStatus: () => Promise<{ status: 'ok' | 'error' }>;
+    forceOllamaHealthCheck: () => Promise<{ status: 'ok' | 'error' }>;
+    onOllamaStatusChange: (callback: (status: { status: string }) => void) => () => void;
+
     /**
      * Resizes the window to a specific resolution.
      * @param resolution - Resolution string in format "WIDTHxHEIGHT" (e.g., "1920x1080")
@@ -204,422 +215,183 @@ export interface ElectronAPI {
 
     /**
      * Initiates GitHub OAuth login flow.
-     * @param appId - Optional app identifier ('profile' or 'copilot')
+     * @param appId - Optional app identifier ('copilot')
      * @returns Promise resolving to OAuth device code information
      */
-    githubLogin: (appId?: 'profile' | 'copilot') => Promise<{
-        device_code: string;
-        user_code: string;
-        verification_uri: string;
-        expires_in: number;
-        interval: number;
-    }>;
+    auth: {
+        githubLogin: (appId?: 'copilot') => Promise<{
+            device_code: string;
+            user_code: string;
+            verification_uri: string;
+            expires_in: number;
+            interval: number;
+        }>;
+        pollToken: (
+            deviceCode: string,
+            interval: number,
+            appId?: 'copilot'
+        ) => Promise<{
+            success: boolean;
+            account?: LinkedAccountInfo;
+            error?: string;
+        }>;
+        antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+        ollamaLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+        ollamaSignout?: (accountId?: string) => Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }>;
+        claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+        claudeBrowserLogin: () => Promise<{ sessionKey?: string; status?: string; error?: string }>;
+        anthropicLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+        codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+        cancelAuth: (provider: 'antigravity' | 'claude' | 'codex' | 'ollama', state: string, accountId: string) => Promise<boolean>;
+        getBrowserAuthStatus: (provider: string, state: string, accountId: string) => Promise<{
+            status: string;
+            error?: string;
+            provider?: string;
+            state?: string;
+            accountId?: string;
+            account_id?: string;
+            account?: Record<string, IpcValue>;
+        }>;
+        verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex' | 'ollama') => Promise<{
+            status: string;
+            provider: string;
+            readiness?: IpcValue;
+            callback?: IpcValue;
+            error?: string;
+        }>;
+        getQuota: (provider?: string) => Promise<{
+            accounts: Array<QuotaResponse & { accountId?: string; email?: string }>;
+        } | null>;
+        getCopilotQuota: () => Promise<{
+            accounts: Array<CopilotQuota & { accountId?: string; email?: string }>;
+        }>;
+        getCodexUsage: () => Promise<{
+            accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
+        }>;
+        getClaudeQuota: () => Promise<{ accounts: Array<ClaudeQuota> }>;
+        forceRefreshQuota: () => Promise<boolean>;
+        saveClaudeSession: (
+            sessionKey: string,
+            accountId?: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        triggerClaudeSessionCapture: () => Promise<{ success: boolean; error?: string }>;
 
-    /**
-     * Polls for GitHub OAuth token after device code authentication.
-     * @param deviceCode - Device code received from githubLogin
-     * @param interval - Polling interval in seconds
-     * @param appId - Optional app identifier ('profile' or 'copilot')
-     * @returns Promise resolving to authentication result
-     */
-    pollToken: (
-        deviceCode: string,
-        interval: number,
-        appId?: 'profile' | 'copilot'
-    ) => Promise<{
-        success: boolean;
-        account?: LinkedAccountInfo;
-        error?: string;
-    }>;
+        // --- Linked Accounts ---
+        getLinkedAccounts: (provider?: string) => Promise<LinkedAccountInfo[]>;
+        getActiveLinkedAccount: (provider: string) => Promise<LinkedAccountInfo | null>;
+        setActiveLinkedAccount: (
+            provider: string,
+            accountId: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        linkAccount: (
+            provider: string,
+            tokenData: TokenData
+        ) => Promise<{ success: boolean; account?: LinkedAccountInfo; error?: string }>;
+        unlinkAccount: (accountId: string) => Promise<{ success: boolean; error?: string }>;
+        unlinkProvider: (provider: string) => Promise<{ success: boolean; error?: string }>;
+        hasLinkedAccount: (provider: string) => Promise<boolean>;
+        getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>;
+        getAuthProviderHealth: (provider?: string) => Promise<Array<{
+            provider: string;
+            checkedAt: number;
+            totalAccounts: number;
+            activeAccountId?: string;
+            hasActiveToken: boolean;
+            hasRefreshToken: boolean;
+            expiringSoonCount: number;
+            expiredCount: number;
+            healthy: boolean;
+        }>>;
+        getAuthProviderAnalytics: () => Promise<Array<{
+            provider: string;
+            totalAccounts: number;
+            activeAccounts: number;
+            lastUpdatedAt?: number;
+            oldestAccountAt?: number;
+            withRefreshToken: number;
+            withSessionToken: number;
+        }>>;
+        getTokenAnalytics: (provider?: string) => Promise<{
+            totalAccounts: number;
+            withAccessToken: number;
+            withRefreshToken: number;
+            withSessionToken: number;
+            expiringWithin30m: number;
+            expired: number;
+            revoked: number;
+        }>;
+        exportCredentials: (options: {
+            provider?: string;
+            password: string;
+            expiresInHours?: number;
+        }) => Promise<{ success: boolean; payload?: string; checksum?: string; expiresAt?: number; error?: string }>;
+        importCredentials: (
+            payload: string,
+            password: string
+        ) => Promise<{ success: boolean; imported?: number; skipped?: number; expiresAt?: number; error?: string }>;
+        createMasterKeyBackup: (
+            passphrase: string
+        ) => Promise<{ success: boolean; backup?: string; error?: string }>;
+        restoreMasterKeyBackup: (
+            backupPayload: string,
+            passphrase: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        startAuthSession: (
+            provider: string,
+            accountId?: string,
+            source?: string
+        ) => Promise<{ sessionId: string }>;
+        touchAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
+        endAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
+        setAuthSessionLimit: (provider: string, limit: number) => Promise<{ limit: number }>;
+        getAuthSessionAnalytics: (provider?: string) => Promise<{
+            totalActiveSessions: number;
+            byProvider: Record<string, number>;
+            oldestSessionAt?: number;
+        }>;
+        setAuthSessionTimeout: (timeoutMs: number) => Promise<{ timeoutMs: number }>;
+        getAuthSessionTimeout: () => Promise<{ timeoutMs: number }>;
 
-    /**
-     * Initiates Antigravity OAuth login flow.
-     * @returns Promise resolving to OAuth URL and state
-     */
-    antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    ollamaLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    ollamaSignout?: (accountId?: string) => Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }>;
-    claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    claudeBrowserLogin: () => Promise<{ sessionKey?: string; status?: string; error?: string }>;
-    anthropicLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex' | 'ollama', state: string, accountId: string) => Promise<boolean>;
-    getBrowserAuthStatus: (provider: string, state: string, accountId: string) => Promise<{
-        status: string;
-        error?: string;
-        provider?: string;
-        state?: string;
-        accountId?: string;
-        account_id?: string;
-        account?: Record<string, IpcValue>;
-    }>;
-    verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex' | 'ollama') => Promise<{
-        status: string;
-        provider: string;
-        readiness?: IpcValue;
-        callback?: IpcValue;
-        error?: string;
-    }>;
+        // Skills / Proxy
+        listSkills: () => Promise<import('@shared/types/skill').ProxySkill[]>;
+        toggleSkill: (id: string, enabled: boolean) => Promise<{ success: boolean }>;
+        deleteSkill: (id: string) => Promise<{ success: boolean }>;
+        checkUsageLimit: (provider: string, modelId: string) => Promise<{ allowed: boolean; reason?: string }>;
+        getProxyModels: () => Promise<IpcValue>;
 
-    saveClaudeSession: (
-        sessionKey: string,
-        accountId?: string
-    ) => Promise<{ success: boolean; error?: string }>;
-    triggerClaudeSessionCapture: () => Promise<{ success: boolean; error?: string }>;
+        // Legacy/Core Auth
+        createAccount: (name: string) => Promise<{ success: boolean; error?: string }>;
+        switchAccount: (id: string) => Promise<{ success: boolean; error?: string }>;
+        onAccountChanged: (callback: () => void) => () => void;
+    };
 
-    // --- Linked Accounts (New Multi-Account API) ---
+    dialog: {
+        showOpenDialog: (options: any) => Promise<{ canceled: boolean; filePaths: string[] }>;
+        showSaveDialog: (options: any) => Promise<{ canceled: boolean; filePath?: string }>;
+        showMessageBox: (options: any) => Promise<{ response: number; checkboxChecked: boolean }>;
+        showErrorBox: (title: string, content: string) => void;
+        selectDirectory: () => Promise<{ success: boolean; path?: string; error?: string }>;
+    };
 
-    /**
-     * Get all linked accounts, optionally filtered by provider.
-     */
-    getLinkedAccounts: (provider?: string) => Promise<LinkedAccountInfo[]>;
-
-    /**
-     * Get the active linked account for a provider.
-     */
-    getActiveLinkedAccount: (provider: string) => Promise<LinkedAccountInfo | null>;
-
-    /**
-     * Set which account should be active for a provider.
-     */
-    setActiveLinkedAccount: (
-        provider: string,
-        accountId: string
-    ) => Promise<{ success: boolean; error?: string }>;
-
-    /**
-     * Link a new account for a provider.
-     */
-    linkAccount: (
-        provider: string,
-        tokenData: TokenData
-    ) => Promise<{ success: boolean; account?: LinkedAccountInfo; error?: string }>;
-
-    /**
-     * Unlink (remove) a specific account.
-     */
-    unlinkAccount: (accountId: string) => Promise<{ success: boolean; error?: string }>;
-
-    /**
-     * Unlink all accounts for a provider.
-     */
-    unlinkProvider: (provider: string) => Promise<{ success: boolean; error?: string }>;
-
-    /**
-     * Check if a provider has any linked accounts.
-     */
-    hasLinkedAccount: (provider: string) => Promise<boolean>;
-
-    /**
-     * Get all linked accounts for a provider (alias for getLinkedAccounts).
-     */
-    getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>;
-    getAuthProviderHealth: (provider?: string) => Promise<Array<{
-        provider: string;
-        checkedAt: number;
-        totalAccounts: number;
-        activeAccountId?: string;
-        hasActiveToken: boolean;
-        hasRefreshToken: boolean;
-        expiringSoonCount: number;
-        expiredCount: number;
-        healthy: boolean;
-    }>>;
-    getAuthProviderAnalytics: () => Promise<Array<{
-        provider: string;
-        totalAccounts: number;
-        activeAccounts: number;
-        lastUpdatedAt?: number;
-        oldestAccountAt?: number;
-        withRefreshToken: number;
-        withSessionToken: number;
-    }>>;
-    getTokenAnalytics: (provider?: string) => Promise<{
-        totalAccounts: number;
-        withAccessToken: number;
-        withRefreshToken: number;
-        withSessionToken: number;
-        expiringWithin30m: number;
-        expired: number;
-        revoked: number;
-    }>;
-    exportCredentials: (options: {
-        provider?: string;
-        password: string;
-        expiresInHours?: number;
-    }) => Promise<{ success: boolean; payload?: string; checksum?: string; expiresAt?: number; error?: string }>;
-    importCredentials: (
-        payload: string,
-        password: string
-    ) => Promise<{ success: boolean; imported?: number; skipped?: number; expiresAt?: number; error?: string }>;
-    createMasterKeyBackup: (
-        passphrase: string
-    ) => Promise<{ success: boolean; backup?: string; error?: string }>;
-    restoreMasterKeyBackup: (
-        backupPayload: string,
-        passphrase: string
-    ) => Promise<{ success: boolean; error?: string }>;
-    startAuthSession: (
-        provider: string,
-        accountId?: string,
-        source?: string
-    ) => Promise<{ sessionId: string }>;
-    touchAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
-    endAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
-    setAuthSessionLimit: (provider: string, limit: number) => Promise<{ limit: number }>;
-    getAuthSessionAnalytics: (provider?: string) => Promise<{
-        totalActiveSessions: number;
-        byProvider: Record<string, number>;
-        oldestSessionAt?: number;
-    }>;
-    setAuthSessionTimeout: (timeoutMs: number) => Promise<{ timeoutMs: number }>;
-    getAuthSessionTimeout: () => Promise<{ timeoutMs: number }>;
+    power: {
+        getLowPowerStatus: () => Promise<{ lowPower: boolean }>;
+        onLowPowerStatusChange: (callback: (status: { lowPower: boolean }) => void) => () => void;
+        onStateChanged: (callback: (state: { lowPowerMode: boolean }) => void) => () => void;
+    };
 
     code: ElectronApiWorkspaceSystemDomain['code'];
     workspace: ElectronApiWorkspaceSystemDomain['workspace'];
     process: ElectronApiWorkspaceSystemDomain['process'];
     files: ElectronApiWorkspaceSystemDomain['files'];
-    getProxyModels: () => Promise<{ id: string; object: string }[]>;
-    getQuota: (provider?: string) => Promise<{
-        accounts: Array<QuotaResponse & { accountId?: string; email?: string }>;
-    } | null>;
-    getCopilotQuota: () => Promise<{
-        accounts: Array<CopilotQuota & { accountId?: string; email?: string }>;
-    }>;
-    getCodexUsage: () => Promise<{
-        accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
-    }>;
-    getClaudeQuota: () => Promise<{ accounts: Array<ClaudeQuota> }>;
-    forceRefreshQuota: () => Promise<boolean>;
-
-    checkUsageLimit: (
-        provider: string,
-        model: string
-    ) => Promise<{ allowed: boolean; reason?: string }>;
-    getUsageCount: (
-        period: 'hourly' | 'daily' | 'weekly',
-        provider?: string,
-        model?: string
-    ) => Promise<number>;
-    listSkills: () => Promise<ProxySkill[]>;
-    saveSkill: (input: ProxySkillUpsertInput) => Promise<ProxySkill>;
-    toggleSkill: (skillId: string, enabled: boolean) => Promise<ProxySkill>;
-    deleteSkill: (skillId: string) => Promise<boolean>;
-    listMarketplaceSkills: () => Promise<MarketplaceSkill[]>;
-    installMarketplaceSkill: (skillId: string) => Promise<ProxySkill>;
-    performance: ElectronApiWorkspaceSystemDomain['performance'];
     runCommand: (
         command: string,
         args: string[],
         cwd?: string
     ) => Promise<{ stdout: string; stderr: string; code: number }>;
     git: ElectronApiWorkspaceSystemDomain['git'];
+    codeLanguages: ElectronApiIntegrationsDomain['codeLanguages'];
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>;
 
-    // Ollama management
-    isOllamaRunning: () => Promise<boolean>;
-    startOllama: () => Promise<{
-      success: boolean;
-      message: string;
-      messageKey?: string;
-      messageParams?: Record<string, string | number>;
-    }>;
-    pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
-    deleteOllamaModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
-    getLibraryModels: () => Promise<{ name: string; description: string; tags: string[] }[]>;
-    onPullProgress: (
-        callback: (progress: {
-            status: string;
-            digest?: string;
-            total?: number;
-            completed?: number;
-            modelName?: string;
-        }) => void
-    ) => () => void;
-    removePullProgressListener: () => void;
-
-    // Health and GPU checks
-
-    saveClaudeSession: (
-        sessionKey: string,
-        accountId?: string
-    ) => Promise<{ success: boolean; error?: string }>;
-    triggerClaudeSessionCapture: () => Promise<{ success: boolean; error?: string }>;
-
-    // --- Linked Accounts (New Multi-Account API) ---
-
-    /**
-     * Get all linked accounts, optionally filtered by provider.
-     */
-    getLinkedAccounts: (provider?: string) => Promise<LinkedAccountInfo[]>;
-
-    /**
-     * Get the active linked account for a provider.
-     */
-    getActiveLinkedAccount: (provider: string) => Promise<LinkedAccountInfo | null>;
-
-    /**
-     * Set which account should be active for a provider.
-     */
-    setActiveLinkedAccount: (
-        provider: string,
-        accountId: string
-    ) => Promise<{ success: boolean; error?: string }>;
-
-    /**
-     * Link a new account for a provider.
-     */
-    linkAccount: (
-        provider: string,
-        tokenData: TokenData
-    ) => Promise<{ success: boolean; account?: LinkedAccountInfo; error?: string }>;
-
-    /**
-     * Unlink (remove) a specific account.
-     */
-    unlinkAccount: (accountId: string) => Promise<{ success: boolean; error?: string }>;
-
-    /**
-     * Unlink all accounts for a provider.
-     */
-    unlinkProvider: (provider: string) => Promise<{ success: boolean; error?: string }>;
-
-    /**
-     * Check if a provider has any linked accounts.
-     */
-    hasLinkedAccount: (provider: string) => Promise<boolean>;
-
-    /**
-     * Get all linked accounts for a provider (alias for getLinkedAccounts).
-     */
-    getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>;
-    getAuthProviderHealth: (provider?: string) => Promise<Array<{
-        provider: string;
-        checkedAt: number;
-        totalAccounts: number;
-        activeAccountId?: string;
-        hasActiveToken: boolean;
-        hasRefreshToken: boolean;
-        expiringSoonCount: number;
-        expiredCount: number;
-        healthy: boolean;
-    }>>;
-    getAuthProviderAnalytics: () => Promise<Array<{
-        provider: string;
-        totalAccounts: number;
-        activeAccounts: number;
-        lastUpdatedAt?: number;
-        oldestAccountAt?: number;
-        withRefreshToken: number;
-        withSessionToken: number;
-    }>>;
-    getTokenAnalytics: (provider?: string) => Promise<{
-        totalAccounts: number;
-        withAccessToken: number;
-        withRefreshToken: number;
-        withSessionToken: number;
-        expiringWithin30m: number;
-        expired: number;
-        revoked: number;
-    }>;
-    exportCredentials: (options: {
-        provider?: string;
-        password: string;
-        expiresInHours?: number;
-    }) => Promise<{ success: boolean; payload?: string; checksum?: string; expiresAt?: number; error?: string }>;
-    importCredentials: (
-        payload: string,
-        password: string
-    ) => Promise<{ success: boolean; imported?: number; skipped?: number; expiresAt?: number; error?: string }>;
-    createMasterKeyBackup: (
-        passphrase: string
-    ) => Promise<{ success: boolean; backup?: string; error?: string }>;
-    restoreMasterKeyBackup: (
-        backupPayload: string,
-        passphrase: string
-    ) => Promise<{ success: boolean; error?: string }>;
-    startAuthSession: (
-        provider: string,
-        accountId?: string,
-        source?: string
-    ) => Promise<{ sessionId: string }>;
-    touchAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
-    endAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
-    setAuthSessionLimit: (provider: string, limit: number) => Promise<{ limit: number }>;
-    getAuthSessionAnalytics: (provider?: string) => Promise<{
-        totalActiveSessions: number;
-        byProvider: Record<string, number>;
-        oldestSessionAt?: number;
-    }>;
-    setAuthSessionTimeout: (timeoutMs: number) => Promise<{ timeoutMs: number }>;
-    getAuthSessionTimeout: () => Promise<{ timeoutMs: number }>;
-
-    code: ElectronApiWorkspaceSystemDomain['code'];
-    workspace: ElectronApiWorkspaceSystemDomain['workspace'];
-    process: ElectronApiWorkspaceSystemDomain['process'];
-    files: ElectronApiWorkspaceSystemDomain['files'];
-    getProxyModels: () => Promise<{ id: string; object: string }[]>;
-    getQuota: (provider?: string) => Promise<{
-        accounts: Array<QuotaResponse & { accountId?: string; email?: string }>;
-    } | null>;
-    getCopilotQuota: () => Promise<{
-        accounts: Array<CopilotQuota & { accountId?: string; email?: string }>;
-    }>;
-    getCodexUsage: () => Promise<{
-        accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
-    }>;
-    getClaudeQuota: () => Promise<{ accounts: Array<ClaudeQuota> }>;
-    checkUsageLimit: (
-        provider: string,
-        model: string
-    ) => Promise<{ allowed: boolean; reason?: string }>;
-    getUsageCount: (
-        period: 'hourly' | 'daily' | 'weekly',
-        provider?: string,
-        model?: string
-    ) => Promise<number>;
-    listSkills: () => Promise<ProxySkill[]>;
-    saveSkill: (input: ProxySkillUpsertInput) => Promise<ProxySkill>;
-    toggleSkill: (skillId: string, enabled: boolean) => Promise<ProxySkill>;
-    deleteSkill: (skillId: string) => Promise<boolean>;
-    listMarketplaceSkills: () => Promise<MarketplaceSkill[]>;
-    installMarketplaceSkill: (skillId: string) => Promise<ProxySkill>;
-    performance: ElectronApiWorkspaceSystemDomain['performance'];
-    runCommand: (
-        command: string,
-        args: string[],
-        cwd?: string
-    ) => Promise<{ stdout: string; stderr: string; code: number }>;
-    git: ElectronApiWorkspaceSystemDomain['git'];
-    getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>;
-
-    // Ollama management
-    isOllamaRunning: () => Promise<boolean>;
-    startOllama: () => Promise<{
-      success: boolean;
-      message: string;
-      messageKey?: string;
-      messageParams?: Record<string, string | number>;
-    }>;
-    pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
-    deleteOllamaModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
-    getLibraryModels: () => Promise<{ name: string; description: string; tags: string[] }[]>;
-    onPullProgress: (
-        callback: (progress: {
-            status: string;
-            digest?: string;
-            total?: number;
-            completed?: number;
-            modelName?: string;
-        }) => void
-    ) => () => void;
-    removePullProgressListener: () => void;
-
-    // Health and GPU checks
-    getOllamaHealthStatus: () => Promise<{ status: 'ok' | 'error' }>;
-    forceOllamaHealthCheck: () => Promise<{ status: 'ok' | 'error' }>;
-    checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
-    onOllamaStatusChange: (callback: (status: { status: string }) => void) => void;
     onAgentEvent: (callback: (payload: IpcValue) => void) => () => void;
     onSdCppStatus: (callback: (data: IpcValue) => void) => () => void;
     onSdCppProgress: (callback: (data: IpcValue) => void) => () => void;
@@ -634,6 +406,78 @@ export interface ElectronAPI {
     modelRegistry: ElectronApiIntegrationsDomain['modelRegistry'];
     session: ElectronApiIntegrationsDomain['session'];
     ssh: ElectronApiIntegrationsDomain['ssh'];
+    huggingface: ElectronApiModelsMemoryDomain['huggingface'];
+    ollama: {
+        getModels: () => Promise<import('@shared/types').ModelDefinition[] | { antigravityError?: string }>;
+        chat: (messages: import('@shared/types').Message[], model: string) => Promise<{ content: string; done: boolean }>;
+        chatOpenAI: (request: Record<string, import('@shared/types').RuntimeValue>) => Promise<{
+            content: string;
+            toolCalls?: import('@shared/types').ToolCall[];
+            reasoning?: string;
+            images?: string[];
+            sources?: string[];
+        }>;
+        chatStream: (request: Record<string, import('@shared/types').RuntimeValue>) => Promise<{ success: boolean; queued?: boolean }>;
+        abortChat: () => void;
+        onStreamChunk: (
+            callback: (chunk: { content?: string; toolCalls?: import('@shared/types').ToolCall[]; reasoning?: string }) => void
+        ) => () => void;
+
+        removeStreamChunkListener: () => void;
+
+        // Management
+        isOllamaRunning: () => Promise<boolean>;
+        startOllama: () => Promise<{
+            success: boolean;
+            message: string;
+            messageKey?: string;
+            messageParams?: Record<string, string | number>;
+        }>;
+        pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
+        deleteModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
+        getLibraryModels: () => Promise<import('@shared/types').OllamaLibraryModel[]>;
+        onPullProgress: (
+            callback: (progress: {
+                status: string;
+                digest?: string;
+                total?: number;
+                completed?: number;
+                modelName?: string;
+            }) => void
+        ) => () => void;
+        removePullProgressListener: () => void;
+
+        // Health and GPU checks
+        getHealthStatus: () => Promise<import('@shared/types').IpcValue>;
+        forceHealthCheck: () => Promise<void>;
+        checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
+        onStatusChange: (callback: (status: 'ok' | 'error' | 'stopped') => void) => void;
+
+        // Model Health & Recommendations
+        checkModelHealth: (modelName: string) => Promise<import('@shared/types').IpcValue>;
+        checkAllModelsHealth: () => Promise<import('@shared/types').IpcValue[]>;
+        getRecommendations: (category?: 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal') => Promise<import('@shared/types').IpcValue[]>;
+        getRecommendedModelForTask: (task: string) => Promise<import('@shared/types').IpcValue | null>;
+
+        // Connection Handling
+        getConnectionStatus: () => Promise<import('@shared/types').IpcValue>;
+        testConnection: () => Promise<import('@shared/types').IpcValue>;
+        reconnect: () => Promise<boolean>;
+
+        // GPU Monitoring
+        getGPUInfo: () => Promise<import('@shared/types').IpcValue>;
+        startGPUMonitoring: (intervalMs?: number) => Promise<{ success: boolean; intervalMs: number }>;
+        stopGPUMonitoring: () => Promise<{ success: boolean }>;
+        setGPUAlertThresholds: (thresholds: { highMemoryPercent?: number; highTemperatureC?: number; lowMemoryMB?: number }) => Promise<{ success: boolean }>;
+        getGPUAlertThresholds: () => Promise<{ highMemoryPercent: number; highTemperatureC: number; lowMemoryMB: number }>;
+        onGPUAlert: (callback: (alert: import('@shared/types').IpcValue) => void) => () => void;
+        onGPUStatus: (callback: (status: import('@shared/types').IpcValue) => void) => () => void;
+
+        // Cloud Account Authentication
+        initiateConnect: () => Promise<import('@shared/types').IpcValue>;
+        pollConnectStatus: (code: string, privateKeyB64: string, publicKeyB64: string) => Promise<import('@shared/types').IpcValue>;
+        getOllamaAccounts: () => Promise<import('@shared/types').IpcValue[]>;
+    };
     executeTools: (
         toolName: string,
         args: Record<string, IpcValue>,
@@ -702,6 +546,7 @@ export interface ElectronAPI {
 
     huggingface: ElectronApiModelsMemoryDomain['huggingface'];
     log: ElectronApiIntegrationsDomain['log'];
+    theme: ElectronApiIntegrationsDomain['theme'];
     gallery: ElectronApiModelsMemoryDomain['gallery'];
     getUserDataPath: () => Promise<string>;
 
@@ -747,3 +592,4 @@ declare global {
         };
     }
 }
+

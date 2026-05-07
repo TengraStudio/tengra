@@ -116,19 +116,9 @@ export const WorkspaceDashboardHeader: React.FC<{
                                 <IconPencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </p>
                         )}
-                    </div>
-
-                    <div className="flex items-center gap-6 pt-2">
-                        <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-success/40" />
-                            <span className="text-sm font-bold text-muted-foreground/40 ">{type}</span>
-                        </div>
-
-                        <div className="text-sm font-medium text-muted-foreground/30 font-mono">
-                            {workspaceRoot}
-                        </div>
-                    </div>
+                    </div> 
                 </div>
             </div>
         );
     };
+

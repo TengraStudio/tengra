@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { BATCH_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -25,8 +26,9 @@ export interface BatchBridge {
 
 export function createBatchBridge(ipc: IpcRenderer): BatchBridge {
     return {
-        invoke: requests => ipc.invoke('batch:invoke', requests),
-        invokeSequential: requests => ipc.invoke('batch:invokeSequential', requests),
-        getChannels: () => ipc.invoke('batch:getChannels'),
+        invoke: requests => ipc.invoke(BATCH_CHANNELS.INVOKE, requests),
+        invokeSequential: requests => ipc.invoke(BATCH_CHANNELS.INVOKE_SEQUENTIAL, requests),
+        getChannels: () => ipc.invoke(BATCH_CHANNELS.GET_CHANNELS),
     };
 }
+

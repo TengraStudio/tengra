@@ -42,7 +42,6 @@ export function useSettingsAuth(
 
     const {
         deviceCodeModal,
-        connectGitHubProfile,
         connectCopilot,
         closeDeviceCodeModal,
         cancelDeviceAuth
@@ -103,7 +102,6 @@ export function useSettingsAuth(
         startOllama,
         checkOllama,
         refreshAuthStatus,
-        connectGitHubProfile,
         connectCopilot,
         connectBrowserProvider,
         cancelAuthFlow,
@@ -116,8 +114,9 @@ export function useSettingsAuth(
         setManualSessionModal
     }), [
         statusMessage, setStatusMessage, authMessage, authBusy, isOllamaRunning, authStatus,
-        startOllama, checkOllama, refreshAuthStatus, connectGitHubProfile, connectCopilot,
+        startOllama, checkOllama, refreshAuthStatus, connectCopilot,
         connectBrowserProvider, cancelAuthFlow, disconnectProvider, cancelBrowserAuthForAccount, handleSaveClaudeSession,
         deviceCodeModal, closeDeviceCodeModal, manualSessionModal, setManualSessionModal
     ]);
 }
+

@@ -127,3 +127,4 @@ export function getErrorRateService(): ErrorRateService {
     instance ??= new ErrorRateService();
     return instance;
 }
+

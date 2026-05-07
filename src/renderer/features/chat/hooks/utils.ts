@@ -295,3 +295,4 @@ export const processStreamChunk = (
 export function categorizeError(message: string, model: string | null): ChatError {
     return normalizeChatError(message, model);
 }
+

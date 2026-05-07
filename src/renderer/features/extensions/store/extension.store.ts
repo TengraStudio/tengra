@@ -9,9 +9,8 @@
  */
 
 import { ExtensionRuntimeInfo } from '@shared/types/system/extension';
+import { appLogger } from '@system/utils/renderer-logger';
 import { create } from 'zustand';
-
-import { appLogger } from '@/system/utils/renderer-logger';
 
 interface ExtensionStoreState {
     extensions: ExtensionRuntimeInfo[];
@@ -132,3 +131,4 @@ if (typeof window !== 'undefined' && window.electron) {
 } else {
     appLogger.debug('ExtensionStore', 'Skipping extension store bootstrap (electron bridge unavailable)');
 }
+

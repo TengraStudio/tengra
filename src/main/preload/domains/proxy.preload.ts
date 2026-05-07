@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { PROXY_CHANNELS, USAGE_CHANNELS } from '@shared/constants/ipc-channels';
 import { CodexUsage, CopilotQuota, ProxyModelResponse, QuotaResponse } from '@shared/types';
 import { IpcValue } from '@shared/types/common';
 import { MarketplaceSkill } from '@shared/types/marketplace';
@@ -72,31 +73,32 @@ export interface ProxyBridge {
 
 export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
     return {
-        getProxyModels: () => ipc.invoke('proxy:getModels'),
-        getQuota: () => ipc.invoke('proxy:getQuota'),
-        getCopilotQuota: () => ipc.invoke('proxy:getCopilotQuota'),
-        getCodexUsage: () => ipc.invoke('proxy:getCodexUsage'),
-        getClaudeQuota: () => ipc.invoke('proxy:getClaudeQuota'),
-        forceRefreshQuota: () => ipc.invoke('proxy:forceRefreshQuota'),
+        getProxyModels: () => ipc.invoke(PROXY_CHANNELS.GET_MODELS),
+        getQuota: () => ipc.invoke(PROXY_CHANNELS.GET_QUOTA),
+        getCopilotQuota: () => ipc.invoke(PROXY_CHANNELS.GET_COPILOT_QUOTA),
+        getCodexUsage: () => ipc.invoke(PROXY_CHANNELS.GET_CODEX_USAGE),
+        getClaudeQuota: () => ipc.invoke(PROXY_CHANNELS.GET_CLAUDE_QUOTA),
+        forceRefreshQuota: () => ipc.invoke(PROXY_CHANNELS.FORCE_REFRESH_QUOTA),
 
-        antigravityLogin: accountId => ipc.invoke('proxy:antigravityLogin', accountId),
-        ollamaLogin: accountId => ipc.invoke('proxy:ollamaLogin', accountId),
-        ollamaSignout: accountId => ipc.invoke('proxy:ollamaSignout', accountId),
-        codexLogin: accountId => ipc.invoke('proxy:codexLogin', accountId),
-        claudeLogin: accountId => ipc.invoke('proxy:claudeLogin', accountId),
-        cancelAuth: (provider, state, accountId) => ipc.invoke('proxy:cancelAuth', provider, state, accountId),
-        getBrowserAuthStatus: (provider, state, accountId) => ipc.invoke('proxy:getAuthStatus', provider, state, accountId),
-        verifyAuthBridge: (provider) => ipc.invoke('proxy:verifyAuthBridge', provider),
+        antigravityLogin: accountId => ipc.invoke(PROXY_CHANNELS.ANTIGRAVITY_LOGIN, accountId),
+        ollamaLogin: accountId => ipc.invoke(PROXY_CHANNELS.OLLAMA_LOGIN, accountId),
+        ollamaSignout: accountId => ipc.invoke(PROXY_CHANNELS.OLLAMA_SIGNOUT, accountId),
+        codexLogin: accountId => ipc.invoke(PROXY_CHANNELS.CODEX_LOGIN, accountId),
+        claudeLogin: accountId => ipc.invoke(PROXY_CHANNELS.CLAUDE_LOGIN, accountId),
+        cancelAuth: (provider, state, accountId) => ipc.invoke(PROXY_CHANNELS.CANCEL_AUTH, provider, state, accountId),
+        getBrowserAuthStatus: (provider, state, accountId) => ipc.invoke(PROXY_CHANNELS.GET_AUTH_STATUS, provider, state, accountId),
+        verifyAuthBridge: (provider) => ipc.invoke(PROXY_CHANNELS.VERIFY_AUTH_BRIDGE, provider),
         saveClaudeSession: (sessionKey, accountId) =>
-            ipc.invoke('proxy:saveClaudeSession', sessionKey, accountId),
-        checkUsageLimit: (provider, model) => ipc.invoke('usage:checkLimit', provider, model),
+            ipc.invoke(PROXY_CHANNELS.SAVE_CLAUDE_SESSION, sessionKey, accountId),
+        checkUsageLimit: (provider, model) => ipc.invoke(USAGE_CHANNELS.CHECK_LIMIT, provider, model),
         getUsageCount: (period, provider, model) =>
-            ipc.invoke('usage:getUsageCount', period, provider, model),
-        listSkills: () => ipc.invoke('proxy:listSkills'),
-        saveSkill: (input) => ipc.invoke('proxy:saveSkill', input),
-        toggleSkill: (skillId, enabled) => ipc.invoke('proxy:toggleSkill', skillId, enabled),
-        deleteSkill: (skillId) => ipc.invoke('proxy:deleteSkill', skillId),
-        listMarketplaceSkills: () => ipc.invoke('proxy:listMarketplaceSkills'),
-        installMarketplaceSkill: (skillId) => ipc.invoke('proxy:installMarketplaceSkill', skillId),
+            ipc.invoke(USAGE_CHANNELS.GET_USAGE_COUNT, period, provider, model),
+        listSkills: () => ipc.invoke(PROXY_CHANNELS.LIST_SKILLS),
+        saveSkill: (input) => ipc.invoke(PROXY_CHANNELS.SAVE_SKILL, input),
+        toggleSkill: (skillId, enabled) => ipc.invoke(PROXY_CHANNELS.TOGGLE_SKILL, skillId, enabled),
+        deleteSkill: (skillId) => ipc.invoke(PROXY_CHANNELS.DELETE_SKILL, skillId),
+        listMarketplaceSkills: () => ipc.invoke(PROXY_CHANNELS.LIST_MARKETPLACE_SKILLS),
+        installMarketplaceSkill: (skillId) => ipc.invoke(PROXY_CHANNELS.INSTALL_MARKETPLACE_SKILL, skillId),
     };
 }
+

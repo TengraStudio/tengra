@@ -23,7 +23,7 @@ import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data';
 import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
-import { ProxyService, ProxyTelemetryEvent } from '@main/services/proxy/proxy.service';
+import { ProxyService, ProxyUsageStatsEvent } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -31,6 +31,7 @@ import { JobSchedulerService } from '@main/services/system/job-scheduler.service
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { MODEL_REGISTRY_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { SystemEventKey } from '@shared/types/events';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -91,6 +92,14 @@ interface ProxyCatalogSnapshot {
     rawModels: ProxyCatalogModel[];
 }
 
+type CopilotPlanTier =
+    | 'free'
+    | 'student'
+    | 'pro'
+    | 'pro_plus'
+    | 'business'
+    | 'enterprise';
+
 export interface ModelRegistryDependencies {
     processManager: ProcessManagerService;
     jobScheduler: JobSchedulerService;
@@ -113,6 +122,151 @@ export class ModelRegistryService extends BaseService {
     private static readonly OPENCODE_DEFAULT_API_KEY = 'public';
     private static readonly OPENCODE_REQUEST_TIMEOUT_MS = 2500;
     private static readonly OPENCODE_FREE_PRICE = 0;
+    private static readonly COPILOT_MODEL_DEFINITIONS: Readonly<Record<string, {
+        name: string;
+        description?: string;
+    }>> = {
+        'claude-haiku-4.5': { name: 'Claude Haiku 4.5' },
+        'claude-opus-4.5': { name: 'Claude Opus 4.5' },
+        'claude-opus-4.6': { name: 'Claude Opus 4.6' },
+        'claude-opus-4.6-fast': { name: 'Claude Opus 4.6 (fast mode) (preview)' },
+        'claude-opus-4.7': { name: 'Claude Opus 4.7' },
+        'claude-sonnet-4': { name: 'Claude Sonnet 4' },
+        'claude-sonnet-4.5': { name: 'Claude Sonnet 4.5' },
+        'claude-sonnet-4.6': { name: 'Claude Sonnet 4.6' },
+        'gemini-2.5-pro': { name: 'Gemini 2.5 Pro' },
+        'gemini-3-flash': { name: 'Gemini 3 Flash' },
+        'gemini-3.1-pro': { name: 'Gemini 3.1 Pro' },
+        'gpt-4.1': { name: 'GPT-4.1' },
+        'gpt-5-mini': { name: 'GPT-5 mini' },
+        'gpt-5.2': { name: 'GPT-5.2' },
+        'gpt-5.2-codex': { name: 'GPT-5.2-Codex' },
+        'gpt-5.3-codex': { name: 'GPT-5.3-Codex' },
+        'gpt-5.4': { name: 'GPT-5.4' },
+        'gpt-5.4-mini': { name: 'GPT-5.4 mini' },
+        'gpt-5.5': { name: 'GPT-5.5' },
+        'grok-code-fast-1': { name: 'Grok Code Fast 1' },
+        'raptor-mini': { name: 'Raptor mini' },
+        'goldeneye': { name: 'Goldeneye' },
+    };
+    private static readonly COPILOT_MODELS_BY_PLAN: Readonly<Record<CopilotPlanTier, readonly string[]>> = {
+        free: [
+            'claude-haiku-4.5',
+            'gpt-4.1',
+            'gpt-5-mini',
+            'grok-code-fast-1',
+            'raptor-mini',
+            'goldeneye',
+        ],
+        student: [
+            'claude-haiku-4.5',
+            'gemini-2.5-pro',
+            'gemini-3-flash',
+            'gemini-3.1-pro',
+            'gpt-4.1',
+            'gpt-5-mini',
+            'gpt-5.2',
+            'gpt-5.2-codex',
+            'gpt-5.4-mini',
+            'grok-code-fast-1',
+            'raptor-mini',
+        ],
+        pro: [
+            'claude-haiku-4.5',
+            'claude-sonnet-4',
+            'claude-sonnet-4.5',
+            'claude-sonnet-4.6',
+            'gemini-2.5-pro',
+            'gemini-3-flash',
+            'gemini-3.1-pro',
+            'gpt-4.1',
+            'gpt-5-mini',
+            'gpt-5.2',
+            'gpt-5.2-codex',
+            'gpt-5.3-codex',
+            'gpt-5.4',
+            'gpt-5.4-mini',
+            'grok-code-fast-1',
+            'raptor-mini',
+        ],
+        pro_plus: [
+            'claude-haiku-4.5',
+            'claude-opus-4.7',
+            'claude-sonnet-4',
+            'claude-sonnet-4.5',
+            'claude-sonnet-4.6',
+            'gemini-2.5-pro',
+            'gemini-3-flash',
+            'gemini-3.1-pro',
+            'gpt-4.1',
+            'gpt-5-mini',
+            'gpt-5.2',
+            'gpt-5.2-codex',
+            'gpt-5.3-codex',
+            'gpt-5.4',
+            'gpt-5.4-mini',
+            'gpt-5.5',
+            'grok-code-fast-1',
+            'raptor-mini',
+        ],
+        business: [
+            'claude-haiku-4.5',
+            'claude-opus-4.5',
+            'claude-opus-4.6',
+            'claude-opus-4.7',
+            'claude-sonnet-4',
+            'claude-sonnet-4.5',
+            'claude-sonnet-4.6',
+            'gemini-2.5-pro',
+            'gemini-3-flash',
+            'gemini-3.1-pro',
+            'gpt-4.1',
+            'gpt-5-mini',
+            'gpt-5.2',
+            'gpt-5.2-codex',
+            'gpt-5.3-codex',
+            'gpt-5.4',
+            'gpt-5.4-mini',
+            'gpt-5.5',
+            'grok-code-fast-1',
+        ],
+        enterprise: [
+            'claude-haiku-4.5',
+            'claude-opus-4.5',
+            'claude-opus-4.6',
+            'claude-opus-4.6-fast',
+            'claude-opus-4.7',
+            'claude-sonnet-4',
+            'claude-sonnet-4.5',
+            'claude-sonnet-4.6',
+            'gemini-2.5-pro',
+            'gemini-3-flash',
+            'gemini-3.1-pro',
+            'gpt-4.1',
+            'gpt-5-mini',
+            'gpt-5.2',
+            'gpt-5.2-codex',
+            'gpt-5.3-codex',
+            'gpt-5.4',
+            'gpt-5.4-mini',
+            'gpt-5.5',
+            'grok-code-fast-1',
+            'goldeneye',
+        ],
+    };
+    private static readonly COPILOT_INDIVIDUAL_STUDENT_EXCLUDED_IDS: ReadonlySet<string> = new Set([
+        'claude-opus-4.5',
+        'claude-opus-4.6',
+        'claude-opus-4.6-fast',
+        'claude-opus-4.7',
+        'claude-sonnet-4',
+        'claude-sonnet-4.5',
+        'claude-sonnet-4.6',
+        'gpt-5.3-codex',
+        'gpt-5.4',
+        'gpt-5.5',
+        'goldeneye',
+    ]);
     private static readonly SUPPORTED_CODEX_MODEL_IDS: ReadonlySet<string> = new Set([
         'gpt-5.5',
         'gpt-5.4',
@@ -166,7 +320,6 @@ export class ModelRegistryService extends BaseService {
         'huggingface',
         'anthropic',
         'sd-cpp',
-        'github',
     ]);
 
     private static readonly ERROR_CODES = {
@@ -197,11 +350,11 @@ export class ModelRegistryService extends BaseService {
     private cacheRefreshPromise: Promise<void> | null = null;
     private initialWarmupTimeout: ReturnType<typeof setTimeout> | null = null;
     private listenersRegistered = false;
-    private telemetry = {
+    private usageStats = {
         cacheUpdates: 0,
         providerFetchFailures: 0,
         lastSuccessfulUpdateAt: 0,
-        lastTelemetryEventAt: 0,
+        lastUsageStatsEventAt: 0,
     };
 
     constructor(private deps: ModelRegistryDependencies) {
@@ -233,19 +386,15 @@ export class ModelRegistryService extends BaseService {
 
         // Listen for account changes to refresh models
         this.deps.eventBus.on('account:linked', () => {
-            appLogger.debug('ModelRegistry', 'Account linked, refreshing model cache...');
             void this.updateCache();
         });
         this.deps.eventBus.on('account:updated', () => {
-            appLogger.debug('ModelRegistry', 'Account updated, refreshing model cache...');
             void this.updateCache();
         });
         this.deps.eventBus.on('account:unlinked', () => {
-            appLogger.debug('ModelRegistry', 'Account unlinked, refreshing model cache...');
             void this.updateCache();
         });
-        this.deps.eventBus.onCustom(ProxyTelemetryEvent.PROXY_STARTED, () => {
-            appLogger.debug('ModelRegistry', 'Embedded proxy reported ready, refreshing model cache...');
+        this.deps.eventBus.onCustom(ProxyUsageStatsEvent.PROXY_STARTED, () => {
             void this.updateCache();
         });
 
@@ -269,13 +418,8 @@ export class ModelRegistryService extends BaseService {
             return;
         }
 
-        appLogger.debug(
-            'ModelRegistry',
-            `Deferring initial model cache warmup by ${ModelRegistryService.INITIAL_CACHE_WARMUP_DELAY_MS}ms`
-        );
         this.initialWarmupTimeout = setTimeout(() => {
             this.initialWarmupTimeout = null;
-            appLogger.debug('ModelRegistry', 'Running deferred initial model cache warmup...');
             void this.updateCache();
         }, ModelRegistryService.INITIAL_CACHE_WARMUP_DELAY_MS);
 
@@ -304,13 +448,12 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async performCacheUpdate(): Promise<void> {
-        this.telemetry.cacheUpdates += 1;
-        this.trackTelemetry('model-registry.cache.update.started');
-        appLogger.debug('ModelRegistry', 'Updating remote model cache...');
+        this.usageStats.cacheUpdates += 1;
+        this.trackUsageStats('model-registry.cache.update.started');
         const remoteModels = await this.fetchRemoteModelsWithRecovery();
         this.cachedModels = await this.mergeConnectedProviderModels(remoteModels, this.cachedModels);
         this.lastUpdate = Date.now();
-        this.telemetry.lastSuccessfulUpdateAt = this.lastUpdate;
+        this.usageStats.lastSuccessfulUpdateAt = this.lastUpdate;
 
         // Push limits to TokenEstimationService
         const tokenEstimator = getTokenEstimationService();
@@ -325,8 +468,7 @@ export class ModelRegistryService extends BaseService {
             }
         }
 
-        appLogger.debug('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`);
-        this.trackTelemetry('model-registry.cache.update.completed', {
+        this.trackUsageStats('model-registry.cache.update.completed', {
             modelCount: this.cachedModels.length,
         });
         this.deps.eventBus.emit('model:updated', {
@@ -388,7 +530,7 @@ export class ModelRegistryService extends BaseService {
 
     private isCopilotProvider(provider: string | undefined): boolean {
         const normalizedProvider = (provider ?? '').trim().toLowerCase();
-        return normalizedProvider === 'copilot' || normalizedProvider === 'github';
+        return normalizedProvider === 'copilot';
     }
 
     private async fetchRemoteModelsWithRecovery(): Promise<ModelProviderInfo[]> {
@@ -477,7 +619,7 @@ export class ModelRegistryService extends BaseService {
      * Get all available models from all sources.
      * This is a cache-aware wrapper that merges remote and local installed models.
      */ 
-    @ipc('model-registry:getAllModels')
+    @ipc(MODEL_REGISTRY_CHANNELS.GET_ALL_MODELS)
     async getAllModelsIpc(): Promise<RuntimeValue> {
         return serializeToIpc(await this.getAllModels());
     }
@@ -508,7 +650,7 @@ export class ModelRegistryService extends BaseService {
             case 'anthropic':
                 return ['claude', 'anthropic'];
             case 'copilot':
-                return ['copilot', 'github'];
+                return ['copilot'];
             case 'cursor':
                 return ['cursor'];
             case 'kimi':
@@ -618,8 +760,8 @@ export class ModelRegistryService extends BaseService {
                 rawModels,
             };
         } catch (e) {
-            this.telemetry.providerFetchFailures += 1;
-            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'proxy' });
+            this.usageStats.providerFetchFailures += 1;
+            this.trackUsageStats('model-registry.provider.fetch.failed', { provider: 'proxy' });
             appLogger.debug(
                 'ModelRegistry',
                 `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch models from tengra-proxy: ${getErrorMessage(e as Error)}`
@@ -639,7 +781,7 @@ export class ModelRegistryService extends BaseService {
             requestedProvider = 'codex';
         } else if (normalizedRawProvider === 'claude' || normalizedRawProvider === 'anthropic') {
             requestedProvider = 'claude';
-        } else if (normalizedRawProvider === 'copilot' || normalizedRawProvider === 'github') {
+        } else if (normalizedRawProvider === 'copilot') {
             requestedProvider = 'copilot';
         } else if (normalizedRawProvider === 'cursor') {
             requestedProvider = 'cursor';
@@ -667,9 +809,9 @@ export class ModelRegistryService extends BaseService {
         return this.enrichModelMetadata(normalizedModel);
     }
 
-    private trackTelemetry(name: SystemEventKey, properties: Record<string, RuntimeValue> = {}): void {
-        this.telemetry.lastTelemetryEventAt = Date.now();
-        this.deps.eventBus.emit('telemetry:model-registry', {
+    private trackUsageStats(name: SystemEventKey, properties: Record<string, RuntimeValue> = {}): void {
+        this.usageStats.lastUsageStatsEventAt = Date.now();
+        this.deps.eventBus.emit('usageStats:model-registry', {
             name,
             ...properties,
             timestamp: Date.now()
@@ -685,23 +827,23 @@ export class ModelRegistryService extends BaseService {
         providerFetchFailures: number;
         cachedModelCount: number;
         lastSuccessfulUpdateAt: number;
-        lastTelemetryEventAt: number;
+        lastUsageStatsEventAt: number;
     } {
-        const uiState = this.telemetry.providerFetchFailures > 0
+        const uiState = this.usageStats.providerFetchFailures > 0
             ? 'failure'
             : this.cachedModels.length === 0
                 ? 'empty'
                 : 'ready';
         return {
-            status: this.telemetry.providerFetchFailures > 0 ? 'degraded' : 'healthy',
+            status: this.usageStats.providerFetchFailures > 0 ? 'degraded' : 'healthy',
             uiState,
             messageKey: ModelRegistryService.UI_MESSAGE_KEYS[uiState],
             performanceBudget: ModelRegistryService.PERFORMANCE_BUDGET,
-            cacheUpdates: this.telemetry.cacheUpdates,
-            providerFetchFailures: this.telemetry.providerFetchFailures,
+            cacheUpdates: this.usageStats.cacheUpdates,
+            providerFetchFailures: this.usageStats.providerFetchFailures,
             cachedModelCount: this.cachedModels.length,
-            lastSuccessfulUpdateAt: this.telemetry.lastSuccessfulUpdateAt,
-            lastTelemetryEventAt: this.telemetry.lastTelemetryEventAt,
+            lastSuccessfulUpdateAt: this.usageStats.lastSuccessfulUpdateAt,
+            lastUsageStatsEventAt: this.usageStats.lastUsageStatsEventAt,
         };
     }
 
@@ -746,7 +888,7 @@ export class ModelRegistryService extends BaseService {
 
     private resolveProviderCategory(provider: string): string {
         const p = provider.toLowerCase();
-        if (p === 'copilot' || p === 'github') {
+        if (p === 'copilot') {
             return 'copilot';
         }
         if (p === 'cursor') {
@@ -770,9 +912,6 @@ export class ModelRegistryService extends BaseService {
     private resolveCanonicalProvider(rawProvider: string, requestedProvider: ModelProviderId): string {
         const raw = rawProvider.trim().toLowerCase();
 
-        if (raw === 'github') {
-            return 'copilot';
-        }
         if (raw === 'moonshot') {
             return 'kimi';
         }
@@ -853,7 +992,7 @@ export class ModelRegistryService extends BaseService {
         return embeddingSignals.some(regex => regex.test(searchable));
     }
 
-    /** Clears the model cache and resets telemetry counters. */
+    /** Clears the model cache and resets usageStats counters. */
     override async cleanup(): Promise<void> {
         if (this.initialWarmupTimeout) {
             clearTimeout(this.initialWarmupTimeout);
@@ -867,7 +1006,7 @@ export class ModelRegistryService extends BaseService {
     /**
      * Get cached remote models.
      */
-    @ipc('model-registry:get-remote')
+    @ipc(MODEL_REGISTRY_CHANNELS.GET_REMOTE_MODELS)
     async getRemoteModelsIpc(): Promise<RuntimeValue> {
         return serializeToIpc(await this.getRemoteModels());
     }
@@ -899,7 +1038,6 @@ export class ModelRegistryService extends BaseService {
         const fallback: ModelProviderInfo[] = [
             { id: 'gpt-5.5', name: 'GPT 5.5', provider: 'codex', sourceProvider: 'codex' },
             { id: 'gpt-5.4', name: 'GPT 5.4', provider: 'codex', sourceProvider: 'codex' },
-            { id: 'gpt-5.4-mini', name: 'GPT 5.4 Mini', provider: 'copilot', sourceProvider: 'copilot' },
             { id: 'gpt-5.3-codex', name: 'GPT 5.3 Codex', provider: 'codex', sourceProvider: 'codex' },
             { id: 'claude-sonnet-4.6', name: 'Claude Sonnet 4.6', provider: 'claude', sourceProvider: 'claude' },
             { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', sourceProvider: 'openai' },
@@ -911,7 +1049,6 @@ export class ModelRegistryService extends BaseService {
                 capabilities: { image_generation: true, text_generation: false },
             },
             { id: 'gemini-3.1-flash', name: 'Gemini 3.1 Flash', provider: 'antigravity', sourceProvider: 'antigravity' },
-            { id: 'copilot-chat', name: 'Copilot Chat', provider: 'copilot', sourceProvider: 'copilot' },
         ];
         return fallback.map(model => this.enrichModelMetadata(model));
     }
@@ -928,7 +1065,11 @@ export class ModelRegistryService extends BaseService {
             this.fetchProxyCatalog(),
             this.fetchOpenCodeModels(),
         ]);
-        const all = [...proxyCatalog.mappedModels];
+        const copilotModels = await this.buildHardcodedCopilotModels(proxyCatalog.rawModels);
+        const all = proxyCatalog.mappedModels.filter(
+            model => !this.isCopilotProvider(model.providerCategory ?? model.provider)
+        );
+        all.push(...copilotModels);
         all.push(...openCodeModels);
 
         const hasOpenAIKey = await this.hasApiKeyCredentialForProvider('openai');
@@ -939,7 +1080,12 @@ export class ModelRegistryService extends BaseService {
         if (hasCodexOAuth) {
             all.push(...this.getCodexImageModels());
         }
-        const mergedWithProxy = this.mergeProxyRegisteredModels(all, proxyCatalog.rawModels);
+        const mergedWithProxy = this.mergeProxyRegisteredModels(
+            all,
+            proxyCatalog.rawModels.filter(
+                rawModel => !this.isCopilotProvider(this.resolveProxyModelProvider(rawModel))
+            )
+        );
 
         const unique = new Map<string, ModelProviderInfo>();
         mergedWithProxy.forEach(m => {
@@ -962,6 +1108,154 @@ export class ModelRegistryService extends BaseService {
         const locale = settings.general?.language ?? 'en';
 
         return RegionalPreferenceService.applyPreferences(allModels, locale);
+    }
+
+    private async buildHardcodedCopilotModels(
+        rawProxyModels: ProxyCatalogModel[]
+    ): Promise<ModelProviderInfo[]> {
+        const accounts = await this.deps.authService.getAccountsByProviderFull('copilot');
+        if (accounts.length === 0) {
+            return [];
+        }
+
+        const plan = await this.resolveCopilotPlanTier();
+        let allowedIds = ModelRegistryService.COPILOT_MODELS_BY_PLAN[plan];
+        const proxyIndex = new Map<string, ProxyCatalogModel>();
+
+        for (const rawModel of rawProxyModels) {
+            if (!this.isCopilotProvider(this.resolveProxyModelProvider(rawModel))) {
+                continue;
+            }
+            const normalizedId = this.normalizeProxyModelId('copilot', rawModel.id);
+            if (normalizedId !== '') {
+                proxyIndex.set(normalizedId, rawModel);
+            }
+        }
+
+        // "individual" can represent different end-user plans and the proxy can over-report.
+        // Clamp to known models and apply a strict exclusion set for Student-ineligible models.
+        if (plan === 'pro') {
+            const accountMetadata = (accounts.find(account => account.isActive) ?? accounts[0])?.metadata;
+            const planLabel = this.metadataString(accountMetadata, 'copilot_plan', 'plan', 'plan_type');
+            if (planLabel === 'individual') {
+                const knownIds = new Set(Object.keys(ModelRegistryService.COPILOT_MODEL_DEFINITIONS));
+                const dynamicIds = Array.from(proxyIndex.keys())
+                    .filter(id => knownIds.has(id))
+                    .filter(id => !ModelRegistryService.COPILOT_INDIVIDUAL_STUDENT_EXCLUDED_IDS.has(id));
+                if (dynamicIds.length > 0) {
+                    allowedIds = dynamicIds;
+                } else {
+                    allowedIds = ModelRegistryService.COPILOT_MODELS_BY_PLAN.student;
+                }
+            }
+        }
+
+        return allowedIds.map(id => {
+            const proxyModel = proxyIndex.get(id);
+            const definition = ModelRegistryService.COPILOT_MODEL_DEFINITIONS[id];
+            return this.enrichModelMetadata({
+                id,
+                name: proxyModel?.name ?? definition?.name ?? id,
+                provider: 'copilot',
+                sourceProvider: 'copilot',
+                description: proxyModel?.description ?? definition?.description,
+                quotaInfo: proxyModel?.quotaInfo,
+            });
+        });
+    }
+
+    private async resolveCopilotPlanTier(): Promise<CopilotPlanTier> {
+        const accounts = await this.deps.authService.getAccountsByProviderFull('copilot');
+        const activeAccount = accounts.find(account => account.isActive) ?? accounts[0];
+        const accountMetadata = activeAccount?.metadata;
+
+        const directPlanLabel = this.metadataString(accountMetadata, 'copilot_plan', 'plan', 'plan_type');
+        const directPlan = this.normalizeCopilotPlanLabel(directPlanLabel);
+        if (directPlan && directPlan !== 'individual') {
+            return directPlan;
+        }
+        const isStudentPlan = directPlanLabel === 'student' || directPlanLabel === 'copilot student';
+
+        const quotaSnapshot = await this.deps.proxyService.getCopilotQuota().catch(() => ({ accounts: [] }));
+        const quotaAccount = quotaSnapshot.accounts.find(account =>
+            account.accountId && activeAccount?.id && account.accountId === activeAccount.id
+        ) ?? quotaSnapshot.accounts[0];
+
+        const seatPlanLabel = quotaAccount?.seat_breakdown?.plan_type?.trim().toLowerCase();
+        const seatPlan = this.normalizeCopilotPlanLabel(seatPlanLabel);
+        if (seatPlan && seatPlan !== 'individual') {
+            return seatPlan;
+        }
+        const isBusinessSeatPlan = seatPlanLabel === 'business' || seatPlanLabel === 'copilot business';
+
+        const quotaPlan = this.normalizeCopilotPlanLabel(
+            typeof quotaAccount?.copilot_plan === 'string'
+                ? quotaAccount.copilot_plan.trim().toLowerCase()
+                : undefined
+        );
+        if (quotaPlan && quotaPlan !== 'individual') {
+            return quotaPlan;
+        }
+
+        const limit = quotaAccount?.limit ?? 0;
+        if (limit >= 1500) {
+            return 'pro_plus';
+        }
+        if (limit >= 1000) {
+            return 'enterprise';
+        }
+        if (limit <= 50 && limit > 0) {
+            return 'free';
+        }
+        if (limit === 300 && isStudentPlan) {
+            return 'student';
+        }
+        if (limit === 300 && isBusinessSeatPlan) {
+            return 'business';
+        }
+        return 'pro';
+    }
+
+    private normalizeCopilotPlanLabel(
+        value: string | undefined
+    ): CopilotPlanTier | 'individual' | undefined {
+        if (!value) {
+            return undefined;
+        }
+
+        const normalized = value.trim().toLowerCase();
+        if (normalized === '') {
+            return undefined;
+        }
+
+        if (normalized === 'free' || normalized === 'copilot free') {
+            return 'free';
+        }
+        if (normalized === 'student' || normalized === 'copilot student') {
+            return 'student';
+        }
+        if (normalized === 'pro' || normalized === 'copilot pro') {
+            return 'pro';
+        }
+        if (
+            normalized === 'pro+' ||
+            normalized === 'pro_plus' ||
+            normalized === 'pro-plus' ||
+            normalized === 'proplus' ||
+            normalized === 'copilot pro+'
+        ) {
+            return 'pro_plus';
+        }
+        if (normalized === 'business' || normalized === 'copilot business') {
+            return 'business';
+        }
+        if (normalized === 'enterprise' || normalized === 'copilot enterprise') {
+            return 'enterprise';
+        }
+        if (normalized === 'individual' || normalized === 'copilot individual') {
+            return 'individual';
+        }
+        return undefined;
     }
 
     private async fetchOpenCodeModels(): Promise<ModelProviderInfo[]> {
@@ -996,8 +1290,8 @@ export class ModelRegistryService extends BaseService {
                 return pricing?.input === 0 && pricing?.output === 0;
             });
         } catch (e) {
-            this.telemetry.providerFetchFailures += 1;
-            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'opencode' });
+            this.usageStats.providerFetchFailures += 1;
+            this.trackUsageStats('model-registry.provider.fetch.failed', { provider: 'opencode' });
             appLogger.debug(
                 'ModelRegistry',
                 `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch OpenCode models: ${getErrorMessage(e as Error)}`
@@ -1057,7 +1351,7 @@ export class ModelRegistryService extends BaseService {
     /**
      * Get locally installed models
      */
-    @ipc('model-registry:get-installed')
+    @ipc(MODEL_REGISTRY_CHANNELS.GET_INSTALLED_MODELS)
     async getInstalledModelsIpc(): Promise<RuntimeValue> {
         return serializeToIpc(await this.getInstalledModels());
     }
@@ -1085,8 +1379,8 @@ export class ModelRegistryService extends BaseService {
                     capabilities: { text_generation: true },
                 }));
         } catch (error) {
-            this.telemetry.providerFetchFailures += 1;
-            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'ollama' });
+            this.usageStats.providerFetchFailures += 1;
+            this.trackUsageStats('model-registry.provider.fetch.failed', { provider: 'ollama' });
             appLogger.debug(
                 'ModelRegistry',
                 `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch installed Ollama models: ${getErrorMessage(error as Error)}`
@@ -1098,6 +1392,10 @@ export class ModelRegistryService extends BaseService {
     private async getInstalledHuggingFaceModels(): Promise<ModelProviderInfo[]> {
         try {
             const installed = await this.deps.huggingFaceService.listInstalledModels();
+            if (installed.length === 0) {
+                return [];
+            }
+
             return installed.map(model => this.enrichModelMetadata({
                 id: model.modelId,
                 name: this.resolveHuggingFaceModelName(model.modelId),
@@ -1111,14 +1409,22 @@ export class ModelRegistryService extends BaseService {
                 localPath: model.path,
             }));
         } catch (error) {
-            this.telemetry.providerFetchFailures += 1;
-            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'huggingface' });
+            this.usageStats.providerFetchFailures += 1;
+            this.trackUsageStats('model-registry.provider.fetch.failed', { provider: 'huggingface' });
             appLogger.debug(
                 'ModelRegistry',
                 `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch installed Hugging Face models: ${getErrorMessage(error as Error)}`
             );
             return [];
         }
+    }
+
+    private resolveHuggingFaceContextWindow(model: { id: string; description?: string }): number | undefined {
+        const lower = `${model.id} ${model.description ?? ''}`.toLowerCase();
+        if (lower.includes('llama')) { return 8192; }
+        if (lower.includes('qwen')) { return 32768; }
+        if (lower.includes('mistral')) { return 32768; }
+        return undefined;
     }
 
     private resolveHuggingFaceModelName(modelId: string): string {
@@ -1312,7 +1618,7 @@ export class ModelRegistryService extends BaseService {
         if (lowerId.includes('gemini') || lowerId.includes('google')) {
             return 'antigravity';
         }
-        if (lowerId.includes('copilot') || lowerId.includes('github')) {
+        if (lowerId.includes('copilot')) {
             return 'copilot';
         }
         if (lowerId.includes('cursor')) {
@@ -1324,3 +1630,4 @@ export class ModelRegistryService extends BaseService {
         return 'antigravity';
     }
 }
+

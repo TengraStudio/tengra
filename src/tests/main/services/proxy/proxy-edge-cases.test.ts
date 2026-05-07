@@ -9,13 +9,13 @@
  */
 
 /**
- * Edge case unit tests for ProxyService cleanup, status, and telemetry.
+ * Edge case unit tests for ProxyService cleanup, status, and Stats.
  */
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import {
     ProxyService,
-    ProxyTelemetryEvent
+    ProxyUsageStatsEvent
 } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -107,12 +107,12 @@ describe('ProxyService edge cases', () => {
             expect(status.port).toBe(8317);
         });
 
-        it('should emit HEALTH_CHECK telemetry', () => {
+        it('should emit HEALTH_CHECK Stats', () => {
             const { proxyService, mockProcessManager, mockEventBus } = createProxyService();
             vi.mocked(mockProcessManager.getStatus).mockReturnValue({ running: false });
             proxyService.getEmbeddedProxyStatus();
             expect(mockEventBus.emitCustom).toHaveBeenCalledWith(
-                ProxyTelemetryEvent.HEALTH_CHECK,
+                ProxyUsageStatsEvent.HEALTH_CHECK,
                 expect.objectContaining({ running: false })
             );
         });
@@ -127,12 +127,12 @@ describe('ProxyService edge cases', () => {
         });
     });
 
-    describe('telemetry emission', () => {
+    describe('Stats emission', () => {
         it('should emit PROXY_STARTED on successful start', async () => {
             const { proxyService, mockEventBus } = createProxyService();
             await proxyService.startEmbeddedProxy({ port: 8080 });
             expect(mockEventBus.emitCustom).toHaveBeenCalledWith(
-                ProxyTelemetryEvent.PROXY_STARTED,
+                ProxyUsageStatsEvent.PROXY_STARTED,
                 expect.objectContaining({ port: 8080 })
             );
         });
@@ -144,7 +144,7 @@ describe('ProxyService edge cases', () => {
             });
             await proxyService.startEmbeddedProxy({ port: 8080 });
             const startEvents = vi.mocked(mockEventBus.emitCustom).mock.calls
-                .filter(c => c[0] === ProxyTelemetryEvent.PROXY_STARTED);
+                .filter(c => c[0] === ProxyUsageStatsEvent.PROXY_STARTED);
             expect(startEvents).toHaveLength(0);
         });
 
@@ -152,7 +152,7 @@ describe('ProxyService edge cases', () => {
             const { proxyService, mockEventBus } = createProxyService();
             await proxyService.stopEmbeddedProxy();
             expect(mockEventBus.emitCustom).toHaveBeenCalledWith(
-                ProxyTelemetryEvent.PROXY_STOPPED,
+                ProxyUsageStatsEvent.PROXY_STOPPED,
                 expect.objectContaining({ elapsedMs: expect.any(Number) })
             );
         });
@@ -197,3 +197,4 @@ describe('ProxyService edge cases', () => {
         });
     });
 });
+

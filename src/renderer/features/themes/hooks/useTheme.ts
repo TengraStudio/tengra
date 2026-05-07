@@ -22,18 +22,18 @@ import { themeRegistry } from '@/themes/theme-registry.service';
 export const useThemeDetection = () => {
     // Initialize with current attribute or default
     const [theme, setTheme] = useState<string>(() => {
-        return document.documentElement.getAttribute('data-theme') ?? 'black';
+        return document.documentElement.getAttribute('data-theme') ?? 'tengra-black';
     });
 
     // Get theme type from registry (VSCode approach)
     const [isLight, setIsLight] = useState<boolean>(() => {
-        const currentTheme = document.documentElement.getAttribute('data-theme') ?? 'black';
+        const currentTheme = document.documentElement.getAttribute('data-theme') ?? 'tengra-black';
         return themeRegistry.isLightTheme(currentTheme);
     });
 
     useEffect(() => {
         const updateThemeInfo = () => {
-            const newTheme = document.documentElement.getAttribute('data-theme') ?? 'black';
+            const newTheme = document.documentElement.getAttribute('data-theme') ?? 'tengra-black';
             setTheme(newTheme);
             setIsLight(themeRegistry.isLightTheme(newTheme));
         };
@@ -75,3 +75,4 @@ export const useThemeDetection = () => {
 
 // Backward compatibility export
 export const useTheme = useThemeDetection;
+

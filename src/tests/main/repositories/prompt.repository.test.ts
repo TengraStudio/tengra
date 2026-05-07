@@ -47,3 +47,4 @@ describe('PromptRepository', () => {
         expect(mockDb.createPrompt).toHaveBeenCalledWith('Test', 'Content', []);
     });
 });
+

@@ -51,7 +51,7 @@ describe('LLM-Settings Integration', () => {
         eventBusService = new EventBusService();
 
         // We need to verify OllamaService reads from SettingsService
-        ollamaService = new OllamaService(settingsService, eventBusService, null as any, null as any);
+        ollamaService = new OllamaService(settingsService, eventBusService, null as any);
     });
 
     it('should initialize OllamaService with URL from settings', () => {
@@ -68,3 +68,4 @@ describe('LLM-Settings Integration', () => {
     // If OllamaService supported dynamic updates (it might not yet, typically re-instantiated), 
     // we would test that here. But constructor reading is the key integration point.
 });
+

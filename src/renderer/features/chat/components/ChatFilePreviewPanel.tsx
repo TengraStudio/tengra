@@ -175,3 +175,4 @@ export const ChatFilePreviewPanel = React.memo(({
 
 ChatFilePreviewPanel.displayName = 'ChatFilePreviewPanel';
 
+

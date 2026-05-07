@@ -61,32 +61,74 @@ describe('useBrowserAuth', () => {
         const baseElectron = window.electron ?? ({} as typeof window.electron);
         window.electron = {
             ...baseElectron,
-            codexLogin: vi.fn().mockResolvedValue({
-                url: 'https://example.com/auth',
-                state: 'state-1',
-                accountId: 'codex_requested',
-            }),
-            claudeLogin: vi.fn().mockResolvedValue({
-                url: 'https://example.com/auth',
-                state: 'state-1',
-                accountId: 'claude_requested',
-            }),
-            antigravityLogin: vi.fn().mockResolvedValue({
-                url: 'https://example.com/auth',
-                state: 'state-1',
-                accountId: 'antigravity_requested',
-            }),
-            ollamaLogin: vi.fn().mockResolvedValue({
-                url: 'https://example.com/auth',
-                state: 'state-1',
-                accountId: 'ollama_requested',
-            }),
-            ollamaSignout: vi.fn().mockResolvedValue({ success: true }),
-            cancelAuth: vi.fn().mockResolvedValue(true),
-            unlinkProvider: vi.fn().mockResolvedValue({ success: true }),
-            getLinkedAccounts: vi.fn().mockResolvedValue([]),
-            getAccountsByProvider: vi.fn().mockResolvedValue([]),
-            saveClaudeSession: vi.fn().mockResolvedValue({ success: true }),
+            auth: {
+                codexLogin: vi.fn().mockResolvedValue({
+                    url: 'https://example.com/auth',
+                    state: 'state-1',
+                    accountId: 'codex_requested',
+                }),
+                claudeLogin: vi.fn().mockResolvedValue({
+                    url: 'https://example.com/auth',
+                    state: 'state-1',
+                    accountId: 'claude_requested',
+                }),
+                antigravityLogin: vi.fn().mockResolvedValue({
+                    url: 'https://example.com/auth',
+                    state: 'state-1',
+                    accountId: 'antigravity_requested',
+                }),
+                ollamaLogin: vi.fn().mockResolvedValue({
+                    url: 'https://example.com/auth',
+                    state: 'state-1',
+                    accountId: 'ollama_requested',
+                }),
+                ollamaSignout: vi.fn().mockResolvedValue({ success: true }),
+                cancelAuth: vi.fn().mockResolvedValue(true),
+                unlinkProvider: vi.fn().mockResolvedValue({ success: true }),
+                getLinkedAccounts: vi.fn().mockResolvedValue([]),
+                getAccountsByProvider: vi.fn().mockResolvedValue([]),
+                saveClaudeSession: vi.fn().mockResolvedValue({ success: true }),
+                onAccountChanged: vi.fn().mockReturnValue(() => { }),
+                getBrowserAuthStatus: vi.fn().mockResolvedValue({ status: 'wait' }),
+                // Add missing properties to satisfy type check
+                githubLogin: vi.fn(),
+                pollToken: vi.fn(),
+                claudeBrowserLogin: vi.fn(),
+                anthropicLogin: vi.fn(),
+                verifyAuthBridge: vi.fn(),
+                getQuota: vi.fn(),
+                getCopilotQuota: vi.fn(),
+                getCodexUsage: vi.fn(),
+                getClaudeQuota: vi.fn(),
+                forceRefreshQuota: vi.fn(),
+                triggerClaudeSessionCapture: vi.fn(),
+                getActiveLinkedAccount: vi.fn(),
+                setActiveLinkedAccount: vi.fn(),
+                linkAccount: vi.fn(),
+                unlinkAccount: vi.fn(),
+                hasLinkedAccount: vi.fn(),
+                getAuthProviderHealth: vi.fn(),
+                getAuthProviderAnalytics: vi.fn(),
+                getTokenAnalytics: vi.fn(),
+                exportCredentials: vi.fn(),
+                importCredentials: vi.fn(),
+                createMasterKeyBackup: vi.fn(),
+                restoreMasterKeyBackup: vi.fn(),
+                startAuthSession: vi.fn(),
+                touchAuthSession: vi.fn(),
+                endAuthSession: vi.fn(),
+                setAuthSessionLimit: vi.fn(),
+                getAuthSessionAnalytics: vi.fn(),
+                setAuthSessionTimeout: vi.fn(),
+                getAuthSessionTimeout: vi.fn(),
+                listSkills: vi.fn(),
+                toggleSkill: vi.fn(),
+                deleteSkill: vi.fn(),
+                checkUsageLimit: vi.fn(),
+                getProxyModels: vi.fn(),
+                createAccount: vi.fn(),
+                switchAccount: vi.fn(),
+            } as any,
             openExternal: vi.fn(),
             invoke: vi.fn().mockResolvedValue({ status: 'wait' }),
             ipcRenderer: {
@@ -156,7 +198,7 @@ describe('useBrowserAuth', () => {
     });
 
     it('completes when auth event links a new provider account id', async () => {
-        vi.mocked(window.electron.getLinkedAccounts).mockResolvedValue([
+        vi.mocked(window.electron.auth.getLinkedAccounts).mockResolvedValue([
             {
                 id: 'codex_existing',
                 provider: 'codex',
@@ -236,7 +278,7 @@ describe('useBrowserAuth', () => {
     });
 
     it('completes when the same provider emits an updated event for an existing account', async () => {
-        vi.mocked(window.electron.getLinkedAccounts).mockResolvedValue([
+        vi.mocked(window.electron.auth.getLinkedAccounts).mockResolvedValue([
             {
                 id: 'codex_existing',
                 provider: 'codex',
@@ -284,7 +326,7 @@ describe('useBrowserAuth', () => {
     it('completes when a recent provider account appears even if account ids drift', async () => {
         const recentCreatedAt = Date.now() + 1000;
         vi.mocked(window.electron.invoke).mockResolvedValue({ status: 'wait' });
-        vi.mocked(window.electron.getLinkedAccounts).mockResolvedValue([
+        vi.mocked(window.electron.auth.getLinkedAccounts).mockResolvedValue([
             {
                 id: 'codex_persisted',
                 provider: 'codex',
@@ -326,7 +368,7 @@ describe('useBrowserAuth', () => {
     });
 
     it('resets auth state when auth initialization hangs', async () => {
-        vi.mocked(window.electron.codexLogin).mockImplementation(() => new Promise(() => undefined));
+        vi.mocked(window.electron.auth.codexLogin).mockImplementation(() => new Promise(() => undefined));
 
         const { result } = renderHook(() => {
             const [authBusy, setAuthBusy] = useState<AuthBusyState | null>(null);
@@ -372,7 +414,7 @@ describe('useBrowserAuth', () => {
             },
         ];
         const callOrder: string[] = [];
-        const ollamaSignout = window.electron.ollamaSignout;
+        const ollamaSignout = window.electron.auth.ollamaSignout;
         if (!ollamaSignout) {
             throw new Error('Missing ollamaSignout bridge in test setup');
         }
@@ -380,7 +422,7 @@ describe('useBrowserAuth', () => {
             callOrder.push('signout');
             return { success: true };
         });
-        vi.mocked(window.electron.unlinkProvider).mockImplementation(async () => {
+        vi.mocked(window.electron.auth.unlinkProvider).mockImplementation(async () => {
             callOrder.push('unlink');
             return { success: true };
         });
@@ -409,8 +451,8 @@ describe('useBrowserAuth', () => {
             await result.current.hook.disconnectProvider('ollama');
         });
 
-        expect(window.electron.ollamaSignout).toHaveBeenCalledWith('ollama_account_1');
-        expect(window.electron.unlinkProvider).toHaveBeenCalledWith('ollama');
+        expect(window.electron.auth.ollamaSignout).toHaveBeenCalledWith('ollama_account_1');
+        expect(window.electron.auth.unlinkProvider).toHaveBeenCalledWith('ollama');
         expect(callOrder).toEqual(['signout', 'unlink']);
         expect(updateSettings).toHaveBeenCalledTimes(1);
         expect(linkedAccounts.refreshAccounts).toHaveBeenCalledTimes(1);
@@ -451,7 +493,8 @@ describe('useBrowserAuth', () => {
             await Promise.resolve();
         });
 
-        expect(window.electron.cancelAuth).toHaveBeenCalled();
+        expect(window.electron.auth.cancelAuth).toHaveBeenCalled();
         expect(result.current.authBusy).toBeNull();
     });
 });
+

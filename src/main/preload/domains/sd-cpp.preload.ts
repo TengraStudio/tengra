@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { SD_CPP_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface SdCppBridge {
@@ -45,47 +46,48 @@ export interface SdCppBridge {
 
 export function createSdCppBridge(ipc: IpcRenderer): SdCppBridge {
     return {
-        getStatus: () => ipc.invoke('sd-cpp:getStatus'),
-        reinstall: () => ipc.invoke('sd-cpp:reinstall'),
-        getHistory: limit => ipc.invoke('sd-cpp:getHistory', limit),
-        searchHistory: (query, limit) => ipc.invoke('sd-cpp:searchHistory', query, limit),
-        exportHistory: format => ipc.invoke('sd-cpp:exportHistory', format),
-        regenerate: historyId => ipc.invoke('sd-cpp:regenerate', historyId),
-        getAnalytics: () => ipc.invoke('sd-cpp:getAnalytics'),
-        getPresetAnalytics: () => ipc.invoke('sd-cpp:getPresetAnalytics'),
-        getScheduleAnalytics: () => ipc.invoke('sd-cpp:getScheduleAnalytics'),
-        listPresets: () => ipc.invoke('sd-cpp:listPresets'),
-        savePreset: preset => ipc.invoke('sd-cpp:savePreset', preset),
-        deletePreset: id => ipc.invoke('sd-cpp:deletePreset', id),
-        exportPresetShare: id => ipc.invoke('sd-cpp:exportPresetShare', id),
-        importPresetShare: code => ipc.invoke('sd-cpp:importPresetShare', code),
-        listWorkflowTemplates: () => ipc.invoke('sd-cpp:listWorkflowTemplates'),
-        saveWorkflowTemplate: payload => ipc.invoke('sd-cpp:saveWorkflowTemplate', payload),
-        deleteWorkflowTemplate: id => ipc.invoke('sd-cpp:deleteWorkflowTemplate', id),
-        exportWorkflowTemplateShare: id => ipc.invoke('sd-cpp:exportWorkflowTemplateShare', id),
-        importWorkflowTemplateShare: code => ipc.invoke('sd-cpp:importWorkflowTemplateShare', code),
-        schedule: payload => ipc.invoke('sd-cpp:schedule', payload),
-        listSchedules: () => ipc.invoke('sd-cpp:listSchedules'),
-        cancelSchedule: id => ipc.invoke('sd-cpp:cancelSchedule', id),
-        compare: ids => ipc.invoke('sd-cpp:compare', ids),
-        exportComparison: payload => ipc.invoke('sd-cpp:exportComparison', payload),
-        shareComparison: ids => ipc.invoke('sd-cpp:shareComparison', ids),
-        batchGenerate: requests => ipc.invoke('sd-cpp:batchGenerate', requests),
-        getQueueStats: () => ipc.invoke('sd-cpp:getQueueStats'),
-        edit: options => ipc.invoke('sd-cpp:edit', options),
+        getStatus: () => ipc.invoke(SD_CPP_CHANNELS.GET_STATUS),
+        reinstall: () => ipc.invoke(SD_CPP_CHANNELS.REINSTALL),
+        getHistory: limit => ipc.invoke(SD_CPP_CHANNELS.GET_HISTORY, limit),
+        searchHistory: (query, limit) => ipc.invoke(SD_CPP_CHANNELS.SEARCH_HISTORY, query, limit),
+        exportHistory: format => ipc.invoke(SD_CPP_CHANNELS.EXPORT_HISTORY, format),
+        regenerate: historyId => ipc.invoke(SD_CPP_CHANNELS.REGENERATE, historyId),
+        getAnalytics: () => ipc.invoke(SD_CPP_CHANNELS.GET_ANALYTICS),
+        getPresetAnalytics: () => ipc.invoke(SD_CPP_CHANNELS.GET_PRESET_ANALYTICS),
+        getScheduleAnalytics: () => ipc.invoke(SD_CPP_CHANNELS.GET_SCHEDULE_ANALYTICS),
+        listPresets: () => ipc.invoke(SD_CPP_CHANNELS.LIST_PRESETS),
+        savePreset: preset => ipc.invoke(SD_CPP_CHANNELS.SAVE_PRESET, preset),
+        deletePreset: id => ipc.invoke(SD_CPP_CHANNELS.DELETE_PRESET, id),
+        exportPresetShare: id => ipc.invoke(SD_CPP_CHANNELS.EXPORT_PRESET_SHARE, id),
+        importPresetShare: code => ipc.invoke(SD_CPP_CHANNELS.IMPORT_PRESET_SHARE, code),
+        listWorkflowTemplates: () => ipc.invoke(SD_CPP_CHANNELS.LIST_WORKFLOW_TEMPLATES),
+        saveWorkflowTemplate: payload => ipc.invoke(SD_CPP_CHANNELS.SAVE_WORKFLOW_TEMPLATE, payload),
+        deleteWorkflowTemplate: id => ipc.invoke(SD_CPP_CHANNELS.DELETE_WORKFLOW_TEMPLATE, id),
+        exportWorkflowTemplateShare: id => ipc.invoke(SD_CPP_CHANNELS.EXPORT_WORKFLOW_TEMPLATE_SHARE, id),
+        importWorkflowTemplateShare: code => ipc.invoke(SD_CPP_CHANNELS.IMPORT_WORKFLOW_TEMPLATE_SHARE, code),
+        schedule: payload => ipc.invoke(SD_CPP_CHANNELS.SCHEDULE, payload),
+        listSchedules: () => ipc.invoke(SD_CPP_CHANNELS.LIST_SCHEDULES),
+        cancelSchedule: id => ipc.invoke(SD_CPP_CHANNELS.CANCEL_SCHEDULE, id),
+        compare: ids => ipc.invoke(SD_CPP_CHANNELS.COMPARE, ids),
+        exportComparison: payload => ipc.invoke(SD_CPP_CHANNELS.EXPORT_COMPARISON, payload),
+        shareComparison: ids => ipc.invoke(SD_CPP_CHANNELS.SHARE_COMPARISON, ids),
+        batchGenerate: requests => ipc.invoke(SD_CPP_CHANNELS.BATCH_GENERATE, requests),
+        getQueueStats: () => ipc.invoke(SD_CPP_CHANNELS.GET_QUEUE_STATS),
+        edit: options => ipc.invoke(SD_CPP_CHANNELS.EDIT, options),
         onSdCppStatus: (callback: (data: RuntimeValue) => void) => {
             const listener = (_event: IpcRendererEvent, data: RuntimeValue) => callback(data);
-            ipc.on('sd-cpp:status', listener);
+            ipc.on(SD_CPP_CHANNELS.STATUS, listener);
             return () => {
-                ipc.removeListener('sd-cpp:status', listener);
+                ipc.removeListener(SD_CPP_CHANNELS.STATUS, listener);
             };
         },
         onSdCppProgress: (callback: (data: RuntimeValue) => void) => {
             const listener = (_event: IpcRendererEvent, data: RuntimeValue) => callback(data);
-            ipc.on('sd-cpp:progress', listener);
+            ipc.on(SD_CPP_CHANNELS.PROGRESS, listener);
             return () => {
-                ipc.removeListener('sd-cpp:progress', listener);
+                ipc.removeListener(SD_CPP_CHANNELS.PROGRESS, listener);
             };
         },
     };
 }
+

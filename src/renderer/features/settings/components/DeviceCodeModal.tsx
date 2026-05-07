@@ -25,7 +25,7 @@ export interface DeviceCodeModalState {
     isOpen: boolean
     userCode: string
     verificationUri: string
-    provider: 'github' | 'copilot'
+    provider: 'copilot'
     status: 'pending' | 'success' | 'error'
     errorMessage?: string
 }
@@ -64,7 +64,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
         window.electron.openExternal(verificationUri);
     }, [verificationUri]);
 
-    const providerName = provider === 'copilot' ? 'GitHub Copilot' : 'GitHub';
+    const providerName = 'GitHub Copilot';
     const isPending = status === 'pending';
     const isSuccess = status === 'success';
     const isError = status === 'error';
@@ -151,3 +151,4 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
         </Modal>
     );
 };
+

@@ -132,3 +132,4 @@ class RendererLogger {
 }
 
 export const appLogger = new RendererLogger();
+

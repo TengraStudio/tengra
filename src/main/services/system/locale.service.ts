@@ -14,6 +14,7 @@ import * as path from 'path';
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { LOCALE_CHANNELS } from '@shared/constants/ipc-channels';
 import { localePackSchema } from '@shared/schemas/locale.schema';
 import { LocalePack, LocalePackManifest } from '@shared/types/locale';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -101,7 +102,7 @@ export class LocaleService extends BaseService {
         }));
     }
 
-    @ipc('locale:runtime:getAll')
+    @ipc(LOCALE_CHANNELS.RUNTIME_GET_ALL)
     async getAllLocalePacksIpc() {
         return this.getAllLocalePacks();
     }
@@ -147,3 +148,4 @@ export class LocaleService extends BaseService {
         }
     }
 }
+

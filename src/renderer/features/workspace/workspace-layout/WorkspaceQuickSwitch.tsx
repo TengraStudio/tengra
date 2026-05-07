@@ -115,3 +115,4 @@ export const WorkspaceQuickSwitch: React.FC<WorkspaceQuickSwitchProps> = ({
         </div>
     );
 };
+

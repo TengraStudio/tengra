@@ -79,3 +79,4 @@ export const SESSION_CAPABILITY_DESCRIPTORS: SessionCapabilityDescriptor[] = [
 export const SESSION_CAPABILITY_DESCRIPTOR_MAP = Object.fromEntries(
     SESSION_CAPABILITY_DESCRIPTORS.map(descriptor => [descriptor.id, descriptor])
 ) as Record<SessionCapabilityDescriptor['id'], SessionCapabilityDescriptor>;
+

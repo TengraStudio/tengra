@@ -80,3 +80,4 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
         </div>
     );
 };
+

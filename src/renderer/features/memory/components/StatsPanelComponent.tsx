@@ -146,3 +146,4 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, subtitle }) => (
     {subtitle && <p className="text-sm text-muted-foreground/50">{subtitle}</p>}
   </div>
 );
+

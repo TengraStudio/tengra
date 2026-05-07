@@ -98,6 +98,23 @@ export function useAppState(): AppState {
         });
     }, []);
 
+    useEffect(() => {
+        const handleNavigateView = (event: Event) => {
+            const nextView = (event as CustomEvent<AppView>).detail;
+            if (typeof nextView !== 'string' || nextView.trim() === '') {
+                return;
+            }
+            startTransition(() => {
+                setCurrentViewState(prev => (prev === nextView ? prev : nextView));
+            });
+        };
+
+        window.addEventListener('app:navigate-view', handleNavigateView as EventListener);
+        return () => {
+            window.removeEventListener('app:navigate-view', handleNavigateView as EventListener);
+        };
+    }, []);
+
     // Toast notifications (shared notification center)
     const activeNotifications = useNotificationCenterStore(snapshot => snapshot.active);
     const toasts = useMemo(() => toActiveToasts(activeNotifications), [activeNotifications]);
@@ -164,3 +181,4 @@ export function useAppState(): AppState {
         setIsAudioOverlayOpen
     ]);
 }
+

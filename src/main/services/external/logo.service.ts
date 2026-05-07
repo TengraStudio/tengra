@@ -23,6 +23,7 @@ import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { DialogService } from '@main/services/system/dialog.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
+import { WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import { ModelQuotaItem } from '@shared/types/quota';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -96,7 +97,7 @@ export class LogoService {
         return styles[style] || style;
     }
 
-    @ipc('workspace:analyzeIdentity')
+    @ipc(WORKSPACE_CHANNELS.ANALYZE_IDENTITY)
     async analyzeWorkspaceIdentity(
         workspacePath: string
     ): Promise<{ suggestedPrompts: string[]; colors: string[] }> {
@@ -258,7 +259,7 @@ ${context}`;
         const copilotModels = textModels
             .filter(model => {
                 const provider = (model.provider ?? '').toLowerCase();
-                return provider === 'copilot' || provider === 'github';
+                return provider === 'copilot';
             })
             .filter(model => this.isAllowedCopilotModelByName(`${model.id} ${model.name ?? ''}`))
             .sort(
@@ -468,11 +469,11 @@ ${context}`;
                 continue;
             }
 
-            if (provider === 'copilot' || provider === 'github') {
+            if (provider === 'copilot') {
                 if (copilotAccounts.length === 0) {
                     appLogger.info(
                         'logo.service',
-                        '[LogoService] Skipping copilot/github candidate because no quota-positive account is available'
+                        '[LogoService] Skipping copilot candidate because no quota-positive account is available'
                     );
                     continue;
                 }
@@ -716,7 +717,7 @@ ${context}`;
         return score;
     }
 
-    @ipc('workspace:improveLogoPrompt')
+    @ipc(WORKSPACE_CHANNELS.IMPROVE_LOGO_PROMPT)
     async improveLogoPrompt(prompt: string): Promise<string> {
         const improvementPrompt = `You are a creative brand designer. Expand and improve the following logo description into a detailed, high-quality prompt for an AI image generator (like Flux or DALL-E). 
         Focus on artistic style, lighting, composition, and professional aesthetics. Keep it to 2-3 sentences.
@@ -756,7 +757,7 @@ ${context}`;
         }
     }
 
-    @ipc('workspace:generateLogo')
+    @ipc(WORKSPACE_CHANNELS.GENERATE_LOGO)
     async generateLogo(
         workspacePath: string,
         prompt: string,
@@ -963,7 +964,7 @@ ${context}`;
         return normalized;
     }
 
-    @ipc('workspace:applyLogo')
+    @ipc(WORKSPACE_CHANNELS.APPLY_LOGO)
     async applyLogo(workspacePath: string, tempLogoDataUri: string): Promise<string> {
         if (workspacePath && this.allowedFileRoots) {
             this.allowedFileRoots.add(join(workspacePath));
@@ -986,7 +987,7 @@ ${context}`;
         }
     }
 
-    @ipc('workspace:uploadLogo')
+    @ipc(WORKSPACE_CHANNELS.UPLOAD_LOGO)
     async uploadLogo(workspacePath: string): Promise<string | null> {
         if (workspacePath && this.allowedFileRoots) {
             this.allowedFileRoots.add(join(workspacePath));
@@ -1030,5 +1031,7 @@ ${context}`;
         });
     }
 }
+
+
 
 

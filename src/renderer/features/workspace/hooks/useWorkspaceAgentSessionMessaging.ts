@@ -31,7 +31,7 @@ interface UseWorkspaceAgentSessionMessagingOptions {
     generateResponse: (chatId: string, userMessage: Message, retryModel?: string) => Promise<void>;
     loadWorkspaceSessions: () => Promise<void>;
     refreshCouncilState: (sessionId: string) => Promise<void>;
-    refreshTelemetry: (sessionId: string) => Promise<void>;
+    refreshStats: (sessionId: string) => Promise<void>;
     updateChatCollection: (sessionId: string, updater: (chat: Chat) => Chat) => void;
 }
 
@@ -45,7 +45,7 @@ export function useWorkspaceAgentSessionMessaging({
     generateResponse,
     loadWorkspaceSessions,
     refreshCouncilState,
-    refreshTelemetry,
+    refreshStats,
     updateChatCollection,
 }: UseWorkspaceAgentSessionMessagingOptions) {
     const isSendingRef = useRef(false);
@@ -61,7 +61,7 @@ export function useWorkspaceAgentSessionMessaging({
                 isLoading,
                 loadWorkspaceSessions,
                 refreshCouncilState,
-                refreshTelemetry,
+                refreshStats,
                 selectedModel,
                 selectedProvider,
                 updateChatCollection,
@@ -76,7 +76,7 @@ export function useWorkspaceAgentSessionMessaging({
         isLoading,
         loadWorkspaceSessions,
         refreshCouncilState,
-        refreshTelemetry,
+        refreshStats,
         resolveTargetSession,
         selectedModel,
         selectedProvider,
@@ -88,3 +88,4 @@ export function useWorkspaceAgentSessionMessaging({
         handleSend,
     };
 }
+

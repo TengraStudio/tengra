@@ -17,38 +17,46 @@
  * @module ipc-channels
  */
 
+export const METRICS_CHANNELS = {
+  GET: 'metrics:get',
+  RECORD: 'metrics:record',
+  GET_PROVIDER_STATS: 'metrics:get-provider-stats',
+  GET_SUMMARY: 'metrics:get-summary',
+  RESET: 'metrics:reset',
+} as const;
+
 // ---------------------------------------------------------------------------
 // Window & Shell
 // ---------------------------------------------------------------------------
 
 /** Window management and shell operations */
 export const WINDOW_CHANNELS = {
-  /** Capture browser cookies */
   CAPTURE_COOKIES: 'window:captureCookies',
-  /** Close the application window */
   CLOSE: 'window:close',
-  /** Maximize the application window */
+  GET_ZOOM_FACTOR: 'window:get-zoom-factor',
   MAXIMIZE: 'window:maximize',
-  /** Minimize the application window */
   MINIMIZE: 'window:minimize',
-  /** Open a detached terminal window */
   OPEN_DETACHED_TERMINAL: 'window:openDetachedTerminal',
-  /** Resize the application window */
+  RESET_ZOOM_FACTOR: 'window:reset-zoom-factor',
   RESIZE: 'window:resize',
-  /** Toggle compact mode */
+  SET_ZOOM_FACTOR: 'window:set-zoom-factor',
+  STEP_ZOOM_FACTOR: 'window:step-zoom-factor',
   TOGGLE_COMPACT: 'window:toggle-compact',
-  /** Toggle fullscreen mode */
   TOGGLE_FULLSCREEN: 'window:toggle-fullscreen',
 } as const;
 
 /** Shell utility channels */
 export const SHELL_CHANNELS = {
-  /** Open a URL or path in the OS default handler */
   OPEN_EXTERNAL: 'shell:openExternal',
-  /** Open the system terminal */
   OPEN_TERMINAL: 'shell:openTerminal',
-  /** Run an arbitrary shell command */
   RUN_COMMAND: 'shell:runCommand',
+} as const;
+ 
+/** Dialog utility channels */
+export const DIALOG_CHANNELS = {
+  SAVE_FILE: 'dialog:saveFile',
+  SELECT_DIRECTORY: 'dialog:selectDirectory',
+  SHOW_OPEN_DIALOG: 'dialog:showOpenDialog',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -57,21 +65,60 @@ export const SHELL_CHANNELS = {
 
 /** Application-level channels */
 export const APP_CHANNELS = {
-  /** Get the Electron userData directory path */
   GET_USER_DATA_PATH: 'app:getUserDataPath',
+} as const;
+
+/** Export channels */
+export const EXPORT_CHANNELS = {
+  CHAT: 'export:chat',
+  CHAT_TO_HTML: 'export:chatToHTML',
+  CHAT_TO_JSON: 'export:chatToJSON',
+  CHAT_TO_MARKDOWN: 'export:chatToMarkdown',
+  CHAT_TO_PDF: 'export:chatToPDF',
+  CHAT_TO_TEXT: 'export:chatToText',
+  GET_CONTENT: 'export:getContent',
+  MARKDOWN: 'export:markdown',
+  PDF: 'export:pdf',
+} as const;
+
+/** Update management channels */
+export const UPDATE_CHANNELS = {
+  CHECK: 'update:check',
+  DOWNLOAD: 'update:download',
+  INSTALL: 'update:install',
+  STATUS: 'update:status',
+} as const;
+
+/** Security channels */
+export const SECURITY_CHANNELS = {
+  RESET_MASTER_KEY: 'security:reset-master-key',
+} as const;
+
+/** Runtime and bootstrap channels */
+export const RUNTIME_CHANNELS = {
+  GET_STATUS: 'runtime:get-status',
+  REFRESH_STATUS: 'runtime:refresh-status',
+  REPAIR: 'runtime:repair',
+  RUN_COMPONENT_ACTION: 'runtime:run-component-action',
+} as const;
+
+/** Clipboard operations channels */
+export const CLIPBOARD_CHANNELS = {
+  READ_TEXT: 'clipboard:read-text',
+  WRITE_TEXT: 'clipboard:write-text',
+} as const;
+
+/** IPC Contract channels */
+export const CONTRACT_CHANNELS = {
+  GET: 'ipc:contract:get',
 } as const;
 
 /** Health-check channels */
 export const HEALTH_CHANNELS = {
-  /** Run a full health check */
   CHECK: 'health:check',
-  /** Get a specific service's health */
   GET_SERVICE: 'health:getService',
-  /** List all registered services */
   LIST_SERVICES: 'health:listServices',
-  /** Get memory context runtime metrics */
   MEMORY_CONTEXT: 'health:memoryContext',
-  /** Get overall health status */
   STATUS: 'health:status',
 } as const;
 
@@ -81,72 +128,61 @@ export const HEALTH_CHANNELS = {
 
 /** Authentication and session channels */
 export const AUTH_CHANNELS = {
-  /** Create a master key backup */
+  CREATE_ACCOUNT: 'auth:create-account',
   CREATE_MASTER_KEY_BACKUP: 'auth:create-master-key-backup',
-  /** Detect the current auth provider */
   DETECT_PROVIDER: 'auth:detect-provider',
-  /** End the current user session */
   END_SESSION: 'auth:end-session',
-  /** Export stored credentials */
   EXPORT_CREDENTIALS: 'auth:export-credentials',
-  /** Get provider analytics data */
+  GET_ACCOUNTS_BY_PROVIDER: 'auth:get-accounts-by-provider',
+  GET_ACTIVE_LINKED_ACCOUNT: 'auth:get-active-linked-account',
+  GET_LINKED_ACCOUNTS: 'auth:get-linked-accounts',
   GET_PROVIDER_ANALYTICS: 'auth:get-provider-analytics',
-  /** Get provider health status */
   GET_PROVIDER_HEALTH: 'auth:get-provider-health',
-  /** Get session analytics data */
   GET_SESSION_ANALYTICS: 'auth:get-session-analytics',
-  /** Get session timeout setting */
   GET_SESSION_TIMEOUT: 'auth:get-session-timeout',
-  /** Get token analytics data */
   GET_TOKEN_ANALYTICS: 'auth:get-token-analytics',
-  /** Initiate GitHub OAuth login */
   GITHUB_LOGIN: 'auth:github-login',
-  /** Import credentials from external source */
   IMPORT_CREDENTIALS: 'auth:import-credentials',
-  /** Link an external account */
+  HAS_LINKED_ACCOUNT: 'auth:has-linked-account',
   LINK_ACCOUNT: 'auth:link-account',
-  /** Poll for pending auth token */
   POLL_TOKEN: 'auth:poll-token',
-  /** Restore master key from backup */
   RESTORE_MASTER_KEY_BACKUP: 'auth:restore-master-key-backup',
-  /** Revoke a linked account's token */
   REVOKE_ACCOUNT_TOKEN: 'auth:revoke-account-token',
-  /** Rotate token encryption keys */
   ROTATE_TOKEN_ENCRYPTION: 'auth:rotate-token-encryption',
-  /** Set the active linked account */
   SET_ACTIVE_LINKED_ACCOUNT: 'auth:set-active-linked-account',
-  /** Set maximum concurrent session limit */
   SET_SESSION_LIMIT: 'auth:set-session-limit',
-  /** Set session timeout duration */
   SET_SESSION_TIMEOUT: 'auth:set-session-timeout',
-  /** Start a new user session */
   START_SESSION: 'auth:start-session',
-  /** Touch (refresh) the current session */
+  SWITCH_ACCOUNT: 'auth:switch-account',
   TOUCH_SESSION: 'auth:touch-session',
-  /** Unlink an external account */
   UNLINK_ACCOUNT: 'auth:unlink-account',
-  /** Unlink a specific auth provider */
   UNLINK_PROVIDER: 'auth:unlink-provider',
+  ACCOUNT_CHANGED_EVENT: 'auth:account-changed',
+} as const;
+
+/** Auth session channels */
+export const AUTH_SESSION_CHANNELS = {
+  ANALYTICS: 'auth:session:analytics',
+  END: 'auth:session:end',
+  GET_TIMEOUT: 'auth:session:get-timeout',
+  SET_LIMIT: 'auth:session:set-limit',
+  SET_TIMEOUT: 'auth:session:set-timeout',
+  START: 'auth:session:start',
+  TOUCH: 'auth:session:touch',
 } as const;
 
 /** Key rotation channels */
 export const KEY_ROTATION_CHANNELS = {
-  /** Get the current encryption key metadata */
   GET_CURRENT_KEY: 'key-rotation:getCurrentKey',
-  /** Get rotation status */
   GET_STATUS: 'key-rotation:getStatus',
-  /** Initialize key rotation system */
   INITIALIZE: 'key-rotation:initialize',
-  /** Perform a key rotation */
   ROTATE: 'key-rotation:rotate',
 } as const;
 
 /** Audit log channels */
 export const AUDIT_CHANNELS = {
-  /** Clear audit logs */
   CLEAR_LOGS: 'audit:clearLogs',
-  /** Retrieve audit logs */
-  GET_LOGS: 'audit:getLogs',
+  GET_LOGS: 'audit:get-logs',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -155,350 +191,275 @@ export const AUDIT_CHANNELS = {
 
 /** Session channels */
 export const SESSION_CHANNELS = {
-  /** Get a single session state snapshot */
   GET_STATE: 'session:get-state',
-  /** List active session recovery snapshots */
   LIST: 'session:list',
-  /** List capability descriptors known to the session runtime */
   LIST_CAPABILITIES: 'session:list-capabilities',
-  /** Basic health/status for the session runtime */
   HEALTH: 'session:health',
-  /** Renderer event channel for session lifecycle updates */
   EVENT: 'session:event',
 } as const;
 
 /** Session conversation channels */
 export const SESSION_CONVERSATION_CHANNELS = {
-  /** Execute a non-streaming conversation request */
   COMPLETE: 'session:conversation:complete',
-  /** Stream a conversation response */
   STREAM: 'session:conversation:stream',
-  /** Renderer event channel for streamed conversation chunks */
   STREAM_CHUNK: 'session:conversation:stream-chunk',
-  /** Renderer event channel for binary-encoded streamed conversation chunks */
   STREAM_CHUNK_BINARY: 'session:conversation:stream-chunk-binary',
-  /** Cancel an in-flight conversation */
   CANCEL: 'session:conversation:cancel',
-  /** Retry a previous response with a different model */
   RETRY_WITH_MODEL: 'session:conversation:retry-with-model',
 } as const;
 
 /** Session automation channels */
 export const SESSION_AUTOMATION_CHANNELS = {
-  /** Start an automation execution session */
   START: 'session:automation:start',
-  /** Generate a plan for an automation session */
   PLAN: 'session:automation:plan',
-  /** Approve a plan for execution */
   APPROVE_PLAN: 'session:automation:approve-plan',
-  /** Stop an automation execution */
   STOP: 'session:automation:stop',
-  /** Pause a running automation task */
   PAUSE_TASK: 'session:automation:pause-task',
-  /** Resume a paused automation task */
   RESUME_TASK: 'session:automation:resume-task',
-  /** Create a checkpoint snapshot for an automation task */
   SAVE_SNAPSHOT: 'session:automation:save-snapshot',
-  /** Approve the currently pending plan */
   APPROVE_CURRENT_PLAN: 'session:automation:approve-current-plan',
-  /** Reject the currently pending plan */
   REJECT_CURRENT_PLAN: 'session:automation:reject-current-plan',
-  /** Reset runtime state for the active task */
   RESET_STATE: 'session:automation:reset-state',
-  /** Read the current automation workflow state */
   GET_STATUS: 'session:automation:get-status',
-  /** Read persisted task messages */
   GET_TASK_MESSAGES: 'session:automation:get-task-messages',
-  /** Read persisted task events */
   GET_TASK_EVENTS: 'session:automation:get-task-events',
-  /** Read task telemetry points */
-  GET_TASK_TELEMETRY: 'session:automation:get-task-telemetry',
-  /** Read task history for a workspace */
+  GET_TASK_STATS: 'session:automation:get-task-stats',
   GET_TASK_HISTORY: 'session:automation:get-task-history',
-  /** Delete an automation task */
   DELETE_TASK: 'session:automation:delete-task',
-  /** List available models for automation routing */
   GET_AVAILABLE_MODELS: 'session:automation:get-available-models',
-  /** Retry a failed step */
   RETRY_STEP: 'session:automation:retry-step',
-  /** Select a new model for a task */
   SELECT_MODEL: 'session:automation:select-model',
-  /** Approve a specific step */
   APPROVE_STEP: 'session:automation:approve-step',
-  /** Skip a specific step */
   SKIP_STEP: 'session:automation:skip-step',
-  /** Edit a step's text */
   EDIT_STEP: 'session:automation:edit-step',
-  /** Add a comment to a step */
   ADD_STEP_COMMENT: 'session:automation:add-step-comment',
-  /** Insert a manual intervention point */
   INSERT_INTERVENTION_POINT: 'session:automation:insert-intervention-point',
-  /** List available checkpoints */
   GET_CHECKPOINTS: 'session:automation:get-checkpoints',
-  /** Resume execution from a checkpoint */
   RESUME_CHECKPOINT: 'session:automation:resume-checkpoint',
-  /** Roll back to a checkpoint */
   ROLLBACK_CHECKPOINT: 'session:automation:rollback-checkpoint',
-  /** List plan versions for a task */
   GET_PLAN_VERSIONS: 'session:automation:get-plan-versions',
-  /** Delete a task by canvas node id */
   DELETE_TASK_BY_NODE_ID: 'session:automation:delete-task-by-node-id',
-  /** Create a pull request for a task */
   CREATE_PULL_REQUEST: 'session:automation:create-pull-request',
-  /** List agent profiles available to automation sessions */
   GET_PROFILES: 'session:automation:get-profiles',
-  /** Read model routing rules */
   GET_ROUTING_RULES: 'session:automation:get-routing-rules',
-  /** Replace model routing rules */
   SET_ROUTING_RULES: 'session:automation:set-routing-rules',
-  /** List stored automation templates */
   GET_TEMPLATES: 'session:automation:get-templates',
-  /** Get a single automation template */
   GET_TEMPLATE: 'session:automation:get-template',
-  /** Save an automation template */
   SAVE_TEMPLATE: 'session:automation:save-template',
-  /** Delete an automation template */
   DELETE_TEMPLATE: 'session:automation:delete-template',
-  /** Export an automation template */
   EXPORT_TEMPLATE: 'session:automation:export-template',
-  /** Import an automation template */
   IMPORT_TEMPLATE: 'session:automation:import-template',
-  /** Apply an automation template */
   APPLY_TEMPLATE: 'session:automation:apply-template',
 } as const;
 
 /** Session workspace channels */
 export const SESSION_WORKSPACE_CHANNELS = {
-  /** Save automation canvas nodes */
   SAVE_CANVAS_NODES: 'session:workspace:save-canvas-nodes',
-  /** Load automation canvas nodes */
   GET_CANVAS_NODES: 'session:workspace:get-canvas-nodes',
-  /** Delete one automation canvas node */
   DELETE_CANVAS_NODE: 'session:workspace:delete-canvas-node',
-  /** Save automation canvas edges */
   SAVE_CANVAS_EDGES: 'session:workspace:save-canvas-edges',
-  /** Load automation canvas edges */
   GET_CANVAS_EDGES: 'session:workspace:get-canvas-edges',
-  /** Delete one automation canvas edge */
   DELETE_CANVAS_EDGE: 'session:workspace:delete-canvas-edge',
 } as const;
 
 /** Workspace-scoped agent session channels */
 export const WORKSPACE_AGENT_SESSION_CHANNELS = {
-  /** List persistent workspace agent sessions for a workspace */
   LIST_BY_WORKSPACE: 'workspace-agent-session:list-by-workspace',
-  /** Create a new workspace agent session */
   CREATE: 'workspace-agent-session:create',
-  /** Rename an existing workspace agent session */
   RENAME: 'workspace-agent-session:rename',
-  /** Persist the selected active session for a workspace */
   SELECT: 'workspace-agent-session:select',
-  /** Update workspace-scoped persistence state for the panel */
   UPDATE_PERSISTENCE: 'workspace-agent-session:update-persistence',
-  /** Update the active mode set for a session */
   UPDATE_MODES: 'workspace-agent-session:update-modes',
-  /** Update the permission policy for a session */
   UPDATE_PERMISSIONS: 'workspace-agent-session:update-permissions',
-  /** Update execution strategy for a session */
   UPDATE_STRATEGY: 'workspace-agent-session:update-strategy',
-  /** Read computed context telemetry for a session */
-  GET_CONTEXT_TELEMETRY: 'workspace-agent-session:get-context-telemetry',
-  /** Archive or unarchive a session */
+  GET_CONTEXT_STATS: 'workspace-agent-session:get-context-stats',
   ARCHIVE: 'workspace-agent-session:archive',
-  /** Delete a session */
   DELETE: 'workspace-agent-session:delete',
-  /** Update background-state persistence for a workspace */
   RESUME_BACKGROUND_STATE: 'workspace-agent-session:resume-background-state',
 } as const;
 
 /** Session council channels */
 export const SESSION_COUNCIL_CHANNELS = {
-  /** Ask the council runtime to generate a proposal for a task */
   GENERATE_PLAN: 'session:council:generate-plan',
-  /** Get the current proposal steps for a council-managed task */
   GET_PROPOSAL: 'session:council:get-proposal',
-  /** Approve a council proposal */
   APPROVE_PROPOSAL: 'session:council:approve-proposal',
-  /** Reject a council proposal */
   REJECT_PROPOSAL: 'session:council:reject-proposal',
-  /** Start execution for an approved council proposal */
   START_EXECUTION: 'session:council:start-execution',
-  /** Pause a council-managed execution */
   PAUSE_EXECUTION: 'session:council:pause-execution',
-  /** Resume a paused council-managed execution */
   RESUME_EXECUTION: 'session:council:resume-execution',
-  /** Retrieve council execution timeline events */
   GET_TIMELINE: 'session:council:get-timeline',
-  /** Create a voting session for a council decision */
   CREATE_VOTING_SESSION: 'session:council:create-voting-session',
-  /** Submit a vote into an existing council voting session */
   SUBMIT_VOTE: 'session:council:submit-vote',
-  /** Request multiple models to vote for a session */
   REQUEST_VOTES: 'session:council:request-votes',
-  /** Resolve a council voting session */
   RESOLVE_VOTING: 'session:council:resolve-voting',
-  /** Get one council voting session */
   GET_VOTING_SESSION: 'session:council:get-voting-session',
-  /** List voting sessions for a task or for all council-enabled sessions */
   LIST_VOTING_SESSIONS: 'session:council:list-voting-sessions',
-  /** Get aggregate voting analytics for council-enabled sessions */
   GET_VOTING_ANALYTICS: 'session:council:get-voting-analytics',
-  /** Read the active voting configuration */
   GET_VOTING_CONFIGURATION: 'session:council:get-voting-configuration',
-  /** Update the active voting configuration */
   UPDATE_VOTING_CONFIGURATION: 'session:council:update-voting-configuration',
-  /** List built-in and custom voting templates */
   LIST_VOTING_TEMPLATES: 'session:council:list-voting-templates',
-  /** Build consensus from multiple council outputs */
   BUILD_CONSENSUS: 'session:council:build-consensus',
-  /** Override the final decision of a voting session */
   OVERRIDE_VOTING_DECISION: 'session:council:override-voting-decision',
-  /** Create a debate session */
   CREATE_DEBATE_SESSION: 'session:council:create-debate-session',
-  /** Submit a debate argument */
   SUBMIT_DEBATE_ARGUMENT: 'session:council:submit-debate-argument',
-  /** Resolve a debate session */
   RESOLVE_DEBATE_SESSION: 'session:council:resolve-debate-session',
-  /** Override a debate session */
   OVERRIDE_DEBATE_SESSION: 'session:council:override-debate-session',
-  /** Get a debate session */
   GET_DEBATE_SESSION: 'session:council:get-debate-session',
-  /** List debate history */
   LIST_DEBATE_HISTORY: 'session:council:list-debate-history',
-  /** Get debate replay */
   GET_DEBATE_REPLAY: 'session:council:get-debate-replay',
-  /** Generate a debate summary */
   GENERATE_DEBATE_SUMMARY: 'session:council:generate-debate-summary',
-  /** Send a collaboration message */
   SEND_MESSAGE: 'session:council:send-message',
-  /** Get collaboration messages */
   GET_MESSAGES: 'session:council:get-messages',
-  /** Cleanup expired collaboration messages */
   CLEANUP_EXPIRED_MESSAGES: 'session:council:cleanup-expired-messages',
-  /** Handle quota interrupt through council routing */
   HANDLE_QUOTA_INTERRUPT: 'session:council:handle-quota-interrupt',
-  /** Stream quota interrupt events for council-enabled sessions */
   QUOTA_INTERRUPT_EVENT: 'session:council:quota-interrupt:event',
-  /** Register worker availability */
   REGISTER_WORKER_AVAILABILITY: 'session:council:register-worker-availability',
-  /** List available workers */
   LIST_AVAILABLE_WORKERS: 'session:council:list-available-workers',
-  /** Score helper candidates */
   SCORE_HELPER_CANDIDATES: 'session:council:score-helper-candidates',
-  /** Generate helper handoff package */
   GENERATE_HELPER_HANDOFF: 'session:council:generate-helper-handoff',
-  /** Review helper merge gate */
   REVIEW_HELPER_MERGE: 'session:council:review-helper-merge',
-  /** Get teamwork analytics */
   GET_TEAMWORK_ANALYTICS: 'session:council:get-teamwork-analytics',
 } as const;
 
 /** Ollama local LLM channels */
 export const OLLAMA_CHANNELS = {
-  /** Abort current generation */
   ABORT: 'ollama:abort',
-  /** Abort an in-progress model pull */
   ABORT_PULL: 'ollama:abortPull',
-  /** Send a chat request (non-streaming) */
   CHAT: 'ollama:chat',
-  /** Send a streaming chat request */
+  CHAT_OPENAI: 'ollama:chat-openai',
   CHAT_STREAM: 'ollama:chatStream',
-  /** Check health of all models */
   CHECK_ALL_MODELS_HEALTH: 'ollama:checkAllModelsHealth',
-  /** Check CUDA availability */
   CHECK_CUDA: 'ollama:checkCuda',
-  /** Check a specific model's health */
+  DELETE_MODEL: 'ollama:deleteModel',
   CHECK_MODEL_HEALTH: 'ollama:checkModelHealth',
-  /** Force a health check */
   FORCE_HEALTH_CHECK: 'ollama:forceHealthCheck',
-  /** Get current connection status */
   GET_CONNECTION_STATUS: 'ollama:getConnectionStatus',
-  /** Get GPU alert thresholds */
   GET_GPU_ALERT_THRESHOLDS: 'ollama:getGPUAlertThresholds',
-  /** Get GPU information */
   GET_GPU_INFO: 'ollama:getGPUInfo',
-  /** Get available library models */
   GET_LIBRARY_MODELS: 'ollama:getLibraryModels',
-  /** Get model recommendations */
   GET_MODEL_RECOMMENDATIONS: 'ollama:getModelRecommendations',
-  /** Get installed models */
   GET_MODELS: 'ollama:getModels',
-  /** Get recommended model for a specific task */
+  GET_OLLAMA_ACCOUNTS: 'ollama:get-ollama-accounts',
   GET_RECOMMENDED_MODEL_FOR_TASK: 'ollama:getRecommendedModelForTask',
-  /** Get health status */
   HEALTH_STATUS: 'ollama:healthStatus',
-  /** Check if Ollama is running */
+  GPU_ALERT: 'ollama:gpu-alert',
+  GPU_STATUS: 'ollama:gpu-status',
+  INITIATE_CONNECT: 'ollama:initiate-connect',
   IS_RUNNING: 'ollama:isRunning',
-  /** Pull a model */
   PULL: 'ollama:pull',
-  /** Reconnect to Ollama */
+  PULL_PROGRESS: 'ollama:pull-progress',
   RECONNECT: 'ollama:reconnect',
-  /** Set GPU alert thresholds */
+  POLL_CONNECT_STATUS: 'ollama:poll-connect-status',
   SET_GPU_ALERT_THRESHOLDS: 'ollama:setGPUAlertThresholds',
-  /** Start Ollama service */
   START: 'ollama:start',
-  /** Start GPU monitoring */
   START_GPU_MONITORING: 'ollama:startGPUMonitoring',
-  /** Stop GPU monitoring */
+  STATUS_CHANGE: 'ollama:status-change',
   STOP_GPU_MONITORING: 'ollama:stopGPUMonitoring',
-  /** List model tags */
   TAGS: 'ollama:tags',
-  /** Test connection to Ollama */
   TEST_CONNECTION: 'ollama:testConnection',
+  STREAM_CHUNK: 'ollama:stream-chunk',
+} as const;
+
+/** Llama local model channels */
+export const LLAMA_CHANNELS = {
+  ABORT_CHAT: 'llama:chat:abort',
+  CHAT: 'llama:chat',
+  CHAT_OPENAI: 'llama:chat-openai',
+  CHAT_STREAM: 'llama:chat:stream',
+  CHAT_STREAM_CHUNK: 'llama:chat:stream:chunk',
+  ABORT_DOWNLOAD: 'llama:abortDownload',
+  DELETE_MODEL: 'llama:deleteModel',
+  DOWNLOAD_MODEL: 'llama:downloadModel',
+  GET_CONFIG: 'llama:getConfig',
+  GET_METADATA: 'llama:get-metadata',
+  GET_MODELS: 'llama:getModels',
+  GET_MODELS_DIR: 'llama:getModelsDir',
+  GET_GPU_INFO: 'llama:getGpuInfo',
+  IS_INSTALLED: 'llama:is-installed',
+  IS_SERVER_RUNNING: 'llama:isServerRunning',
+  LOAD_MODEL: 'llama:loadModel',
+  RESET_SESSION: 'llama:resetSession',
+  SET_CONFIG: 'llama:setConfig',
+  SET_MODELS_DIR: 'llama:setModelsDir',
+  START: 'llama:start',
+  STATUS: 'llama:status',
+  STOP: 'llama:stop',
+  UNLOAD_MODEL: 'llama:unloadModel',
+  VALIDATE_MODEL: 'llama:validate-model',
+} as const;
+
+/** LLM comparison channels */
+export const LLM_CHANNELS = {
+  CLEAR_COMPARISON_HISTORY: 'llm:clear-comparison-history',
+  COMPARE_MODELS: 'llm:compare-models',
+  GET_COMPARISON_HISTORY: 'llm:get-comparison-history',
+} as const;
+
+/** Embedding channels */
+export const EMBEDDING_CHANNELS = {
+  GENERATE: 'embedding:generate',
+  GET_ANALYTICS: 'embedding:get-analytics',
+  GET_HEALTH: 'embedding:get-health',
 } as const;
 
 /** Model registry channels */
 export const MODEL_REGISTRY_CHANNELS = {
-  /** Get all models (local + remote) */
   GET_ALL_MODELS: 'model-registry:getAllModels',
-  /** Get locally installed models */
-  GET_INSTALLED_MODELS: 'model-registry:getInstalledModels',
-  /** Get remote/available models */
-  GET_REMOTE_MODELS: 'model-registry:getRemoteModels',
+  GET_INSTALLED_MODELS: 'model-registry:get-installed',
+  GET_REMOTE_MODELS: 'model-registry:get-remote',
+} as const;
+
+/** Model downloader channels */
+export const MODEL_DOWNLOADER_CHANNELS = {
+  CANCEL: 'model-downloader:cancel',
+  HISTORY: 'model-downloader:history',
+  PAUSE: 'model-downloader:pause',
+  RESUME: 'model-downloader:resume',
+  RETRY: 'model-downloader:retry',
+  START: 'model-downloader:start',
 } as const;
 
 /** Context window management channels */
 export const CONTEXT_WINDOW_CHANNELS = {
-  /** Get context window info for a model */
   GET_INFO: 'context-window:getInfo',
-  /** Get recommended context settings */
   GET_RECOMMENDED_SETTINGS: 'context-window:getRecommendedSettings',
-  /** Check if messages need truncation */
   NEEDS_TRUNCATION: 'context-window:needsTruncation',
-  /** Truncate messages to fit context window */
   TRUNCATE: 'context-window:truncate',
 } as const;
 
 /** Token estimation channels */
 export const TOKEN_ESTIMATION_CHANNELS = {
-  /** Estimate tokens for a single message */
   ESTIMATE_MESSAGE: 'token-estimation:estimateMessage',
-  /** Estimate tokens for multiple messages */
   ESTIMATE_MESSAGES: 'token-estimation:estimateMessages',
-  /** Estimate tokens for a raw string */
   ESTIMATE_STRING: 'token-estimation:estimateString',
-  /** Check if content fits in context window */
   FITS_IN_CONTEXT_WINDOW: 'token-estimation:fitsInContextWindow',
-  /** Get context window size for a model */
   GET_CONTEXT_WINDOW_SIZE: 'token-estimation:getContextWindowSize',
 } as const;
 
 /** Collaboration / multi-model channels */
 export const COLLABORATION_CHANNELS = {
-  /** Get active task count */
   GET_ACTIVE_TASK_COUNT: 'collaboration:getActiveTaskCount',
-  /** Get provider statistics */
   GET_PROVIDER_STATS: 'collaboration:getProviderStats',
-  /** Run a collaborative task */
   RUN: 'collaboration:run',
-  /** Set provider configuration */
   SET_PROVIDER_CONFIG: 'collaboration:setProviderConfig',
-  /** Join a sync session */
   SYNC_JOIN: 'collaboration:sync:join',
-  /** Leave a sync session */
   SYNC_LEAVE: 'collaboration:sync:leave',
-  /** Send a sync message */
   SYNC_SEND: 'collaboration:sync:send',
+} as const;
+
+/** Collaboration sync event channels */
+export const COLLABORATION_SYNC_CHANNELS = {
+  ERROR: 'collaboration:sync:error',
+  JOINED: 'collaboration:sync:joined',
+  LEFT: 'collaboration:sync:left',
+  UPDATE: 'collaboration:sync:update',
+} as const;
+
+/** Live collaboration channels */
+export const LIVE_COLLABORATION_CHANNELS = {
+  JOIN_ROOM: 'live-collaboration:join-room',
+  SEND_UPDATE: 'live-collaboration:send-update',
+  SYNC_UPDATE: 'live-collaboration:sync-update',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -507,96 +468,66 @@ export const COLLABORATION_CHANNELS = {
 
 /** Advanced memory system channels */
 export const ADVANCED_MEMORY_CHANNELS = {
-  /** Archive a memory entry */
   ARCHIVE: 'advancedMemory:archive',
-  /** Archive multiple entries */
   ARCHIVE_MANY: 'advancedMemory:archiveMany',
-  /** Confirm a pending memory */
   CONFIRM: 'advancedMemory:confirm',
-  /** Confirm all pending memories */
   CONFIRM_ALL: 'advancedMemory:confirmAll',
-  /** Create a shared namespace */
   CREATE_SHARED_NAMESPACE: 'advancedMemory:createSharedNamespace',
-  /** Delete a memory entry */
   DELETE: 'advancedMemory:delete',
-  /** Delete multiple entries */
   DELETE_MANY: 'advancedMemory:deleteMany',
-  /** Edit a memory entry */
   EDIT: 'advancedMemory:edit',
-  /** Export memories */
   EXPORT: 'advancedMemory:export',
-  /** Extract memories from a message */
   EXTRACT_FROM_MESSAGE: 'advancedMemory:extractFromMessage',
-  /** Get a single memory */
+  EXTRACT_AND_STAGE: 'advancedMemory:extractAndStage',
   GET: 'advancedMemory:get',
-  /** Get all advanced memories */
   GET_ALL: 'advancedMemory:getAllAdvancedMemories',
-  /** Get all entity knowledge */
   GET_ALL_ENTITY_KNOWLEDGE: 'advancedMemory:getAllEntityKnowledge',
-  /** Get all episodes */
   GET_ALL_EPISODES: 'advancedMemory:getAllEpisodes',
-  /** Get memory change history */
   GET_HISTORY: 'advancedMemory:getHistory',
-  /** Get pending memories */
   GET_PENDING: 'advancedMemory:getPending',
-  /** Get search analytics */
   GET_SEARCH_ANALYTICS: 'advancedMemory:getSearchAnalytics',
-  /** Get search history */
   GET_SEARCH_HISTORY: 'advancedMemory:getSearchHistory',
-  /** Get search suggestions */
   GET_SEARCH_SUGGESTIONS: 'advancedMemory:getSearchSuggestions',
-  /** Get shared namespace analytics */
   GET_SHARED_NAMESPACE_ANALYTICS: 'advancedMemory:getSharedNamespaceAnalytics',
-  /** Get memory statistics */
   GET_STATS: 'advancedMemory:getStats',
-  /** Health check for memory system */
   HEALTH: 'advancedMemory:health',
-  /** Import memories */
   IMPORT: 'advancedMemory:import',
-  /** Recall memories by query */
   RECALL: 'advancedMemory:recall',
-  /** Recategorize a memory */
   RECATEGORIZE: 'advancedMemory:recategorize',
-  /** Reject a pending memory */
   REJECT: 'advancedMemory:reject',
-  /** Reject all pending memories */
   REJECT_ALL: 'advancedMemory:rejectAll',
-  /** Store a new memory */
   REMEMBER: 'advancedMemory:remember',
-  /** Restore an archived memory */
   RESTORE: 'advancedMemory:restore',
-  /** Rollback a memory change */
   ROLLBACK: 'advancedMemory:rollback',
-  /** Run memory decay process */
   RUN_DECAY: 'advancedMemory:runDecay',
-  /** Search memories */
   SEARCH: 'advancedMemory:search',
-  /** Search across all workspaces */
   SEARCH_ACROSS_WORKSPACES: 'advancedMemory:searchAcrossWorkspaces',
-  /** Share memory with a workspace */
+  SEARCH_RESOLUTIONS: 'advancedMemory:searchResolutions',
   SHARE_WITH_WORKSPACE: 'advancedMemory:shareWithWorkspace',
-  /** Sync a shared namespace */
   SYNC_SHARED_NAMESPACE: 'advancedMemory:syncSharedNamespace',
+  SUMMARIZE_CHAT: 'advancedMemory:summarizeChat',
+} as const;
+
+/** Memory channels */
+export const MEMORY_CHANNELS = {
+  ADD_FACT: 'memory:addFact',
+  DELETE_ENTITY: 'memory:deleteEntity',
+  DELETE_FACT: 'memory:deleteFact',
+  GET_ALL: 'memory:getAll',
+  SEARCH: 'memory:search',
+  SET_ENTITY_FACT: 'memory:setEntityFact',
 } as const;
 
 /** IconBrain (lightweight memory) channels */
 export const BRAIN_CHANNELS = {
-  /** Extract knowledge from a message */
-  EXTRACT_FROM_MESSAGE: 'brain:extractFromMessage',
-  /** Forget a piece of knowledge */
+  EXTRACT_FROM_MESSAGE: 'brain:extract-from-message',
   FORGET: 'brain:forget',
-  /** Get knowledge by category */
-  GET_BY_CATEGORY: 'brain:getByCategory',
-  /** Get contextual knowledge */
-  GET_CONTEXT: 'brain:getContext',
-  /** Get brain statistics */
-  GET_STATS: 'brain:getStats',
-  /** Learn new knowledge */
+  GET_BY_CATEGORY: 'brain:get-by-category',
+  GET_CONTEXT: 'brain:get-context',
+  GET_STATS: 'brain:get-stats',
   LEARN: 'brain:learn',
-  /** Recall knowledge by query */
   RECALL: 'brain:recall',
-  /** Update confidence of a memory */
-  UPDATE_CONFIDENCE: 'brain:updateConfidence',
+  UPDATE_CONFIDENCE: 'brain:update-confidence',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -605,106 +536,76 @@ export const BRAIN_CHANNELS = {
 
 /** Database / persistence channels */
 export const DB_CHANNELS = {
-  /** Archive a chat */
   ARCHIVE_CHAT: 'db:archiveChat',
-  /** Clear all chat history */
-  CLEAR_HISTORY: 'db:clearHistory',
-  /** Create a new chat */
-  CREATE_CHAT: 'db:createChat',
-  /** Get a single chat */
+  ARCHIVE_WORKSPACE: 'db:archiveWorkspace',
+  ADD_MESSAGE: 'db:addMessage',
+  ADD_TOKEN_USAGE: 'db:addTokenUsage',
+  BULK_ARCHIVE_CHATS: 'db:bulkArchiveChats',
+  BULK_ARCHIVE_WORKSPACES: 'db:bulkArchiveWorkspaces',
+  BULK_DELETE_CHATS: 'db:bulkDeleteChats',
+  BULK_DELETE_WORKSPACES: 'db:bulkDeleteWorkspaces',
   CHAT_GET: 'db:getChat',
-  /** List chats with options */
   CHAT_LIST: 'db:listChats',
-  /** Update a chat */
   CHAT_UPDATE: 'db:updateChat',
-  /** Delete a chat */
   CHAT_DELETE: 'db:deleteChat',
-
-  /** Create a chat folder */
+  CLEAR_HISTORY: 'db:clearHistory',
+  CREATE_CHAT: 'db:createChat',
   CREATE_FOLDER: 'db:createFolder',
-  /** Create a workspace */
-  CREATE_WORKSPACE: 'db:createWorkspace',
-  /** Create a prompt */
   CREATE_PROMPT: 'db:createPrompt',
-  /** Delete a folder */
+  CREATE_WORKSPACE: 'db:createWorkspace',
+  DELETE_ALL_CHATS: 'db:deleteAllChats',
+  DELETE_CHATS_BY_TITLE: 'db:deleteChatsByTitle',
   DELETE_FOLDER: 'db:deleteFolder',
-  /** Delete messages */
+  DELETE_MESSAGE: 'db:deleteMessage',
   DELETE_MESSAGES: 'db:deleteMessages',
-  /** Delete a workspace */
-  DELETE_WORKSPACE: 'db:deleteWorkspace',
-  /** Delete a prompt */
   DELETE_PROMPT: 'db:deletePrompt',
-  /** Favorite a chat */
+  DELETE_WORKSPACE: 'db:deleteWorkspace',
+  DUPLICATE_CHAT: 'db:duplicateChat',
   FAVORITE_CHAT: 'db:favoriteChat',
-  /** Get detailed database stats */
+  GET_ALL_CHATS: 'db:getAllChats',
   GET_DETAILED_STATS: 'db:getDetailedStats',
-  /** Get all folders */
   GET_FOLDERS: 'db:getFolders',
-  /** Get a workspace by ID */
-  GET_WORKSPACE_BY_ID: 'db:getWorkspaceById',
-  /** Get all workspaces */
-  GET_WORKSPACES: 'db:getWorkspaces',
-  /** Event emitted when workspaces change */
-  WORKSPACE_UPDATED_EVENT: 'db:workspace-updated',
-  /** Get all prompts */
+  GET_MESSAGES: 'db:getMessages',
   GET_PROMPTS: 'db:getPrompts',
-  /** Get provider statistics */
   GET_PROVIDER_STATS: 'db:getProviderStats',
-  /** Get usage statistics */
+  GET_STATS: 'db:getStats',
+  GET_TOKEN_STATS: 'db:getTokenStats',
   GET_USAGE_STATS: 'db:getUsageStats',
-  /** Move chat to a folder */
+  GET_WORKSPACE_BY_ID: 'db:getWorkspaceById',
+  GET_WORKSPACES: 'db:getWorkspaces',
   MOVE_CHAT_TO_FOLDER: 'db:moveChatToFolder',
-  /** Pin a chat */
   PIN_CHAT: 'db:pinChat',
-  /** Record a usage event */
   RECORD_USAGE: 'db:recordUsage',
-  /** Search chats */
   SEARCH_CHATS: 'db:searchChats',
-  /** Search similar messages by vector */
   SEARCH_SIMILAR_MESSAGES: 'db:searchSimilarMessages',
-  /** Update a chat title */
   UPDATE_CHAT_TITLE: 'db:updateChatTitle',
-  /** Update a folder */
   UPDATE_FOLDER: 'db:updateFolder',
-  /** Update message vector embedding */
+  UPDATE_MESSAGE: 'db:updateMessage',
   UPDATE_MESSAGE_VECTOR: 'db:updateMessageVector',
-  /** Update a workspace */
-  UPDATE_WORKSPACE: 'db:updateWorkspace',
-  /** Update a prompt */
   UPDATE_PROMPT: 'db:updatePrompt',
+  UPDATE_WORKSPACE: 'db:updateWorkspace',
+  WORKSPACE_UPDATED_EVENT: 'db:workspace-updated',
 } as const;
 
 /** Backup channels */
 export const BACKUP_CHANNELS = {
-  /** Clean up old backups */
   CLEANUP: 'backup:cleanup',
-  /** Configure auto-backup settings */
   CONFIGURE_AUTO_BACKUP: 'backup:configureAutoBackup',
-  /** Create a new backup */
   CREATE: 'backup:create',
-  /** Create a disaster recovery bundle */
   CREATE_DISASTER_RECOVERY_BUNDLE: 'backup:createDisasterRecoveryBundle',
-  /** Delete a backup */
   DELETE: 'backup:delete',
-  /** Get auto-backup status */
   GET_AUTO_BACKUP_STATUS: 'backup:getAutoBackupStatus',
-  /** Get the backup directory path */
   GET_DIR: 'backup:getDir',
-  /** List all backups */
   LIST: 'backup:list',
-  /** Restore from a backup */
   RESTORE: 'backup:restore',
-  /** Restore from a disaster recovery bundle */
   RESTORE_DISASTER_RECOVERY_BUNDLE: 'backup:restoreDisasterRecoveryBundle',
-  /** Sync backups to a cloud directory */
   SYNC_TO_CLOUD_DIR: 'backup:syncToCloudDir',
-  /** Verify backup integrity */
   VERIFY: 'backup:verify',
 } as const;
 
 /** Migration channels */
 export const MIGRATION_CHANNELS = {
-  /** Get migration status */
+  HISTORY: 'migration:history',
   STATUS: 'migration:status',
 } as const;
 
@@ -714,34 +615,26 @@ export const MIGRATION_CHANNELS = {
 
 /** Filesystem channels */
 export const FILES_CHANNELS = {
-  /** Create a directory */
+  COPY_PATH: 'files:copyPath',
   CREATE_DIRECTORY: 'files:createDirectory',
-  /** Delete a directory */
   DELETE_DIRECTORY: 'files:deleteDirectory',
-  /** Delete a file */
   DELETE_FILE: 'files:deleteFile',
-  /** Check if a path exists */
   EXISTS: 'files:exists',
-  /** File system health check */
+  GET_FILE_DIFF: 'files:getFileDiff',
   HEALTH: 'files:health',
-  /** List directory contents */
   LIST_DIRECTORY: 'files:listDirectory',
-  /** Read a file */
   READ_FILE: 'files:readFile',
-  /** Read an image file as base64 */
   READ_IMAGE: 'files:readImage',
-  /** Rename a file or directory */
+  READ_PDF: 'files:readPdf',
   RENAME_PATH: 'files:renamePath',
-  /** Search for files */
+  REVERT_FILE_CHANGE: 'files:revertFileChange',
   SEARCH_FILES: 'files:searchFiles',
-  /** Search for files with streaming results */
   SEARCH_FILES_STREAM: 'files:searchFilesStream',
-  /** Open a native directory picker */
   SELECT_DIRECTORY: 'files:selectDirectory',
-  /** Open a native file picker */
   SELECT_FILE: 'files:selectFile',
-  /** Write content to a file */
   WRITE_FILE: 'files:writeFile',
+  EXPORT_CHAT_TO_PDF: 'files:exportChatToPdf',
+  SAVE_FILE: 'files:saveFile',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -750,107 +643,71 @@ export const FILES_CHANNELS = {
 
 /** Git operations channels */
 export const GIT_CHANNELS = {
-  /** Abort an in-progress rebase */
   ABORT_REBASE: 'git:abortRebase',
-  /** Add a git submodule */
+  ADD: 'git:add',
   ADD_SUBMODULE: 'git:addSubmodule',
-  /** Apply a stash entry */
   APPLY_STASH: 'git:applyStash',
-  /** Cancel a running git operation */
   CANCEL_OPERATION: 'git:cancelOperation',
-  /** Checkout a branch or commit */
   CHECKOUT: 'git:checkout',
-  /** Create a commit */
   COMMIT: 'git:commit',
-  /** Continue a paused rebase */
+  COMPARE_REFS: 'git:compareRefs',
   CONTINUE_REBASE: 'git:continueRebase',
-  /** Create a stash entry */
+  CREATE_BRANCH: 'git:createBranch',
   CREATE_STASH: 'git:createStash',
-  /** Drop a stash entry */
+  DELETE_BRANCH: 'git:deleteBranch',
   DROP_STASH: 'git:dropStash',
-  /** Export git hooks */
+  EXECUTE_RAW: 'git:executeRaw',
   EXPORT_HOOKS: 'git:exportHooks',
-  /** Export repository statistics */
   EXPORT_REPOSITORY_STATS: 'git:exportRepositoryStats',
-  /** Export a stash entry */
   EXPORT_STASH: 'git:exportStash',
-  /** Finish a git-flow branch */
   FINISH_FLOW_BRANCH: 'git:finishFlowBranch',
-  /** Get blame information for a file */
+  GENERATE_PR_SUMMARY: 'git:generatePrSummary',
   GET_BLAME: 'git:getBlame',
-  /** Get commit details */
+  GET_BRANCH: 'git:getBranch',
+  GET_BRANCHES: 'git:getBranches',
   GET_COMMIT_DETAILS: 'git:getCommitDetails',
-  /** Get diff for a commit */
   GET_COMMIT_DIFF: 'git:getCommitDiff',
-  /** Get commit statistics */
   GET_COMMIT_STATS: 'git:getCommitStats',
-  /** Get merge conflicts */
   GET_CONFLICTS: 'git:getConflicts',
-  /** Get detailed working tree status */
   GET_DETAILED_STATUS: 'git:getDetailedStatus',
-  /** Get diff statistics */
   GET_DIFF_STATS: 'git:getDiffStats',
-  /** Get diff for a specific file */
   GET_FILE_DIFF: 'git:getFileDiff',
-  /** Get git-flow status */
+  GET_FILE_HISTORY: 'git:getFileHistory',
   GET_FLOW_STATUS: 'git:getFlowStatus',
-  /** Get installed hooks */
   GET_HOOKS: 'git:getHooks',
-  /** Get the last commit info */
+  GET_HOTSPOTS: 'git:getHotspots',
   GET_LAST_COMMIT: 'git:getLastCommit',
-  /** Get the rebase plan */
   GET_REBASE_PLAN: 'git:getRebasePlan',
-  /** Get rebase status */
   GET_REBASE_STATUS: 'git:getRebaseStatus',
-  /** Get recent commits */
   GET_RECENT_COMMITS: 'git:getRecentCommits',
-  /** Get configured remotes */
   GET_REMOTES: 'git:getRemotes',
-  /** Get repository statistics */
   GET_REPOSITORY_STATS: 'git:getRepositoryStats',
-  /** Get stash entries */
+  GET_STAGED_DIFF: 'git:getStagedDiff',
   GET_STASHES: 'git:getStashes',
-  /** Get submodule info */
+  GET_STATUS: 'git:getStatus',
   GET_SUBMODULES: 'git:getSubmodules',
-  /** Get tracking info for current branch */
   GET_TRACKING_INFO: 'git:getTrackingInfo',
-  /** Get working tree status */
   GET_TREE_STATUS: 'git:getTreeStatus',
-  /** Get unified diff */
+  GET_TREE_STATUS_PREVIEW: 'git:getTreeStatusPreview',
   GET_UNIFIED_DIFF: 'git:getUnifiedDiff',
-  /** Initialize submodules */
   INIT_SUBMODULES: 'git:initSubmodules',
-  /** Install a git hook */
   INSTALL_HOOK: 'git:installHook',
-  /** Check if path is a git repository */
   IS_REPOSITORY: 'git:isRepository',
-  /** Open the merge tool */
   OPEN_MERGE_TOOL: 'git:openMergeTool',
-  /** Pull from remote */
   PULL: 'git:pull',
-  /** Push to remote */
   PUSH: 'git:push',
-  /** Remove a submodule */
   REMOVE_SUBMODULE: 'git:removeSubmodule',
-  /** Resolve a merge conflict */
+  RENAME_BRANCH: 'git:renameBranch',
   RESOLVE_CONFLICT: 'git:resolveConflict',
-  /** Run a controlled git operation */
   RUN_CONTROLLED_OPERATION: 'git:runControlledOperation',
-  /** Stage a file */
+  SET_UPSTREAM: 'git:setUpstream',
   STAGE_FILE: 'git:stageFile',
-  /** Start a git-flow branch */
   START_FLOW_BRANCH: 'git:startFlowBranch',
-  /** Start an interactive rebase */
   START_REBASE: 'git:startRebase',
-  /** Sync submodules */
   SYNC_SUBMODULES: 'git:syncSubmodules',
-  /** Test a git hook */
   TEST_HOOK: 'git:testHook',
-  /** Unstage a file */
   UNSTAGE_FILE: 'git:unstageFile',
-  /** Update submodules */
   UPDATE_SUBMODULES: 'git:updateSubmodules',
-  /** Validate a git hook */
   VALIDATE_HOOK: 'git:validateHook',
 } as const;
 
@@ -860,26 +717,53 @@ export const GIT_CHANNELS = {
 
 /** Agent management channels */
 export const AGENT_CHANNELS = {
-  /** Clone an agent */
   CLONE: 'agent:clone',
-  /** Create a new agent */
   CREATE: 'agent:create',
-  /** Delete an agent */
   DELETE: 'agent:delete',
-  /** Export agent configuration */
   EXPORT: 'agent:export',
-  /** Get an agent by ID */
   GET: 'agent:get',
-  /** Get all agents */
   GET_ALL: 'agent:get-all',
-  /** Get the agent templates library */
+  GET_TEMPLATES: 'agent:get-templates',
   GET_TEMPLATES_LIBRARY: 'agent:get-templates-library',
-  /** Import an agent configuration */
   IMPORT: 'agent:import',
-  /** Recover a deleted agent */
   RECOVER: 'agent:recover',
-  /** Validate an agent template */
   VALIDATE_TEMPLATE: 'agent:validate-template',
+} as const;
+
+/** Marketplace channels */
+export const MARKETPLACE_CHANNELS = {
+  CHECK_LIVE_UPDATES: 'marketplace:check-live-updates',
+  FETCH: 'marketplace:fetch',
+  FETCH_README: 'marketplace:fetch-readme',
+  GET_RUNTIME_PROFILE: 'marketplace:getRuntimeProfile',
+  GET_UPDATE_COUNT: 'marketplace:get-update-count',
+  INSTALL: 'marketplace:install',
+  UNINSTALL: 'marketplace:uninstall',
+} as const;
+ 
+/** Extension management channels */
+export const EXTENSION_CHANNELS = {
+  ACTIVATE: 'extension:activate',
+  DEACTIVATE: 'extension:deactivate',
+  DEV_RELOAD: 'extension:dev-reload',
+  DEV_START: 'extension:dev-start',
+  DEV_STOP: 'extension:dev-stop',
+  DISMISS_WARNING: 'extension:dismissWarning',
+  GET: 'extension:get',
+  GET_ALL: 'extension:get-all',
+  GET_CONFIG: 'extension:get-config',
+  GET_PROFILE: 'extension:get-profile',
+  GET_STATE: 'extension:get-state',
+  GET_STATUS: 'extension:getStatus',
+  INSTALL: 'extension:install',
+  PUBLISH: 'extension:publish',
+  SET_INSTALLED: 'extension:setInstalled',
+  SHOULD_SHOW_WARNING: 'extension:shouldShowWarning',
+  TEST: 'extension:test',
+  UNINSTALL: 'extension:uninstall',
+  UPDATE_CONFIG: 'extension:update-config',
+  VALIDATE: 'extension:validate',
+  LOG_UPDATE: 'extension:log-update',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -888,64 +772,89 @@ export const AGENT_CHANNELS = {
 
 /** Settings channels */
 export const SETTINGS_CHANNELS = {
-  /** Get application settings */
   GET: 'settings:get',
-  /** Health check for settings */
   HEALTH: 'settings:health',
-  /** Save application settings */
   SAVE: 'settings:save',
+} as const;
+ 
+/** Code language management channels */
+export const CODE_LANGUAGE_CHANNELS = {
+  RUNTIME_GET_ALL: 'code-language:runtime:getAll',
+  RUNTIME_UPDATED: 'code-language:runtime:updated',
+} as const;
+ 
+/** Locale management channels */
+export const LOCALE_CHANNELS = {
+  RUNTIME_GET_ALL: 'locale:runtime:getAll',
+  RUNTIME_UPDATED: 'locale:runtime:updated',
+} as const;
+ 
+/** Power management channels */
+export const POWER_CHANNELS = {
+  STATE_CHANGED: 'power:state-changed',
 } as const;
 
 /** Theme channels */
 export const THEME_CHANNELS = {
-  /** Add a custom theme */
   ADD_CUSTOM: 'theme:addCustom',
-  /** Apply a theme preset */
   APPLY_PRESET: 'theme:applyPreset',
-  /** Clear theme history */
   CLEAR_HISTORY: 'theme:clearHistory',
-  /** Clear current preset */
   CLEAR_PRESET: 'theme:clearPreset',
-  /** Delete a custom theme */
   DELETE_CUSTOM: 'theme:deleteCustom',
-  /** Duplicate a theme */
   DUPLICATE: 'theme:duplicate',
-  /** Export a theme */
   EXPORT: 'theme:export',
-  /** Get all themes */
   GET_ALL: 'theme:getAll',
-  /** Get the current theme */
   GET_CURRENT: 'theme:getCurrent',
-  /** Get the current preset */
   GET_CURRENT_PRESET: 'theme:getCurrentPreset',
-  /** Get custom themes */
   GET_CUSTOM: 'theme:getCustom',
-  /** Get theme details */
   GET_DETAILS: 'theme:getDetails',
-  /** Get favorite themes */
   GET_FAVORITES: 'theme:getFavorites',
-  /** Get theme history */
   GET_HISTORY: 'theme:getHistory',
-  /** Get theme presets */
   GET_PRESETS: 'theme:getPresets',
-  /** Import a theme */
   IMPORT: 'theme:import',
-  /** Check if theme is a favorite */
   IS_FAVORITE: 'theme:isFavorite',
-  /** Get all runtime themes */
   RUNTIME_GET_ALL: 'theme:runtime:getAll',
-  /** Install a runtime theme */
   RUNTIME_INSTALL: 'theme:runtime:install',
-  /** Open runtime themes directory */
   RUNTIME_OPEN_DIRECTORY: 'theme:runtime:openDirectory',
-  /** Uninstall a runtime theme */
   RUNTIME_UNINSTALL: 'theme:runtime:uninstall',
-  /** Set the active theme */
   SET: 'theme:set',
-  /** Toggle theme favorite status */
   TOGGLE_FAVORITE: 'theme:toggleFavorite',
-  /** Update a custom theme */
   UPDATE_CUSTOM: 'theme:updateCustom',
+  RUNTIME_UPDATED: 'theme:runtime:updated',
+} as const;
+
+/** Image studio channels */
+export const IMAGE_STUDIO_CHANNELS = {
+  EDIT: 'image-studio:edit',
+  GENERATE: 'image-studio:generate',
+  LOAD_SETTINGS: 'image-studio:load-settings',
+  SAVE: 'image-studio:save',
+  SAVE_SETTINGS: 'image-studio:save-settings',
+} as const;
+
+/** Voice processing and synthesis channels */
+export const VOICE_CHANNELS = {
+  ADD_COMMAND: 'voice:add-command',
+  CREATE_NOTE: 'voice:create-note',
+  DETECT_WAKE_WORD: 'voice:detect-wake-word',
+  EXECUTE_COMMAND: 'voice:execute-command',
+  END_SESSION: 'voice:end-session',
+  GET_NOTE: 'voice:get-note',
+  GET_COMMANDS: 'voice:get-commands',
+  GET_SETTINGS: 'voice:get-settings',
+  GET_VOICES: 'voice:get-voices',
+  HEALTH: 'voice:health',
+  LIST_NOTES: 'voice:list-notes',
+  PROCESS_TRANSCRIPT: 'voice:process-transcript',
+  REMOVE_COMMAND: 'voice:remove-command',
+  SEND_EVENT: 'voice:send-event',
+  START_SESSION: 'voice:start-session',
+  SET_LISTENING: 'voice:set-listening',
+  SUBMIT_UTTERANCE: 'voice:submit-utterance',
+  STOP_SPEAKING: 'voice:stop-speaking',
+  SYNTHESIZE: 'voice:synthesize',
+  UPDATE_COMMAND: 'voice:update-command',
+  UPDATE_SETTINGS: 'voice:update-settings',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -954,42 +863,193 @@ export const THEME_CHANNELS = {
 
 /** Process management channels */
 export const PROCESS_CHANNELS = {
-  /** Kill a running process */
+  DATA: 'process:data',
+  EXIT: 'process:exit',
   KILL: 'process:kill',
-  /** List running processes */
   LIST: 'process:list',
-  /** Resize a terminal process */
   RESIZE: 'process:resize',
-  /** Scan for available scripts */
   SCAN_SCRIPTS: 'process:scan-scripts',
-  /** Spawn a new process */
   SPAWN: 'process:spawn',
-  /** Write to a process stdin */
   WRITE: 'process:write',
 } as const;
+
+/** Terminal channels */
+export const TERMINAL_CHANNELS = {
+  ADD_SCROLLBACK_MARKER: 'terminal:addScrollbackMarker',
+  CLEAR_COMMAND_HISTORY: 'terminal:clearCommandHistory',
+  CLOSE: 'terminal:close',
+  CREATE: 'terminal:create',
+  CREATE_FROM_SESSION_TEMPLATE: 'terminal:createFromSessionTemplate',
+  DATA: 'terminal:data',
+  EXIT: 'terminal:exit',
+  CREATE_SESSION: 'terminal:createSession',
+  CREATE_SESSION_SHARE_CODE: 'terminal:createSessionShareCode',
+  DELETE_PROFILE: 'terminal:deleteProfile',
+  DELETE_SCROLLBACK_MARKER: 'terminal:deleteScrollbackMarker',
+  DELETE_SESSION_TEMPLATE: 'terminal:deleteSessionTemplate',
+  EXPLAIN_COMMAND: 'terminal:explainCommand',
+  EXPLAIN_ERROR: 'terminal:explainError',
+  EXPORT_PROFILES: 'terminal:exportProfiles',
+  EXPORT_PROFILE_SHARE_CODE: 'terminal:exportProfileShareCode',
+  EXPORT_SCROLLBACK: 'terminal:exportScrollback',
+  EXPORT_SEARCH_RESULTS: 'terminal:exportSearchResults',
+  EXPORT_SESSION: 'terminal:exportSession',
+  FILTER_SCROLLBACK: 'terminal:filterScrollback',
+  FIX_ERROR: 'terminal:fixError',
+  GET_BACKENDS: 'terminal:getBackends',
+  GET_COMMAND_HISTORY: 'terminal:getCommandHistory',
+  GET_DISCOVERY_SNAPSHOT: 'terminal:getDiscoverySnapshot',
+  GET_DOCKER_CONTAINERS: 'terminal:getDockerContainers',
+  GET_PROFILES: 'terminal:getProfiles',
+  GET_PROFILE_TEMPLATES: 'terminal:getProfileTemplates',
+  GET_RUNTIME_HEALTH: 'terminal:getRuntimeHealth',
+  GET_SEARCH_ANALYTICS: 'terminal:getSearchAnalytics',
+  GET_SEARCH_SUGGESTIONS: 'terminal:getSearchSuggestions',
+  GET_SESSION_ANALYTICS: 'terminal:getSessionAnalytics',
+  GET_SESSION_TEMPLATES: 'terminal:getSessionTemplates',
+  GET_SESSIONS: 'terminal:getSessions',
+  GET_SHELLS: 'terminal:getShells',
+  GET_SNAPSHOT_SESSIONS: 'terminal:getSnapshotSessions',
+  GET_SUGGESTIONS: 'terminal:getSuggestions',
+  IMPORT_PROFILES: 'terminal:importProfiles',
+  IMPORT_PROFILE_SHARE_CODE: 'terminal:importProfileShareCode',
+  IMPORT_SESSION: 'terminal:importSession',
+  IMPORT_SESSION_SHARE_CODE: 'terminal:importSessionShareCode',
+  IS_AVAILABLE: 'terminal:isAvailable',
+  KILL: 'terminal:kill',
+  LIST_SCROLLBACK_MARKERS: 'terminal:listScrollbackMarkers',
+  READ_BUFFER: 'terminal:readBuffer',
+  RESIZE: 'terminal:resize',
+  RESTORE_ALL_SNAPSHOTS: 'terminal:restoreAllSnapshots',
+  RESTORE_SNAPSHOT_SESSION: 'terminal:restoreSnapshotSession',
+  SAVE_PROFILE: 'terminal:saveProfile',
+  SAVE_SESSION_TEMPLATE: 'terminal:saveSessionTemplate',
+  SEARCH_SCROLLBACK: 'terminal:searchScrollback',
+  SET_SESSION_TITLE: 'terminal:setSessionTitle',
+  VALIDATE_PROFILE: 'terminal:validateProfile',
+  WRITE: 'terminal:write',
+  DETACH: 'terminal:detach',
+
+  // Events
+  DATA_EVENT: 'terminal:data-event',
+  EXIT_EVENT: 'terminal:exit-event',
+  STATUS_CHANGE_EVENT: 'terminal:status-change-event',
+} as const;
+
+// ---------------------------------------------------------------------------
+// SSH
+// ---------------------------------------------------------------------------
+
+/** SSH connection and operation channels */
+export const SSH_CHANNELS = {
+  ACQUIRE_CONNECTION: 'ssh:acquireConnection',
+  ADD_KNOWN_HOST: 'ssh:addKnownHost',
+  BACKUP_MANAGED_KEY: 'ssh:backupManagedKey',
+  CLOSE: 'ssh:close',
+  CLOSE_TUNNEL: 'ssh:closeTunnel',
+  CONNECT: 'ssh:connect',
+  CONNECTED: 'ssh:connected',
+  COPY_PATH: 'ssh:copyPath',
+  CREATE_TUNNEL: 'ssh:createTunnel',
+  DELETE_DIR: 'ssh:deleteDir',
+  DELETE_FILE: 'ssh:deleteFile',
+  DELETE_MANAGED_KEY: 'ssh:deleteManagedKey',
+  DELETE_PROFILE: 'ssh:deleteProfile',
+  DELETE_PROFILE_TEMPLATE: 'ssh:deleteProfileTemplate',
+  DELETE_TUNNEL_PRESET: 'ssh:deleteTunnelPreset',
+  DISCONNECTED: 'ssh:disconnected',
+  DISCONNECT: 'ssh:disconnect',
+  DOWNLOAD: 'ssh:download',
+  DOWNLOAD_PROGRESS: 'ssh:downloadProgress',
+  ENQUEUE_TRANSFER: 'ssh:enqueueTransfer',
+  EXECUTE: 'ssh:execute',
+  EXPORT_PROFILES: 'ssh:exportProfiles',
+  EXPORT_SEARCH_HISTORY: 'ssh:exportSearchHistory',
+  EXPORT_SESSION_RECORDING: 'ssh:exportSessionRecording',
+  GENERATE_MANAGED_KEY: 'ssh:generateManagedKey',
+  GET_CONNECTION_POOL_STATS: 'ssh:getConnectionPoolStats',
+  GET_CONNECTIONS: 'ssh:getConnections',
+  GET_INSTALLED_PACKAGES: 'ssh:getInstalledPackages',
+  GET_LOG_FILES: 'ssh:getLogFiles',
+  GET_MANAGED_KEYS: 'ssh:listManagedKeys',
+  GET_PROFILE_TEMPLATES: 'ssh:getProfileTemplates',
+  GET_PROFILES: 'ssh:getProfiles',
+  GET_SEARCH_HISTORY: 'ssh:getSearchHistory',
+  GET_SESSION_RECORDING: 'ssh:getSessionRecording',
+  GET_SYSTEM_STATS: 'ssh:getSystemStats',
+  GET_TRANSFER_QUEUE: 'ssh:getTransferQueue',
+  IMPORT_MANAGED_KEY: 'ssh:importManagedKey',
+  IMPORT_PROFILES: 'ssh:importProfiles',
+  IS_CONNECTED: 'ssh:isConnected',
+  LIST_KNOWN_HOSTS: 'ssh:listKnownHosts',
+  LIST_MANAGED_KEYS: 'ssh:listManagedKeys',
+  LIST_DIR: 'ssh:listDir',
+  LIST_PROFILE_TEMPLATES: 'ssh:listProfileTemplates',
+  LIST_REMOTE_CONTAINERS: 'ssh:listRemoteContainers',
+  LIST_SESSION_RECORDINGS: 'ssh:listSessionRecordings',
+  LIST_TUNNELS: 'ssh:listTunnels',
+  LIST_TUNNEL_PRESETS: 'ssh:listTunnelPresets',
+  MKDIR: 'ssh:mkdir',
+  READ_FILE: 'ssh:readFile',
+  READ_LOG_FILE: 'ssh:readLogFile',
+  RECONNECT: 'ssh:reconnect',
+  RELEASE_CONNECTION: 'ssh:releaseConnection',
+  REMOVE_KNOWN_HOST: 'ssh:removeKnownHost',
+  RENAME: 'ssh:rename',
+  ROTATE_MANAGED_KEY: 'ssh:rotateManagedKey',
+  RUN_REMOTE_CONTAINER: 'ssh:runRemoteContainer',
+  RUN_TRANSFER_BATCH: 'ssh:runTransferBatch',
+  SAVE_PROFILE: 'ssh:saveProfile',
+  SAVE_PROFILE_TEMPLATE: 'ssh:saveProfileTemplate',
+  SAVE_TUNNEL_PRESET: 'ssh:saveTunnelPreset',
+  SEARCH_LOG_FILES: 'ssh:searchLogFiles',
+  SEARCH_REMOTE_FILES: 'ssh:searchRemoteFiles',
+  SEARCH_SESSION_RECORDING: 'ssh:searchSessionRecording',
+  SEARCH_TRANSFER_HISTORY: 'ssh:searchTransferHistory',
+  SHELL_CLOSE: 'ssh:shellClose',
+  SHELL_DATA: 'ssh:shellData',
+  SHELL_RESIZE: 'ssh:shellResize',
+  SHELL_START: 'ssh:shellStart',
+  SHELL_WRITE: 'ssh:shellWrite',
+  START: 'ssh:start',
+  START_SESSION_RECORDING: 'ssh:startSessionRecording',
+  STOP_REMOTE_CONTAINER: 'ssh:stopRemoteContainer',
+  STOP_SESSION_RECORDING: 'ssh:stopSessionRecording',
+  STDERR: 'ssh:stderr',
+  STDOUT: 'ssh:stdout',
+  TEST_PROFILE: 'ssh:testProfile',
+  UPLOAD: 'ssh:upload',
+  UPLOAD_PROGRESS: 'ssh:uploadProgress',
+  VALIDATE_PROFILE: 'ssh:validateProfile',
+  WRITE_FILE: 'ssh:writeFile',
+} as const;
+
+// ---------------------------------------------------------------------------
+// Workspace & Editor
+// ---------------------------------------------------------------------------
 
 /** Workspace analysis, watching, and editor assistance channels */
 export const WORKSPACE_CHANNELS = {
   ANALYZE: 'workspace:analyze',
-  ANALYZE_SUMMARY: 'workspace:analyzeSummary',
-  GET_FILE_DIAGNOSTICS: 'workspace:getFileDiagnostics',
-  GET_FILE_DEFINITION: 'workspace:getFileDefinition',
-  ANALYZE_IDENTITY: 'workspace:analyzeIdentity',
-  GENERATE_LOGO: 'workspace:generateLogo',
   ANALYZE_DIRECTORY: 'workspace:analyzeDirectory',
+  ANALYZE_IDENTITY: 'workspace:analyzeIdentity',
+  ANALYZE_SUMMARY: 'workspace:analyzeSummary',
   APPLY_LOGO: 'workspace:applyLogo',
+  CLEAR_ACTIVE: 'workspace:clearActive',
+  FILE_CHANGE_EVENT: 'workspace:file-change',
+  GENERATE_LOGO: 'workspace:generateLogo',
   GET_COMPLETION: 'workspace:getCompletion',
+  GET_ENV: 'workspace:getEnv',
+  GET_FILE_DEFINITION: 'workspace:getFileDefinition',
+  GET_FILE_DIAGNOSTICS: 'workspace:getFileDiagnostics',
   GET_INLINE_SUGGESTION: 'workspace:getInlineSuggestion',
-  TRACK_INLINE_SUGGESTION_TELEMETRY: 'workspace:trackInlineSuggestionTelemetry',
   IMPROVE_LOGO_PROMPT: 'workspace:improveLogoPrompt',
+  SAVE_ENV: 'workspace:saveEnv',
+  SET_ACTIVE: 'workspace:setActive',
+  TRACK_INLINE_SUGGESTION_usageStats: 'workspace:trackInlineSuggestionUsageStats',
+  UNWATCH: 'workspace:unwatch',
   UPLOAD_LOGO: 'workspace:uploadLogo',
   WATCH: 'workspace:watch',
-  UNWATCH: 'workspace:unwatch',
-  SET_ACTIVE: 'workspace:setActive',
-  CLEAR_ACTIVE: 'workspace:clearActive',
-  GET_ENV: 'workspace:getEnv',
-  SAVE_ENV: 'workspace:saveEnv',
-  FILE_CHANGE_EVENT: 'workspace:file-change',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -998,43 +1058,44 @@ export const WORKSPACE_CHANNELS = {
 
 /** Proxy and provider channels */
 export const PROXY_CHANNELS = {
-  /** Login to Anthropic */
   ANTHROPIC_LOGIN: 'proxy:anthropicLogin',
-  /** Login to Antigravity */
   ANTIGRAVITY_LOGIN: 'proxy:antigravityLogin',
-  /** Login to Claude */
+  CANCEL_AUTH: 'proxy:cancelAuth',
   CLAUDE_LOGIN: 'proxy:claudeLogin',
-  /** Login to Codex */
   CODEX_LOGIN: 'proxy:codexLogin',
-  /** Delete a stored auth file */
   DELETE_AUTH_FILE: 'proxy:deleteAuthFile',
-  /** Download an auth file */
   DOWNLOAD_AUTH_FILE: 'proxy:downloadAuthFile',
-  /** Get Claude quota */
+  FORCE_REFRESH_QUOTA: 'proxy:forceRefreshQuota',
+  GET_AUTH_STATUS: 'proxy:getAuthStatus',
   GET_CLAUDE_QUOTA: 'proxy:getClaudeQuota',
-  /** Get Codex usage */
   GET_CODEX_USAGE: 'proxy:getCodexUsage',
-  /** Get Copilot quota */
   GET_COPILOT_QUOTA: 'proxy:getCopilotQuota',
-  /** Get available models from proxy */
   GET_MODELS: 'proxy:getModels',
-  /** Get general quota info */
   GET_QUOTA: 'proxy:getQuota',
-  /** Save a Claude session */
   SAVE_CLAUDE_SESSION: 'proxy:saveClaudeSession',
-  /** One-click OAuth bridge verification */
-  VERIFY_AUTH_BRIDGE: 'proxy:verifyAuthBridge',
-  /** Sync auth files across devices */
   SYNC_AUTH_FILES: 'proxy:syncAuthFiles',
+  VERIFY_AUTH_BRIDGE: 'proxy:verifyAuthBridge',
+  LIST_SKILLS: 'proxy:listSkills',
+  SAVE_SKILL: 'proxy:saveSkill',
+  TOGGLE_SKILL: 'proxy:toggleSkill',
+  DELETE_SKILL: 'proxy:deleteSkill',
+  LIST_MARKETPLACE_SKILLS: 'proxy:listMarketplaceSkills',
+  INSTALL_MARKETPLACE_SKILL: 'proxy:installMarketplaceSkill',
+  OLLAMA_LOGIN: 'proxy:ollamaLogin',
+  OLLAMA_SIGNOUT: 'proxy:ollamaSignout',
+} as const;
+
+/** Proxy embed channels */
+export const PROXY_EMBED_CHANNELS = {
+  START: 'proxy-embed:start',
+  STATUS: 'proxy-embed:status',
+  STOP: 'proxy-embed:stop',
 } as const;
 
 /** Usage tracking channels */
 export const USAGE_CHANNELS = {
-  /** Check if a usage limit is reached */
   CHECK_LIMIT: 'usage:checkLimit',
-  /** Get the current usage count */
   GET_USAGE_COUNT: 'usage:getUsageCount',
-  /** Record a usage event */
   RECORD_USAGE: 'usage:recordUsage',
 } as const;
 
@@ -1044,27 +1105,19 @@ export const USAGE_CHANNELS = {
 
 /** MCP plugin system channels */
 export const MCP_CHANNELS = {
-  /** Get debug metrics */
   DEBUG_METRICS: 'mcp:debug-metrics',
-  /** Dispatch a tool call to an MCP server */
   DISPATCH: 'mcp:dispatch',
-  /** Install an MCP server */
   INSTALL: 'mcp:install',
-  /** List installed MCP servers */
   LIST: 'mcp:list',
-  /** Toggle an MCP server on/off */
+  RESULT: 'mcp:result',
   TOGGLE: 'mcp:toggle',
-  /** Uninstall an MCP server */
   UNINSTALL: 'mcp:uninstall',
 } as const;
 
 /** MCP permissions channels */
 export const MCP_PERMISSIONS_CHANNELS = {
-  /** List pending permission requests */
   LIST_REQUESTS: 'mcp:permissions:list-requests',
-  /** Resolve a permission request */
   RESOLVE_REQUEST: 'mcp:permissions:resolve-request',
-  /** Set permissions for an MCP server */
   SET: 'mcp:permissions:set',
 } as const;
 
@@ -1074,79 +1127,57 @@ export const MCP_PERMISSIONS_CHANNELS = {
 
 /** Hugging Face integration channels */
 export const HF_CHANNELS = {
-  /** Clear download cache */
   CACHE_CLEAR: 'hf:cache-clear',
-  /** Get cache statistics */
   CACHE_STATS: 'hf:cache-stats',
-  /** Cancel an active download */
   CANCEL_DOWNLOAD: 'hf:cancel-download',
-  /** Compare two models */
   COMPARE_MODELS: 'hf:compare-models',
-  /** Convert a model format */
   CONVERT_MODEL: 'hf:convert-model',
-  /** Download a specific file */
+  DELETE_MODEL: 'hf:delete-model',
+  GET_BULK_MODEL_PREVIEWS: 'hf:get-bulk-model-previews',
+  CONVERSION_PROGRESS: 'hf:conversion-progress',
   DOWNLOAD_FILE: 'hf:download-file',
-  /** Get conversion presets */
+  DOWNLOAD_PROGRESS: 'hf:download-progress',
   GET_CONVERSION_PRESETS: 'hf:get-conversion-presets',
-  /** Get model files */
   GET_FILES: 'hf:get-files',
-  /** Get model preview data */
   GET_MODEL_PREVIEW: 'hf:get-model-preview',
-  /** Get optimization suggestions */
   GET_OPTIMIZATION_SUGGESTIONS: 'hf:get-optimization-suggestions',
-  /** Get model recommendations */
   GET_RECOMMENDATIONS: 'hf:get-recommendations',
-  /** Search for models */
+  GET_WATCHLIST: 'hf:watchlist:get',
   SEARCH_MODELS: 'hf:search-models',
-  /** Test a downloaded model */
   TEST_DOWNLOADED_MODEL: 'hf:test-downloaded-model',
-  /** Validate hardware compatibility */
   VALIDATE_COMPATIBILITY: 'hf:validate-compatibility',
-  /** Validate model conversion */
   VALIDATE_CONVERSION: 'hf:validate-conversion',
+  ADD_TO_WATCHLIST: 'hf:watchlist:add',
+  REMOVE_FROM_WATCHLIST: 'hf:watchlist:remove',
 } as const;
 
 /** Hugging Face fine-tuning channels */
 export const HF_FINETUNE_CHANNELS = {
-  /** Cancel a fine-tuning job */
   CANCEL: 'hf:finetune:cancel',
-  /** Evaluate a fine-tuned model */
   EVALUATE: 'hf:finetune:evaluate',
-  /** Export a fine-tuned model */
   EXPORT: 'hf:finetune:export',
-  /** Get fine-tuning job details */
   GET: 'hf:finetune:get',
-  /** List fine-tuning jobs */
   LIST: 'hf:finetune:list',
-  /** Prepare a dataset for fine-tuning */
   PREPARE_DATASET: 'hf:finetune:prepare-dataset',
-  /** Start a fine-tuning job */
   START: 'hf:finetune:start',
+  PROGRESS: 'hf:finetune-progress',
 } as const;
 
 /** Hugging Face version management channels */
 export const HF_VERSIONS_CHANNELS = {
-  /** Compare two versions */
   COMPARE: 'hf:versions:compare',
-  /** List available versions */
+  COMPARE_MODELS: 'hf:versions:compare-models',
   LIST: 'hf:versions:list',
-  /** Get version notifications */
   NOTIFICATIONS: 'hf:versions:notifications',
-  /** Pin a specific version */
   PIN: 'hf:versions:pin',
-  /** Register a version */
   REGISTER: 'hf:versions:register',
-  /** Rollback to a previous version */
   ROLLBACK: 'hf:versions:rollback',
 } as const;
 
 /** Hugging Face watchlist channels */
 export const HF_WATCHLIST_CHANNELS = {
-  /** Add a model to the watchlist */
   ADD: 'hf:watchlist:add',
-  /** Get the watchlist */
   GET: 'hf:watchlist:get',
-  /** Remove a model from the watchlist */
   REMOVE: 'hf:watchlist:remove',
 } as const;
 
@@ -1156,75 +1187,44 @@ export const HF_WATCHLIST_CHANNELS = {
 
 /** Stable Diffusion C++ integration channels */
 export const SD_CPP_CHANNELS = {
-  /** Generate images in batch */
   BATCH_GENERATE: 'sd-cpp:batchGenerate',
-  /** Cancel a scheduled generation */
   CANCEL_SCHEDULE: 'sd-cpp:cancelSchedule',
-  /** Compare generated images */
   COMPARE: 'sd-cpp:compare',
-  /** Delete a preset */
   DELETE_PRESET: 'sd-cpp:deletePreset',
-  /** Delete a workflow template */
   DELETE_WORKFLOW_TEMPLATE: 'sd-cpp:deleteWorkflowTemplate',
-  /** Edit an image */
   EDIT: 'sd-cpp:edit',
-  /** Export a comparison */
   EXPORT_COMPARISON: 'sd-cpp:exportComparison',
-  /** Export generation history */
   EXPORT_HISTORY: 'sd-cpp:exportHistory',
-  /** Export a preset for sharing */
   EXPORT_PRESET_SHARE: 'sd-cpp:exportPresetShare',
-  /** Export a workflow template for sharing */
   EXPORT_WORKFLOW_TEMPLATE_SHARE: 'sd-cpp:exportWorkflowTemplateShare',
-  /** Get generation analytics */
+  PROGRESS: 'sd-cpp:progress',
   GET_ANALYTICS: 'sd-cpp:getAnalytics',
-  /** Get generation history */
   GET_HISTORY: 'sd-cpp:getHistory',
-  /** Get preset analytics */
   GET_PRESET_ANALYTICS: 'sd-cpp:getPresetAnalytics',
-  /** Get generation queue stats */
   GET_QUEUE_STATS: 'sd-cpp:getQueueStats',
-  /** Get schedule analytics */
   GET_SCHEDULE_ANALYTICS: 'sd-cpp:getScheduleAnalytics',
-  /** Get service status */
   GET_STATUS: 'sd-cpp:getStatus',
-  /** Import a preset from share data */
+  STATUS: 'sd-cpp:status',
   IMPORT_PRESET_SHARE: 'sd-cpp:importPresetShare',
-  /** Import a workflow template from share data */
   IMPORT_WORKFLOW_TEMPLATE_SHARE: 'sd-cpp:importWorkflowTemplateShare',
-  /** List presets */
   LIST_PRESETS: 'sd-cpp:listPresets',
-  /** List scheduled generations */
   LIST_SCHEDULES: 'sd-cpp:listSchedules',
-  /** List workflow templates */
   LIST_WORKFLOW_TEMPLATES: 'sd-cpp:listWorkflowTemplates',
-  /** Regenerate with same settings */
   REGENERATE: 'sd-cpp:regenerate',
-  /** Reinstall SD-CPP */
   REINSTALL: 'sd-cpp:reinstall',
-  /** Save a preset */
   SAVE_PRESET: 'sd-cpp:savePreset',
-  /** Save a workflow template */
   SAVE_WORKFLOW_TEMPLATE: 'sd-cpp:saveWorkflowTemplate',
-  /** Schedule a generation */
   SCHEDULE: 'sd-cpp:schedule',
-  /** Search generation history */
   SEARCH_HISTORY: 'sd-cpp:searchHistory',
-  /** Share a comparison */
   SHARE_COMPARISON: 'sd-cpp:shareComparison',
 } as const;
 
 /** Image gallery channels */
 export const GALLERY_CHANNELS = {
-  /** Batch download gallery images */
   BATCH_DOWNLOAD: 'gallery:batch-download',
-  /** Delete a gallery image */
   DELETE: 'gallery:delete',
-  /** List gallery images */
   LIST: 'gallery:list',
-  /** Open a gallery image */
   OPEN: 'gallery:open',
-  /** Reveal image in file explorer */
   REVEAL: 'gallery:reveal',
 } as const;
 
@@ -1234,46 +1234,33 @@ export const GALLERY_CHANNELS = {
 
 /** Code analysis and intelligence channels */
 export const CODE_CHANNELS = {
-  /** Analyze code quality */
   ANALYZE_QUALITY: 'code:analyzeQuality',
-  /** Apply a rename symbol refactoring */
   APPLY_RENAME_SYMBOL: 'code:applyRenameSymbol',
-  /** Find symbol definitions */
   FIND_DEFINITION: 'code:findDefinition',
-  /** Find implementations of a symbol */
   FIND_IMPLEMENTATIONS: 'code:findImplementations',
-  /** Find references to a symbol */
   FIND_REFERENCES: 'code:findReferences',
-  /** Find symbols in a file or workspace */
   FIND_SYMBOLS: 'code:findSymbols',
-  /** Find usages of a symbol */
   FIND_USAGE: 'code:findUsage',
-  /** Generate documentation for a file */
   GENERATE_FILE_DOCUMENTATION: 'code:generateFileDocumentation',
-  /** Generate workspace-wide documentation */
   GENERATE_WORKSPACE_DOCUMENTATION: 'code:generateWorkspaceDocumentation',
-  /** Get an outline of a file */
   GET_FILE_OUTLINE: 'code:getFileOutline',
-  /** Get symbol analytics */
   GET_SYMBOL_ANALYTICS: 'code:getSymbolAnalytics',
-  /** Get a workspace dependency graph derived from indexed files */
-  GET_WORKSPACE_DEPENDENCY_GRAPH: 'code:getWorkspaceDependencyGraph',
-  /** Get a workspace code map derived from indexed symbols */
-  GET_WORKSPACE_CODE_MAP: 'code:getWorkspaceCodeMap',
-  /** Get relationships between symbols */
   GET_SYMBOL_RELATIONSHIPS: 'code:getSymbolRelationships',
-  /** Index the workspace for code intelligence */
+  GET_WORKSPACE_CODE_MAP: 'code:getWorkspaceCodeMap',
+  GET_WORKSPACE_DEPENDENCY_GRAPH: 'code:getWorkspaceDependencyGraph',
   INDEX_WORKSPACE: 'code:indexWorkspace',
-  /** Preview a rename symbol refactoring */
   PREVIEW_RENAME_SYMBOL: 'code:previewRenameSymbol',
-  /** Query indexed symbols */
   QUERY_INDEXED_SYMBOLS: 'code:queryIndexedSymbols',
-  /** Query symbols */
   QUERY_SYMBOLS: 'code:querySymbols',
-  /** Scan for TODO/FIXME comments */
   SCAN_TODOS: 'code:scanTodos',
-  /** Search for files */
   SEARCH_FILES: 'code:searchFiles',
+} as const;
+
+/** Code sandbox execution channels */
+export const CODE_SANDBOX_CHANNELS = {
+  EXECUTE: 'code-sandbox:execute',
+  HEALTH: 'code-sandbox:health',
+  LANGUAGES: 'code-sandbox:languages',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -1282,28 +1269,31 @@ export const CODE_CHANNELS = {
 
 /** Prompt template channels */
 export const PROMPT_TEMPLATES_CHANNELS = {
-  /** Create a new prompt template */
   CREATE: 'prompt-templates:create',
-  /** Delete a prompt template */
   DELETE: 'prompt-templates:delete',
-  /** Get a prompt template by ID */
   GET: 'prompt-templates:get',
-  /** Get all prompt templates */
   GET_ALL: 'prompt-templates:getAll',
-  /** Get templates by category */
   GET_BY_CATEGORY: 'prompt-templates:getByCategory',
-  /** Get templates by tag */
   GET_BY_TAG: 'prompt-templates:getByTag',
-  /** Get all categories */
   GET_CATEGORIES: 'prompt-templates:getCategories',
-  /** Get all tags */
   GET_TAGS: 'prompt-templates:getTags',
-  /** Render a template with variables */
   RENDER: 'prompt-templates:render',
-  /** Search prompt templates */
   SEARCH: 'prompt-templates:search',
-  /** Update a prompt template */
   UPDATE: 'prompt-templates:update',
+} as const;
+
+/** Shared prompts channels */
+export const SHARED_PROMPTS_CHANNELS = {
+  CREATE: 'shared-prompts:create',
+  DELETE: 'shared-prompts:delete',
+  EXPORT_TO_FILE: 'shared-prompts:exportToFile',
+  EXPORT_TO_JSON: 'shared-prompts:exportToJson',
+  GET_ALL: 'shared-prompts:getAll',
+  GET_BY_ID: 'shared-prompts:getById',
+  IMPORT_FROM_FILE: 'shared-prompts:importFromFile',
+  IMPORT_FROM_JSON: 'shared-prompts:importFromJson',
+  LIST: 'shared-prompts:list',
+  UPDATE: 'shared-prompts:update',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -1312,12 +1302,20 @@ export const PROMPT_TEMPLATES_CHANNELS = {
 
 /** Tool execution channels */
 export const TOOLS_CHANNELS = {
-  /** Execute a tool */
   EXECUTE: 'tools:execute',
-  /** Get tool definitions */
   GET_DEFINITIONS: 'tools:get-definitions',
-  /** Kill a running tool */
   KILL: 'tools:kill',
+} as const;
+
+// ---------------------------------------------------------------------------
+// Batch & IPC Utils
+// ---------------------------------------------------------------------------
+
+/** IPC batching channels */
+export const BATCH_CHANNELS = {
+  GET_CHANNELS: 'batch:getChannels',
+  INVOKE: 'batch:invoke',
+  INVOKE_SEQUENTIAL: 'batch:invokeSequential',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -1326,15 +1324,10 @@ export const TOOLS_CHANNELS = {
 
 /** Log channels */
 export const LOG_CHANNELS = {
-  /** Clear the log buffer */
   BUFFER_CLEAR: 'log:buffer:clear',
-  /** Get buffered log entries */
   BUFFER_GET: 'log:buffer:get',
-  /** Start log streaming */
   STREAM_START: 'log:stream:start',
-  /** Stop log streaming */
   STREAM_STOP: 'log:stream:stop',
-  /** Write a log entry */
   WRITE: 'log:write',
 } as const;
 
@@ -1344,62 +1337,158 @@ export const LOG_CHANNELS = {
 
 /** Lazy loading channels */
 export const LAZY_CHANNELS = {
-  /** Get lazy loading status */
   GET_STATUS: 'lazy:get-status',
 } as const;
 
 // ---------------------------------------------------------------------------
-// Aggregate export
+// Main Channel Registry
 // ---------------------------------------------------------------------------
 
-/** All IPC channels grouped by domain */
+/**
+ * Main channel registry containing all channel constants.
+ * Use this for a more structured access to channel names.
+ */
+export const CHANNELS = {
+  advancedMemory: ADVANCED_MEMORY_CHANNELS,
+  agent: AGENT_CHANNELS,
+  app: APP_CHANNELS,
+  audit: AUDIT_CHANNELS,
+  auth: AUTH_CHANNELS,
+  authSession: AUTH_SESSION_CHANNELS,
+  backup: BACKUP_CHANNELS,
+  batch: BATCH_CHANNELS,
+  brain: BRAIN_CHANNELS,
+  clipboard: CLIPBOARD_CHANNELS,
+  code: CODE_CHANNELS,
+  codeSandbox: CODE_SANDBOX_CHANNELS,
+  collaboration: COLLABORATION_CHANNELS,
+  collaborationSync: COLLABORATION_SYNC_CHANNELS,
+  contextWindow: CONTEXT_WINDOW_CHANNELS,
+  contract: CONTRACT_CHANNELS,
+  db: DB_CHANNELS,
+  embedding: EMBEDDING_CHANNELS,
+  export: EXPORT_CHANNELS,
+  files: FILES_CHANNELS,
+  gallery: GALLERY_CHANNELS,
+  git: GIT_CHANNELS,
+  health: HEALTH_CHANNELS,
+  hf: HF_CHANNELS,
+  hfFinetune: HF_FINETUNE_CHANNELS,
+  hfVersions: HF_VERSIONS_CHANNELS,
+  hfWatchlist: HF_WATCHLIST_CHANNELS,
+  llama: LLAMA_CHANNELS,
+  keyRotation: KEY_ROTATION_CHANNELS,
+  lazy: LAZY_CHANNELS,
+  log: LOG_CHANNELS,
+  mcp: MCP_CHANNELS,
+  mcpPermissions: MCP_PERMISSIONS_CHANNELS,
+  metrics: METRICS_CHANNELS,
+  migration: MIGRATION_CHANNELS,
+  marketplace: MARKETPLACE_CHANNELS,
+  memory: MEMORY_CHANNELS,
+  llm: LLM_CHANNELS,
+  modelRegistry: MODEL_REGISTRY_CHANNELS,
+  ollama: OLLAMA_CHANNELS,
+  process: PROCESS_CHANNELS,
+  promptTemplates: PROMPT_TEMPLATES_CHANNELS,
+  proxy: PROXY_CHANNELS,
+  proxyEmbed: PROXY_EMBED_CHANNELS,
+  runtime: RUNTIME_CHANNELS,
+  sdCpp: SD_CPP_CHANNELS,
+  settings: SETTINGS_CHANNELS,
+  sharedPrompts: SHARED_PROMPTS_CHANNELS,
+  shell: SHELL_CHANNELS,
+  ssh: SSH_CHANNELS,
+  terminal: TERMINAL_CHANNELS,
+  theme: THEME_CHANNELS,
+  tokenEstimation: TOKEN_ESTIMATION_CHANNELS,
+  tools: TOOLS_CHANNELS,
+  update: UPDATE_CHANNELS,
+  usage: USAGE_CHANNELS,
+  voice: VOICE_CHANNELS,
+  window: WINDOW_CHANNELS,
+  workspace: WORKSPACE_CHANNELS,
+  session: SESSION_CHANNELS,
+  sessionConversation: SESSION_CONVERSATION_CHANNELS,
+  sessionAutomation: SESSION_AUTOMATION_CHANNELS,
+  sessionCouncil: SESSION_COUNCIL_CHANNELS,
+  sessionWorkspace: SESSION_WORKSPACE_CHANNELS,
+  liveCollaboration: LIVE_COLLABORATION_CHANNELS,
+  workspaceAgentSession: WORKSPACE_AGENT_SESSION_CHANNELS,
+} as const;
+
+/** All IPC channels grouped by domain for internal use */
 export const IPC_CHANNELS = {
   ADVANCED_MEMORY: ADVANCED_MEMORY_CHANNELS,
   AGENT: AGENT_CHANNELS,
   APP: APP_CHANNELS,
   AUDIT: AUDIT_CHANNELS,
   AUTH: AUTH_CHANNELS,
+  AUTH_SESSION: AUTH_SESSION_CHANNELS,
   BACKUP: BACKUP_CHANNELS,
+  BATCH: BATCH_CHANNELS,
   BRAIN: BRAIN_CHANNELS,
+  CLIPBOARD: CLIPBOARD_CHANNELS,
   CODE: CODE_CHANNELS,
+  CODE_SANDBOX: CODE_SANDBOX_CHANNELS,
   COLLABORATION: COLLABORATION_CHANNELS,
+  COLLABORATION_SYNC: COLLABORATION_SYNC_CHANNELS,
   CONTEXT_WINDOW: CONTEXT_WINDOW_CHANNELS,
+  CONTRACT: CONTRACT_CHANNELS,
   DB: DB_CHANNELS,
+  EMBEDDING: EMBEDDING_CHANNELS,
+  EXPORT: EXPORT_CHANNELS,
   FILES: FILES_CHANNELS,
   GALLERY: GALLERY_CHANNELS,
   GIT: GIT_CHANNELS,
   HEALTH: HEALTH_CHANNELS,
   HF: HF_CHANNELS,
+  IMAGE_STUDIO: IMAGE_STUDIO_CHANNELS,
   HF_FINETUNE: HF_FINETUNE_CHANNELS,
   HF_VERSIONS: HF_VERSIONS_CHANNELS,
   HF_WATCHLIST: HF_WATCHLIST_CHANNELS,
+  LLAMA: LLAMA_CHANNELS,
   KEY_ROTATION: KEY_ROTATION_CHANNELS,
   LAZY: LAZY_CHANNELS,
   LOG: LOG_CHANNELS,
   MCP: MCP_CHANNELS,
   MCP_PERMISSIONS: MCP_PERMISSIONS_CHANNELS,
+  METRICS: METRICS_CHANNELS,
   MIGRATION: MIGRATION_CHANNELS,
+  MARKETPLACE: MARKETPLACE_CHANNELS,
+  MEMORY: MEMORY_CHANNELS,
+  LLM: LLM_CHANNELS,
+  MODEL_DOWNLOADER: MODEL_DOWNLOADER_CHANNELS,
   MODEL_REGISTRY: MODEL_REGISTRY_CHANNELS,
   OLLAMA: OLLAMA_CHANNELS,
   PROCESS: PROCESS_CHANNELS,
+  PROMPT_TEMPLATES: PROMPT_TEMPLATES_CHANNELS,
+  PROXY: PROXY_CHANNELS,
+  PROXY_EMBED: PROXY_EMBED_CHANNELS,
+  RUNTIME: RUNTIME_CHANNELS,
+  SD_CPP: SD_CPP_CHANNELS,
+  SETTINGS: SETTINGS_CHANNELS,
+  SHARED_PROMPTS: SHARED_PROMPTS_CHANNELS,
+  SHELL: SHELL_CHANNELS,
+  SSH: SSH_CHANNELS,
+  TERMINAL: TERMINAL_CHANNELS,
+  THEME: THEME_CHANNELS,
+  TOKEN_ESTIMATION: TOKEN_ESTIMATION_CHANNELS,
+  TOOLS: TOOLS_CHANNELS,
+  UPDATE: UPDATE_CHANNELS,
+  USAGE: USAGE_CHANNELS,
+  VOICE: VOICE_CHANNELS,
+  WINDOW: WINDOW_CHANNELS,
   WORKSPACE: WORKSPACE_CHANNELS,
   SESSION: SESSION_CHANNELS,
   SESSION_CONVERSATION: SESSION_CONVERSATION_CHANNELS,
   SESSION_AUTOMATION: SESSION_AUTOMATION_CHANNELS,
   SESSION_COUNCIL: SESSION_COUNCIL_CHANNELS,
   SESSION_WORKSPACE: SESSION_WORKSPACE_CHANNELS,
+  LIVE_COLLABORATION: LIVE_COLLABORATION_CHANNELS,
   WORKSPACE_AGENT_SESSION: WORKSPACE_AGENT_SESSION_CHANNELS,
-  PROMPT_TEMPLATES: PROMPT_TEMPLATES_CHANNELS,
-  PROXY: PROXY_CHANNELS,
-  SD_CPP: SD_CPP_CHANNELS,
-  SETTINGS: SETTINGS_CHANNELS,
-  SHELL: SHELL_CHANNELS,
-  THEME: THEME_CHANNELS,
-  TOKEN_ESTIMATION: TOKEN_ESTIMATION_CHANNELS,
-  TOOLS: TOOLS_CHANNELS,
-  USAGE: USAGE_CHANNELS,
-  WINDOW: WINDOW_CHANNELS,
 } as const;
 
 /** Union type of all IPC channel name strings */
 export type IpcChannelName = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS][keyof typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS]];
+

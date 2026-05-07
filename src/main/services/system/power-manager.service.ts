@@ -158,3 +158,4 @@ export class PowerManagerService extends BaseService {
         return this.isLowPowerModeActive;
     }
 }
+

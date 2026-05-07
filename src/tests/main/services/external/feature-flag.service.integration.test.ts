@@ -26,7 +26,7 @@ import {
     FeatureFlagError,
     FeatureFlagErrorCode,
     FeatureFlagService,
-    FeatureFlagTelemetryEvent,
+    FeatureFlagUsageStatsEvent,
 } from '@main/services/external/feature-flag.service';
 
 const flushMicrotasks = async (): Promise<void> => {
@@ -76,13 +76,13 @@ describe('FeatureFlagService Integration', () => {
         expect(FeatureFlagErrorCode.EVALUATION_FAILED).toBe('FEATURE_FLAG_EVALUATION_FAILED');
     });
 
-    it('has all expected telemetry events', () => {
-        expect(FeatureFlagTelemetryEvent.FLAG_CHECKED).toBeDefined();
-        expect(FeatureFlagTelemetryEvent.FLAG_ENABLED).toBeDefined();
-        expect(FeatureFlagTelemetryEvent.FLAG_DISABLED).toBeDefined();
-        expect(FeatureFlagTelemetryEvent.FLAGS_LOADED).toBeDefined();
-        expect(FeatureFlagTelemetryEvent.FLAGS_SAVED).toBeDefined();
-        expect(FeatureFlagTelemetryEvent.FLAGS_LOAD_FAILED).toBeDefined();
+    it('has all expected UsageStats events', () => {
+        expect(FeatureFlagUsageStatsEvent.FLAG_CHECKED).toBeDefined();
+        expect(FeatureFlagUsageStatsEvent.FLAG_ENABLED).toBeDefined();
+        expect(FeatureFlagUsageStatsEvent.FLAG_DISABLED).toBeDefined();
+        expect(FeatureFlagUsageStatsEvent.FLAGS_LOADED).toBeDefined();
+        expect(FeatureFlagUsageStatsEvent.FLAGS_SAVED).toBeDefined();
+        expect(FeatureFlagUsageStatsEvent.FLAGS_LOAD_FAILED).toBeDefined();
     });
 
     it('has positive performance budgets', () => {
@@ -273,3 +273,4 @@ describe('FeatureFlagService regression tests (B-0442)', () => {
         await expect(svc.cleanup()).resolves.toBeUndefined();
     });
 });
+

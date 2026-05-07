@@ -66,3 +66,4 @@ export function createDefaultMarketplaceQueries(): Record<MarketplaceTab, Market
         iconPacks: { ...DEFAULT_QUERY_STATE, viewMode: 'grid' },
     };
 }
+

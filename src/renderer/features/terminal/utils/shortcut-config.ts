@@ -210,3 +210,4 @@ export function parseShortcutShareCode(raw: string): {
         return { preset: null, bindings: {} };
     }
 }
+

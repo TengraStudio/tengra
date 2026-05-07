@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { HF_CHANNELS, HF_FINETUNE_CHANNELS, HF_VERSIONS_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface HuggingFaceBridge {
@@ -134,66 +135,67 @@ export interface HuggingFaceBridge {
         callback: (progress: { filename: string; received: number; total: number }) => void
     ) => void;
     cancelDownload: () => void;
+    deleteModel: (modelId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function createHuggingFaceBridge(ipc: IpcRenderer): HuggingFaceBridge {
     return {
         searchModels: (query, limit, page, sort) =>
-            ipc.invoke('hf:search-models', query, limit, page, sort),
+            ipc.invoke(HF_CHANNELS.SEARCH_MODELS, query, limit, page, sort),
         getRecommendations: (limit, query) =>
-            ipc.invoke('hf:get-recommendations', limit, query),
-        getFiles: (modelId) => ipc.invoke('hf:get-files', modelId),
-        getModelPreview: (modelId) => ipc.invoke('hf:get-model-preview', modelId),
-        getBulkModelPreviews: (modelIds) => ipc.invoke('hf:get-bulk-model-previews', modelIds),
-        compareModels: (modelIds) => ipc.invoke('hf:compare-models', modelIds),
+            ipc.invoke(HF_CHANNELS.GET_RECOMMENDATIONS, limit, query),
+        getFiles: (modelId) => ipc.invoke(HF_CHANNELS.GET_FILES, modelId),
+        getModelPreview: (modelId) => ipc.invoke(HF_CHANNELS.GET_MODEL_PREVIEW, modelId),
+        getBulkModelPreviews: (modelIds) => ipc.invoke(HF_CHANNELS.GET_BULK_MODEL_PREVIEWS, modelIds),
+        compareModels: (modelIds) => ipc.invoke(HF_CHANNELS.COMPARE_MODELS, modelIds),
         validateCompatibility: (file, availableRamGB, availableVramGB) =>
-            ipc.invoke('hf:validate-compatibility', file, availableRamGB, availableVramGB),
-        getWatchlist: () => ipc.invoke('hf:watchlist:get'),
-        addToWatchlist: (modelId) => ipc.invoke('hf:watchlist:add', modelId),
-        removeFromWatchlist: (modelId) => ipc.invoke('hf:watchlist:remove', modelId),
-        getCacheStats: () => ipc.invoke('hf:cache-stats'),
-        clearCache: () => ipc.invoke('hf:cache-clear'),
-        testDownloadedModel: (filePath) => ipc.invoke('hf:test-downloaded-model', filePath),
-        getConversionPresets: () => ipc.invoke('hf:get-conversion-presets'),
+            ipc.invoke(HF_CHANNELS.VALIDATE_COMPATIBILITY, file, availableRamGB, availableVramGB),
+        getWatchlist: () => ipc.invoke(HF_CHANNELS.GET_WATCHLIST),
+        addToWatchlist: (modelId) => ipc.invoke(HF_CHANNELS.ADD_TO_WATCHLIST, modelId),
+        removeFromWatchlist: (modelId) => ipc.invoke(HF_CHANNELS.REMOVE_FROM_WATCHLIST, modelId),
+        getCacheStats: () => ipc.invoke(HF_CHANNELS.CACHE_STATS),
+        clearCache: () => ipc.invoke(HF_CHANNELS.CACHE_CLEAR),
+        testDownloadedModel: (filePath) => ipc.invoke(HF_CHANNELS.TEST_DOWNLOADED_MODEL, filePath),
+        getConversionPresets: () => ipc.invoke(HF_CHANNELS.GET_CONVERSION_PRESETS),
         getOptimizationSuggestions: (options) =>
-            ipc.invoke('hf:get-optimization-suggestions', options),
-        validateConversion: (options) => ipc.invoke('hf:validate-conversion', options),
-        convertModel: (options) => ipc.invoke('hf:convert-model', options),
+            ipc.invoke(HF_CHANNELS.GET_OPTIMIZATION_SUGGESTIONS, options),
+        validateConversion: (options) => ipc.invoke(HF_CHANNELS.VALIDATE_CONVERSION, options),
+        convertModel: (options) => ipc.invoke(HF_CHANNELS.CONVERT_MODEL, options),
         onConversionProgress: (callback) => {
             const listener = (
                 _event: IpcRendererEvent,
                 progress: { stage: string; percent: number; message: string }
             ) => callback(progress);
-            ipc.on('hf:conversion-progress', listener);
-            return () => ipc.removeListener('hf:conversion-progress', listener);
+            ipc.on(HF_CHANNELS.CONVERSION_PROGRESS, listener);
+            return () => ipc.removeListener(HF_CHANNELS.CONVERSION_PROGRESS, listener);
         },
-        getModelVersions: (modelId) => ipc.invoke('hf:versions:list', modelId),
+        getModelVersions: (modelId) => ipc.invoke(HF_VERSIONS_CHANNELS.LIST, modelId),
         registerModelVersion: (modelId, filePath, notes) =>
-            ipc.invoke('hf:versions:register', modelId, filePath, notes),
+            ipc.invoke(HF_VERSIONS_CHANNELS.REGISTER, modelId, filePath, notes),
         compareModelVersions: (modelId, leftVersionId, rightVersionId) =>
-            ipc.invoke('hf:versions:compare', modelId, leftVersionId, rightVersionId),
+            ipc.invoke(HF_VERSIONS_CHANNELS.COMPARE, modelId, leftVersionId, rightVersionId),
         rollbackModelVersion: (modelId, versionId, targetPath) =>
-            ipc.invoke('hf:versions:rollback', modelId, versionId, targetPath),
+            ipc.invoke(HF_VERSIONS_CHANNELS.ROLLBACK, modelId, versionId, targetPath),
         pinModelVersion: (modelId, versionId, pinned) =>
-            ipc.invoke('hf:versions:pin', modelId, versionId, pinned),
-        getVersionNotifications: (modelId) => ipc.invoke('hf:versions:notifications', modelId),
+            ipc.invoke(HF_VERSIONS_CHANNELS.PIN, modelId, versionId, pinned),
+        getVersionNotifications: (modelId) => ipc.invoke(HF_VERSIONS_CHANNELS.NOTIFICATIONS, modelId),
         prepareFineTuneDataset: (inputPath, outputPath) =>
-            ipc.invoke('hf:finetune:prepare-dataset', inputPath, outputPath),
+            ipc.invoke(HF_FINETUNE_CHANNELS.PREPARE_DATASET, inputPath, outputPath),
         startFineTune: (modelId, datasetPath, outputPath, options) =>
-            ipc.invoke('hf:finetune:start', modelId, datasetPath, outputPath, options),
-        listFineTuneJobs: (modelId) => ipc.invoke('hf:finetune:list', modelId),
-        getFineTuneJob: (jobId) => ipc.invoke('hf:finetune:get', jobId),
-        cancelFineTuneJob: (jobId) => ipc.invoke('hf:finetune:cancel', jobId),
-        evaluateFineTuneJob: (jobId) => ipc.invoke('hf:finetune:evaluate', jobId),
+            ipc.invoke(HF_FINETUNE_CHANNELS.START, modelId, datasetPath, outputPath, options),
+        listFineTuneJobs: (modelId) => ipc.invoke(HF_FINETUNE_CHANNELS.LIST, modelId),
+        getFineTuneJob: (jobId) => ipc.invoke(HF_FINETUNE_CHANNELS.GET, jobId),
+        cancelFineTuneJob: (jobId) => ipc.invoke(HF_FINETUNE_CHANNELS.CANCEL, jobId),
+        evaluateFineTuneJob: (jobId) => ipc.invoke(HF_FINETUNE_CHANNELS.EVALUATE, jobId),
         exportFineTunedModel: (jobId, exportPath) =>
-            ipc.invoke('hf:finetune:export', jobId, exportPath),
+            ipc.invoke(HF_FINETUNE_CHANNELS.EXPORT, jobId, exportPath),
         onFineTuneProgress: (callback) => {
             const listener = (_event: IpcRendererEvent, job: RuntimeValue) => callback(job);
-            ipc.on('hf:finetune-progress', listener);
-            return () => ipc.removeListener('hf:finetune-progress', listener);
+            ipc.on(HF_FINETUNE_CHANNELS.PROGRESS, listener);
+            return () => ipc.removeListener(HF_FINETUNE_CHANNELS.PROGRESS, listener);
         },
         downloadFile: (url, outputPath, expectedSize, expectedSha256, scheduleAtMs) =>
-            ipc.invoke('hf:download-file', {
+            ipc.invoke(HF_CHANNELS.DOWNLOAD_FILE, {
                 url,
                 outputPath,
                 expectedSize,
@@ -205,11 +207,13 @@ export function createHuggingFaceBridge(ipc: IpcRenderer): HuggingFaceBridge {
                 _event: IpcRendererEvent,
                 progress: { filename: string; received: number; total: number }
             ) => callback(progress);
-            ipc.on('hf:download-progress', listener);
-            return () => ipc.removeListener('hf:download-progress', listener);
+            ipc.on(HF_CHANNELS.DOWNLOAD_PROGRESS, listener);
+            return () => ipc.removeListener(HF_CHANNELS.DOWNLOAD_PROGRESS, listener);
         },
         cancelDownload: () => {
-            void ipc.invoke('hf:cancel-download');
+            void ipc.invoke(HF_CHANNELS.CANCEL_DOWNLOAD);
         },
+        deleteModel: (modelId) => ipc.invoke(HF_CHANNELS.DELETE_MODEL, modelId),
     };
 }
+

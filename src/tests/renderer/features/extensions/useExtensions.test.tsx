@@ -133,3 +133,4 @@ describe('useExtensions', () => {
         expect(result.current.error).toBe('Failed to fetch extensions');
     });
 });
+

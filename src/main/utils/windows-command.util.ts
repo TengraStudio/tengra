@@ -59,3 +59,4 @@ export function createWindowsSpawnCommand(command: string, args: string[]): Wind
         args: ['/d', '/s', '/c', resolvedCommand, ...args]
     };
 }
+

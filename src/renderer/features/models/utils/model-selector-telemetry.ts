@@ -9,16 +9,16 @@
  */
 
 /**
- * @fileoverview Telemetry events and health monitoring for Model Selector Popover
+ * @fileoverview usageStats events and health monitoring for Model Selector Popover
  * @description Provides metrics collection, health dashboards, and observability
  */
 
 import { appLogger } from "@/utils/renderer-logger";
 
 /**
- * Telemetry event names for model selector
+ * usageStats event names for model selector
  */
-export const TelemetryEvents = {
+export const UsageStatsEvents = {
     // Model selection events
     MODEL_SELECTED: 'model_selector:model_selected',
     MODEL_DESELECTED: 'model_selector:model_deselected',
@@ -54,10 +54,10 @@ export const TelemetryEvents = {
     RECENT_MODEL_SELECTED: 'model_selector:recent_model_selected',
 } as const;
 
-export type TelemetryEventName = typeof TelemetryEvents[keyof typeof TelemetryEvents];
+export type UsageStatsEventName = typeof UsageStatsEvents[keyof typeof UsageStatsEvents];
 
 /**
- * Telemetry event payload types
+ * usageStats event payload types
  */
 export interface ModelSelectedPayload {
     modelId: string;
@@ -96,9 +96,9 @@ export interface PerformancePayload {
 }
 
 /**
- * Union type for all telemetry payloads
+ * Union type for all usageStats payloads
  */
-export type TelemetryPayload =
+export type usageStatsPayload =
     | ModelSelectedPayload
     | SearchPerformedPayload
     | ReasoningLevelSelectedPayload
@@ -108,12 +108,12 @@ export type TelemetryPayload =
     | Record<string, RendererDataValue>;
 
 /**
- * Telemetry event interface
+ * usageStats event interface
  */
-export interface TelemetryEvent {
-    name: TelemetryEventName;
+export interface UsageStatsEvent {
+    name: UsageStatsEventName;
     timestamp: number;
-    payload?: TelemetryPayload;
+    payload?: usageStatsPayload;
     sessionId: string;
 }
 
@@ -132,10 +132,10 @@ export interface HealthStatus {
 }
 
 /**
- * Telemetry collector for model selector
+ * usageStats collector for model selector
  */
-export class ModelSelectorTelemetry {
-    private events: TelemetryEvent[] = [];
+export class ModelSelectorusageStats {
+    private events: UsageStatsEvent[] = [];
     private sessionId: string;
     private maxEvents: number = 1000;
     private performanceMarks: Map<string, number> = new Map();
@@ -152,10 +152,10 @@ export class ModelSelectorTelemetry {
     }
 
     /**
-     * Records a telemetry event
+     * Records a usageStats event
      */
-    recordEvent(name: TelemetryEventName, payload?: TelemetryPayload): void {
-        const event: TelemetryEvent = {
+    recordEvent(name: UsageStatsEventName, payload?: usageStatsPayload): void {
+        const event: UsageStatsEvent = {
             name,
             timestamp: Date.now(),
             payload,
@@ -176,9 +176,9 @@ export class ModelSelectorTelemetry {
     /**
      * Logs event to console (development only)
      */
-    private logEvent(event: TelemetryEvent): void {
+    private logEvent(event: UsageStatsEvent): void {
         if (process.env.NODE_ENV === 'development') {
-            appLogger.debug(`[Telemetry] ${event.name}`, JSON.stringify(event.payload ?? ''));
+            appLogger.debug(`[usageStats] ${event.name}`, JSON.stringify(event.payload ?? ''));
         }
     }
 
@@ -201,7 +201,7 @@ export class ModelSelectorTelemetry {
         const durationMs = performance.now() - startTime;
         this.performanceMarks.delete(operation);
 
-        this.recordEvent(TelemetryEvents.RENDER_TIME, {
+        this.recordEvent(UsageStatsEvents.RENDER_TIME, {
             durationMs,
             operation,
             metadata,
@@ -213,14 +213,14 @@ export class ModelSelectorTelemetry {
     /**
      * Gets all events for the current session
      */
-    getEvents(): TelemetryEvent[] {
+    getEvents(): UsageStatsEvent[] {
         return [...this.events];
     }
 
     /**
      * Gets events by name
      */
-    getEventsByName(name: TelemetryEventName): TelemetryEvent[] {
+    getEventsByName(name: UsageStatsEventName): UsageStatsEvent[] {
         return this.events.filter(e => e.name === name);
     }
 
@@ -228,11 +228,11 @@ export class ModelSelectorTelemetry {
      * Calculates health status
      */
     getHealthStatus(): HealthStatus {
-        const renderEvents = this.getEventsByName(TelemetryEvents.RENDER_TIME);
-        const searchEvents = this.getEventsByName(TelemetryEvents.SEARCH_PERFORMED);
+        const renderEvents = this.getEventsByName(UsageStatsEvents.RENDER_TIME);
+        const searchEvents = this.getEventsByName(UsageStatsEvents.SEARCH_PERFORMED);
         const errorEvents = [
-            ...this.getEventsByName(TelemetryEvents.SELECTION_ERROR),
-            ...this.getEventsByName(TelemetryEvents.VALIDATION_ERROR),
+            ...this.getEventsByName(UsageStatsEvents.SELECTION_ERROR),
+            ...this.getEventsByName(UsageStatsEvents.VALIDATION_ERROR),
         ];
 
         const averageRenderTime = this.calculateAverage(
@@ -297,25 +297,25 @@ export class ModelSelectorTelemetry {
 }
 
 /**
- * Global telemetry instance
+ * Global usageStats instance
  */
-let globalTelemetry: ModelSelectorTelemetry | undefined;
+let globalusageStats: ModelSelectorusageStats | undefined;
 
 /**
- * Gets the global telemetry instance
+ * Gets the global usageStats instance
  */
-export function getTelemetry(): ModelSelectorTelemetry {
-    if (globalTelemetry === undefined) {
-        globalTelemetry = new ModelSelectorTelemetry();
+export function getusageStats(): ModelSelectorusageStats {
+    if (globalusageStats === undefined) {
+        globalusageStats = new ModelSelectorusageStats();
     }
-    return globalTelemetry;
+    return globalusageStats;
 }
 
 /**
- * Resets the global telemetry instance
+ * Resets the global usageStats instance
  */
-export function resetTelemetry(): void {
-    globalTelemetry = new ModelSelectorTelemetry();
+export function resetusageStats(): void {
+    globalusageStats = new ModelSelectorusageStats();
 }
 
 /**
@@ -327,7 +327,7 @@ export function recordModelSelection(
     hasThinkingLevels: boolean,
     selectionMethod: 'click' | 'keyboard' | 'recent' = 'click'
 ): void {
-    getTelemetry().recordEvent(TelemetryEvents.MODEL_SELECTED, {
+    getusageStats().recordEvent(UsageStatsEvents.MODEL_SELECTED, {
         modelId,
         provider,
         hasThinkingLevels,
@@ -339,7 +339,7 @@ export function recordModelSelection(
  * Convenience function to record a search event
  */
 export function recordSearch(query: string, resultCount: number, latencyMs: number): void {
-    getTelemetry().recordEvent(TelemetryEvents.SEARCH_PERFORMED, {
+    getusageStats().recordEvent(UsageStatsEvents.SEARCH_PERFORMED, {
         query,
         resultCount,
         latencyMs,
@@ -350,7 +350,7 @@ export function recordSearch(query: string, resultCount: number, latencyMs: numb
  * Convenience function to record an error event
  */
 export function recordError(code: string, message: string, context?: Record<string, RendererDataValue>): void {
-    getTelemetry().recordEvent(TelemetryEvents.SELECTION_ERROR, {
+    getusageStats().recordEvent(UsageStatsEvents.SELECTION_ERROR, {
         code,
         message,
         context,
@@ -401,8 +401,8 @@ export function createHealthReport(): {
     status: HealthStatus;
     recommendations: string[];
 } {
-    const telemetry = getTelemetry();
-    const status = telemetry.getHealthStatus();
+    const usageStats = getusageStats();
+    const status = usageStats.getHealthStatus();
     const recommendations: string[] = [];
 
     if (status.metrics.averageRenderTime > PerformanceThresholds.renderTime.degraded) {
@@ -422,3 +422,4 @@ export function createHealthReport(): {
         recommendations,
     };
 }
+

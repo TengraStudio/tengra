@@ -182,3 +182,4 @@ function getSimpleLabel(ts: number, period: string) {
     if (period === 'weekly') { return d.getDate(); }
     return d.getDate();
 }
+

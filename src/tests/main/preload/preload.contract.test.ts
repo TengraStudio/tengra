@@ -47,10 +47,11 @@ describe('Preload contract regression', () => {
         const ipc = createIpcRendererMock();
         const bridge = createAuthBridge(ipc as never);
 
-        await bridge.githubLogin('profile');
+        await bridge.githubLogin('copilot');
         await bridge.pollToken('device', 5, 'copilot');
 
         expect(ipc.invoke).toHaveBeenCalledWith('auth:github-login', 'profile');
         expect(ipc.invoke).toHaveBeenCalledWith('auth:poll-token', 'device', 5, 'copilot');
     });
 });
+

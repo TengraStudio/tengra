@@ -14,3 +14,4 @@ import enLocalePackData from '@/i18n/locales/en.locale.json';
 
 export const enLocalePack = enLocalePackData satisfies LocalePack;
 export const en = enLocalePackData.translations;
+

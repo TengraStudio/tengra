@@ -208,7 +208,7 @@ export const createSafeIpcHandler = <T = JsonValue, Args extends readonly Runtim
 };
 
 interface ValidatedIpcHandlerOptions<T, Args extends readonly RuntimeValue[]> extends IpcHandlerOptions {
-    argsSchema?: z.ZodTuple<[z.ZodTypeAny, ...z.ZodTypeAny[]]> | z.ZodTuple<[]>;
+    argsSchema?: z.ZodTypeAny;
     responseSchema?: ZodType<T>;
     normalizeArgs?: (args: Args) => Args;
     schemaVersion?: number;
@@ -270,7 +270,17 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends readonly R
             };
 
             const parsedArgs = argsSchema
-                ? parseWithLog('args', () => argsSchema.parse(args) as readonly RuntimeValue[] as Args)
+                ? parseWithLog('args', () => {
+                    if (argsSchema instanceof z.ZodTuple) {
+                        return argsSchema.parse(args) as readonly RuntimeValue[] as Args;
+                    }
+
+                    if (args.length === 1) {
+                        return [argsSchema.parse(args[0])] as readonly RuntimeValue[] as Args;
+                    }
+
+                    return argsSchema.parse(args) as readonly RuntimeValue[] as Args;
+                })
                 : args;
             const finalArgs = normalizeArgs ? normalizeArgs(parsedArgs) : parsedArgs;
             
@@ -282,3 +292,4 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends readonly R
         ipcOptions
     );
 };
+

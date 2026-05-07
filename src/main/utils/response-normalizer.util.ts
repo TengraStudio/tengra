@@ -427,3 +427,4 @@ function asArray(value: JsonValue | undefined): JsonValue[] | null {
     if (!Array.isArray(value)) { return null; }
     return value;
 }
+

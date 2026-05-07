@@ -24,7 +24,6 @@
     - Implement proactive notifications via Discord/Telegram bots.
     - Research and implement WhatsApp integration (QR/API).
 - [ ] **Auth Enrichment**: Add authenticated provider info (avatar/org metadata) for OpenAI/Anthropic accounts.
-- [ ] **Telemetry**: Add callback bridge telemetry (latency, redirect counts) to `tengra-proxy`.
 
 ## OSS Readiness & Roadmap
 - [/] **Final OSS Checklist**: Completed governance (CoC, Templates), security (PII scrubbing, Security.md), and documentation (Roadmap, README expansion).

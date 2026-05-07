@@ -49,6 +49,28 @@ export interface AppSettings {
         numCtx?: number;
         orchestrationPolicy?: 'auto' | 'fifo' | 'parallel';
     };
+    llama?: {
+        host?: string;
+        port?: number;
+        backend?: 'auto' | 'cpu' | 'cuda' | 'vulkan' | 'metal';
+        gpuLayers?: number;
+        contextSize?: number;
+        batchSize?: number;
+        ubatchSize?: number;
+        parallel?: number;
+        threads?: number;
+        threadsBatch?: number;
+        flashAttn?: boolean;
+        continuousBatching?: boolean;
+        mlock?: boolean;
+        mmap?: boolean;
+        defragThold?: number;
+        metrics?: boolean;
+        mainGpu?: number;
+        tensorSplit?: string;
+        sleepIdleSeconds?: number;
+        extraArgs?: string;
+    };
     embeddings: {
         provider: 'ollama' | 'openai' | 'llama' | 'none';
         model?: string;
@@ -95,6 +117,7 @@ export interface AppSettings {
         responseStyle?: 'concise' | 'balanced' | 'detailed';
         responseTone?: 'neutral' | 'friendly' | 'professional';
         responseFormat?: 'auto' | 'structured' | 'steps';
+        chatMode?: 'instant' | 'thinking' | 'agent';
         customInstructions?: string;
         contextMessageLimit?: number;
         workspacesBasePath?: string;
@@ -281,7 +304,7 @@ export interface AppSettings {
         verified: boolean;
         status: 'published' | 'flagged' | 'hidden';
     }>>;
-    mcpTelemetry?: {
+    mcpUsageStats?: {
         enabled: boolean;
         anonymize: boolean;
         crashReporting: boolean;
@@ -461,7 +484,7 @@ export type MCPServerConfig = {
         malwareFlags?: string[];
         lastScannedAt?: number;
     };
-    telemetry?: {
+    usageStats?: {
         enabled?: boolean;
         anonymize?: boolean;
         crashReporting?: boolean;
@@ -479,3 +502,4 @@ export type AccountQuotaInfo = {
     files?: Array<{ provider: string; type?: string; name?: string }>;
     [key: string]: JsonValue | undefined;
 };
+

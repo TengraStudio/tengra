@@ -9,11 +9,9 @@
  */
 
 import { type MutableRefObject,useCallback } from 'react';
-import { z } from 'zod';
 
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { TerminalTab } from '@/types';
-import { appLogger } from '@/utils/renderer-logger';
+ import { appLogger } from '@/utils/renderer-logger';
 
 import { promptDialog } from '../utils/dialog';
 import {
@@ -23,7 +21,6 @@ import {
     type SplitPreset,
     TERMINAL_SPLIT_PRESET_LIMIT,
 } from '../utils/split-config';
-import type { TerminalIpcContract } from '../utils/terminal-ipc';
 import { resolveSecondarySplitTabId } from '../utils/terminal-panel-helpers';
 
 interface SplitView {
@@ -278,11 +275,7 @@ export function useTerminalSplitActions({
         }
 
         try {
-            const detached = await invokeTypedIpc<TerminalIpcContract, 'terminal:detach'>(
-                'terminal:detach',
-                [{ sessionId: tabToDetach.id }],
-                { responseSchema: z.boolean() }
-            );
+            const detached = await window.electron.terminal.detach({ sessionId: tabToDetach.id });
             if (!detached) {
                 return;
             }
@@ -351,3 +344,4 @@ export function useTerminalSplitActions({
         toggleSynchronizedInput,
     };
 }
+

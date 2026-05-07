@@ -74,3 +74,4 @@ export function useEditorMacro({ updateTabContent, setSnippetStatus }: UseEditor
         importMacro,
     };
 }
+

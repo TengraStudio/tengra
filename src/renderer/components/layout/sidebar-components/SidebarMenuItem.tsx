@@ -208,3 +208,4 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = React.memo(({
 });
 
 SidebarMenuItem.displayName = 'SidebarMenuItem';
+

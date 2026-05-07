@@ -34,3 +34,4 @@ export function TerminalEmptyState({ title, actionLabel, onCreate }: TerminalEmp
         </div>
     );
 }
+

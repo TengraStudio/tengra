@@ -160,3 +160,4 @@ export function useLanguagePromptStore<T>(selector: (state: LanguagePromptState)
     const currentState = useSyncExternalStore(languagePromptStore.subscribe, languagePromptStore.getState, languagePromptStore.getState);
     return selector(currentState);
 }
+

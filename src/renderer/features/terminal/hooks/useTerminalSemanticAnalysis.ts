@@ -278,3 +278,4 @@ export function useTerminalSemanticAnalysis({ tabs }: UseTerminalSemanticAnalysi
         clearSemanticIssues,
     };
 }
+

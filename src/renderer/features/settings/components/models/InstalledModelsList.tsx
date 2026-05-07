@@ -223,3 +223,4 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
         </div>
     );
 };
+

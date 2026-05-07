@@ -77,7 +77,8 @@ type CertificateErrorDetails = [
     callback: (isTrusted: boolean) => void,
 ];
 function recordStartupPhase(services: Services, event: StartupMetricEvent): void {
-    services?.performanceService?.recordStartupEvent(event);
+    void services;
+    void event;
 }
 
 type WindowLifecycleFlags = {
@@ -281,12 +282,9 @@ app.whenReady().then(async () => {
             if (runtimeStartupDecisions.embeddedProxy.shouldStart) {
                 void services.proxyService
                     .startEmbeddedProxy()
-                    .catch((e: unknown) => appLogger.error('Main', `Proxy Init Failed: ${getErrorMessage(e)}`));
+                    .catch((e: Error | string | { message?: string }) => appLogger.error('Main', `Proxy Init Failed: ${getErrorMessage(e)}`));
             }
 
-            await services.localAIService.maybeStartOllama().catch((error: unknown) => {
-                appLogger.warn('Main', `Headless Ollama auto-start failed: ${getErrorMessage(error)}`);
-            });
             const { startOllama } = await import('@main/startup/ollama');
             void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
 
@@ -395,7 +393,7 @@ app.whenReady().then(async () => {
 
         win.webContents.once('did-finish-load', () => {
             windowLifecycleFlags.didFinishLoad = true;
-            services?.performanceService?.recordStartupEvent('loadTime');
+            recordStartupPhase(services, 'loadTime');
             runDeferredStartupTasks();
             setTimeout(runPostInteractiveTasks, 0);
         });
@@ -404,7 +402,7 @@ app.whenReady().then(async () => {
             recordStartupPhase(services, 'readyTime');
         }
         if (windowLifecycleFlags.didFinishLoad) {
-            services?.performanceService?.recordStartupEvent('loadTime');
+            recordStartupPhase(services, 'loadTime');
             runDeferredStartupTasks();
             setTimeout(runPostInteractiveTasks, 0);
         }
@@ -576,9 +574,10 @@ app.whenReady().then(async () => {
     }, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
     setTimeout(runPostInteractiveTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP * 2);
 
-}).catch((e: unknown) => {
+}).catch((e: Error | string | { message?: string }) => {
     closeSplashWindow();
     const normalizedError = e instanceof Error ? e : new Error(getErrorMessage(e));
     appLogger.error('Main', 'Critical failure on startup', normalizedError);
     app.exit(1);
 });
+

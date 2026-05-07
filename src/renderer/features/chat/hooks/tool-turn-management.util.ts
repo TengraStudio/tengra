@@ -522,3 +522,4 @@ export async function finalizeLoopForcefully(
         reasoning: params.assistantMsg.reasoning,
     });
 }
+

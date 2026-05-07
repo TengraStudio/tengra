@@ -113,3 +113,4 @@ export function TerminalTabsBar({
         </div>
     );
 }
+

@@ -47,3 +47,4 @@ export interface FixErrorResult {
     confidence: 'low' | 'medium' | 'high';
     alternativeCommands?: string[];
 }
+

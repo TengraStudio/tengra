@@ -68,3 +68,4 @@ export function scoreModelForMode(model: ModelListItem, mode: SelectorChatMode):
     score += model.isFree ? 4 : 0;
     return score;
 }
+

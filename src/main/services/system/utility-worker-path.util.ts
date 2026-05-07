@@ -42,3 +42,4 @@ export function getBundledUtilityWorkerPath(fileName: string): string {
 
     return path.join(app.getAppPath(), 'src', 'main', 'workers', fileName);
 }
+

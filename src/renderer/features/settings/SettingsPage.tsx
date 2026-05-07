@@ -85,7 +85,7 @@ export function SettingsPage({
     const {
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
+        connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
@@ -133,7 +133,7 @@ export function SettingsPage({
             embeddings: { provider: 'none' as const },
             general: {
                 language: 'en' as const,
-                theme: 'graphite',
+                theme: 'tengra-black',
                 resolution: '1920x1080',
                 fontSize: 14,
                 typographyScale: 'balanced' as const,
@@ -180,7 +180,7 @@ export function SettingsPage({
         setStatusMessage: (m: string) => { setStatusMessage(m); },
         authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
+        connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod,
         setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => { setStatsPeriod(p); },
         statsData, quotaData, copilotQuota, codexUsage, claudeQuota,
@@ -197,7 +197,7 @@ export function SettingsPage({
     }), [
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, updateWindow, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
+        connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
@@ -377,3 +377,4 @@ export function SettingsPage({
 export const MemoizedSettingsPage = memo(SettingsPage);
 
 export default MemoizedSettingsPage;
+

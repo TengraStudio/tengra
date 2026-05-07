@@ -14,31 +14,43 @@ import { cn } from '@/lib/utils';
 import { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
 
-/* Batch-02: Extracted Long Classes */
-const C_WORKSPACEOVERVIEW_1 = "w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner";
-const C_WORKSPACEOVERVIEW_2 = "absolute inset-0 bg-primary/60 backdrop-blur-2 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground sm:flex-row";
-const C_WORKSPACEOVERVIEW_3 = "text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2";
-const C_WORKSPACEOVERVIEW_4 = "p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 typo-caption";
-
-
 interface WorkspaceOverviewHeaderProps {
-    workspace: Workspace
-    workspaceRoot: string
-    analysis: WorkspaceAnalysis
-    loading: boolean
-    isEditingName: boolean
-    isEditingDesc: boolean
-    editName: string
-    editDesc: string
-    onEditName: (editing: boolean) => void
-    onEditDesc: (editing: boolean) => void
-    onSetName: (name: string) => void
-    onSetDesc: (desc: string) => void
-    onSaveName: () => void
-    onSaveDesc: () => void
-    onAnalyze: () => void
-    onOpenLogoGenerator?: () => void
-    t: (key: string) => string
+    workspace: Workspace;
+    workspaceRoot: string;
+    analysis: WorkspaceAnalysis;
+    loading: boolean;
+    isEditingName: boolean;
+    isEditingDesc: boolean;
+    editName: string;
+    editDesc: string;
+    onEditName: (editing: boolean) => void;
+    onEditDesc: (editing: boolean) => void;
+    onSetName: (name: string) => void;
+    onSetDesc: (desc: string) => void;
+    onSaveName: () => void;
+    onSaveDesc: () => void;
+    onAnalyze: () => void;
+    onOpenLogoGenerator?: () => void;
+    t: (key: string) => string;
+}
+
+function InfoRow({
+    label,
+    value,
+}: {
+    label: string;
+    value: string;
+}) {
+    return (
+        <div className="flex items-start justify-between gap-4 py-2 border-b border-border/40 last:border-b-0">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                {label}
+            </span>
+            <span className="text-sm text-foreground text-right break-all">
+                {value}
+            </span>
+        </div>
+    );
 }
 
 export function WorkspaceOverviewHeader({
@@ -58,139 +70,201 @@ export function WorkspaceOverviewHeader({
     onSaveDesc,
     onAnalyze,
     onOpenLogoGenerator,
-    t
+    t,
 }: WorkspaceOverviewHeaderProps) {
     const baseLogoUrl = toSafeFileUrl(workspace.logo);
-    const workspaceLogoUrl = baseLogoUrl && baseLogoUrl.startsWith('data:') ? baseLogoUrl : (baseLogoUrl ? `${baseLogoUrl}?t=${workspace.updatedAt}` : null);
+    const workspaceLogoUrl = baseLogoUrl?.startsWith('data:')
+        ? baseLogoUrl
+        : (baseLogoUrl ? `${baseLogoUrl}?t=${workspace.updatedAt}` : null);
 
     return (
-        <div className="flex flex-col md:flex-row gap-8 items-start bg-card/40 p-6 rounded-3xl border border-border backdrop-blur-sm">
-            {/* Logo Area */}
-            <div className="relative group shrink-0">
-                <div className={C_WORKSPACEOVERVIEW_1}>
-                    {workspaceLogoUrl ? (
-                        <img src={workspaceLogoUrl} alt={t('frontend.workspaces.logoAlt')} className="w-full h-full object-cover" />
-                    ) : (
-                        <IconSparkles className="w-10 h-10 text-muted-foreground/20" />
-                    )}
+        <div className="rounded-2xl border border-border bg-background/80 p-5 md:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+                <div className="flex items-start gap-4 min-w-0 flex-1">
+                    <div className="relative shrink-0">
+                        <div className="w-16 h-16 rounded-xl border border-border/70 bg-muted/40 overflow-hidden flex items-center justify-center">
+                            {workspaceLogoUrl ? (
+                                <img
+                                    src={workspaceLogoUrl}
+                                    alt={t('frontend.workspaces.logoAlt')}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <IconSparkles className="w-7 h-7 text-muted-foreground/50" />
+                            )}
+                        </div>
+                        {onOpenLogoGenerator && (
+                            <button
+                                type="button"
+                                onClick={onOpenLogoGenerator}
+                                className="absolute -right-1 -bottom-1 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm hover:text-foreground hover:bg-accent"
+                                title={t('frontend.workspaces.changeLogo')}
+                            >
+                                <IconCamera className="h-3.5 w-3.5" />
+                            </button>
+                        )}
+                    </div>
 
+                    <div className="min-w-0 flex-1">
+                        {isEditingName ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    autoFocus
+                                    value={editName}
+                                    onChange={e => onSetName(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') { onSaveName(); }
+                                        if (e.key === 'Escape') { onEditName(false); }
+                                    }}
+                                    onBlur={() => onSaveName()}
+                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-lg font-medium text-foreground outline-none focus:border-primary"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={onSaveName}
+                                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-accent"
+                                >
+                                    <IconCheck className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => onEditName(true)}
+                                className="group flex items-center gap-2 text-left"
+                            >
+                                <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+                                    {workspace.title}
+                                </h1>
+                                <IconPencil className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                            </button>
+                        )}
+
+                        <div className="mt-2 text-sm text-muted-foreground">
+                            {workspace.description?.trim()
+                                ? (
+                                    isEditingDesc ? (
+                                        <textarea
+                                            autoFocus
+                                            value={editDesc}
+                                            onChange={e => onSetDesc(e.target.value)}
+                                            onBlur={() => onSaveDesc()}
+                                            className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary resize-y"
+                                            placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
+                                        />
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => onEditDesc(true)}
+                                            className="group text-left leading-6 text-muted-foreground hover:text-foreground"
+                                        >
+                                            <span>{workspace.description}</span>
+                                            <IconPencil className="ml-2 inline h-3.5 w-3.5 align-baseline opacity-0 transition-opacity group-hover:opacity-100" />
+                                        </button>
+                                    )
+                                )
+                                : (
+                                    <button
+                                        type="button"
+                                        onClick={() => onEditDesc(true)}
+                                        className="text-left text-muted-foreground hover:text-foreground"
+                                    >
+                                        {t('frontend.workspaces.workspaceDescPlaceholder')}
+                                    </button>
+                                )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                            {t('frontend.workspaceDashboard.type')}
+                        </div>
+                        <div className="text-sm font-medium text-foreground capitalize">
+                            {analysis.type}
+                        </div>
+                    </div>
                     <button
-                        onClick={onOpenLogoGenerator}
-                        className={C_WORKSPACEOVERVIEW_2}
+                        type="button"
+                        onClick={onAnalyze}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground hover:bg-accent disabled:opacity-60"
+                        title={t('common.refresh')}
                     >
-                        <IconCamera className="w-6 h-6" />
-                        <span className="text-sm font-bold">{t('frontend.workspaces.changeLogo')}</span>
+                        <IconRefresh className={cn('h-4 w-4', loading && 'animate-spin')} />
+                        <span>{loading ? t('common.loading') : t('common.refresh')}</span>
                     </button>
                 </div>
             </div>
 
-            {/* Name & Description Area */}
-            <div className="flex-1 space-y-4 w-full">
-                <div className="space-y-1 group">
-                    {isEditingName ? (
-                        <div className="flex items-center gap-2">
-                            <input
-                                autoFocus
-                                value={editName}
-                                onChange={e => onSetName(e.target.value)}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter') { onSaveName(); }
-                                    if (e.key === 'Escape') { onEditName(false); }
-                                }}
-                                onBlur={() => onSaveName()}
-                                className="text-3xl font-bold bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full text-foreground"
-                            />
-                            <button onClick={onSaveName} className="p-2 bg-primary text-primary-foreground rounded-lg">
-                                <IconCheck className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ) : (
-                        <h1
-                            onClick={() => onEditName(true)}
-                            className="text-4xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
-                        >
-                            {workspace.title}
-                            <IconPencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
-                        </h1>
-                    )}
-                </div>
-
-                <div className="group">
-                    {isEditingDesc ? (
-                        <div className="space-y-2">
-                            <textarea
-                                autoFocus
-                                value={editDesc}
-                                onChange={e => onSetDesc(e.target.value)}
-                                onBlur={() => onSaveDesc()}
-                                className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-80 resize-none"
-                                placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
-                            />
-                        </div>
-                    ) : (
-                        <p
-                            onClick={() => onEditDesc(true)}
-                            className={C_WORKSPACEOVERVIEW_3}
-                        >
-                            {workspace.description}
-                            <IconPencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </p>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-4 pt-2">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
-                        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-sm font-bold text-success">{analysis.type}</span>
-                    </div>
-                    <div className="text-sm font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
-                        {workspaceRoot}
-                    </div>
-                    <button
-                        onClick={onAnalyze}
-                        disabled={loading}
-                        className={C_WORKSPACEOVERVIEW_4}
-                        title={t('common.refresh')}
-                    >
-                        <IconRefresh className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
-                        {loading ? t('common.loading') : t('common.refresh')}
-                    </button>
-                </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <InfoRow
+                    label={t('frontend.workspaceDashboard.fileCount')}
+                    value={String(analysis.stats.fileCount)}
+                />
+                <InfoRow
+                    label={t('frontend.workspaceDashboard.loc')}
+                    value={`~${analysis.stats.loc}`}
+                />
+                <InfoRow
+                    label={t('frontend.workspaces.placeholders.rootPath')}
+                    value={workspaceRoot}
+                />
+                <InfoRow
+                    label={t('frontend.workspaceDashboard.modules')}
+                    value={String(analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length)}
+                />
             </div>
         </div>
     );
 }
 
 interface WorkspaceStatsCardsProps {
-    stats: WorkspaceStats | null
-    analysis: WorkspaceAnalysis
-    t: (key: string) => string
-    formatBytes: (bytes: number) => string
+    stats: WorkspaceStats | null;
+    analysis: WorkspaceAnalysis;
+    t: (key: string) => string;
+    formatBytes: (bytes: number) => string;
+}
+
+function SimpleStatCard({
+    label,
+    value,
+}: {
+    label: string;
+    value: string;
+}) {
+    return (
+        <div className="rounded-xl border border-border bg-card p-4">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                {label}
+            </div>
+            <div className="mt-2 text-xl font-semibold text-foreground">
+                {value}
+            </div>
+        </div>
+    );
 }
 
 export function WorkspaceStatsCards({ stats, analysis, t, formatBytes }: WorkspaceStatsCardsProps) {
     return (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.fileCount')}</div>
-                <div className="text-2xl font-bold text-foreground">{stats?.fileCount ?? 0}</div>
-            </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.loc')}</div>
-                <div className="text-2xl font-bold text-foreground">~{stats?.loc ?? 0}</div>
-            </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.totalSize')}</div>
-                <div className="text-2xl font-bold text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
-            </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="typo-body font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.modules')}</div>
-                <div className="text-2xl font-bold text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
-            </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-sm font-bold text-muted-foreground mb-1">{t('frontend.workspaceDashboard.type')}</div>
-                <div className="text-2xl font-bold text-primary capitalize">{analysis.type}</div>
-            </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <SimpleStatCard
+                label={t('frontend.workspaceDashboard.fileCount')}
+                value={String(stats?.fileCount ?? 0)}
+            />
+            <SimpleStatCard
+                label={t('frontend.workspaceDashboard.loc')}
+                value={`~${stats?.loc ?? 0}`}
+            />
+            <SimpleStatCard
+                label={t('frontend.workspaceDashboard.totalSize')}
+                value={stats ? formatBytes(stats.totalSize) : '0 B'}
+            />
+            <SimpleStatCard
+                label={t('frontend.workspaceDashboard.modules')}
+                value={String(analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length)}
+            />
         </div>
     );
 }

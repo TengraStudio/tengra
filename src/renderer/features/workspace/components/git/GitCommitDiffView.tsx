@@ -190,3 +190,4 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
         </div>
     );
 };
+

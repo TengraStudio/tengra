@@ -38,8 +38,8 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
 
             // 2. Fetch Models and Quotas
             const allModels = await fetchModels(true);
-            const rawQuota = await window.electron.getQuota();
-            const accounts = await window.electron.getLinkedAccounts();
+            const rawQuota = await window.electron.auth.getQuota();
+            const accounts = await window.electron.auth.getLinkedAccounts();
 
             const quotaMap = new Map<string, number>();
             if (rawQuota?.accounts) {
@@ -168,3 +168,4 @@ ${diffResult.diff}`;
         isGenerating
     };
 };
+

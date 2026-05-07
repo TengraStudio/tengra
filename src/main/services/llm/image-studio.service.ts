@@ -19,6 +19,7 @@ import type { LocalImageService } from '@main/services/llm/local/local-image.ser
 import type { ImageProvider } from '@main/services/llm/local/local-image.types';
 import type { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { IMAGE_STUDIO_CHANNELS } from '@shared/constants/ipc-channels';
 import { MessageContentPart } from '@shared/types/chat';
 import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -77,7 +78,7 @@ export class ImageStudioService {
         private readonly imagePersistenceService: ImagePersistenceService
     ) {}
 
-    @ipc('image-studio:save')
+    @ipc(IMAGE_STUDIO_CHANNELS.SAVE)
     async saveImage(raw: RuntimeValue): Promise<RuntimeValue> {
         if (typeof raw !== 'object' || raw === null) {
             throw new Error('Invalid request payload');
@@ -98,7 +99,7 @@ export class ImageStudioService {
         return serializeToIpc(result);
     }
 
-    @ipc('image-studio:generate')
+    @ipc(IMAGE_STUDIO_CHANNELS.GENERATE)
     async generateImage(raw: RuntimeValue): Promise<RuntimeValue> {
         if (typeof raw !== 'object' || raw === null) {
             throw new Error('Invalid request payload');
@@ -202,7 +203,7 @@ export class ImageStudioService {
         }
     }
 
-    @ipc('image-studio:edit')
+    @ipc(IMAGE_STUDIO_CHANNELS.EDIT)
     async editImage(raw: RuntimeValue): Promise<RuntimeValue> {
         if (typeof raw !== 'object' || raw === null) {
             throw new Error('Invalid request payload');
@@ -378,7 +379,7 @@ export class ImageStudioService {
         throw new Error(`Image edit failed for source model ${modelId}.${details}`);
     }
 
-    private clampInt(value: unknown, fallback: number, min: number, max: number): number {
+    private clampInt(value: RuntimeValue, fallback: number, min: number, max: number): number {
         const n = typeof value === 'number' && Number.isFinite(value) ? Math.floor(value) : fallback;
         return Math.max(min, Math.min(max, n));
     }
@@ -524,3 +525,4 @@ export class ImageStudioService {
         return searchable.includes('edit') || searchable.includes('inpaint') || searchable.includes('image') || provider === 'antigravity' || provider === 'google' || provider === 'gemini' || provider === 'nvidia';
     }
 }
+

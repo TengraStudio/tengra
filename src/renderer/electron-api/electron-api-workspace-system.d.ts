@@ -11,7 +11,7 @@
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
-    InlineSuggestionTelemetry,
+    InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 
 import type {
@@ -32,6 +32,20 @@ import type {
     WorkspaceIssue,
     WorkspaceStats,
 } from '@/shared/types';
+import type {
+    GitBlameLine,
+    GitCommitDetails,
+    GitConflict,
+    GitFileHistoryItem,
+    GitFlowStatus,
+    GitHookInfo,
+    GitHotspot,
+    GitRebasePlanCommit,
+    GitRefComparison,
+    GitRepositoryStats,
+    GitStash,
+    GitSubmodule,
+} from '@/shared/types/git';
 
 export interface ElectronApiWorkspaceSystemDomain {
     code: {
@@ -170,8 +184,8 @@ export interface ElectronApiWorkspaceSystemDomain {
         applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
         getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
-        trackInlineSuggestionTelemetry: (
-            event: InlineSuggestionTelemetry
+        trackInlineSuggestionUsageStats: (
+            event: InlineSuggestionUsageStats
         ) => Promise<{ success: boolean }>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
         uploadLogo: (workspacePath: string) => Promise<string | null>;
@@ -228,19 +242,15 @@ export interface ElectronApiWorkspaceSystemDomain {
             rootPath: string,
             pattern: string
         ) => Promise<{ success: boolean; results: string[]; error?: string }>;
+        selectFile: (options?: {
+            title?: string;
+            filters?: Array<{ name: string; extensions: string[] }>;
+        }) => Promise<{ success: boolean; path?: string; error?: string }>;
         revertFileChange: (diffId: string) => Promise<{ success: boolean; error?: string }>;
         getFileDiff: (diffId: string) => Promise<{ success: boolean; data?: FileDiff; error?: string }>;
     };
 
     // Proxy
-    performance: {
-        getMemoryStats: () => Promise<IpcValue>;
-        getProcessMetrics: () => Promise<IpcValue>;
-        getStartupMetrics: () => Promise<IpcValue>;
-        detectLeak: () => Promise<IpcValue>;
-        triggerGC: () => Promise<IpcValue>;
-        getDashboard: () => Promise<IpcValue>;
-    };
     git: {
         getBranch: (cwd: string) => Promise<{ success: boolean; branch?: string; error?: string }>;
         getStatus: (cwd: string) => Promise<{
@@ -271,22 +281,13 @@ export interface ElectronApiWorkspaceSystemDomain {
         getFileHistory: (
             cwd: string,
             filePath: string,
-            count?: number,
-            skip?: number
+            count?: number
         ) => Promise<{
             success: boolean;
-            commits?: Array<{
-                hash: string;
-                message: string;
-                author: string;
-                relativeTime: string;
-                date: string;
-            }>;
+            commits?: GitFileHistoryItem[];
             error?: string;
         }>;
-        getBranches: (
-            cwd: string
-        ) => Promise<{ success: boolean; branches?: string[]; error?: string }>;
+        getBranches: (cwd: string) => Promise<{ success: boolean; branches?: string[]; error?: string }>;
         isRepository: (cwd: string) => Promise<{ success: boolean; isRepository?: boolean }>;
         getFileDiff: (
             cwd: string,
@@ -299,15 +300,11 @@ export interface ElectronApiWorkspaceSystemDomain {
             staged?: boolean
         ) => Promise<{ diff: string; success: boolean; error?: string }>;
         stageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>;
-        unstageFile: (
-            cwd: string,
-            filePath: string
-        ) => Promise<{ success: boolean; error?: string }>;
+        unstageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>;
         getDetailedStatus: (cwd: string) => Promise<{
             success: boolean;
-            stagedFiles?: Array<{ status: string; path: string; staged: boolean }>;
-            unstagedFiles?: Array<{ status: string; path: string; staged: boolean }>;
-            allFiles?: Array<{ status: string; path: string; staged: boolean }>;
+            staged?: Array<{ path: string; status: string }>;
+            unstaged?: Array<{ path: string; status: string }>;
             error?: string;
         }>;
         checkout: (cwd: string, branch: string) => Promise<{ success: boolean; error?: string }>;
@@ -317,9 +314,7 @@ export interface ElectronApiWorkspaceSystemDomain {
             remote?: string,
             branch?: string
         ) => Promise<{ success: boolean; error?: string; stdout?: string; stderr?: string }>;
-        pull: (
-            cwd: string
-        ) => Promise<{ success: boolean; error?: string; stdout?: string; stderr?: string }>;
+        pull: (cwd: string) => Promise<{ success: boolean; error?: string; stdout?: string; stderr?: string }>;
         getRemotes: (cwd: string) => Promise<{
             success: boolean;
             remotes?: Array<{ name: string; url: string; fetch: boolean; push: boolean }>;
@@ -342,13 +337,81 @@ export interface ElectronApiWorkspaceSystemDomain {
             total?: { added: number; deleted: number; files: number };
             error?: string;
         }>;
-        getCommitDiff: (
+        getCommitDiff: (cwd: string, hash: string) => Promise<{ diff: string; success: boolean; error?: string }>;
+        getStagedDiff: (cwd: string) => Promise<{ diff: string; success: boolean; error?: string }>;
+
+        getConflicts: (cwd: string) => Promise<{
+            success: boolean;
+            conflicts?: GitConflict[];
+            analytics?: Record<string, number>;
+            error?: string;
+        }>;
+        resolveConflict: (
             cwd: string,
-            hash: string
-        ) => Promise<{ diff: string; success: boolean; error?: string }>;
-        getStagedDiff: (
-            cwd: string
-        ) => Promise<{ diff: string; success: boolean; error?: string }>;
+            filePath: string,
+            strategy: 'ours' | 'theirs' | 'manual'
+        ) => Promise<{ success: boolean; error?: string }>;
+        openMergeTool: (cwd: string, filePath?: string) => Promise<{ success: boolean; error?: string }>;
+        getBlame: (cwd: string, filePath: string) => Promise<{ success: boolean; lines?: GitBlameLine[]; error?: string }>;
+        getCommitDetails: (cwd: string, hash: string) => Promise<{ success: boolean; details?: GitCommitDetails; error?: string }>;
+        getRebaseStatus: (cwd: string) => Promise<{
+            success: boolean;
+            inRebase?: boolean;
+            currentBranch?: string;
+            conflictCount?: number;
+            conflicts?: GitConflict[];
+            error?: string;
+        }>;
+        getStashes: (cwd: string) => Promise<{ success: boolean; stashes?: GitStash[]; error?: string }>;
+        createStash: (cwd: string, message: string, includeUntracked?: boolean) => Promise<{ success: boolean; error?: string }>;
+        applyStash: (cwd: string, stashRef: string, pop: boolean) => Promise<{ success: boolean; error?: string }>;
+        dropStash: (cwd: string, stashRef: string) => Promise<{ success: boolean; error?: string }>;
+        exportStash: (cwd: string, stashRef: string) => Promise<{ success: boolean; patch?: string; error?: string }>;
+        runControlledOperation: (
+            cwd: string,
+            command: string,
+            operationId: string,
+            timeoutMs: number
+        ) => Promise<{
+            success: boolean;
+            error?: string;
+            stdout?: string;
+            stderr?: string;
+        }>;
+        getRebasePlan: (cwd: string, ontoBranch: string) => Promise<{ success: boolean; plan?: GitRebasePlanCommit[]; error?: string }>;
+        getSubmodules: (cwd: string) => Promise<{ success: boolean; submodules?: GitSubmodule[]; error?: string }>;
+        cancelOperation: (operationId: string) => Promise<{ success: boolean; error?: string }>;
+        getFlowStatus: (cwd: string) => Promise<{ success: boolean; flowStatus?: GitFlowStatus; error?: string }>;
+        startFlowBranch: (
+            cwd: string,
+            branchType: string,
+            branchName: string,
+            baseBranch?: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        finishFlowBranch: (
+            cwd: string,
+            branchName: string,
+            targetBranch?: string,
+            shouldDelete?: boolean
+        ) => Promise<{ success: boolean; error?: string }>;
+        getHooks: (cwd: string) => Promise<{ success: boolean; hooks?: GitHookInfo[]; templates?: string[]; error?: string }>;
+        installHook: (cwd: string, hookName: string, templateName: string) => Promise<{ success: boolean; error?: string }>;
+        validateHook: (cwd: string, hookName: string) => Promise<{
+            success: boolean;
+            validation?: { hookName: string; hasShebang: boolean; executable: boolean; valid: boolean };
+            error?: string;
+        }>;
+        testHook: (cwd: string, hookName: string) => Promise<{ success: boolean; stdout?: string; stderr?: string; error?: string }>;
+        getRepositoryStats: (cwd: string, days?: number) => Promise<{ success: boolean; stats?: GitRepositoryStats; error?: string }>;
+        exportRepositoryStats: (cwd: string, days?: number) => Promise<{ success: boolean; export?: { authorsCsv: string }; error?: string }>;
+        createBranch: (cwd: string, name: string, startPoint?: string) => Promise<{ success: boolean; error?: string }>;
+        deleteBranch: (cwd: string, name: string, force?: boolean) => Promise<{ success: boolean; error?: string }>;
+        renameBranch: (cwd: string, oldName: string, newName: string) => Promise<{ success: boolean; error?: string }>;
+        setUpstream: (cwd: string, branch: string, remote: string, upstreamBranch: string) => Promise<{ success: boolean; error?: string }>;
+        generatePrSummary: (cwd: string, base: string, head: string) => Promise<{ success: boolean; summary?: string; error?: string }>;
+        compareRefs: (cwd: string, base: string, head: string) => Promise<GitRefComparison>;
+        getHotspots: (cwd: string, limit?: number, days?: number) => Promise<{ success: boolean; hotspots: GitHotspot[]; error?: string }>;
+        getTreeStatusPreview: (cwd: string, directoryPath: string) => Promise<any>;
     };
 
     // LLM chat
@@ -358,3 +421,4 @@ export interface ElectronApiWorkspaceSystemDomain {
     };
     // Database
 }
+

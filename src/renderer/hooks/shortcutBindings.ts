@@ -137,3 +137,4 @@ export const eventToShortcutBinding = (event: KeyboardEvent): ShortcutBinding | 
         alt: event.altKey,
     };
 };
+

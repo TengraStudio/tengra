@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { createComponentHealthStore } from '@/ui/store/component-health.store';
+import { createComponentHealthStore } from '@ui/store/component-health.store';
 
 const languageSelectionHealthStore = createComponentHealthStore('language-selection-prompt', 300);
 
@@ -21,3 +21,4 @@ export const recordLanguageSelectionFailure = languageSelectionHealthStore.recor
 export const recordLanguageSelectionRetry = languageSelectionHealthStore.recordRetry;
 export const recordLanguageSelectionFallback = languageSelectionHealthStore.recordFallback;
 export const __resetLanguageSelectionHealthForTests = languageSelectionHealthStore.resetForTests;
+

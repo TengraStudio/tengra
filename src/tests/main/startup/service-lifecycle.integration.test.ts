@@ -86,3 +86,4 @@ describe('startup service lifecycle integration', () => {
         expect(startSpy).toHaveBeenCalled();
     });
 });
+

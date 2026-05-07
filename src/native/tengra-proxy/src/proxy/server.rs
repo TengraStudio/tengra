@@ -227,8 +227,8 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
 
 async fn health_check() -> Json<serde_json::Value> {
     let client_id_configured = codex_client_id_configured().await;
-    let callback_bridge_telemetry =
-        crate::auth::session::callback_bridge_telemetry_snapshot().await;
+    let callback_bridge_usageStats =
+        crate::auth::session::callback_bridge_usageStats_snapshot().await;
     Json(json!({
         "status": "ok",
         "build_signature": "2026-04-27 23:20:00 UTC",
@@ -239,7 +239,7 @@ async fn health_check() -> Json<serde_json::Value> {
         "oauth_bridge": {
             "callback_port": 1455,
             "openai_client_id_configured": client_id_configured,
-            "telemetry": callback_bridge_telemetry
+            "usageStats": callback_bridge_usageStats
         }
     }))
 }

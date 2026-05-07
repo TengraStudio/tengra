@@ -8,9 +8,8 @@
  * (at your option) any later version.
  */
 
+import { createComponentHealthStore } from '@ui/store/component-health.store';
 import { describe, expect, it } from 'vitest';
-
-import { createComponentHealthStore } from '@/ui/store/component-health.store';
 
 describe('component health store', () => {
     it('tracks success, retry, fallback, and failure counters', () => {
@@ -30,3 +29,4 @@ describe('component health store', () => {
         expect(snapshot.lastErrorCode).toBe('TEST_FAILURE');
     });
 });
+

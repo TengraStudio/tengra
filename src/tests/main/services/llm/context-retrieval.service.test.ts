@@ -176,7 +176,7 @@ describe('ContextRetrievalService', () => {
         expect(analytics.topQueries).toHaveLength(0);
     });
 
-    it('retries embedding generation and records retry telemetry', async () => {
+    it('retries embedding generation and records retry Stats', async () => {
         const { service, mocks } = createService();
         mocks.generateEmbedding
             .mockRejectedValueOnce(new Error('temporary failure'))
@@ -202,3 +202,4 @@ describe('ContextRetrievalService', () => {
         expect(health.uiState).toBe('failure');
     });
 });
+

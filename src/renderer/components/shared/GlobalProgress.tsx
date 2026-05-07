@@ -62,3 +62,4 @@ export const GlobalProgress: React.FC = () => {
 };
 
 export default GlobalProgress;
+

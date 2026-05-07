@@ -207,9 +207,9 @@ export interface ElectronApiIntegrationsDomain {
             rows?: number;
             backendId?: string;
             title?: string;
-            metadata?: Record<string, RendererDataValue>;
+            metadata?: Record<string, IpcValue | RuntimeValue | any>;
         }) => Promise<string>;
-        getDockerContainers: () => Promise<Array<{ id: string; name: string; status: string }>>;
+        getDockerContainers: () => Promise<{ success: boolean; containers: Array<{ id: string; name: string; status: string }> }>;
         detach: (options: {
             sessionId: string;
             title?: string;
@@ -662,7 +662,24 @@ export interface ElectronApiIntegrationsDomain {
         uninstall: (itemId: string, itemType: MarketplaceItem['itemType']) => Promise<{ success: boolean; error?: string; messageKey?: string }>;
     };
     locale: {
-        getAll: () => Promise<LocalePack[]>;
+        getAll: () => Promise<import('@shared/types/locale').LocalePack[]>;
+        onRuntimeUpdated: (callback: () => void) => () => void;
+    };
+    codeLanguages: {
+        getAll: () => Promise<import('@shared/types/marketplace').MarketplaceCodeLanguagePack[]>;
+        onRuntimeUpdated: (callback: () => void) => () => void;
+    };
+    theme: {
+        getAll: () => Promise<import('@shared/types/theme').ThemeManifest[]>;
+        getCurrent: () => Promise<string>;
+        set: (themeId: string) => Promise<boolean>;
+        runtime: {
+            getAll: () => Promise<import('@shared/types/theme').ThemeManifest[]>;
+            install: (manifest: import('@shared/types/theme').ThemeManifest) => Promise<boolean>;
+            uninstall: (themeId: string) => Promise<boolean>;
+            openDirectory: () => Promise<boolean>;
+        };
+        onRuntimeUpdated: (callback: () => void) => () => void;
     };
 
     // Screenshot
@@ -683,6 +700,7 @@ export interface ElectronApiIntegrationsDomain {
         checkForUpdates: () => Promise<void>;
         downloadUpdate: () => Promise<void>;
         installUpdate: () => Promise<void>;
+        onStatus: (callback: (status: import('@shared/types').UpdateStatus) => void) => () => void;
     };
 
 
@@ -899,6 +917,7 @@ export interface ElectronApiIntegrationsDomain {
         validate: (manifest: RendererDataValue) => Promise<{ valid: boolean; errors: string[] }>;
         getConfig: (extensionId: string) => Promise<{ success: boolean; config?: Record<string, IpcValue>; error?: string }>;
         updateConfig: (extensionId: string, config: Record<string, IpcValue>) => Promise<{ success: boolean; config?: Record<string, IpcValue>; error?: string }>;
+        onLogUpdate: (callback: (log: import('@/renderer/features/extensions/hooks/useExtensionLogs').ExtensionLogEntry) => void) => () => void;
     };
 
     codeSandbox: {
@@ -1001,3 +1020,4 @@ export interface ElectronApiIntegrationsDomain {
     };
     liveCollaboration: ElectronApiIntegrationsDomain['userCollaboration'];
 }
+

@@ -30,7 +30,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Initialize from localStorage as immediate fallback before settings load
     const [localTheme, setLocalTheme] = useState<Theme>(() => {
-        return readCachedSettings()?.general.theme ?? localStorage.getItem('Tengra-theme') ?? 'graphite';
+        return readCachedSettings()?.general.theme ?? localStorage.getItem('Tengra-theme') ?? 'tengra-black';
     });
 
     // Prefer settings if available, otherwise local state
@@ -44,22 +44,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             void updateSettings({
                 ...settings,
                 general: { ...settings.general, theme: newTheme }
-            }, true);
+            }, false);
         }
     }, [settings, updateSettings]);
 
     const toggleTheme = useCallback(() => {
-        setTheme(theme === 'black' ? 'white' : 'black');
+        setTheme(theme === 'tengra-black' ? 'tengra-white' : 'tengra-black');
     }, [theme, setTheme]);
 
-    // DOM update is handled by SettingsContext for settings-based changes,
-    // but we keep this for immediate local-only updates (e.g. before settings load)
+    // Apply theme to DOM
     useEffect(() => {
-        if (!settings) {
-            const root = window.document.documentElement;
-            root.setAttribute('data-theme', theme);
-        }
-    }, [theme, settings]);
+        const root = window.document.documentElement;
+        root.setAttribute('data-theme', theme);
+    }, [theme]);
 
     // Handle system preference changes if needed (optional for curated themes)
     useEffect(() => {
@@ -92,5 +89,6 @@ export const useTheme = () => {
     }
     return context;
 };
+
 
 

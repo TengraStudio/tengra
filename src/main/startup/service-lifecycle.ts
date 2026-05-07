@@ -12,6 +12,7 @@ import { Container } from '@main/core/container';
 import { appLogger } from '@main/logging/logger';
 import { DataService } from '@main/services/data/data.service';
 import { getHealthCheckService } from '@main/services/system/health-check.service';
+import type { RuntimeValue } from '@shared/types/common';
 
 type ContainerLike = Pick<Container, 'register' | 'resolve' | 'init' | 'markDeferred' | 'initDeferred'>;
 
@@ -45,9 +46,7 @@ export function registerServiceGroups(registrations: ServiceGroupRegistrations):
     registrations.registerDataServices();
     registrations.registerSecurityServices();
     registrations.registerLLMServices();
-    registrations.registerWorkspaceServices?.(); // Simplified
-
-
+    registrations.registerWorkspaceServices?.();
     registrations.registerAnalysisServices();
     registrations.registerMcpServices();
     registrations.registerLazyServices();
@@ -55,7 +54,6 @@ export function registerServiceGroups(registrations: ServiceGroupRegistrations):
 }
 
 export async function initializeContainerSafely(container: ContainerLike): Promise<void> {
-    // Mark non-critical services for deferred initialization
     markDeferredStartupServices(container);
 
     try {
@@ -69,9 +67,6 @@ export function markDeferredStartupServices(container: ContainerLike): void {
     container.markDeferred(DEFERRED_SERVICE_NAMES);
 }
 
-/**
- * Initialize deferred (non-critical) services after the main window is shown.
- */
 export async function initDeferredServices(container: ContainerLike): Promise<void> {
     const start = Date.now();
     appLogger.debug('Startup', 'Starting deferred service initialization...');
@@ -83,9 +78,7 @@ export async function initDeferredServices(container: ContainerLike): Promise<vo
     }
 }
 
-/** Services that don't need to be ready before the main window is shown. */
 const DEFERRED_SERVICE_NAMES: string[] = [
-    // Heavy Workspace Services
     'terminalService',
     'terminalProfileService',
     'terminalSmartService',
@@ -94,30 +87,22 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'dockerService',
     'sshService',
     'extensionService',
-    
-    // AI & Proxy Infrastructure
+
     'llmService',
     'ollamaService',
-    'localAIService',
     'copilotService',
     'proxyService',
     'proxyProcessManager',
     'proxyCore',
     'backgroundModelResolver',
 
-    // Analysis & monitoring
-    'telemetryService',
+    'usageStatsService',
     'usageTrackingService',
     'auditLogService',
     'timeTrackingService',
-    'performanceService',
     'monitoringService',
 
-    // Export & screenshot
-    'exportService',
     'screenshotService',
-    
-    // Advanced AI services
     'advancedMemoryService',
     'embeddingService',
     'brainService',
@@ -131,15 +116,13 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'modelRegistryDeps',
     'modelRegistryService',
     'modelSelectionService',
-    
-    // Agent services
+
     'agentService',
     'councilCapabilityService',
     'sessionModuleRegistryService',
     'chatSessionRegistryService',
     'sessionDirectoryService',
-    
-    // Workspace & external
+
     'mcpDeps',
     'marketplaceService',
     'mcpPluginService',
@@ -162,3 +145,4 @@ export function startCriticalHealthChecks(deps: { databaseService: RuntimeValue;
     });
     health.start();
 }
+

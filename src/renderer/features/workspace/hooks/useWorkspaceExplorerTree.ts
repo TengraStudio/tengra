@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FILES_CHANNELS } from '@shared/constants/ipc-channels';
 
 import { useWorkspaceExplorerWatchers } from '@/features/workspace/hooks/useWorkspaceExplorerWatchers';
 import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
@@ -98,11 +99,35 @@ function shouldMountBeOpen(
     return Boolean(expandedMounts[mount.id]);
 }
 
-function extractFileList(
-    result: { files?: MountFileEntry[]; data?: MountFileEntry[] }
-): MountFileEntry[] {
-    const fileList = result.files ?? result.data ?? [];
-    return Array.isArray(fileList) ? fileList : [];
+function extractFileList(result: unknown): MountFileEntry[] {
+    if (Array.isArray(result)) {
+        return result.filter((item): item is MountFileEntry =>
+            typeof item === 'object' &&
+            item !== null &&
+            typeof (item as { name?: unknown }).name === 'string'
+        );
+    }
+
+    if (!result || typeof result !== 'object') {
+        return [];
+    }
+
+    const candidate = result as {
+        files?: unknown;
+        data?: unknown;
+        result?: unknown;
+        content?: unknown;
+    };
+
+    const directCollections = [candidate.files, candidate.data, candidate.result, candidate.content];
+    for (const value of directCollections) {
+        const fileList = extractFileList(value);
+        if (fileList.length > 0) {
+            return fileList;
+        }
+    }
+
+    return [];
 }
 
 function mapFileEntries(
@@ -117,6 +142,10 @@ function mapFileEntries(
     }));
 }
 
+async function listLocalDirectory(path: string): Promise<DirectoryListingResult> {
+    return await window.electron.invoke<DirectoryListingResult>(FILES_CHANNELS.LIST_DIRECTORY, path);
+}
+
 function makeWorkspaceEntry(mountId: string, node: FileNode): WorkspaceEntry {
     return {
         mountId,
@@ -125,6 +154,32 @@ function makeWorkspaceEntry(mountId: string, node: FileNode): WorkspaceEntry {
         isDirectory: node.isDirectory,
         isGitIgnored: node.isGitIgnored,
     };
+}
+
+function buildMountRootSnapshot(
+    mount: WorkspaceMount,
+    nodes: FileNode[]
+): {
+    childKeys: string[];
+    nextRecords: Record<string, ExplorerNodeRecord>;
+} {
+    const childKeys = nodes.map(node => buildNodeKey(mount.id, node.path));
+    const nextRecords = Object.fromEntries(
+        nodes.map(node => {
+            const key = buildNodeKey(mount.id, node.path);
+            return [key, {
+                key,
+                mountId: mount.id,
+                parentKey: null,
+                node,
+                childKeys: [],
+                loaded: false,
+                loading: false,
+            } satisfies ExplorerNodeRecord];
+        })
+    );
+
+    return { childKeys, nextRecords };
 }
 
 function pruneTreeState(
@@ -181,6 +236,15 @@ interface PendingDirectoryReload {
     mountId: string;
     directoryPath: string;
     parentKey: string | null;
+}
+
+interface DirectoryListingResult {
+    success: boolean;
+    error?: string;
+    files?: unknown;
+    data?: unknown;
+    result?: unknown;
+    content?: unknown;
 }
 
 function buildVisibleRows(
@@ -390,6 +454,18 @@ export function useWorkspaceExplorerTree({
             const mountRootLoaded = loadedMountsRef.current[mount.id] ?? false;
             const mountRootLoading = loadingMountsRef.current[mount.id] ?? false;
 
+            if (!directoryPath) {
+                appLogger.error('WorkspaceExplorer', 'loadDirectory called with missing directoryPath', { 
+                    mountId: mount.id, 
+                    mountRoot: mount.rootPath,
+                    parentKey 
+                });
+                if (!parentKey) {
+                    setLoadingMounts(prev => ({ ...prev, [mount.id]: false }));
+                }
+                return;
+            }
+
             if (!force) {
                 if (parentKey && existingRecord?.loading) {
                     return;
@@ -438,18 +514,60 @@ export function useWorkspaceExplorerTree({
                 return;
             }
 
+            if (!directoryPath || directoryPath.trim().length === 0) {
+                appLogger.warn('WorkspaceExplorer', 'Skipping directory listing with empty path', {
+                    mountId: mount.id,
+                    parentKey,
+                });
+                return;
+            }
+
             try {
-                const result =
+                appLogger.info('WorkspaceExplorer', 'Requesting directory listing', { directoryPath, mountId: mount.id });
+                const result: DirectoryListingResult =
                     mount.type === 'local'
-                        ? await window.electron.files.listDirectory(directoryPath)
-                        : await window.electron.ssh.listDir(mount.id, directoryPath);
+                        ? await listLocalDirectory(directoryPath)
+                        : await window.electron.ssh.listDir(mount.id, directoryPath) as DirectoryListingResult;
+                
+                const fileList = extractFileList(result);
+
+                appLogger.info('WorkspaceExplorer', 'Received directory listing', {
+                    directoryPath, 
+                    success: result.success,
+                    entries: fileList.length,
+                });
+
                 if (!result.success) {
+                    appLogger.warn('WorkspaceExplorer', 'Directory listing failed', {
+                        mountId: mount.id,
+                        directoryPath,
+                        error: 'error' in result ? result.error : undefined,
+                    });
                     return;
                 }
 
-                const fileList = extractFileList(result as { files?: MountFileEntry[]; data?: MountFileEntry[] });
                 const initialNodes = sortNodes(mapFileEntries(fileList, directoryPath, mount.type));
                 const nextChildKeys = initialNodes.map(node => buildNodeKey(mount.id, node.path));
+
+                // Root listings are the only path that can blank the whole explorer.
+                // If duplicate refreshes race, still seed the mount rows from the
+                // successful response so the tree can recover.
+                if (!parentKey && initialNodes.length > 0) {
+                    const snapshot = buildMountRootSnapshot(mount, initialNodes);
+                    setNodeRecords(prev => ({
+                        ...prev,
+                        ...snapshot.nextRecords,
+                    }));
+                    setRootNodeKeys(prev => ({
+                        ...prev,
+                        [mount.id]: snapshot.childKeys,
+                    }));
+                    setLoadedMounts(prev => ({
+                        ...prev,
+                        [mount.id]: true,
+                    }));
+                }
+
                 const commitNodes = (
                     nextNodes: FileNode[],
                     options?: { updateLoadState?: boolean }
@@ -538,6 +656,60 @@ export function useWorkspaceExplorerTree({
         },
         []
     );
+
+    const recoverBlankMountRoots = useCallback(async () => {
+        const candidateMounts = mountsRef.current.filter(mount => {
+            if (!shouldMountBeOpen(mountsRef.current, mount, expandedMounts)) {
+                return false;
+            }
+
+            const mountRootKeys = rootNodeKeys[mount.id] ?? [];
+            return mountRootKeys.length === 0 && !(loadingMountsRef.current[mount.id] ?? false);
+        });
+
+        for (const mount of candidateMounts) {
+            if (!mount.rootPath || mount.rootPath.trim().length === 0) {
+                appLogger.warn('WorkspaceExplorer', 'Skipping blank mount recovery with empty rootPath', { mountId: mount.id });
+                continue;
+            }
+
+            const result: DirectoryListingResult =
+                mount.type === 'local'
+                    ? await listLocalDirectory(mount.rootPath)
+                    : await window.electron.ssh.listDir(mount.id, mount.rootPath) as DirectoryListingResult;
+
+            if (!result.success) {
+                continue;
+            }
+
+            const fileList = extractFileList(result);
+            if (fileList.length === 0) {
+                continue;
+            }
+
+            const initialNodes = sortNodes(mapFileEntries(fileList, mount.rootPath, mount.type));
+            const snapshot = buildMountRootSnapshot(mount, initialNodes);
+
+            setNodeRecords(prev => ({
+                ...prev,
+                ...snapshot.nextRecords,
+            }));
+            setRootNodeKeys(prev => ({
+                ...prev,
+                [mount.id]: snapshot.childKeys,
+            }));
+            setLoadedMounts(prev => ({
+                ...prev,
+                [mount.id]: true,
+            }));
+
+            appLogger.warn('WorkspaceExplorer', 'Recovered blank mount root listing', {
+                mountId: mount.id,
+                rootPath: mount.rootPath,
+                entries: fileList.length,
+            });
+        }
+    }, [expandedMounts, rootNodeKeys]);
 
     const flushPendingDirectoryReloads = useCallback(() => {
         const pendingReloads = Array.from(pendingDirectoryReloadsRef.current.values());
@@ -635,12 +807,25 @@ export function useWorkspaceExplorerTree({
             if (!shouldMountBeOpen(mounts, mount, expandedMounts)) {
                 continue;
             }
-            if (loadedMounts[mount.id]) {
+            const mountRootKeys = rootNodeKeys[mount.id] ?? [];
+            if (loadedMounts[mount.id] && mountRootKeys.length > 0) {
                 continue;
             }
-            void loadDirectory(mount, mount.rootPath, null);
+            void loadDirectory(mount, mount.rootPath, null, loadedMounts[mount.id] === true);
         }
-    }, [expandedMounts, loadDirectory, loadedMounts, mounts]);
+    }, [expandedMounts, loadDirectory, loadedMounts, mounts, rootNodeKeys]);
+
+    useEffect(() => {
+        const hasVisibleMount = mounts.some(mount => shouldMountBeOpen(mounts, mount, expandedMounts));
+        const isAnyMountLoading = mounts.some(mount => Boolean(loadingMounts[mount.id]));
+        const hasAnyRootRows = mounts.some(mount => (rootNodeKeys[mount.id] ?? []).length > 0);
+
+        if (!hasVisibleMount || isAnyMountLoading || hasAnyRootRows) {
+            return;
+        }
+
+        void recoverBlankMountRoots();
+    }, [expandedMounts, loadingMounts, mounts, recoverBlankMountRoots, rootNodeKeys]);
 
     useEffect(() => {
         for (const [nodeKey, isExpanded] of Object.entries(expandedTreeNodes)) {
@@ -843,16 +1028,28 @@ export function useWorkspaceExplorerTree({
         saveExpandedTreeState(treeStorageKey, {});
     }, [treeStorageKey]);
 
+    const reloadAll = useCallback(() => {
+        for (const mount of mountsRef.current) {
+            if (!shouldMountBeOpen(mountsRef.current, mount, expandedMounts)) {
+                continue;
+            }
+            void loadDirectory(mount, mount.rootPath, null, true);
+        }
+    }, [expandedMounts, loadDirectory]);
+
     return {
         contextMenu,
         visibleRows,
+        loadingMounts,
         toggleMount,
         toggleNode,
         revealPath,
         collapseAll,
+        reloadAll,
         handleContextMenu,
         handleMountContextMenu,
         handleContextAction,
         closeContextMenu,
     };
 }
+

@@ -178,3 +178,4 @@ export interface SSHSessionRecording {
     endedAt?: number;
     chunks: string[];
 }
+

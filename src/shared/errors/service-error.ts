@@ -35,3 +35,4 @@ export class ServiceError extends AppError {
     this.serviceName = serviceName;
   }
 }
+

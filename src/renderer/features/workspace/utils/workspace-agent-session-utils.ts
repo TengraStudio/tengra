@@ -250,7 +250,7 @@ export function buildSessionSummary(
         modes: toSessionModes(chat),
         strategy: metadata.strategy ?? existingSummary?.strategy ?? 'reasoning-first',
         permissionPolicy: toPermissionPolicy(chat, existingSummary),
-        contextTelemetry: existingSummary?.contextTelemetry,
+        usageStats: existingSummary?.usageStats,
         councilConfig: toCouncilConfig(chat, existingSummary),
         background: metadata.background ?? existingSummary?.background ?? false,
         archived: Boolean(metadata.archived) || Boolean(chat.metadata?.isArchived),
@@ -371,21 +371,21 @@ export async function loadWorkspaceSessionsForWorkspace(options: {
     options.setComposerValue(listing.persistence.composerDraft);
 }
 
-export async function refreshTelemetryForSession(options: {
+export async function refreshStatsForSession(options: {
     sessionId: string;
     setSessions: Dispatch<SetStateAction<WorkspaceAgentSessionSummary[]>>;
 }): Promise<void> {
-    const telemetry = await window.electron.session.workspaceAgent.getContextTelemetry({
+    const stats = await window.electron.session.workspaceAgent.getContextStats({
         sessionId: options.sessionId,
     });
-    if (!telemetry) {
+    if (!stats) {
         return;
     }
 
     options.setSessions(previousSessions =>
         previousSessions.map(session =>
             session.id === options.sessionId
-                ? { ...session, contextTelemetry: telemetry }
+                ? { ...session, usageStats: stats }
                 : session
         )
     );
@@ -565,7 +565,7 @@ export async function sendWorkspaceAgentMessage(options: {
     isLoading: boolean;
     loadWorkspaceSessions: () => Promise<void>;
     refreshCouncilState: (sessionId: string) => Promise<void>;
-    refreshTelemetry: (sessionId: string) => Promise<void>;
+    refreshStats: (sessionId: string) => Promise<void>;
     selectedModel: string;
     selectedProvider: string;
     updateChatCollection: (sessionId: string, updater: (chat: Chat) => Chat) => void;
@@ -620,16 +620,17 @@ export async function sendWorkspaceAgentMessage(options: {
         );
         await options.refreshCouncilState(targetSession.id);
     } else {
-        // We start generation but wrap it to refresh telemetry when finished
+        // We start generation but wrap it to refresh usageStats when finished
         options.generateResponse(targetSession.id, userMessage).then(async () => {
-            await options.refreshTelemetry(targetSession.id);
+            await options.refreshStats(targetSession.id);
             await options.loadWorkspaceSessions();
         }).catch(err => {
-            appLogger.error('WorkspaceAgentSessionUtils', 'Failed to refresh telemetry after generation', err);
+            appLogger.error('WorkspaceAgentSessionUtils', 'Failed to refresh stats after generation', err);
         });
     }
 
     // Immediate refresh for UI responsiveness (message count etc)
-    await options.refreshTelemetry(targetSession.id);
+    await options.refreshStats(targetSession.id);
     await options.loadWorkspaceSessions();
 }
+

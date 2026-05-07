@@ -20,6 +20,7 @@ import { BaseService } from '@main/services/base.service';
 import { t } from '@main/utils/i18n.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { NETWORK_DEFAULTS } from '@shared/constants/app-config';
+import { RUNTIME_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { JsonObject } from '@shared/types/common';
 import {
@@ -66,6 +67,7 @@ export class RuntimeBootstrapService extends BaseService {
     private latestExecutionResult: RuntimeBootstrapExecutionResult | null = null;
     public onScanFinished?: (result: RuntimeBootstrapExecutionResult) => void;
     private isMainProcessReadyGetter?: () => boolean;
+    private initializationPromise: Promise<void> | null = null;
 
     constructor(
         private readonly runtimeManifestService: RuntimeManifestService = new RuntimeManifestService(),
@@ -75,15 +77,26 @@ export class RuntimeBootstrapService extends BaseService {
     }
 
     async initialize(): Promise<void> {
-        try {
-            await this.cleanupManagedAppData();
-            this.latestExecutionResult = await this.scanManagedRuntime();
-            this.logInfo(
-                `Managed runtime scan finished: ready=${this.latestExecutionResult.summary.ready}, installRequired=${this.latestExecutionResult.summary.installRequired}, failed=${this.latestExecutionResult.summary.failed}`
-            );
-        } catch (error) {
-            this.logError('Managed runtime scan failed', error);
+        if (this.initializationPromise) {
+            await this.initializationPromise;
+            return;
         }
+
+        if (!this.latestExecutionResult) {
+            this.latestExecutionResult = this.createInitializingExecutionResult();
+        }
+
+        this.initializationPromise = (async () => {
+            try {
+                void this.runStartupRefresh().catch(error => {
+                    this.logError('Managed runtime background refresh failed', error);
+                });
+            } finally {
+                this.logInfo('Managed runtime bootstrap initialized');
+            }
+        })();
+
+        await this.initializationPromise;
     }
 
     getLatestExecutionResult(): RuntimeBootstrapExecutionResult | null {
@@ -325,7 +338,7 @@ export class RuntimeBootstrapService extends BaseService {
     ): Promise<RuntimeManifest> {
         try {
             this.logWarn(
-                `Falling back to cached runtime manifest at ${cachedManifestPath}; reason=${this.describeManifestLoadError(originalError)}`
+                `Falling back to cached runtime manifest at ${cachedManifestPath}; reason=${this.describeManifestLoadError(originalError as any)}`
             );
             const cachedManifestText = await fsPromises.readFile(cachedManifestPath, 'utf8');
             return this.runtimeManifestService.parseManifest(
@@ -343,7 +356,7 @@ export class RuntimeBootstrapService extends BaseService {
         }
     }
 
-    private describeManifestLoadError(error: unknown): string {
+    private describeManifestLoadError(error: Error | string | { code?: string; message?: string }): string {
         if (!(error instanceof Error)) {
             return 'unknown';
         }
@@ -367,6 +380,47 @@ export class RuntimeBootstrapService extends BaseService {
             generatedAt: new Date().toISOString(),
             components: [],
         };
+    }
+
+    private createInitializingExecutionResult(): RuntimeBootstrapExecutionResult {
+        const environment = this.runtimeManifestService.getCurrentEnvironment();
+        return {
+            manifestVersion: 'initializing',
+            environment,
+            entries: [],
+            summary: {
+                ready: 0,
+                installed: 0,
+                installRequired: 0,
+                failed: 0,
+                external: 0,
+                unsupported: 0,
+                blockingFailures: 0,
+            },
+            health: {
+                entries: [],
+                summary: {
+                    ready: 0,
+                    missing: 0,
+                    invalid: 0,
+                    external: 0,
+                    unsupported: 0,
+                },
+            },
+            mainProcessReady: this.isMainProcessReadyGetter ? this.isMainProcessReadyGetter() : false,
+        };
+    }
+
+    private async runStartupRefresh(): Promise<void> {
+        try {
+            await this.cleanupManagedAppData();
+            const result = await this.scanManagedRuntime();
+            this.logInfo(
+                `Managed runtime scan finished: ready=${result.summary.ready}, installRequired=${result.summary.installRequired}, failed=${result.summary.failed}`
+            );
+        } catch (error) {
+            this.logError('Managed runtime scan failed', error);
+        }
     }
 
     private async cleanupManagedAppData(): Promise<void> {
@@ -413,7 +467,7 @@ export class RuntimeBootstrapService extends BaseService {
     private async removePathIfPresent(targetPath: string): Promise<void> {
         try {
             await fsPromises.rm(targetPath, { recursive: true, force: true });
-        } catch (error) {
+        } catch (error: any) {
             if (this.isIgnorableCleanupError(error)) {
                 this.logDebug(`Skipping managed app-data cleanup for locked artifact at ${targetPath}`);
                 return;
@@ -425,7 +479,7 @@ export class RuntimeBootstrapService extends BaseService {
         }
     }
 
-    private isIgnorableCleanupError(error: unknown): boolean {
+    private isIgnorableCleanupError(error: Error | { code?: string } | null): boolean {
         if (!(error instanceof Error)) {
             return false;
         }
@@ -680,7 +734,7 @@ export class RuntimeBootstrapService extends BaseService {
         this.isMainProcessReadyGetter = getter;
     }
 
-    @ipc('runtime:get-status')
+    @ipc(RUNTIME_CHANNELS.GET_STATUS)
     async getStatusIpc(): Promise<RuntimeValue> {
         const result = this.getLatestExecutionResult();
         if (result) {
@@ -689,19 +743,19 @@ export class RuntimeBootstrapService extends BaseService {
         return serializeToIpc(result);
     }
 
-    @ipc('runtime:refresh-status')
+    @ipc(RUNTIME_CHANNELS.REFRESH_STATUS)
     async refreshStatusIpc(): Promise<RuntimeValue> {
         const result = await this.scanManagedRuntime();
         return serializeToIpc(result);
     }
 
-    @ipc('runtime:repair')
+    @ipc(RUNTIME_CHANNELS.REPAIR)
     async repairIpc(manifestUrl: RuntimeValue): Promise<RuntimeValue> {
         const result = await this.ensureManagedRuntime(typeof manifestUrl === 'string' ? manifestUrl : undefined);
         return serializeToIpc(result);
     }
 
-    @ipc('runtime:run-component-action')
+    @ipc(RUNTIME_CHANNELS.RUN_COMPONENT_ACTION)
     async runComponentActionIpc(componentId: RuntimeValue): Promise<RuntimeValue> {
         if (typeof componentId !== 'string') {
             throw new Error('componentId must be a string');
@@ -710,3 +764,4 @@ export class RuntimeBootstrapService extends BaseService {
         return serializeToIpc(result);
     }
 }
+

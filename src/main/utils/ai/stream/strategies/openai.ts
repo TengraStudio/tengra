@@ -3,13 +3,12 @@
  * Copyright (c) 2026 TengraStudio
  */
 
+import { InterceptorState, IStreamParserStrategy, OpenAIStreamDelta, RuntimeValue, StreamChunk, StreamPayload } from '@main/utils/ai/stream/types';
+import { interceptEmbeddedToolCalls } from '@main/utils/ai/stream/utils';
 import { ToolCall } from '@shared/types/ai/chat';
 
-import { InterceptorState, IStreamParserStrategy, OpenAIStreamDelta, StreamChunk, StreamPayload } from '../types';
-import { interceptEmbeddedToolCalls } from '../utils';
-
 export class OpenAIParserStrategy implements IStreamParserStrategy {
-    *parse(json: StreamPayload, _state: unknown, interceptorState: InterceptorState): Generator<StreamChunk> {
+    *parse(json: StreamPayload, _state: RuntimeValue, interceptorState: InterceptorState): Generator<StreamChunk> {
         // Handle specialized error payloads
         if (json.type === 'error' && json.message) {
             throw new Error(json.message);
@@ -151,3 +150,4 @@ export class OpenAIParserStrategy implements IStreamParserStrategy {
         };
     }
 }
+

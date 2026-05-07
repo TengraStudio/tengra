@@ -29,3 +29,4 @@ export const sessionCanvasEdgeRecordSchema = z.object({
     sourceHandle: z.string().optional(),
     targetHandle: z.string().optional(),
 });
+

@@ -22,7 +22,8 @@ import {
 import { withRetry } from '@main/utils/retry.util';
 import { RETRY_DEFAULTS } from '@shared/constants/defaults';
 import { JsonObject } from '@shared/types/common';
-import { CustomTheme, DEFAULT_THEME_PRESETS, ThemeColors, ThemePreset } from '@shared/types/theme';
+import { BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
+import { CustomTheme, ThemeColors, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 interface ThemeStoreData {
@@ -33,8 +34,8 @@ interface ThemeStoreData {
     preset: ThemePreset | null
 }
 
-/** Structured telemetry event emitted by ThemeService */
-export interface ThemeTelemetryEvent {
+/** Structured usageStats event emitted by ThemeService */
+export interface ThemeUsageStatsEvent {
     action: string;
     themeId?: string;
     previousThemeId?: string;
@@ -57,108 +58,47 @@ export interface ThemeServiceHealth {
 }
 
 const DEFAULT_THEME_STORE: ThemeStoreData = {
-    currentTheme: 'graphite',
+    currentTheme: 'tengra-black',
     customThemes: [],
     favorites: [],
-    history: ['graphite'],
+    history: ['tengra-black'],
     preset: null
 };
 
-const BASE_DARK_COLORS: ThemeColors = {
-    background: '0 0% 0%',
-    foreground: '0 0% 100%',
-    card: '0 0% 4%',
-    cardForeground: '0 0% 100%',
-    popover: '0 0% 4%',
-    popoverForeground: '0 0% 100%',
-    primary: '199 89% 48%',
-    primaryForeground: '0 0% 100%',
-    secondary: '0 0% 10%',
-    secondaryForeground: '0 0% 100%',
-    muted: '0 0% 8%',
-    mutedForeground: '0 0% 60%',
-    accent: '199 70% 15%',
-    accentForeground: '199 89% 70%',
-    destructive: '0 72% 51%',
-    destructiveForeground: '0 0% 100%',
-    border: '0 0% 15%',
-    input: '0 0% 15%',
-    ring: '199 89% 48%',
-};
-
-const BASE_LIGHT_COLORS: ThemeColors = {
-    background: '0 0% 100%',
-    foreground: '0 0% 0%',
-    card: '0 0% 98%',
-    cardForeground: '0 0% 10%',
-    popover: '0 0% 100%',
-    popoverForeground: '0 0% 0%',
-    primary: '221 83% 53%',
-    primaryForeground: '0 0% 100%',
-    secondary: '0 0% 95%',
-    secondaryForeground: '0 0% 10%',
-    muted: '0 0% 92%',
-    mutedForeground: '0 0% 40%',
-    accent: '221 70% 95%',
-    accentForeground: '221 83% 40%',
-    destructive: '0 84% 60%',
-    destructiveForeground: '0 0% 100%',
-    border: '0 0% 85%',
-    input: '0 0% 85%',
-    ring: '221 83% 53%',
-};
-
-const BUILT_IN_THEMES: Array<{
-    id: string;
-    name: string;
-    category: CustomTheme['category'];
-    isDark: boolean;
-    colors: ThemeColors;
-}> = [
-    { id: 'graphite', name: 'Graphite', category: 'elite-dark', isDark: true, colors: BASE_DARK_COLORS },
-    { id: 'obsidian', name: 'Obsidian', category: 'elite-dark', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '262 83% 58%', ring: '262 83% 58%' } },
-    { id: 'midnight', name: 'Midnight', category: 'elite-dark', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '217 91% 60%', ring: '217 91% 60%' } },
-    { id: 'deep-forest', name: 'Deep Forest', category: 'elite-dark', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '142 71% 45%', ring: '142 71% 45%' } },
-    { id: 'dracula', name: 'Dracula', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '326 100% 74%', ring: '326 100% 74%' } },
-    { id: 'cyberpunk', name: 'Cyberpunk', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '49 100% 50%', ring: '49 100% 50%' } },
-    { id: 'matrix', name: 'Matrix', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '120 100% 45%', ring: '120 100% 45%' } },
-    { id: 'synthwave', name: 'Synthwave', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '292 84% 61%', ring: '292 84% 61%' } },
-    { id: 'snow', name: 'Snow', category: 'professional-light', isDark: false, colors: BASE_LIGHT_COLORS },
-    { id: 'sand', name: 'Sand', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '35 91% 42%', ring: '35 91% 42%' } },
-    { id: 'sky', name: 'Sky', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '199 89% 48%', ring: '199 89% 48%' } },
-    { id: 'minimal', name: 'Minimal', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '0 0% 20%', ring: '0 0% 20%' } },
-    { id: 'paper', name: 'Paper', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '24 75% 45%', ring: '24 75% 45%' } },
-    { id: 'ocean', name: 'Ocean', category: 'artisanal', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '188 86% 53%', ring: '188 86% 53%' } },
-    { id: 'rose', name: 'Rose', category: 'artisanal', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '346 77% 50%', ring: '346 77% 50%' } },
-    { id: 'coffee', name: 'Coffee', category: 'artisanal', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '25 75% 47%', ring: '25 75% 47%' } },
-];
-
-const BUILT_IN_THEME_IDS = new Set(BUILT_IN_THEMES.map(theme => theme.id));
+const BUILTIN_THEMES = BUILTIN_THEME_MANIFESTS.map(theme => ({
+    id: theme.id,
+    name: theme.displayName,
+    isDark: theme.type !== 'light',
+    colors: { ...theme.colors } as ThemeColors,
+    description: theme.description,
+    author: theme.author,
+    tags: theme.tags,
+}));
 
 export class ThemeService extends BaseService {
     private storePath: string;
     private store: ThemeStoreData = { ...DEFAULT_THEME_STORE };
     private initialized = false;
-    private readonly telemetryLog: ThemeTelemetryEvent[] = [];
-    private static readonly MAX_TELEMETRY_LOG = 200;
+    private readonly usageStatsLog: ThemeUsageStatsEvent[] = [];
+    private static readonly MAX_usageStats_LOG = 200;
 
     constructor() {
         super('ThemeService');
         this.storePath = getDataFilePath('themes', 'theme-store.json');
     }
 
-    /** Emits a structured telemetry event and logs it via appLogger. */
-    private emitTelemetry(event: ThemeTelemetryEvent): void {
-        this.telemetryLog.push(event);
-        if (this.telemetryLog.length > ThemeService.MAX_TELEMETRY_LOG) {
-            this.telemetryLog.shift();
+    /** Emits a structured usageStats event and logs it via appLogger. */
+    private emitUsageStats(event: ThemeUsageStatsEvent): void {
+        this.usageStatsLog.push(event);
+        if (this.usageStatsLog.length > ThemeService.MAX_usageStats_LOG) {
+            this.usageStatsLog.shift();
         }
-        this.logInfo(`Telemetry: ${event.action}`, event as RuntimeValue as JsonObject);
+        this.logInfo(`usageStats: ${event.action}`, event as RuntimeValue as JsonObject);
     }
 
-    /** Returns a copy of the recent telemetry event log. */
-    getTelemetryLog(): ReadonlyArray<ThemeTelemetryEvent> {
-        return [...this.telemetryLog];
+    /** Returns a copy of the recent usageStats event log. */
+    getusageStatsLog(): ReadonlyArray<ThemeUsageStatsEvent> {
+        return [...this.usageStatsLog];
     }
 
     /** Returns a health snapshot of the theme service. */
@@ -266,7 +206,7 @@ export class ThemeService extends BaseService {
             return true;
         } catch (error) {
             this.logError('Failed to save theme store after retries', error as Error);
-            this.emitTelemetry({
+            this.emitUsageStats({
                 action: 'theme.save.failed',
                 success: false,
                 timestamp: Date.now(),
@@ -286,14 +226,14 @@ export class ThemeService extends BaseService {
         const idError = this.validateThemeId(themeId);
         if (idError) {
             this.logWarn(`Invalid theme ID: ${themeId}`);
-            this.emitTelemetry({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
+            this.emitUsageStats({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
             return false;
         }
 
         const theme = this.getThemeDetails(themeId);
         if (!theme) {
             this.logWarn(`Theme not found: ${themeId}`);
-            this.emitTelemetry({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
+            this.emitUsageStats({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
             return false;
         }
 
@@ -313,7 +253,7 @@ export class ThemeService extends BaseService {
 
         await this.saveStore();
         this.logInfo(`Theme changed to: ${themeId}`);
-        this.emitTelemetry({
+        this.emitUsageStats({
             action: 'theme.switch',
             themeId,
             previousThemeId: previousTheme,
@@ -325,11 +265,11 @@ export class ThemeService extends BaseService {
     }
 
     getAllThemes(): Array<{ id: string; name: string; isDark: boolean; isCustom?: boolean }> {
-        const builtIn = BUILT_IN_THEMES.map(t => ({
+        const builtIn = BUILTIN_THEMES.map(t => ({
             id: t.id,
             name: t.name,
             isDark: t.isDark,
-            isCustom: false
+            isCustom: false,
         }));
         const custom = this.store.customThemes.map(t => ({
             id: t.id,
@@ -341,7 +281,7 @@ export class ThemeService extends BaseService {
     }
 
     getThemeDetails(themeId: string) {
-        const builtIn = BUILT_IN_THEMES.find(t => t.id === themeId);
+        const builtIn = BUILTIN_THEMES.find(t => t.id === themeId);
         if (builtIn) {
             return { ...builtIn, isBuiltIn: true };
         }
@@ -361,13 +301,13 @@ export class ThemeService extends BaseService {
         const nameError = this.validateThemeName(theme.name);
         if (nameError) {
             this.logWarn(`Invalid theme name: ${theme.name}`);
-            this.emitTelemetry({ action: 'theme.custom.create', success: false, timestamp: Date.now() });
+            this.emitUsageStats({ action: 'theme.custom.create', success: false, timestamp: Date.now() });
             return null;
         }
         const colorsError = this.validateColors(theme.colors);
         if (colorsError) {
             this.logWarn('Invalid theme colors');
-            this.emitTelemetry({ action: 'theme.custom.create', success: false, timestamp: Date.now() });
+            this.emitUsageStats({ action: 'theme.custom.create', success: false, timestamp: Date.now() });
             return null;
         }
 
@@ -380,7 +320,7 @@ export class ThemeService extends BaseService {
         this.store.customThemes.push(customTheme);
         await this.saveStore();
         this.logInfo(`Custom theme added: ${customTheme.id}`);
-        this.emitTelemetry({
+        this.emitUsageStats({
             action: 'theme.custom.create',
             themeId: customTheme.id,
             source: theme.source,
@@ -413,19 +353,19 @@ export class ThemeService extends BaseService {
         const index = this.store.customThemes.findIndex(t => t.id === id);
         if (index === -1) {
             this.logWarn(`Custom theme not found for deletion: ${id}`);
-            this.emitTelemetry({ action: 'theme.custom.delete', themeId: id, success: false, timestamp: Date.now() });
+            this.emitUsageStats({ action: 'theme.custom.delete', themeId: id, success: false, timestamp: Date.now() });
             return false;
         }
 
         this.store.customThemes.splice(index, 1);
 
         if (this.store.currentTheme === id) {
-            await this.setTheme('graphite');
+            await this.setTheme('tengra-black');
         }
 
         await this.saveStore();
         this.logInfo(`Custom theme deleted: ${id}`);
-        this.emitTelemetry({ action: 'theme.custom.delete', themeId: id, success: true, timestamp: Date.now() });
+        this.emitUsageStats({ action: 'theme.custom.delete', themeId: id, success: true, timestamp: Date.now() });
         return true;
     }
 
@@ -464,49 +404,11 @@ export class ThemeService extends BaseService {
         this.store.history = [];
         await this.saveStore();
     }
-
-    getPresets(): ThemePreset[] {
-        return [...DEFAULT_THEME_PRESETS];
-    }
-
-    getPreset(id: string): ThemePreset | undefined {
-        return DEFAULT_THEME_PRESETS.find(p => p.id === id);
-    }
-
-    async applyPreset(presetId: string): Promise<boolean> {
-        const preset = this.getPreset(presetId);
-        if (!preset) {
-            this.logWarn(`Preset not found: ${presetId}`);
-            this.emitTelemetry({ action: 'theme.preset.apply', presetId, success: false, timestamp: Date.now() });
-            return false;
-        }
-
-        this.store.preset = preset;
-        await this.setTheme(preset.themeId);
-        this.logInfo(`Preset applied: ${presetId}`);
-        this.emitTelemetry({
-            action: 'theme.preset.apply',
-            presetId,
-            themeId: preset.themeId,
-            success: true,
-            timestamp: Date.now(),
-        });
-        return true;
-    }
-
-    getCurrentPreset(): ThemePreset | null {
-        return this.store.preset;
-    }
-
-    async clearPreset(): Promise<void> {
-        this.store.preset = null;
-        await this.saveStore();
-    }
-
+   
     exportTheme(themeId: string): string | null {
         const theme = this.getThemeDetails(themeId);
         if (!theme) {
-            this.emitTelemetry({ action: 'theme.export', themeId, success: false, timestamp: Date.now() });
+            this.emitUsageStats({ action: 'theme.export', themeId, success: false, timestamp: Date.now() });
             return null;
         }
 
@@ -515,7 +417,7 @@ export class ThemeService extends BaseService {
             exportedAt: new Date().toISOString(),
             theme
         };
-        this.emitTelemetry({ action: 'theme.export', themeId, success: true, timestamp: Date.now() });
+        this.emitUsageStats({ action: 'theme.export', themeId, success: true, timestamp: Date.now() });
         return JSON.stringify(exportData, null, 2);
     }
 
@@ -538,7 +440,7 @@ export class ThemeService extends BaseService {
             if (!imported) {
                 throw new Error(ThemeErrorCode.IMPORT_FAILED);
             }
-            this.emitTelemetry({
+            this.emitUsageStats({
                 action: 'theme.import',
                 themeId: imported.id,
                 source: 'imported',
@@ -549,7 +451,7 @@ export class ThemeService extends BaseService {
             return imported;
         } catch (error) {
             this.logError('Failed to import theme', error);
-            this.emitTelemetry({ action: 'theme.import', success: false, durationMs: Date.now() - start, timestamp: Date.now() });
+            this.emitUsageStats({ action: 'theme.import', success: false, durationMs: Date.now() - start, timestamp: Date.now() });
             return null;
         }
     }
@@ -567,11 +469,7 @@ export class ThemeService extends BaseService {
         const idError = this.validateThemeId(themeId);
         if (idError) {
             throw new Error(ThemeErrorCode.INVALID_ID);
-        }
-
-        if (BUILT_IN_THEME_IDS.has(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
-            throw new Error(ThemeErrorCode.DUPLICATE_ID);
-        }
+        } 
     }
 
     async duplicateTheme(themeId: string, newName: string): Promise<CustomTheme | null> {
@@ -589,4 +487,5 @@ export class ThemeService extends BaseService {
         });
     }
 }
+
 

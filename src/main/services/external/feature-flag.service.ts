@@ -59,7 +59,7 @@ export class FeatureFlagError extends TengraError {
     }
 }
 
-export enum FeatureFlagTelemetryEvent {
+export enum FeatureFlagUsageStatsEvent {
     FLAG_CHECKED = 'feature_flag_checked',
     FLAG_ENABLED = 'feature_flag_enabled',
     FLAG_DISABLED = 'feature_flag_disabled',
@@ -378,3 +378,4 @@ export class FeatureFlagService extends BaseService {
         };
     }
 }
+

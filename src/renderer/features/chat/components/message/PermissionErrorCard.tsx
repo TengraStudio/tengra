@@ -76,3 +76,4 @@ export const PermissionErrorCard = memo(({ t }: PermissionErrorCardProps) => {
 });
 
 PermissionErrorCard.displayName = 'PermissionErrorCard';
+

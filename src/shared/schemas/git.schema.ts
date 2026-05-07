@@ -36,3 +36,4 @@ export const gitTreeStatusPreviewResponseSchema = z.object({
     ),
     error: z.string().optional(),
 });
+

@@ -59,7 +59,7 @@ export interface WorkspaceAgentPermissionPolicy extends JsonObject {
     allowedPaths: string[];
 }
 
-export interface WorkspaceAgentContextTelemetry extends JsonObject {
+export interface WorkspaceAgentContextusageStats extends JsonObject {
     model: string;
     provider: string;
     strategy: WorkspaceAgentExecutionStrategy;
@@ -153,7 +153,7 @@ export interface WorkspaceAgentSessionSummary {
     modes: WorkspaceAgentSessionModes;
     strategy: WorkspaceAgentExecutionStrategy;
     permissionPolicy: WorkspaceAgentPermissionPolicy;
-    contextTelemetry?: WorkspaceAgentContextTelemetry;
+    contextusageStats?: WorkspaceAgentContextusageStats;
     councilConfig?: CouncilRunConfig;
     background: boolean;
     archived: boolean;
@@ -227,3 +227,4 @@ export interface NormalizedQuotaSnapshot extends JsonObject {
     models: ModelCostProfile[];
     fallbackCandidates: ProviderFallbackCandidate[];
 }
+

@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { SETTINGS_CHANNELS } from '@shared/constants/ipc-channels';
 import { AppSettings } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -24,8 +25,9 @@ export interface SettingsBridge {
 
 export function createSettingsBridge(ipc: IpcRenderer): SettingsBridge {
     return {
-        getSettings: () => ipc.invoke('settings:get'),
-        saveSettings: settings => ipc.invoke('settings:save', settings),
-        health: () => ipc.invoke('settings:health'),
+        getSettings: () => ipc.invoke(SETTINGS_CHANNELS.GET),
+        saveSettings: settings => ipc.invoke(SETTINGS_CHANNELS.SAVE, settings),
+        health: () => ipc.invoke(SETTINGS_CHANNELS.HEALTH),
     };
 }
+

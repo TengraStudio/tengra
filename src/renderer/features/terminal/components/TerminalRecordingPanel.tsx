@@ -181,3 +181,4 @@ export function TerminalRecordingPanel({
         </div>
     );
 }
+

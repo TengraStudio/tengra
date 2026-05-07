@@ -57,3 +57,4 @@ export function RuntimeBootstrapBoundary({ children }: RuntimeBootstrapBoundaryP
 
     return <>{children}</>;
 }
+

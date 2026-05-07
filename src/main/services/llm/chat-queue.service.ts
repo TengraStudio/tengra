@@ -154,3 +154,4 @@ export class ChatQueueManager extends EventEmitter {
 }
 
 export const chatQueueManager = new ChatQueueManager();
+

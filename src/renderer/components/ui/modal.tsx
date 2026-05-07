@@ -232,3 +232,4 @@ const ModalBase: React.FC<ModalProps> = ({
 
 export const Modal = React.memo(ModalBase);
 Modal.displayName = 'Modal';
+

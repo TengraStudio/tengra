@@ -59,3 +59,4 @@ describe('ModelDetailsPanel', () => {
         expect(badLink?.getAttribute('href')?.toLowerCase() ?? '').not.toContain('javascript:');
     });
 });
+

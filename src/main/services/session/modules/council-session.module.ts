@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { SessionRuntimeModule } from '@main/services/session/base-session-engine.service';
 import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import {
@@ -16,8 +17,6 @@ import {
     SessionStatus,
     SessionSubmitMessageOptions,
 } from '@shared/types/session-engine';
-
-import { SessionRuntimeModule } from '../base-session-engine.service';
 
 export class CouncilSessionModule implements SessionRuntimeModule {
     readonly id = 'council' as const;
@@ -70,3 +69,4 @@ export class CouncilSessionModule implements SessionRuntimeModule {
         });
     }
 }
+

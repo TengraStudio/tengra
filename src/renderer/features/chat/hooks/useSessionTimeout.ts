@@ -53,9 +53,9 @@ export function useSessionTimeout(): SessionTimeoutState & SessionTimeoutActions
                 setIsEnabled(enabled);
                 setTimeoutMs(resolvedTimeoutMs);
                 if (enabled) {
-                    const session = await window.electron.startAuthSession('app', undefined, 'renderer-idle');
+                    const session = await window.electron.auth.startAuthSession('app', undefined, 'renderer-idle');
                     setSessionId(session.sessionId);
-                    await window.electron.setAuthSessionTimeout(resolvedTimeoutMs);
+                    await window.electron.auth.setAuthSessionTimeout(resolvedTimeoutMs);
                 }
             } catch {
                 setIsEnabled(false);
@@ -89,7 +89,7 @@ export function useSessionTimeout(): SessionTimeoutState & SessionTimeoutActions
                 return;
             }
             lastTouchRef.current = now;
-            void window.electron.touchAuthSession(sessionId);
+            void window.electron.auth.touchAuthSession(sessionId);
         };
 
         const events: Array<keyof WindowEventMap> = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
@@ -118,7 +118,7 @@ export function useSessionTimeout(): SessionTimeoutState & SessionTimeoutActions
     useEffect(() => {
         return () => {
             if (sessionId) {
-                void window.electron.endAuthSession(sessionId);
+                void window.electron.auth.endAuthSession(sessionId);
             }
         };
     }, [sessionId]);
@@ -129,7 +129,7 @@ export function useSessionTimeout(): SessionTimeoutState & SessionTimeoutActions
             setLockedAt(undefined);
             lastActivityRef.current = Date.now();
             if (sessionId) {
-                void window.electron.touchAuthSession(sessionId);
+                void window.electron.auth.touchAuthSession(sessionId);
             }
         };
     }, [sessionId]);
@@ -143,4 +143,5 @@ export function useSessionTimeout(): SessionTimeoutState & SessionTimeoutActions
         unlock,
     };
 }
+
 

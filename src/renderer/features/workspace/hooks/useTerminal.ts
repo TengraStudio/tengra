@@ -8,19 +8,11 @@
  * (at your option) any later version.
  */
 
-import {
-    terminalCreateResponseSchema,
-    terminalKillResponseSchema,
-    terminalResizeResponseSchema,
-    terminalWriteResponseSchema
-} from '@shared/schemas/terminal.schema';
-import type { TerminalIpcContract } from '@shared/terminal-ipc';
-import { toTerminalSessionId,toWorkspaceId, WorkspaceId } from '@shared/types/ids';
+import { toTerminalSessionId, toWorkspaceId, WorkspaceId } from '@shared/types/ids';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
 import { useCallback, useEffect, useRef } from 'react';
 
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { useSettingsStore } from '@/store/settings.store';
 import { appLogger } from '@/utils/renderer-logger';
@@ -109,8 +101,8 @@ const handleArrowUp = (context: LineBufferContext): string => {
 
     const historyItem = historyRef.current[historyIndexRef.current] ?? '';
     if (pidRef.current) {
-        void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, KEY_CODES.CLEAR_LINE], { responseSchema: terminalWriteResponseSchema });
-        void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, historyItem], { responseSchema: terminalWriteResponseSchema });
+        void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
+        void window.electron.terminal.write(pidRef.current, historyItem);
     }
     return historyItem;
 };
@@ -126,15 +118,15 @@ const handleArrowDown = (context: LineBufferContext): string => {
         historyIndexRef.current++;
         const historyItem = historyRef.current[historyIndexRef.current] ?? '';
         if (pidRef.current) {
-            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, KEY_CODES.CLEAR_LINE], { responseSchema: terminalWriteResponseSchema });
-            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, historyItem], { responseSchema: terminalWriteResponseSchema });
+            void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
+            void window.electron.terminal.write(pidRef.current, historyItem);
         }
         return historyItem;
     } else {
         historyIndexRef.current = -1;
         if (pidRef.current) {
-            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, KEY_CODES.CLEAR_LINE], { responseSchema: terminalWriteResponseSchema });
-            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, currentInputRef.current], { responseSchema: terminalWriteResponseSchema });
+            void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
+            void window.electron.terminal.write(pidRef.current, currentInputRef.current);
         }
         return currentInputRef.current;
     }
@@ -208,12 +200,12 @@ export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string
             initializingTerminals.add(finalTerminalId);
 
             try {
-                const sessionId = await invokeTypedIpc<TerminalIpcContract, 'terminal:create'>('terminal:create', [{
+                const sessionId = await window.electron.terminal.create({
                     id: finalTerminalId,
                     cwd: cwd ?? (typeof process !== 'undefined' ? process.cwd() : ''),
                     cols: term.cols,
                     rows: term.rows
-                }], { responseSchema: terminalCreateResponseSchema });
+                });
 
                 if (!sessionId) {
                     const errorMessage = t ? t('frontend.workspaceDashboard.terminalFailedSession') : 'Failed to start session';
@@ -262,7 +254,7 @@ export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string
                     }
 
                     if (pidRef.current) {
-                        invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, data], { responseSchema: terminalWriteResponseSchema }).catch(error => {
+                        window.electron.terminal.write(pidRef.current, data).catch(error => {
                             appLogger.warn('WorkspaceUseTerminal', 'Failed to write terminal input', error as Error);
                         });
                     }
@@ -270,7 +262,7 @@ export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string
 
                 term.onResize(({ cols, rows }: { cols: number; rows: number }) => {
                     if (pidRef.current) {
-                        invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [pidRef.current, cols, rows], { responseSchema: terminalResizeResponseSchema }).catch(error => {
+                        window.electron.terminal.resize(pidRef.current, cols, rows).catch(error => {
                             appLogger.warn('WorkspaceUseTerminal', 'Failed to resize terminal', error as Error);
                         });
                     }
@@ -298,7 +290,7 @@ export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string
             if (terminalId) {
                 initializedTerminals.delete(terminalId);
                 initializingTerminals.delete(terminalId);
-                invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [terminalId], { responseSchema: terminalKillResponseSchema }).catch(error => {
+                window.electron.terminal.kill(terminalId).catch(error => {
                     appLogger.warn('WorkspaceUseTerminal', 'Failed to kill terminal during cleanup', error as Error);
                 });
             }
@@ -325,3 +317,4 @@ export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string
 
     return { terminalRef };
 }
+

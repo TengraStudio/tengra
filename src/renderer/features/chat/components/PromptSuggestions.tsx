@@ -148,3 +148,4 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
 });
 
 PromptSuggestions.displayName = 'PromptSuggestions';
+

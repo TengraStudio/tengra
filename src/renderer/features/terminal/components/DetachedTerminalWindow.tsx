@@ -15,17 +15,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { appLogger } from '@/utils/renderer-logger';
-
-import {
-    TerminalIpcContract,
-    terminalKillResponseSchema,
-    terminalReadBufferResponseSchema,
-    terminalResizeResponseSchema,
-    terminalWriteResponseSchema
-} from '../utils/terminal-ipc';
 
 
 export function DetachedTerminalWindow() {
@@ -92,14 +83,14 @@ export function DetachedTerminalWindow() {
 
         term.onData((data) => {
             if (!isExitedRef.current) {
-                void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [sessionId, data], { responseSchema: terminalWriteResponseSchema }).catch((error) => {
+                void window.electron.terminal.write(sessionId, data).catch((error) => {
                     appLogger.warn('DetachedTerminalWindow', 'Failed to write terminal input', error as Error);
                 });
             }
         });
         term.onResize((size) => {
             if (!isExitedRef.current) {
-                void invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [sessionId, size.cols, size.rows], { responseSchema: terminalResizeResponseSchema }).catch((error) => {
+                void window.electron.terminal.resize(sessionId, size.cols, size.rows).catch((error) => {
                     appLogger.warn('DetachedTerminalWindow', 'Failed to resize detached terminal', error as Error);
                 });
             }
@@ -118,7 +109,7 @@ export function DetachedTerminalWindow() {
             }
         });
 
-        void invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [sessionId], { responseSchema: terminalReadBufferResponseSchema })
+        void window.electron.terminal.readBuffer(sessionId)
             .then((buffer) => {
                 if (buffer && terminalRef.current) {
                     terminalRef.current.write(buffer);
@@ -155,7 +146,7 @@ export function DetachedTerminalWindow() {
             return;
         }
         const handleBeforeUnload = () => {
-            void invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionId], { responseSchema: terminalKillResponseSchema }).catch((error) => {
+            void window.electron.terminal.kill(sessionId).catch((error) => {
                 appLogger.warn('DetachedTerminalWindow', 'Failed to kill detached terminal on unload', error as Error);
             });
         };
@@ -210,3 +201,4 @@ export function DetachedTerminalWindow() {
         </div>
     );
 }
+

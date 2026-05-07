@@ -12,6 +12,7 @@ import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { HttpRequestOptions, HttpService } from '@main/services/external/http.service';
+import { applyReasoningEffort } from '@main/services/llm/llm-reasoning.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
@@ -27,8 +28,6 @@ import {
 } from '@shared/types/llm-provider-types';
 import { ApiError, AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { Agent } from 'undici';
-
-import { applyReasoningEffort } from '../llm-reasoning.service';
 
 /** Configuration required by LLMOpenAIChatService. */
 export interface OpenAIChatDeps {
@@ -598,3 +597,4 @@ export class LLMOpenAIChatService {
         }
     }
 }
+

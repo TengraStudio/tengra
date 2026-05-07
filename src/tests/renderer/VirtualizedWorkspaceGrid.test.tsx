@@ -45,7 +45,7 @@ function createWorkspace(index: number): Workspace {
     };
 }
 
-describe('VirtualizedWorkspaceGrid telemetry', () => {
+describe('VirtualizedWorkspaceGrid Stats', () => {
     afterEach(() => {
         vi.restoreAllMocks();
     });
@@ -111,3 +111,4 @@ describe('VirtualizedWorkspaceGrid telemetry', () => {
         });
     });
 });
+

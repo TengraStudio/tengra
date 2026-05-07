@@ -103,3 +103,4 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
         </div>
     );
 };
+

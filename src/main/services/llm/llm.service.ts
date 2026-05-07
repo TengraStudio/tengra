@@ -19,7 +19,7 @@ import { LlamaService } from '@main/services/llm/local/llama.service';
 import {
     resolveHuggingFaceLocalRouteTarget,
     resolveLocalRuntimeBaseUrl,
-} from '@main/services/llm/local/local-runtime-router.service';
+} from '@main/services/llm/local/local-model-runtime-router.service';
 import { ModelFallbackService } from '@main/services/llm/model-fallback.service';
 import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
@@ -123,7 +123,7 @@ export class LLMService {
     private opencodeApiKey: string = '';
     private dispatcher: Agent | null = null;
 
-    private telemetry = {
+    private usageStats = {
         openAiRequests: 0,
         openAiFailures: 0,
         lastRequestAt: 0,
@@ -329,9 +329,9 @@ export class LLMService {
         this.validateMessagesInput(messages);
         const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, stream = false, n, signal, systemMode, reasoningEffort, workspaceRoot, metadata, accountId } = options;
         const provider = this.resolveProvider(model, requestedProvider);
-        this.telemetry.openAiRequests += 1;
-        this.telemetry.lastRequestAt = Date.now();
-        this.recordTelemetryEvent('llm.openai.request', provider);
+        this.usageStats.openAiRequests += 1;
+        this.usageStats.lastRequestAt = Date.now();
+        this.recordUsageStatsEvent('llm.openai.request', provider);
         const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
         const preparedMessages = this.prepareMessagesForContextWindow(sanitized as Message[], model);
 
@@ -352,14 +352,14 @@ export class LLMService {
                     accountId,
                 }
             );
-            this.telemetry.lastSuccessAt = Date.now();
-            this.telemetry.lastError = null;
-            this.recordTelemetryEvent('llm.openai.success', provider);
+            this.usageStats.lastSuccessAt = Date.now();
+            this.usageStats.lastError = null;
+            this.recordUsageStatsEvent('llm.openai.success', provider);
             return parsed;
         } catch (error) {
-            this.telemetry.openAiFailures += 1;
-            this.telemetry.lastError = getErrorMessage(error as Error);
-            this.recordTelemetryEvent('llm.openai.failure', provider);
+            this.usageStats.openAiFailures += 1;
+            this.usageStats.lastError = getErrorMessage(error as Error);
+            this.recordUsageStatsEvent('llm.openai.failure', provider);
             appLogger.error('LLMService', `[LLMService:OpenAI] Chat Error: ${getErrorMessage(error as Error)}`);
             if (error instanceof ApiError) { throw error; }
             throw new NetworkError(error instanceof Error ? error.message : String(error), { originalError: (error instanceof Error ? error.message : String(error)) as RuntimeValue as JsonObject });
@@ -589,22 +589,22 @@ export class LLMService {
         lastError: string | null;
         recentEvents: Array<{ name: string; timestamp: number; provider: string }>;
     } {
-        const uiState = this.telemetry.openAiFailures > 0
+        const uiState = this.usageStats.openAiFailures > 0
             ? 'failure'
-            : this.telemetry.openAiRequests === 0
+            : this.usageStats.openAiRequests === 0
                 ? 'empty'
                 : 'ready';
         return {
-            status: this.telemetry.openAiFailures > 0 ? 'degraded' : 'healthy',
+            status: this.usageStats.openAiFailures > 0 ? 'degraded' : 'healthy',
             uiState,
             messageKey: LLMService.UI_MESSAGE_KEYS[uiState],
             performanceBudget: LLMService.PERFORMANCE_BUDGET,
-            openAiRequests: this.telemetry.openAiRequests,
-            openAiFailures: this.telemetry.openAiFailures,
-            lastRequestAt: this.telemetry.lastRequestAt,
-            lastSuccessAt: this.telemetry.lastSuccessAt,
-            lastError: this.telemetry.lastError,
-            recentEvents: [...this.telemetry.recentEvents],
+            openAiRequests: this.usageStats.openAiRequests,
+            openAiFailures: this.usageStats.openAiFailures,
+            lastRequestAt: this.usageStats.lastRequestAt,
+            lastSuccessAt: this.usageStats.lastSuccessAt,
+            lastError: this.usageStats.lastError,
+            recentEvents: [...this.usageStats.recentEvents],
         };
     }
 
@@ -631,10 +631,10 @@ export class LLMService {
 
     // --- Private helpers ---
 
-    private recordTelemetryEvent(name: string, provider: string): void {
-        this.telemetry.recentEvents.push({ name, provider, timestamp: Date.now() });
-        if (this.telemetry.recentEvents.length > 20) {
-            this.telemetry.recentEvents.shift();
+    private recordUsageStatsEvent(name: string, provider: string): void {
+        this.usageStats.recentEvents.push({ name, provider, timestamp: Date.now() });
+        if (this.usageStats.recentEvents.length > 20) {
+            this.usageStats.recentEvents.shift();
         }
     }
 
@@ -838,7 +838,7 @@ export class LLMService {
             };
         }
 
-        if (p.includes('copilot') || p.includes('github')) {
+        if (p.includes('copilot')) {
             const proxyUrl = buildProxyBaseUrl();
             const proxyKey = await this.deps.proxyService.getProxyKey();
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'copilot', temperature: temp, workspaceRoot };
@@ -863,3 +863,5 @@ export class LLMService {
         return /^https?:\/\/(localhost|127\.0\.0\.1):\d+\/v1$/i.test(baseUrl);
     }
 }
+
+

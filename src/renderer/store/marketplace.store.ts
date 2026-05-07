@@ -118,3 +118,4 @@ export function useMarketplaceStore<T>(selector: (state: MarketplaceState) => T)
     const state = useSyncExternalStore(marketplaceStore.subscribe, marketplaceStore.getState, marketplaceStore.getState);
     return selector(state);
 }
+

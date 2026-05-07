@@ -379,3 +379,4 @@ export function quoteShellArg(arg: string): string {
     // e.g. "foo'bar" -> "'foo''bar'"
     return `'${arg.replace(/'/g, "''")}'`;
 }
+

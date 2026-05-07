@@ -23,3 +23,4 @@ describe('responsive helpers', () => {
         expect(resolveBreakpoint(1440)).toBe('wide');
     });
 });
+

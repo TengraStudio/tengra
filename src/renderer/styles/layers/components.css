@@ -462,12 +462,12 @@
     }
 
     /* BLACK THEME (Dark) - Same HSL values, can be overridden if needed */
-    [data-theme='black'] {
+    [data-theme='tengra-black'] {
         /* Icons remain the same in dark mode - brand colors */
     }
 
     /* WHITE THEME (Light) - Same HSL values */
-    [data-theme='white'] {
+    [data-theme='tengra-white'] {
         /* Icons remain the same in light mode - brand colors */
     }
 

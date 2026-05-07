@@ -94,29 +94,29 @@ describe('ThemeService (UI)', () => {
     describe('initialize', () => {
         it('should initialize with default store when no file exists', async () => {
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('light');
         });
 
         it('should load persisted store from disk', async () => {
             const persisted = JSON.stringify({
-                currentTheme: 'obsidian',
+                currentTheme: 'dark',
                 customThemes: [],
-                favorites: ['obsidian'],
-                history: ['obsidian'],
+                favorites: ['dark'],
+                history: ['dark'],
                 preset: null,
             });
             mockAccess.mockResolvedValue(undefined);
             mockReadFile.mockResolvedValue(persisted);
 
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('obsidian');
-            expect(service.getFavorites()).toContain('obsidian');
+            expect(service.getCurrentTheme()).toBe('dark');
+            expect(service.getFavorites()).toContain('dark');
         });
 
         it('should be idempotent – second call is a no-op', async () => {
             await service.initialize();
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('light');
         });
 
         it('should fall back to defaults when store file is corrupt', async () => {
@@ -124,7 +124,7 @@ describe('ThemeService (UI)', () => {
             mockReadFile.mockResolvedValue('not json!!!');
 
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('light');
         });
 
         it('should merge partial persisted data with defaults', async () => {
@@ -137,7 +137,7 @@ describe('ThemeService (UI)', () => {
             expect(service.getCurrentTheme()).toBe('midnight');
             // Missing fields should come from defaults
             expect(service.getFavorites()).toEqual([]);
-            expect(service.getHistory()).toEqual(['graphite']);
+            expect(service.getHistory()).toEqual(['light']);
         });
 
         it('should handle readFile throwing an error', async () => {
@@ -145,7 +145,7 @@ describe('ThemeService (UI)', () => {
             mockReadFile.mockRejectedValue(new Error('EACCES'));
 
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('light');
         });
     });
 
@@ -154,7 +154,7 @@ describe('ThemeService (UI)', () => {
     describe('init (legacy)', () => {
         it('should delegate to initialize', async () => {
             await service.init();
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('light');
         });
     });
 
@@ -166,15 +166,15 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should switch to a valid built-in theme', async () => {
-            const result = await service.setTheme('obsidian');
+            const result = await service.setTheme('dark');
             expect(result).toBe(true);
-            expect(service.getCurrentTheme()).toBe('obsidian');
+            expect(service.getCurrentTheme()).toBe('dark');
         });
 
         it('should return false for a non-existent theme', async () => {
             const result = await service.setTheme('does-not-exist');
             expect(result).toBe(false);
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('light');
         });
 
         it('should add the new theme to history', async () => {
@@ -191,13 +191,13 @@ describe('ThemeService (UI)', () => {
 
         it('should cap history at 20 entries', async () => {
             const themes = [
-                'obsidian', 'midnight', 'deep-forest', 'dracula',
+                'dark', 'midnight', 'deep-forest', 'dracula',
                 'cyberpunk', 'matrix', 'synthwave', 'snow',
                 'sand', 'sky', 'minimal', 'paper',
                 'ocean', 'rose', 'coffee',
             ];
 
-            // Initial history has 'graphite' already
+            // Initial history has 'light' already
             for (const t of themes) {
                 await service.setTheme(t);
             }
@@ -212,7 +212,7 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should persist the store after switching', async () => {
-            await service.setTheme('obsidian');
+            await service.setTheme('dark');
             expect(mockWriteFile).toHaveBeenCalled();
             expect(mockRename).toHaveBeenCalled();
         });
@@ -236,8 +236,8 @@ describe('ThemeService (UI)', () => {
             const themes = service.getAllThemes();
             expect(themes.length).toBeGreaterThan(0);
             const ids = themes.map((t: { id: string }) => t.id);
-            expect(ids).toContain('graphite');
-            expect(ids).toContain('obsidian');
+            expect(ids).toContain('light');
+            expect(ids).toContain('dark');
         });
 
         it('should include custom themes with isCustom flag', async () => {
@@ -257,7 +257,7 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should return built-in theme with isBuiltIn = true', () => {
-            const details = service.getThemeDetails('graphite');
+            const details = service.getThemeDetails('light');
             expect(details).not.toBeNull();
             expect(details!.isBuiltIn).toBe(true);
         });
@@ -356,14 +356,14 @@ describe('ThemeService (UI)', () => {
             expect(service.getCustomThemes().length).toBe(0);
         });
 
-        it('should revert to graphite when deleting the active theme', async () => {
+        it('should revert to light when deleting the active theme', async () => {
             const theme = await service.addCustomTheme(themeInput('Active Custom'));
 
             await service.setTheme(theme!.id);
             expect(service.getCurrentTheme()).toBe(theme!.id);
 
             await service.deleteCustomTheme(theme!.id);
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('light');
         });
 
         it('should return false for a non-existent id', async () => {
@@ -395,17 +395,17 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should add a theme to favorites via toggleFavorite', async () => {
-            const isFav = await service.toggleFavorite('obsidian');
+            const isFav = await service.toggleFavorite('dark');
             expect(isFav).toBe(true);
-            expect(service.isFavorite('obsidian')).toBe(true);
-            expect(service.getFavorites()).toContain('obsidian');
+            expect(service.isFavorite('dark')).toBe(true);
+            expect(service.getFavorites()).toContain('dark');
         });
 
         it('should remove a theme from favorites on second toggle', async () => {
-            await service.toggleFavorite('obsidian');
-            const isFav = await service.toggleFavorite('obsidian');
+            await service.toggleFavorite('dark');
+            const isFav = await service.toggleFavorite('dark');
             expect(isFav).toBe(false);
-            expect(service.isFavorite('obsidian')).toBe(false);
+            expect(service.isFavorite('dark')).toBe(false);
         });
 
         it('should persist after toggling', async () => {
@@ -427,12 +427,12 @@ describe('ThemeService (UI)', () => {
             await service.initialize();
         });
 
-        it('should start with graphite in history', () => {
-            expect(service.getHistory()).toEqual(['graphite']);
+        it('should start with light in history', () => {
+            expect(service.getHistory()).toEqual(['light']);
         });
 
         it('should clear history', async () => {
-            await service.setTheme('obsidian');
+            await service.setTheme('dark');
             await service.clearHistory();
             expect(service.getHistory()).toEqual([]);
         });
@@ -442,56 +442,7 @@ describe('ThemeService (UI)', () => {
             const b = service.getHistory();
             expect(a).not.toBe(b);
         });
-    });
-
-    // ── Presets ──────────────────────────────────────────────────────
-
-    describe('presets', () => {
-        beforeEach(async () => {
-            await service.initialize();
-        });
-
-        it('should return all default presets', () => {
-            const presets = service.getPresets();
-            expect(presets.length).toBeGreaterThan(0);
-            const ids = presets.map((p: { id: string }) => p.id);
-            expect(ids).toContain('default');
-            expect(ids).toContain('compact');
-            expect(ids).toContain('developer');
-        });
-
-        it('should find a preset by id', () => {
-            const preset = service.getPreset('developer');
-            expect(preset).toBeDefined();
-            expect(preset!.themeId).toBe('obsidian');
-        });
-
-        it('should return undefined for unknown preset', () => {
-            expect(service.getPreset('nonexistent')).toBeUndefined();
-        });
-
-        it('should apply a preset and switch to its theme', async () => {
-            const result = await service.applyPreset('developer');
-            expect(result).toBe(true);
-            expect(service.getCurrentTheme()).toBe('obsidian');
-            expect(service.getCurrentPreset()).not.toBeNull();
-            expect(service.getCurrentPreset()!.id).toBe('developer');
-        });
-
-        it('should return false when applying a non-existent preset', async () => {
-            const result = await service.applyPreset('nonexistent');
-            expect(result).toBe(false);
-        });
-
-        it('should clear the current preset', async () => {
-            await service.applyPreset('developer');
-            await service.clearPreset();
-            expect(service.getCurrentPreset()).toBeNull();
-        });
-
-        it('should have null preset initially', () => {
-            expect(service.getCurrentPreset()).toBeNull();
-        });
-    });
+    }); 
 });
+
 

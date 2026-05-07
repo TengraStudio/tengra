@@ -131,3 +131,4 @@ export function getDefaultPersonality(): PersonalityConfig {
         responseStyle: 'professional'
     };
 }
+

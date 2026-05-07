@@ -175,3 +175,4 @@ export const AccountRow: React.FC<AccountRowProps> = ({
         </div>
     );
 };
+

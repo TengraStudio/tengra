@@ -53,3 +53,4 @@ export interface GroupedModel {
     provider: string;
     models: InstalledModel[];
 }
+

@@ -247,3 +247,4 @@ export function getMetricsService(): MetricsService {
     instance ??= new MetricsService();
     return instance;
 }
+

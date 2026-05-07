@@ -211,3 +211,4 @@ export async function completeDirectImageMessage(options: {
 
     await persistAssistantMessage(assistantId, chatId, updates);
 }
+

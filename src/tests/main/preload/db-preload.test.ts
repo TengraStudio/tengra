@@ -73,3 +73,4 @@ describe('Db preload bridge', () => {
         expect(mockInvoke).toHaveBeenCalledWith('db:deleteWorkspace', 'ws-1', true);
     });
 });
+

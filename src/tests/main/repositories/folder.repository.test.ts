@@ -66,3 +66,4 @@ describe('FolderRepository', () => {
         await expect(repo.update('1', {})).rejects.toThrow('Folder not found after update: 1');
     });
 });
+

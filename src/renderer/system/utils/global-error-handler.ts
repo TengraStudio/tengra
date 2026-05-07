@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { appLogger } from '@/system/utils/renderer-logger';
+import { appLogger } from '@system/utils/renderer-logger';
 
 const CONTEXT = 'GlobalErrorHandler';
 const RESIZE_OBSERVER_LOOP_MESSAGE = 'ResizeObserver loop completed with undelivered notifications';
@@ -73,3 +73,4 @@ export function installGlobalErrorHandlers(): void {
 
     appLogger.info(CONTEXT, 'Global error handlers installed');
 }
+

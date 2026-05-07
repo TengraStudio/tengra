@@ -27,3 +27,4 @@ describe('session collaboration aliases', () => {
         expect(typeof webElectronMock.userCollaboration.joinRoom).toBe('function');
     });
 });
+

@@ -8,17 +8,10 @@
  * (at your option) any later version.
  */
 
+import type { TerminalCommandHistoryEntry } from '@shared/types/terminal';
 import { RefObject, useCallback, useEffect, useState } from 'react';
-import { z } from 'zod';
 
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { appLogger } from '@/utils/renderer-logger';
-
-import {
-    terminalClearCommandHistoryResponseSchema,
-    TerminalCommandHistoryEntry,
-    terminalCommandHistoryEntrySchema,
-    TerminalIpcContract} from '../utils/terminal-ipc';
 
 export type TerminalHistoryEntry = TerminalCommandHistoryEntry;
 
@@ -112,7 +105,7 @@ export function useTerminalCommandTools({
 
     const clearCommandHistory = useCallback(async () => {
         try {
-            const success = await invokeTypedIpc<TerminalIpcContract, 'terminal:clearCommandHistory'>('terminal:clearCommandHistory', [], { responseSchema: terminalClearCommandHistoryResponseSchema });
+            const success = await window.electron.terminal.clearCommandHistory();
             if (success) {
                 setCommandHistoryItems([]);
             }
@@ -131,7 +124,7 @@ export function useTerminalCommandTools({
             void (async () => {
                 try {
                     setIsCommandHistoryLoading(true);
-                    const entries = await invokeTypedIpc<TerminalIpcContract, 'terminal:getCommandHistory'>('terminal:getCommandHistory', [commandHistoryQuery, 80], { responseSchema: z.array(terminalCommandHistoryEntrySchema) });
+                    const entries = await window.electron.terminal.getCommandHistory(commandHistoryQuery, 80);
                     if (!cancelled) {
                         setCommandHistoryItems(entries);
                     }
@@ -296,3 +289,4 @@ export function useTerminalCommandTools({
         executeTaskRunnerEntry,
     };
 }
+

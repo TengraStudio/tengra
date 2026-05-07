@@ -68,3 +68,4 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
 };
 
 export default ContextWindowIndicator;
+

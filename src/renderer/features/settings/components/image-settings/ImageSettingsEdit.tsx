@@ -195,3 +195,4 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
         </div>
     );
 };
+

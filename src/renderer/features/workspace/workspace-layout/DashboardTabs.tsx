@@ -65,7 +65,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
                             title={tab.title}
                         >
                             <Icon className="w-4 h-4" />
-                            {isActive && <span className="text-xs font-medium">{tab.title}</span>}
+                            <span className="text-xs font-medium">{tab.title}</span>
                         </button>
                     </React.Fragment>
                 );
@@ -73,3 +73,4 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
         </div>
     );
 };
+

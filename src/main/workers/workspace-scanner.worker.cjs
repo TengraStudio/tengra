@@ -113,11 +113,29 @@ function matchesRule(rule, rel) {
     return rel.split('/').some(s => rule.regex.test(s));
 }
 
+function isBinaryOrLargeAsset(name) {
+    const lowerName = name.toLowerCase();
+    const ignoredExtensions = [
+        '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.o', '.a', '.lib',
+        '.pyc', '.pyo', '.pyd', '.class', '.jar', '.war', '.ear',
+        '.zip', '.tar', '.gz', '.7z', '.rar',
+        '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.svg',
+        '.mp3', '.mp4', '.wav', '.mov', '.pdf', '.doc', '.docx',
+        '.pdb', '.ilk', '.tlog', '.idb', '.ipdb', '.iobj', '.pch', '.sdf',
+        '.opensdf', '.cache', '.bmp', '.depend'
+    ];
+    return ignoredExtensions.some(ext => lowerName.endsWith(ext));
+}
+
 function buildMatcher(root, patterns) {
     const normRoot = normalizePath(root);
     const rules = (patterns || []).map(compileRule).filter(r => r !== null);
 
-    return (candidate) => {
+    return (candidate, name) => {
+        // 1. Check hardcoded binary extensions
+        if (name && isBinaryOrLargeAsset(name)) return true;
+
+        // 2. Standard glob pattern matching
         const normCand = normalizePath(candidate);
         if (normCand !== normRoot && !normCand.startsWith(normRoot + '/')) return false;
         const rel = normCand.slice(normRoot.length);
@@ -152,10 +170,10 @@ async function scan(requestId, root, patterns, maxFiles) {
                 
                 // Base filter
                 if (entry.name === '.git' || entry.name === 'node_modules') {
-                    if (isIgnored(full)) continue;
+                    if (isIgnored(full, entry.name)) continue;
                 }
                 
-                if (isIgnored(full)) continue;
+                if (isIgnored(full, entry.name)) continue;
 
                 if (entry.isDirectory()) {
                     dirs.push(full);

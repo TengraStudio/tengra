@@ -17,3 +17,4 @@ export interface SessionRegistryReader {
     getSnapshot(sessionId: string): SessionState | null;
     listRecoverySnapshots(): SessionRecoverySnapshot[];
 }
+

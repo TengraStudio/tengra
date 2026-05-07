@@ -18,6 +18,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
+import { HEALTH_CHANNELS } from '@shared/constants/ipc-channels';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { IpcMainInvokeEvent } from 'electron';
@@ -201,7 +202,7 @@ export class HealthCheckService extends BaseService {
     /**
      * Get current health status
      */
-    @ipc('health:status')
+    @ipc(HEALTH_CHANNELS.STATUS)
     getStatusIpc(_event: IpcMainInvokeEvent): HealthCheckResult {
         return this.getStatus();
     }
@@ -236,7 +237,7 @@ export class HealthCheckService extends BaseService {
     /**
      * Check a specific service immediately
      */
-    @ipc('health:check')
+    @ipc(HEALTH_CHANNELS.CHECK)
     async checkNowIpc(_event: IpcMainInvokeEvent, name: string): Promise<HealthStatus | null> {
         return await this.checkNow(name);
     }
@@ -246,7 +247,7 @@ export class HealthCheckService extends BaseService {
         return this.statuses.get(name) ?? null;
     }
 
-    @ipc('health:getService')
+    @ipc(HEALTH_CHANNELS.GET_SERVICE)
     getServiceIpc(_event: IpcMainInvokeEvent, serviceName: string): HealthStatus | null {
         if (!serviceName || typeof serviceName !== 'string') {
             return null;
@@ -256,7 +257,7 @@ export class HealthCheckService extends BaseService {
         return status.services.find(s => s.name === trimmed) ?? null;
     }
 
-    @ipc('health:listServices')
+    @ipc(HEALTH_CHANNELS.LIST_SERVICES)
     listServicesIpc(_event: IpcMainInvokeEvent): string[] {
         try {
             const status = this.getStatus();
@@ -266,7 +267,7 @@ export class HealthCheckService extends BaseService {
         }
     }
 
-    @ipc('health:memoryContext')
+    @ipc(HEALTH_CHANNELS.MEMORY_CONTEXT)
     getMemoryContextStats(_event: IpcMainInvokeEvent) {
         return MemoryContextService.getStats();
     }
@@ -324,3 +325,4 @@ export function getHealthCheckService(): HealthCheckService {
     instance ??= new HealthCheckService();
     return instance;
 }
+

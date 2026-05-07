@@ -73,3 +73,4 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
         </div>
     );
 };
+

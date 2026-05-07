@@ -124,3 +124,4 @@ export function useTerminalAppearance({
 
     return { terminalAppearance, setTerminalAppearance };
 }
+

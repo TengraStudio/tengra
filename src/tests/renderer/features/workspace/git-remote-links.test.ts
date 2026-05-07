@@ -51,3 +51,4 @@ describe('buildGitRemoteLinks', () => {
         expect(links).toEqual([]);
     });
 });
+

@@ -29,3 +29,4 @@ describe('WorkspaceNotifications', () => {
         expect(screen.getByText(/File created\.\s*\(2x\)/i)).toBeInTheDocument();
     });
 });
+

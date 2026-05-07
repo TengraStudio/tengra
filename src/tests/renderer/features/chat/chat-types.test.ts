@@ -40,3 +40,4 @@ describe('ChatTemplate type', () => {
         expect(template.systemPrompt).toBeUndefined();
     });
 });
+

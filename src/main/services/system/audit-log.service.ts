@@ -10,6 +10,9 @@
 
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
+import { AUDIT_CHANNELS } from '@shared/constants/ipc-channels';
+import type { RuntimeValue } from '@shared/types/common';
+import type { IpcMainInvokeEvent } from 'electron';
 
 export interface AuditLogFilters {
     startDate?: string;
@@ -23,7 +26,7 @@ export interface AuditLogEntry {
     category: string;
     action: string;
     success: boolean;
-    details?: Record<string, unknown>;
+    details?: Record<string, RuntimeValue>;
 }
 
 export class AuditLogService extends BaseService {
@@ -33,8 +36,8 @@ export class AuditLogService extends BaseService {
         super('AuditLogService');
     }
 
-    @ipc('audit:get-logs')
-    async getLogsIpc(_event: unknown, filters: AuditLogFilters = {}): Promise<AuditLogEntry[]> {
+    @ipc(AUDIT_CHANNELS.GET_LOGS)
+    async getLogsIpc(_event: IpcMainInvokeEvent, filters: AuditLogFilters = {}): Promise<AuditLogEntry[]> {
         try {
             return await this.getLogs(filters);
         } catch (error) {
@@ -61,7 +64,7 @@ export class AuditLogService extends BaseService {
         });
     }
 
-    logFileSystemOperation(action: string, success: boolean, details?: Record<string, unknown>): void {
+    logFileSystemOperation(action: string, success: boolean, details?: Record<string, RuntimeValue>): void {
         this.entries.unshift({
             id: `${Date.now()}-${this.entries.length}`,
             timestamp: new Date().toISOString(),
@@ -76,3 +79,4 @@ export class AuditLogService extends BaseService {
         }
     }
 }
+

@@ -144,3 +144,4 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
         </div>
     </div>
 );
+

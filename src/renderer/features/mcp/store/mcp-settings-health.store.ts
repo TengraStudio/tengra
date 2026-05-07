@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { createComponentHealthStore } from '@/ui/store/component-health.store';
+import { createComponentHealthStore } from '@ui/store/component-health.store';
 
 const mcpSettingsHealthStore = createComponentHealthStore('mcp-settings-tab', 450);
 
@@ -21,3 +21,4 @@ export const recordMcpSettingsFailure = mcpSettingsHealthStore.recordFailure;
 export const recordMcpSettingsRetry = mcpSettingsHealthStore.recordRetry;
 export const recordMcpSettingsFallback = mcpSettingsHealthStore.recordFallback;
 export const __resetMcpSettingsHealthForTests = mcpSettingsHealthStore.resetForTests;
+

@@ -59,3 +59,4 @@ export const SidebarDivider: React.FC<SidebarDividerProps> = ({
 };
 
 SidebarDivider.displayName = 'SidebarDivider';
+

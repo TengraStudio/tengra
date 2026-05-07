@@ -148,11 +148,11 @@ export function useWorkspaceAgentSessionCouncil({
                     ? {
                           provider:
                               currentSession?.councilConfig?.chairman.provider ??
-                              currentSession?.contextTelemetry?.provider ??
+                              currentSession?.usageStats?.provider ??
                               '',
                           model:
                               currentSession?.councilConfig?.chairman.model ??
-                              currentSession?.contextTelemetry?.model ??
+                              currentSession?.usageStats?.model ??
                               '',
                       }
                     : undefined;
@@ -211,3 +211,4 @@ export function useWorkspaceAgentSessionCouncil({
         sendDiscussionMessage,
     };
 }
+

@@ -47,7 +47,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            setSkills(await window.electron.listSkills());
+            setSkills(await window.electron.auth.listSkills());
         } finally {
             setLoading(false);
         }
@@ -58,14 +58,14 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
     }, [loadData]);
 
     const handleToggle = useCallback(async (skill: ProxySkill, enabled: boolean) => {
-        await window.electron.toggleSkill(skill.id, enabled);
+        await window.electron.auth.toggleSkill(skill.id, enabled);
         await loadData();
     }, [loadData]);
 
     const handleUninstall = useCallback(async (skillId: string) => {
         setRemovingId(skillId);
         try {
-            await window.electron.deleteSkill(skillId);
+            await window.electron.auth.deleteSkill(skillId);
             await loadData();
         } finally {
             setRemovingId(null);
@@ -223,4 +223,5 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
         </div>
     );
 };
+
 

@@ -65,3 +65,4 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
         </Select>
     );
 };
+

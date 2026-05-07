@@ -245,3 +245,4 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
         </motion.div>
     );
 }
+

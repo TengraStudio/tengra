@@ -113,3 +113,4 @@ export class UserBehaviorService extends BaseService {
         return await this.database.userBehavior.getRecentInteractions(limit);
     }
 }
+

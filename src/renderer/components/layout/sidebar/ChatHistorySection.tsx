@@ -309,3 +309,4 @@ const ChatListContent: React.FC<{
 };
 
 ChatHistorySectionComponent.displayName = 'ChatHistorySection';
+

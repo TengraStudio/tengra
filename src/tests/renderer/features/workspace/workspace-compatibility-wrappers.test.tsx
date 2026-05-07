@@ -299,3 +299,4 @@ describe('workspace compatibility wrappers', () => {
         expect(startArchive).toHaveBeenCalledWith(workspaceFixture);
     });
 });
+

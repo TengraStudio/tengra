@@ -121,3 +121,4 @@ describe('MarketplaceService MCP installed-state mapping', () => {
         expect(versions.get('TENGRASTUDIO.JOB-FINDER'.toLowerCase())).toBe('1.1.0');
     });
 });
+

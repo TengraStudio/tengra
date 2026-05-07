@@ -16,6 +16,81 @@ import { cn } from '@/lib/utils';
 /* Batch-02: Extracted Long Classes */
 const C_SETTINGSPRIMITIVES_1 = "flex flex-col gap-3 rounded-md border border-border/40 bg-background px-3 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5";
 
+export const SETTINGS_TAB_CONTAINER_CLASS = 'mx-auto flex w-full max-w-5xl flex-col gap-6 pb-10';
+export const SETTINGS_PANEL_CLASS = 'rounded-3xl border border-border/25 bg-card p-5 shadow-sm sm:p-6 lg:p-8';
+export const SETTINGS_SUBSECTION_CLASS = 'rounded-2xl border border-border/15 bg-muted/10 p-4 sm:p-5';
+export const SETTINGS_META_CARD_CLASS = 'rounded-2xl border border-border/15 bg-muted/10 p-4';
+export const SETTINGS_SEGMENTED_CONTROL_CLASS = 'flex flex-wrap items-center gap-1.5 rounded-2xl border border-border/20 bg-muted/10 p-1.5';
+export const SETTINGS_SEGMENTED_ITEM_CLASS = 'flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors';
+
+export const SettingsTabLayout: React.FC<{
+    children: React.ReactNode
+    className?: string
+}> = ({ children, className }) => (
+    <div className={cn(SETTINGS_TAB_CONTAINER_CLASS, className)}>
+        {children}
+    </div>
+);
+
+export const SettingsTabHeader: React.FC<{
+    title: string
+    description?: string
+    icon?: React.ComponentType<{ className?: string }>
+    actions?: React.ReactNode
+    className?: string
+}> = ({ title, description, icon: Icon, actions, className }) => (
+    <header className={cn('flex flex-col gap-4 px-1 md:flex-row md:items-start md:justify-between', className)}>
+        <div className="space-y-2">
+            <div className="flex items-center gap-3">
+                {Icon && (
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+                        <Icon className="h-5 w-5" />
+                    </div>
+                )}
+                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                    {title}
+                </h2>
+            </div>
+            {description && (
+                <p className="max-w-2xl pl-0.5 text-sm leading-relaxed text-muted-foreground/75">
+                    {description}
+                </p>
+            )}
+        </div>
+        {actions && <div className="shrink-0">{actions}</div>}
+    </header>
+);
+
+export const SettingsStatGrid: React.FC<{
+    children: React.ReactNode
+    className?: string
+}> = ({ children, className }) => (
+    <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4', className)}>
+        {children}
+    </div>
+);
+
+export const SettingsStatCard: React.FC<{
+    label: string
+    value: React.ReactNode
+    tone?: 'default' | 'success' | 'destructive' | 'primary'
+    className?: string
+}> = ({ label, value, tone = 'default', className }) => (
+    <div className={cn(SETTINGS_META_CARD_CLASS, className)}>
+        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">
+            {label}
+        </div>
+        <div className={cn(
+            'mt-2 text-xl font-semibold text-foreground',
+            tone === 'success' && 'text-success',
+            tone === 'destructive' && 'text-destructive',
+            tone === 'primary' && 'text-primary'
+        )}>
+            {value}
+        </div>
+    </div>
+);
+
 
 export const SettingsPanel: React.FC<{
     title: string
@@ -25,7 +100,7 @@ export const SettingsPanel: React.FC<{
     className?: string
     icon?: React.ComponentType<{ className?: string }>
 }> = ({ title, description, actions, children, className, icon: Icon }) => (
-    <section className={cn('rounded-lg border border-border/40 bg-card p-4 md:p-5', className)}>
+    <section className={cn(SETTINGS_PANEL_CLASS, className)}>
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -70,7 +145,7 @@ export const SettingsField: React.FC<{
 );
 
 export const SettingsInputClassName =
-    'h-9 w-full rounded-md border border-border/50 bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-ring';
+    'h-11 w-full rounded-2xl border border-border/35 bg-muted/15 px-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:border-primary/35 focus-visible:ring-1 focus-visible:ring-ring';
 
 export const SettingsToggleRow: React.FC<{
     title: string
@@ -91,3 +166,4 @@ export const SettingsToggleRow: React.FC<{
         </div>
     </div>
 );
+

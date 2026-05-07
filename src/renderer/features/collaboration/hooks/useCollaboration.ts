@@ -78,3 +78,4 @@ export function useCollaboration({ type, id, enabled = true }: UseCollaborationO
 
     return { doc, provider: null, awareness, status, error };
 }
+

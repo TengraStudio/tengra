@@ -3,9 +3,8 @@
  * Copyright (c) 2026 TengraStudio
  */
 
+import { CopilotStreamState, InterceptorState,IStreamParserStrategy, StreamChunk, StreamPayload } from '@main/utils/ai/stream/types';
 import { ToolCall } from '@shared/types/ai/chat';
-
-import { CopilotStreamState, InterceptorState,IStreamParserStrategy, StreamChunk, StreamPayload } from '../types';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
@@ -126,3 +125,4 @@ export class CopilotParserStrategy implements IStreamParserStrategy {
         }
     }
 }
+

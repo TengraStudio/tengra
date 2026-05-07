@@ -37,3 +37,4 @@ export function useAuthManager() {
         logic, settingsCategory, isAuthModalOpen
     ]);
 }
+

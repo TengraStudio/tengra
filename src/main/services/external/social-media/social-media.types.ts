@@ -22,3 +22,4 @@ export abstract class SocialMediaProvider {
     abstract sendMessage(userId: string, text: string): Promise<boolean>;
     abstract stop(): Promise<void>;
 }
+

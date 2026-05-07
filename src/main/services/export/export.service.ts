@@ -14,6 +14,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { EXPORT_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { BrowserWindow } from 'electron';
 
@@ -49,14 +50,14 @@ export class ExportService extends BaseService {
         return { content, filePath: filePath.trim() };
     }
 
-    @ipc('export:markdown')
+    @ipc(EXPORT_CHANNELS.MARKDOWN)
     async exportToMarkdownIpc(contentRaw: RuntimeValue, filePathRaw: RuntimeValue): Promise<RuntimeValue> {
         const validated = this.validateExportInput(contentRaw, filePathRaw);
         const result = await this.exportToMarkdown(validated.content, validated.filePath);
         return serializeToIpc(result);
     }
 
-    @ipc('export:pdf')
+    @ipc(EXPORT_CHANNELS.PDF)
     async exportToPDFIpc(htmlContentRaw: RuntimeValue, filePathRaw: RuntimeValue): Promise<RuntimeValue> {
         const validated = this.validateExportInput(htmlContentRaw, filePathRaw);
         const result = await this.exportToPDF(validated.content, validated.filePath);
@@ -130,3 +131,4 @@ export class ExportService extends BaseService {
         }
     }
 }
+

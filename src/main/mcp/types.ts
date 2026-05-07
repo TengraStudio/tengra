@@ -39,3 +39,4 @@ export interface McpDispatchResult extends McpResult {
     service?: string
     action?: string
 }
+

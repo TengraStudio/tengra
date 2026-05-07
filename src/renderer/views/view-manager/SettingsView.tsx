@@ -55,3 +55,4 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 };
 
 SettingsView.displayName = 'SettingsView';
+

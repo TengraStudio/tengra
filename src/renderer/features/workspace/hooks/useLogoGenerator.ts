@@ -125,3 +125,4 @@ export function useLogoGenerator(
         handleApply,
     };
 }
+

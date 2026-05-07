@@ -16,6 +16,7 @@ import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { assertPathWithinRoot } from '@main/utils/path-security.util';
+import { GALLERY_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { shell } from 'electron';
 
@@ -66,7 +67,7 @@ export class GalleryService {
         return assertPathWithinRoot(inputPath, this.galleryRoot, 'gallery');
     }
 
-    @ipc('gallery:list')
+    @ipc(GALLERY_CHANNELS.LIST)
     async listItems(): Promise<RuntimeValue> {
         try {
             const results: GalleryItem[] = [];
@@ -133,7 +134,7 @@ export class GalleryService {
         }
     }
 
-    @ipc('gallery:delete')
+    @ipc(GALLERY_CHANNELS.DELETE)
     async deleteItem(filePath: string): Promise<RuntimeValue> {
         try {
             const safePath = this.resolveGalleryPath(filePath);
@@ -145,7 +146,7 @@ export class GalleryService {
         }
     }
 
-    @ipc('gallery:open')
+    @ipc(GALLERY_CHANNELS.OPEN)
     async openItem(filePath: string): Promise<RuntimeValue> {
         try {
             const safePath = this.resolveGalleryPath(filePath);
@@ -156,7 +157,7 @@ export class GalleryService {
         }
     }
 
-    @ipc('gallery:reveal')
+    @ipc(GALLERY_CHANNELS.REVEAL)
     async revealItem(filePath: string): Promise<RuntimeValue> {
         try {
             const safePath = this.resolveGalleryPath(filePath);
@@ -167,7 +168,7 @@ export class GalleryService {
         }
     }
 
-    @ipc('gallery:batch-download')
+    @ipc(GALLERY_CHANNELS.BATCH_DOWNLOAD)
     async batchDownload(payload: { filePaths: string[]; targetDirectory: string }): Promise<RuntimeValue> {
         const { filePaths, targetDirectory } = payload;
         const resolvedTargetDirectory = path.resolve(targetDirectory);
@@ -211,3 +212,4 @@ export class GalleryService {
         throw new Error('Unable to determine unique target file path');
     }
 }
+

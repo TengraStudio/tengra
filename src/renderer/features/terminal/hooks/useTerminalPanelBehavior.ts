@@ -271,3 +271,4 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
 
 /** Return type of the behavior hook */
 export type TerminalPanelBehaviorResult = ReturnType<typeof useTerminalPanelBehavior>;
+

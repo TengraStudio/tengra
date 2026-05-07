@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { CONTRACT_CHANNELS } from '@shared/constants/ipc-channels';
 import { type IpcContractVersionInfo, isIpcContractCompatible } from '@shared/constants/ipc-contract';
 import { IpcRenderer } from 'electron';
 
@@ -18,10 +19,11 @@ export interface IpcContractBridge {
 
 export function createIpcContractBridge(ipc: IpcRenderer): IpcContractBridge {
     return {
-        getVersion: () => ipc.invoke('ipc:contract:get'),
+        getVersion: () => ipc.invoke(CONTRACT_CHANNELS.GET),
         isCompatible: async () => {
-            const contractInfo = (await ipc.invoke('ipc:contract:get')) as IpcContractVersionInfo;
+            const contractInfo = (await ipc.invoke(CONTRACT_CHANNELS.GET)) as IpcContractVersionInfo;
             return isIpcContractCompatible(contractInfo);
         },
     };
 }
+

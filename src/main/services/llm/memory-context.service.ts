@@ -93,8 +93,8 @@ export class MemoryContextService {
                 const result = await this.raceWithTimeout(existingLookup, options.timeoutMs);
                 this.recordLookupDuration(startTime);
                 return result;
-            } catch (error) {
-                this.recordLookupError(error);
+            } catch (error: any) {
+                this.recordLookupError(error as any);
                 this.recordLookupDuration(startTime);
                 return undefined;
             }
@@ -109,7 +109,7 @@ export class MemoryContextService {
             this.setCachedContext(cacheKey, context);
             this.recordLookupDuration(startTime);
             return context;
-        } catch (error) {
+        } catch (error: any) {
             this.recordLookupError(error);
             this.recordLookupDuration(startTime);
             return undefined;
@@ -293,7 +293,7 @@ export class MemoryContextService {
         MemoryContextService.totalLookupDurationMs += elapsed;
     }
 
-    private recordLookupError(error: unknown): void {
+    private recordLookupError(error: Error | string | { message?: string }): void {
         if (error instanceof Error && error.message === 'Request timed out') {
             MemoryContextService.lookupTimeoutCount += 1;
             return;
@@ -332,3 +332,4 @@ export class MemoryContextService {
         this.latestInflightSize = 0;
     }
 }
+

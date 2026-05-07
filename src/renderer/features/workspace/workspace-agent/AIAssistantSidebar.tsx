@@ -206,3 +206,4 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
         </motion.div>
     );
 };
+

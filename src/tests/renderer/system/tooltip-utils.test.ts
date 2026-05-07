@@ -86,3 +86,4 @@ describe('tooltip utils', () => {
         expect(typeof position.left).toBe('number');
     });
 });
+

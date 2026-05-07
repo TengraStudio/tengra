@@ -146,10 +146,11 @@ export const SidebarChatList = React.memo(
                             {item.action && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); item.action?.onClick(); }}
-                                    className="p-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/35 bg-background/75 text-muted-foreground shadow-sm transition-all hover:border-border/60 hover:bg-muted/80 hover:text-foreground"
                                     title={item.action.label}
+                                    aria-label={item.action.label}
                                 >
-                                    <item.action.icon className="w-3 h-3" />
+                                    <item.action.icon className="h-3.5 w-3.5" />
                                 </button>
                             )}
                         </div>
@@ -172,9 +173,11 @@ export const SidebarChatList = React.memo(
                             actions={(
                                 <button
                                     onClick={e => { e.stopPropagation(); deleteFolder(item.folder.id); }}
-                                    className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/35 bg-background/80 text-muted-foreground shadow-sm opacity-0 transition-all hover:border-destructive/30 hover:bg-destructive/12 hover:text-destructive group-hover:opacity-100"
+                                    aria-label={t('common.delete')}
+                                    title={t('common.delete')}
                                 >
-                                    <IconTrash className="w-3 h-3" />
+                                    <IconTrash className="h-3.5 w-3.5" />
                                 </button>
                             )}
                         />
@@ -227,3 +230,4 @@ export const SidebarChatList = React.memo(
 );
 
 SidebarChatList.displayName = 'SidebarChatList';
+

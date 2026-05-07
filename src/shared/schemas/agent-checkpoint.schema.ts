@@ -93,3 +93,4 @@ export const AgentCheckpointSnapshotV1Schema = z.object({
     createdAt: z.number().int().positive(),
     state: AgentTaskStateSchema
 });
+

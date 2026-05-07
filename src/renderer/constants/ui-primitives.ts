@@ -41,7 +41,7 @@ export const UI_PRIMITIVES = {
     
     // Interactive
     ACTION_BUTTON_PRIMARY: "group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-primary px-8 py-4 text-sm font-bold text-primary-foreground shadow-2xl shadow-primary/20 transition-all hover:scale-102 hover:bg-primary/90 active:scale-95",
-    ACTION_BUTTON_GHOST: "p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95",
+    ACTION_BUTTON_GHOST: "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/40 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-border/70 hover:bg-muted/85 hover:text-foreground active:scale-95",
     ITEM_OVERLAY: "absolute inset-0 bg-background/90 backdrop-blur-sm px-3 py-2 flex items-center gap-3 animate-in fade-in duration-200",
     
     // Chat & Tools
@@ -59,3 +59,4 @@ export const UI_PRIMITIVES = {
     // Animation Utility
     FADE_SLIDE_IN: "animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out",
 } as const;
+

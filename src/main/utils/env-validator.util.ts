@@ -11,7 +11,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { appLogger } from '../logging/logger';
+import { appLogger } from '@main/logging/logger';
 
 /**
  * Environment variable configuration
@@ -190,3 +190,4 @@ export function getEnvironmentSummary(envExamplePath?: string): {
 
     return { total, configured, missing, percentage };
 }
+

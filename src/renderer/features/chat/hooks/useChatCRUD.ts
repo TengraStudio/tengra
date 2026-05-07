@@ -11,7 +11,10 @@
 import type { Dispatch, SetStateAction } from 'react';
 
 import { generateId } from '@/lib/utils';
+import { WORKSPACE_AGENT_CHAT_TYPE } from '@shared/types/workspace-agent-session';
+import { getChatSnapshot } from '@/store/chat.store';
 import { Chat, Message } from '@/types';
+import { CachedDatabase } from '@/utils/cached-database.util';
 import { CommonBatches } from '@/utils/ipc-batch.util';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -21,6 +24,10 @@ interface UseChatCRUDProps {
     setChats: Dispatch<SetStateAction<Chat[]>>
     setInput: (input: string) => void
     baseDeleteFolder: (id: string, callback?: (deletedId: string) => void) => void | Promise<void>
+}
+
+function isWorkspaceAgentChat(chat: Chat): boolean {
+    return chat.metadata?.chatType === WORKSPACE_AGENT_CHAT_TYPE;
 }
 
 export const useChatCRUD = (props: UseChatCRUDProps): {
@@ -45,9 +52,62 @@ export const useChatCRUD = (props: UseChatCRUDProps): {
 
     const deleteChat = async (id: string) => {
         try {
-            await window.electron.db.deleteChat(id);
-            setChats(prev => prev.filter(c => c.id !== id));
-            if (currentChatId === id) { createNewChat(); }
+            const currentChats = getChatSnapshot().chats;
+            const currentIndex = currentChats.findIndex(chat => chat.id === id);
+            const fallbackChatId = currentIndex >= 0
+                ? currentChats.find((chat, index) => index > currentIndex && chat.id !== id)?.id
+                    ?? currentChats.find((chat, index) => index < currentIndex && chat.id !== id)?.id
+                    ?? null
+                : null;
+            const optimisticVisibleChats = currentChats.filter(chat => chat.id !== id);
+
+            setChats(optimisticVisibleChats);
+            if (currentChatId === id) {
+                const optimisticNextChatId = optimisticVisibleChats.find(chat => chat.id === fallbackChatId)?.id
+                    ?? optimisticVisibleChats[0]?.id
+                    ?? null;
+                setCurrentChatId(optimisticNextChatId);
+                if (!optimisticNextChatId) {
+                    setInput('');
+                }
+            }
+
+            let result = await CachedDatabase.deleteChat(id);
+            if (!result?.success) {
+                throw new Error(`Failed to delete chat ${id}`);
+            }
+
+            let deletedChat = await window.electron.db.getChat(id);
+            if (deletedChat) {
+                await window.electron.db.deleteMessages(id);
+                result = await window.electron.db.deleteChat(id);
+                if (!result?.success) {
+                    throw new Error(`Failed to fully delete chat ${id}`);
+                }
+                deletedChat = await window.electron.db.getChat(id);
+            }
+
+            if (deletedChat) {
+                throw new Error(`Chat ${id} still exists after deletion`);
+            }
+            CachedDatabase.clearAllCaches();
+            const remainingChats = await CachedDatabase.getAllChats();
+            const visibleChats = (remainingChats as Chat[]).filter(
+                chat => !isWorkspaceAgentChat(chat)
+            );
+            setChats(visibleChats.map(chat => ({
+                ...chat,
+                messages: [],
+            })));
+            if (currentChatId === id) {
+                const nextChatId = visibleChats.find(chat => chat.id === fallbackChatId)?.id
+                    ?? visibleChats[0]?.id
+                    ?? null;
+                setCurrentChatId(nextChatId);
+                if (!nextChatId) {
+                    setInput('');
+                }
+            }
         } catch (error) {
             appLogger.error('useChatCRUD', 'Failed to delete chat', error as Error);
         }
@@ -122,9 +182,17 @@ export const useChatCRUD = (props: UseChatCRUDProps): {
     const bulkDeleteChats = async (chatIds: string[]) => {
         try {
             await CommonBatches.deleteChatsBatch(chatIds);
+            CachedDatabase.clearAllCaches();
             setChats(prev => prev.filter(c => !chatIds.includes(c.id)));
             if (currentChatId && chatIds.includes(currentChatId)) {
-                createNewChat();
+                const remainingVisibleChats = getChatSnapshot().chats.filter(
+                    chat => !chatIds.includes(chat.id)
+                );
+                const nextChatId = remainingVisibleChats[0]?.id ?? null;
+                setCurrentChatId(nextChatId);
+                if (!nextChatId) {
+                    setInput('');
+                }
             }
         } catch (error) {
             appLogger.error('useChatCRUD', 'Failed to bulk delete chats', error as Error);
@@ -145,3 +213,4 @@ export const useChatCRUD = (props: UseChatCRUDProps): {
         bulkDeleteChats
     };
 };
+

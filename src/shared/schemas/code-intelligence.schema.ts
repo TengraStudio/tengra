@@ -152,3 +152,4 @@ export const WorkspaceCodeMapSchema = z.object({
     files: z.array(WorkspaceCodeMapFileSchema).max(5000),
     folders: z.array(WorkspaceCodeMapFolderSchema).max(2000),
 });
+

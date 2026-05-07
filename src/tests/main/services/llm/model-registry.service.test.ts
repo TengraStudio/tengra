@@ -12,7 +12,7 @@ import { HuggingFaceService } from '@main/services/llm/local/huggingface.service
 import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { ProxyService, ProxyTelemetryEvent } from '@main/services/proxy/proxy.service';
+import { ProxyService, ProxyUsageStatsEvent } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -167,7 +167,7 @@ describe('ModelRegistryService', () => {
         it('should refresh models again when the embedded proxy reports ready', async () => {
             let proxyReadyListener: (() => void) | undefined;
             vi.mocked(mockEventBus.onCustom!).mockImplementation((event, listener) => {
-                if (event === ProxyTelemetryEvent.PROXY_STARTED) {
+                if (event === ProxyUsageStatsEvent.PROXY_STARTED) {
                     proxyReadyListener = listener as () => void;
                 }
                 return 'sub-id';
@@ -192,7 +192,7 @@ describe('ModelRegistryService', () => {
             expect(mockHuggingFaceService.searchModels).not.toHaveBeenCalled();
             expect(service.getHealthMetrics().cacheUpdates).toBe(1);
             expect(mockEventBus.emit).toHaveBeenCalledWith(
-                'telemetry:model-registry',
+                'Stats:model-registry',
                 expect.objectContaining({ name: 'model-registry.cache.update.completed' })
             );
         });
@@ -611,7 +611,7 @@ describe('ModelRegistryService', () => {
 
             expect(service.getHealthMetrics().providerFetchFailures).toBe(1);
             expect(mockEventBus.emit).toHaveBeenCalledWith(
-                'telemetry:model-registry',
+                'Stats:model-registry',
                 expect.objectContaining({ name: 'model-registry.provider.fetch.failed', provider: 'ollama' })
             );
         });
@@ -639,3 +639,4 @@ describe('ModelRegistryService', () => {
         });
     });
 });
+

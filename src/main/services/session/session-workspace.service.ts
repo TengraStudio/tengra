@@ -3,6 +3,7 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { UacCanvasEdgeRecord, UacCanvasNodeRecord } from '@main/services/data/repositories/uac.repository';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { SESSION_WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import type {
     SessionCanvasEdgeRecord,
@@ -34,41 +35,42 @@ export class SessionWorkspaceService extends BaseService {
 
     // --- IPC Decorated Methods ---
 
-    @ipc('session:workspace:save-canvas-nodes')
+    @ipc(SESSION_WORKSPACE_CHANNELS.SAVE_CANVAS_NODES)
     async saveCanvasNodesIpc(nodes: SessionCanvasNodeRecord[]): Promise<RuntimeValue> {
         await this.databaseService.uac.saveCanvasNodes(nodes);
         return serializeToIpc(void 0);
     }
 
-    @ipc('session:workspace:get-canvas-nodes')
+    @ipc(SESSION_WORKSPACE_CHANNELS.GET_CANVAS_NODES)
     async getCanvasNodesIpc(): Promise<RuntimeValue> {
         const records = await this.databaseService.uac.getCanvasNodes();
         const mapped = records.map(mapCanvasNodeRecord);
-        return serializeToIpc(mapped as unknown);
+        return serializeToIpc(mapped);
     }
 
-    @ipc('session:workspace:delete-canvas-node')
+    @ipc(SESSION_WORKSPACE_CHANNELS.DELETE_CANVAS_NODE)
     async deleteCanvasNodeIpc(id: string): Promise<RuntimeValue> {
         await this.databaseService.uac.deleteCanvasNode(id);
         return serializeToIpc(void 0);
     }
 
-    @ipc('session:workspace:save-canvas-edges')
+    @ipc(SESSION_WORKSPACE_CHANNELS.SAVE_CANVAS_EDGES)
     async saveCanvasEdgesIpc(edges: SessionCanvasEdgeRecord[]): Promise<RuntimeValue> {
         await this.databaseService.uac.saveCanvasEdges(edges);
         return serializeToIpc(void 0);
     }
 
-    @ipc('session:workspace:get-canvas-edges')
+    @ipc(SESSION_WORKSPACE_CHANNELS.GET_CANVAS_EDGES)
     async getCanvasEdgesIpc(): Promise<RuntimeValue> {
         const records = await this.databaseService.uac.getCanvasEdges();
         const mapped = records.map(mapCanvasEdgeRecord);
-        return serializeToIpc(mapped as unknown);
+        return serializeToIpc(mapped);
     }
 
-    @ipc('session:workspace:delete-canvas-edge')
+    @ipc(SESSION_WORKSPACE_CHANNELS.DELETE_CANVAS_EDGE)
     async deleteCanvasEdgeIpc(id: string): Promise<RuntimeValue> {
         await this.databaseService.uac.deleteCanvasEdge(id);
         return serializeToIpc(void 0);
     }
 }
+

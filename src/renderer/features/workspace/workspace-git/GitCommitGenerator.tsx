@@ -252,3 +252,4 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
         </div>
     );
 }
+

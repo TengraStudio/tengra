@@ -211,3 +211,4 @@ describe('ExtensionService manifest normalization', () => {
         expect(state.configListeners.get(extensionId)).toBeUndefined();
     });
 });
+

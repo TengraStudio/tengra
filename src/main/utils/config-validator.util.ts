@@ -346,3 +346,4 @@ export const settingsSchema: Schema = {
         default: true
     }
 };
+

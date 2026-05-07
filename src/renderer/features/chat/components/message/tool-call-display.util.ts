@@ -64,3 +64,4 @@ export function compactToolCallsForDisplay(toolCalls?: ToolCall[]): ToolCall[] |
 
     return compacted.length > 0 ? compacted : undefined;
 }
+

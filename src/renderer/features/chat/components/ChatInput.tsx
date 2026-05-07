@@ -119,7 +119,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 e.preventDefault();
                 const hasContent = ctrl.input.trim() !== '' || ctrl.attachments.length > 0;
                 if (!ctrl.isLoading && hasContent) {
-                    void ctrl.sendMessageWithTelemetry();
+                    void ctrl.sendMessageWithusageStats();
                 }
             }
         };
@@ -219,3 +219,4 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
 );
 
 ChatInput.displayName = 'ChatInput';
+

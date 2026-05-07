@@ -156,3 +156,4 @@ export const PipelinesSection: React.FC<SettingsSectionProps> = ({
         </div>
     );
 };
+

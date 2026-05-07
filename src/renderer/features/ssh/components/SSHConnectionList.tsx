@@ -226,3 +226,4 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
         </div>
     );
 };
+

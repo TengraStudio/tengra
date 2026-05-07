@@ -9,14 +9,11 @@
  */
 
 import { type MutableRefObject, useCallback, useMemo } from 'react';
-import { z } from 'zod';
 
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { TerminalTab } from '@/types';
 
 import type { RemoteConnectionTarget } from '../constants/terminal-panel-constants';
 import { clearTerminalSessionFlags } from '../utils/session-registry';
-import type { TerminalIpcContract } from '../utils/terminal-ipc';
 import { buildDockerBootstrapCommand, buildSshBootstrapCommand } from '../utils/terminal-panel-helpers';
 
 interface AvailableShell {
@@ -240,11 +237,7 @@ export function useTerminalTabActions({
             if (recordingCaptureRef.current?.tabId === id) {
                 completeRecording();
             }
-            void invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>(
-                'terminal:kill',
-                [id],
-                { responseSchema: z.boolean() }
-            );
+            void window.electron.terminal.kill(id);
 
             setTabs(prev => prev.filter(tab => tab.id !== id));
             setActiveTabId(nextActiveTabId);
@@ -290,3 +283,4 @@ export function useTerminalTabActions({
         reorderTabs,
     };
 }
+

@@ -279,3 +279,4 @@ function VoiceCommandsHelp({ onClose }: { onClose: () => void }) {
 }
 
 export default VoiceControl;
+

@@ -101,3 +101,4 @@ export const ImagePreviewBar: React.FC<ImagePreviewBarProps> = ({
 };
 
 ImagePreviewBar.displayName = 'ImagePreviewBar';
+

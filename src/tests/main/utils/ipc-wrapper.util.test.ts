@@ -15,6 +15,19 @@ import { z } from 'zod';
 vi.unmock('@main/utils/ipc-wrapper.util');
 
 describe('createValidatedIpcHandler', () => {
+    it('accepts a single object payload for object args schemas', async () => {
+        const handler = createValidatedIpcHandler(
+            'test:object-args',
+            async (_event, payload: { value: number }) => payload.value * 2,
+            {
+                argsSchema: z.object({ value: z.number().int().positive() }),
+                schemaVersion: 1
+            }
+        );
+
+        await expect(handler({} as never, { value: 2 })).resolves.toBe(4);
+    });
+
     it('rejects invalid args payload', async () => {
         const handler = createValidatedIpcHandler(
             'test:invalid-args',
@@ -57,3 +70,4 @@ describe('createValidatedIpcHandler', () => {
         expect(onValidationFailed).toHaveBeenCalledTimes(1);
     });
 });
+

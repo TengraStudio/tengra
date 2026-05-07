@@ -126,3 +126,4 @@ describe('memory-inspector-health.store', () => {
         expect(snapshot.status).toBe('degraded');
     });
 });
+

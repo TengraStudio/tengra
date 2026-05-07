@@ -17,14 +17,14 @@ import { DetailedStats } from '../types';
 
 type QuotaPushPayload = {
     timestampMs?: number;
-    quotaData?: Awaited<ReturnType<Window['electron']['getQuota']>> | null;
-    copilotQuota?: Awaited<ReturnType<Window['electron']['getCopilotQuota']>> | null;
-    codexUsage?: Awaited<ReturnType<Window['electron']['getCodexUsage']>> | null;
-    claudeQuota?: Awaited<ReturnType<Window['electron']['getClaudeQuota']>> | null;
+    quotaData?: Awaited<ReturnType<Window['electron']['auth']['getQuota']>> | null;
+    copilotQuota?: Awaited<ReturnType<Window['electron']['auth']['getCopilotQuota']>> | null;
+    codexUsage?: Awaited<ReturnType<Window['electron']['auth']['getCodexUsage']>> | null;
+    claudeQuota?: Awaited<ReturnType<Window['electron']['auth']['getClaudeQuota']>> | null;
     error?: string;
 };
 
-function hasMeaningfulCodexUsage(payload?: Awaited<ReturnType<Window['electron']['getCodexUsage']>> | null): boolean {
+function hasMeaningfulCodexUsage(payload?: Awaited<ReturnType<Window['electron']['auth']['getCodexUsage']>> | null): boolean {
     if (!payload?.accounts || payload.accounts.length === 0) {
         return false;
     }
@@ -56,10 +56,10 @@ export function useSettingsStats(): {
     statsPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly';
     setStatsPeriod: (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => void;
     statsData: DetailedStats | null;
-    quotaData: Awaited<ReturnType<Window['electron']['getQuota']>> | null;
-    copilotQuota: Awaited<ReturnType<Window['electron']['getCopilotQuota']>> | null;
-    codexUsage: Awaited<ReturnType<Window['electron']['getCodexUsage']>> | null;
-    claudeQuota: Awaited<ReturnType<Window['electron']['getClaudeQuota']>> | null;
+    quotaData: Awaited<ReturnType<Window['electron']['auth']['getQuota']>> | null;
+    copilotQuota: Awaited<ReturnType<Window['electron']['auth']['getCopilotQuota']>> | null;
+    codexUsage: Awaited<ReturnType<Window['electron']['auth']['getCodexUsage']>> | null;
+    claudeQuota: Awaited<ReturnType<Window['electron']['auth']['getClaudeQuota']>> | null;
     setReloadTrigger: Dispatch<SetStateAction<number>>;
 } {
     const [statsLoading, setStatsLoading] = useState(false);
@@ -68,10 +68,10 @@ export function useSettingsStats(): {
 
     const [data, setData] = useState({
         statsData: null as DetailedStats | null,
-        quotaData: null as Awaited<ReturnType<Window['electron']['getQuota']>> | null,
-        copilotQuota: null as Awaited<ReturnType<Window['electron']['getCopilotQuota']>> | null,
-        codexUsage: null as Awaited<ReturnType<Window['electron']['getCodexUsage']>> | null,
-        claudeQuota: null as Awaited<ReturnType<Window['electron']['getClaudeQuota']>> | null
+        quotaData: null as Awaited<ReturnType<Window['electron']['auth']['getQuota']>> | null,
+        copilotQuota: null as Awaited<ReturnType<Window['electron']['auth']['getCopilotQuota']>> | null,
+        codexUsage: null as Awaited<ReturnType<Window['electron']['auth']['getCodexUsage']>> | null,
+        claudeQuota: null as Awaited<ReturnType<Window['electron']['auth']['getClaudeQuota']>> | null
     });
     const quotaCacheRef = useRef<{
         quotaHash: string;
@@ -191,3 +191,4 @@ export function useSettingsStats(): {
         setReloadTrigger
     }), [statsLoading, statsPeriod, data]);
 }
+

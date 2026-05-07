@@ -93,3 +93,4 @@ export function useVisibilityAwareInterval(
     }, [intervalMs, pauseWhenHidden, slowFactor, startTimer, clearTimer, isLowPowerMode]);
 }
 
+

@@ -773,9 +773,11 @@ const ThoughtTimeline = memo(({
     const toolCalls = buildToolCalls(message);
     const toolResultMap = buildToolResultMap(message);
     const thoughts = readThoughtSegments(message);
+    const hasUnscopedToolCalls = toolCalls.some(tc => typeof tc.thoughtIndex !== 'number');
 
     const maxThoughtIndex = Math.max(
         thoughts.length - 1,
+        hasUnscopedToolCalls ? 0 : -1,
         ...toolCalls.map(tc => (typeof tc.thoughtIndex === 'number' ? tc.thoughtIndex : -1))
     );
 
@@ -842,7 +844,9 @@ const ThoughtTimeline = memo(({
             {Array.from({ length: maxThoughtIndex + 1 }).map((_, idx) => {
                 const thoughtText = thoughts[idx] ?? '';
                 const expanded = Boolean(expandedMap[idx] ?? true);
-                const headerBase = t('frontend.workspaceAgent.thoughtStep', { index: idx + 1 });
+                const headerBase = thoughtText.trim().length > 0
+                    ? t('frontend.workspaceAgent.thoughtStep', { index: idx + 1 })
+                    : t('frontend.chat.usingTool');
                 const durationSuffix = typeof message.responseTime === 'number' && Number.isFinite(message.responseTime)
                     ? ` • ${(message.responseTime / 1000).toFixed(1)}${t('frontend.messageBubble.secondsShort')}`
                     : '';
@@ -1396,3 +1400,4 @@ export const SingleMessageViewContent = memo(
 );
 
 SingleMessageViewContent.displayName = 'SingleMessageViewContent';
+

@@ -10,6 +10,7 @@
 
 import { AdvancedSemanticFragment } from '@shared/types/advanced-memory';
 import { EpisodicMemory } from '@shared/types/memory';
+import { appLogger } from '@system/utils/renderer-logger';
 import { IconBrain, IconHistory, IconMessage } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -18,8 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-
-import { appLogger } from '../../../utils/renderer-logger';
 
 /* Batch-02: Extracted Long Classes */
 const C_MEMORYTIMELINEVIEW_1 = "bg-muted/20 border border-border/30 hover:border-border/60 rounded-2xl p-4 transition-all hover:bg-muted/30 shadow-sm hover:shadow-xl sm:p-5 lg:p-6";
@@ -255,3 +254,4 @@ export const MemoryTimelineView: React.FC = () => {
         </div>
     );
 };
+

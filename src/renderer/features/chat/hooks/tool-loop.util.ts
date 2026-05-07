@@ -43,3 +43,4 @@ export function updateRecentToolSignatures(
     }
     return next.slice(next.length - recentSignatureWindow);
 }
+

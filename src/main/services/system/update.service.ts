@@ -8,309 +8,363 @@
  * (at your option) any later version.
  */
 
+import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
+import { getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { IpcValue } from '@shared/types';
-import { JsonObject } from '@shared/types/common';
-import { app, BrowserWindow, ipcMain } from 'electron';
-import { autoUpdater, UpdateCheckResult } from 'electron-updater';
+import { UPDATE_CHANNELS } from '@shared/constants/ipc-channels';
+import { app, BrowserWindow } from 'electron';
 
+type UpdateState =
+    | 'checking'
+    | 'available'
+    | 'downloading'
+    | 'downloaded'
+    | 'not-available'
+    | 'error'
+    | 'warning';
+
+type GithubReleaseAsset = {
+    name: string;
+    browser_download_url: string;
+    size: number;
+};
+
+type GithubRelease = {
+    tag_name: string;
+    name?: string;
+    body?: string;
+    html_url: string;
+    published_at?: string;
+    assets: GithubReleaseAsset[];
+};
+
+type UpdaterStatus = {
+    state: UpdateState;
+    version?: string;
+    progress?: number;
+    bytesPerSecond?: number;
+    total?: number;
+    transferred?: number;
+    error?: string;
+    warning?: string;
+};
 
 export class UpdateService extends BaseService {
     private settingsService: SettingsService;
     private window: BrowserWindow | null = null;
-    private isSupported: boolean = true;
+    private isSupported = true;
+    private latestRelease: GithubRelease | null = null;
+    private downloadedAssetPath: string | null = null;
+    private downloadedAssetName: string | null = null;
 
-    constructor(
-        settingsService: SettingsService
-    ) {
+    constructor(settingsService: SettingsService) {
         super('UpdateService');
         this.settingsService = settingsService;
-
-        // PRE-LAUNCH BYPASS: Disable update checks while repo is private
-        // TODO: Remove this once the repository is public (expected in a few days)
-        const isPreLaunch = process.env.NODE_ENV !== 'test';
-
-        // CRITICAL: Always disable automatic behaviors immediately
-        // These properties are on the autoUpdater singleton and must be set early
-        autoUpdater.autoDownload = false;
-        autoUpdater.autoInstallOnAppQuit = false;
-
-        const updateConfigPath = this.resolveUpdateConfigPath();
-        if (isPreLaunch) {
-            this.isSupported = false;
-            this.logInfo('Update check disabled: Pre-launch phase');
-        } else if (!updateConfigPath) {
-            this.isSupported = false;
-            this.logInfo('Update check disabled: app-update.yml not found');
-        } else {
-            this.logDebug(`Update config found: ${updateConfigPath}`);
-        }
-
-        // Configure autoUpdater logger and basic settings
-        autoUpdater.logger = {
-            info: (msg: string) => this.logInfo(msg),
-            warn: (msg: string) => this.logWarn(msg),
-            error: (msg: string, err?: unknown) => {
-                // Suppress GitHub 404 errors during pre-launch
-                if (this.isReleaseFeedWarning(err ?? msg)) {
-                    this.logDebug(`Suppressed update feed error: ${msg}`);
-                    return;
-                }
-                this.logError(msg, err);
-            },
-            debug: (msg: string) => this.logDebug(msg),
-        };
-
-
-        // Ensure environment is cleared of sensitive tokens immediately
-        this.clearGitHubAuthEnvironment();
-
-        // Safety: If electron-updater has a background timer, try to stop it
-        if ('removeAllListeners' in autoUpdater) {
-            autoUpdater.removeAllListeners('error');
-            autoUpdater.on('error', (err) => {
-                if (!this.isReleaseFeedWarning(err)) {
-                    this.logError('Background update error', err);
-                }
-            });
-        }
-
-        // Catch internal promise rejections that electron-updater might leak
-        const updaterInternal = autoUpdater as unknown as { appUpdater?: { on: (event: string, cb: () => void) => void } };
-        if (updaterInternal.appUpdater) {
-            updaterInternal.appUpdater.on('error', () => {
-                // Internal error suppression
-            }); 
-        }
-
+        this.isSupported = process.env.NODE_ENV === 'test' || app.isPackaged;
     }
 
     override async cleanup(): Promise<void> {
-        this.logInfo('Cleaning up update service, clearing window reference');
         this.window = null;
-    }
-
-    private resolveUpdateConfigPath(): string | null {
-        const candidatePaths: string[] = [];
-        if (typeof process.resourcesPath === 'string' && process.resourcesPath.length > 0) {
-            candidatePaths.push(path.join(process.resourcesPath, 'app-update.yml'));
-        }
-        if (typeof process.execPath === 'string' && process.execPath.length > 0) {
-            candidatePaths.push(path.join(path.dirname(process.execPath), 'app-update.yml'));
-        }
-
-        for (const candidatePath of candidatePaths) {
-            if (fs.existsSync(candidatePath)) {
-                return candidatePath;
-            }
-        }
-
-        return null;
     }
 
     init(window: BrowserWindow) {
         this.window = window;
 
         if (!this.isSupported) {
+            this.logDebug('Skipping update checks in development mode');
             return;
         }
 
-        // Don't run in development unless forced
-        if (!app.isPackaged && !process.env.FORCE_UPDATE_TEST) {
-            this.logDebug('Skipping auto-updater in development mode');
-            return;
-        }
-
-        try {
-            this.registerEvents();
-
-            const settings = this.settingsService.getSettings();
-            if (settings.autoUpdate?.enabled && settings.autoUpdate.checkOnStartup) {
-                // Delay check to ensure it doesn't interfere with critical startup
-                setTimeout(() => {
-                    this.checkForUpdates().catch(err => {
-                        // Silent suppression for expected feed errors
-                        if (!this.isReleaseFeedWarning(err)) {
-                            this.logDebug(`Deferred update check failed (safe): ${err.message}`);
-                        }
-                    });
-                }, 15000); // 15 seconds delay
-            }
-        } catch (error) {
-            this.logError('Failed to initialize update service events', error);
-        }
-    }
-
-    private registerEvents() {
-        autoUpdater.on('checking-for-update', () => {
-            this.sendToWindow('update:status', { state: 'checking' });
-        });
-
-        autoUpdater.on('update-available', (info) => {
-            this.logInfo('Update available', info as RuntimeValue as JsonObject);
-            this.sendToWindow('update:status', { state: 'available', version: info.version });
-
-            const settings = this.settingsService.getSettings();
-            if (settings.autoUpdate?.downloadAutomatically && !settings.autoUpdate.notifyOnly) {
-                void autoUpdater.downloadUpdate().catch(error => {
-                    this.handleUpdateError(error);
+        const settings = this.settingsService.getSettings();
+        if (settings.autoUpdate?.enabled && settings.autoUpdate.checkOnStartup) {
+            setTimeout(() => {
+                void this.checkForUpdates().catch(error => {
+                    this.handleError(error);
                 });
-            }
-        });
-
-        autoUpdater.on('update-not-available', (info) => {
-            this.logInfo('Update not available', info as RuntimeValue as JsonObject);
-            this.sendToWindow('update:status', { state: 'not-available' });
-        });
-
-        autoUpdater.on('error', (err) => {
-            const msg = err?.message || String(err);
-            if (msg.includes('ENOENT') || msg.includes('app-update.yml')) {
-                this.logDebug('Update check skipped (config missing)');
-                return;
-            }
-            if (this.isReleaseFeedWarning(err)) {
-                this.logWarn('Update feed unavailable for this repository');
-                this.sendUpdateWarning('Update feed unavailable for this repository');
-                return;
-            }
-            this.logError('Update error', err);
-            this.sendToWindow('update:status', { state: 'error', error: err.message });
-        });
-
-        autoUpdater.on('download-progress', (progressObj) => {
-            this.sendToWindow('update:status', {
-                state: 'downloading',
-                progress: progressObj.percent,
-                bytesPerSecond: progressObj.bytesPerSecond,
-                total: progressObj.total,
-                transferred: progressObj.transferred
-            });
-        });
-
-        autoUpdater.on('update-downloaded', (info) => {
-            this.logInfo('Update downloaded');
-            this.sendToWindow('update:status', { state: 'downloaded', version: info.version });
-        });
-    }
-
-    @ipc('update:check')
-    async checkForUpdatesIpc(): Promise<UpdateCheckResult | null | { error: string }> {
-        if (!this.isSupported) {
-            return { error: 'Updates not supported in this version' };
-        }
-        return await this.checkForUpdates();
-    }
-
-    @ipc('update:download')
-    async downloadUpdateIpc(): Promise<{ success: boolean } | { error: string }> {
-        if (!this.isSupported) {
-            return { error: 'Updates not supported in this version' };
-        }
-        await this.downloadUpdate();
-        return { success: true };
-    }
-
-    @ipc('update:install')
-    quitAndInstallIpc(): void {
-        if (this.isSupported) {
-            this.quitAndInstall();
+            }, 5000);
         }
     }
 
-    async checkForUpdates(): Promise<UpdateCheckResult | null> {
+    @ipc(UPDATE_CHANNELS.CHECK)
+    async checkForUpdatesIpc(): Promise<{ success: boolean; version?: string; available: boolean; releaseNotes?: string; error?: string }> {
+        const result = await this.checkForUpdates();
+        if (!result) {
+            return { success: false, available: false, error: 'Update check failed' };
+        }
+
+        return {
+            success: true,
+            available: result.available,
+            version: result.version,
+            releaseNotes: result.releaseNotes,
+        };
+    }
+
+    @ipc(UPDATE_CHANNELS.DOWNLOAD)
+    async downloadUpdateIpc(): Promise<{ success: boolean; error?: string }> {
+        try {
+            const result = await this.downloadUpdate();
+            return { success: result };
+        } catch (error) {
+            return { success: false, error: this.toMessage(error) };
+        }
+    }
+
+    @ipc(UPDATE_CHANNELS.INSTALL)
+    async quitAndInstallIpc(): Promise<{ success: boolean; error?: string }> {
+        try {
+            await this.quitAndInstall();
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: this.toMessage(error) };
+        }
+    }
+
+    async checkForUpdates(): Promise<{ available: boolean; version?: string; releaseNotes?: string } | null> {
         if (!this.isSupported) {
+            this.sendStatus({ state: 'warning', warning: 'Updates are disabled in this build' });
             return null;
         }
 
+        this.sendStatus({ state: 'checking' });
+
         try {
-            return await autoUpdater.checkForUpdates();
+            const release = await this.fetchLatestRelease();
+            const currentVersion = this.normalizeVersion(app.getVersion());
+            const latestVersion = this.normalizeVersion(release.tag_name);
+
+            this.latestRelease = release;
+
+            if (!latestVersion || !currentVersion || this.compareVersions(latestVersion, currentVersion) <= 0) {
+                this.sendStatus({ state: 'not-available' });
+                return { available: false };
+            }
+
+            this.sendStatus({ state: 'available', version: latestVersion });
+            return {
+                available: true,
+                version: latestVersion,
+                releaseNotes: release.body ?? '',
+            };
         } catch (error) {
-            this.handleUpdateError(error);
+            this.handleError(error);
             return null;
         }
     }
 
-    async downloadUpdate() {
-        try {
-            await autoUpdater.downloadUpdate();
-        } catch (error) {
-            this.handleUpdateError(error);
-            throw error;
-        }
-    }
-
-    quitAndInstall() {
-        autoUpdater.quitAndInstall();
-    }
-
-    private sendToWindow(channel: string, ...args: IpcValue[]) {
-        if (this.window && !this.window.isDestroyed()) {
-            this.window.webContents.send(channel, ...args);
-        }
-    }
-
-    private handleUpdateError(error: unknown): void {
-        const msg = error instanceof Error ? error.message : String(error);
-        if (this.isReleaseFeedWarning(error)) {
-            this.logWarn(`Update feed unavailable: ${msg}`);
-            this.sendUpdateWarning('Update feed unavailable for this repository');
-            return;
+    async downloadUpdate(): Promise<boolean> {
+        if (!this.latestRelease) {
+            const checked = await this.checkForUpdates();
+            if (!checked?.available) {
+                return false;
+            }
         }
 
-        this.logError('Update check failed', error);
-        this.sendUpdateError(msg);
+        const release = this.latestRelease;
+        if (!release) {
+            throw new Error('No release metadata is available');
+        }
+
+        const asset = this.pickReleaseAsset(release);
+        if (!asset) {
+            throw new Error('No downloadable release asset was found');
+        }
+
+        const downloadDir = getManagedRuntimeTempDir();
+        const outputPath = path.join(downloadDir, asset.name);
+
+        this.sendStatus({ state: 'downloading', version: this.normalizeVersion(release.tag_name) ?? undefined, progress: 0 });
+
+        await this.downloadFile(asset.browser_download_url, outputPath, asset.size);
+        this.downloadedAssetPath = outputPath;
+        this.downloadedAssetName = asset.name;
+        this.sendStatus({ state: 'downloaded', version: this.normalizeVersion(release.tag_name) ?? undefined });
+        return true;
     }
 
-    private isReleaseFeedWarning(error: unknown): boolean {
-        if (!error) { return false; }
+    async quitAndInstall(): Promise<void> {
+        const executablePath = app.getPath('exe');
+        const release = this.latestRelease;
+        if (!release) {
+            throw new Error('No release metadata is available');
+        }
 
-        const message = error instanceof Error ? error.message : String(error);
-        const lowerMessage = message.toLowerCase();
-        const stack = error instanceof Error ? (error.stack || '').toLowerCase() : '';
+        const asset = this.pickReleaseAsset(release);
+        const downloadedAssetPath = this.downloadedAssetPath ?? (asset ? path.join(getManagedRuntimeTempDir(), asset.name) : null);
+        if (!downloadedAssetPath || !fs.existsSync(downloadedAssetPath)) {
+            throw new Error('The update has not been downloaded yet');
+        }
 
-        // Comprehensive list of strings that indicate GitHub feed/release missing or inaccessible
-        const commonFeedErrors = [
-            'releases.atom',
-            'authentication token',
-            'http_error_404',
-            'status code 404',
-            'not found',
-            'github.com/tengrastudio/tengra/releases',
-            'failed to fetch',
-            'http error 404',
-            'httperror: 404'
+        const helperScript = this.resolveUpdaterScriptPath();
+        if (!helperScript) {
+            throw new Error('Updater helper script was not found');
+        }
+
+        const helperArgs = this.buildHelperArgs(helperScript, downloadedAssetPath, executablePath);
+        const helperCommand = process.platform === 'win32' && helperScript.endsWith('.ps1')
+            ? 'powershell'
+            : process.execPath;
+
+        const child = spawn(helperCommand, helperArgs, {
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: true,
+            env: helperScript.endsWith('.js')
+                ? { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+                : process.env,
+        });
+
+        child.unref();
+
+        this.sendStatus({ state: 'checking' });
+        app.quit();
+    }
+
+    private resolveUpdaterScriptPath(): string | null {
+        const candidates = [
+            ...(process.platform === 'win32'
+                ? [
+                    path.join(process.resourcesPath || '', 'updater', 'tengra-updater.ps1'),
+                    path.join(app.getAppPath(), 'assets', 'updater', 'tengra-updater.ps1'),
+                    path.join(process.cwd(), 'assets', 'updater', 'tengra-updater.ps1'),
+                ]
+                : [
+                    path.join(process.resourcesPath || '', 'updater', 'tengra-updater.js'),
+                    path.join(app.getAppPath(), 'assets', 'updater', 'tengra-updater.js'),
+                    path.join(process.cwd(), 'assets', 'updater', 'tengra-updater.js'),
+                ]),
         ];
 
-        if (commonFeedErrors.some(err => lowerMessage.includes(err) || stack.includes(err))) {
-            return true;
+        for (const candidate of candidates) {
+            if (fs.existsSync(candidate)) {
+                return candidate;
+            }
         }
 
-        if (typeof error !== 'object') {
-            return false;
+        return null;
+    }
+
+    private buildHelperArgs(helperScript: string, sourcePath: string, targetPath: string): string[] {
+        if (helperScript.endsWith('.ps1')) {
+            return [
+                '-NoProfile',
+                '-ExecutionPolicy',
+                'Bypass',
+                '-File',
+                helperScript,
+                '-ProcessId',
+                String(process.pid),
+                '-SourcePath',
+                sourcePath,
+                '-TargetPath',
+                targetPath,
+                '-LaunchAfter',
+                targetPath,
+            ];
         }
 
-        const statusCode = 'statusCode' in error ? (error as { statusCode?: number }).statusCode : undefined;
-        const errProp = 'error' in error ? String((error as { error?: unknown }).error).toLowerCase() : '';
-
-        return statusCode === 404 || errProp.includes('404');
+        return [
+            helperScript,
+            '--process-id',
+            String(process.pid),
+            '--source-path',
+            sourcePath,
+            '--target-path',
+            targetPath,
+            '--launch-after',
+            targetPath,
+        ];
     }
 
-    private clearGitHubAuthEnvironment(): void {
-        delete process.env.GH_TOKEN;
-        delete process.env.GITHUB_TOKEN;
+    private async fetchLatestRelease(): Promise<GithubRelease> {
+        const response = await fetch('https://api.github.com/repos/TengraStudio/tengra/releases/latest', {
+            headers: {
+                Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'User-Agent': 'Tengra-Updater',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`GitHub release lookup failed with status ${response.status}`);
+        }
+
+        return await response.json() as GithubRelease;
     }
 
-    private sendUpdateError(message: string): void {
-        this.sendToWindow('update:status', { state: 'error', error: message });
+    private pickReleaseAsset(release: GithubRelease): GithubReleaseAsset | null {
+        const platform = process.platform;
+        const allowedExtensions = platform === 'win32'
+            ? ['.exe', '.zip']
+            : platform === 'darwin'
+                ? ['.dmg', '.zip']
+                : ['.appimage', '.deb', '.rpm', '.zip'];
+
+        const preferred = release.assets.find(asset => {
+            const lowerName = asset.name.toLowerCase();
+            return allowedExtensions.some(extension => lowerName.endsWith(extension));
+        });
+
+        return preferred ?? null;
     }
 
-    private sendUpdateWarning(message: string): void {
-        this.sendToWindow('update:status', { state: 'warning', warning: message });
+    private async downloadFile(url: string, outputPath: string, expectedSize?: number): Promise<void> {
+        const response = await fetch(url);
+        if (!response.ok || !response.body) {
+            throw new Error(`Failed to download update: ${response.status}`);
+        }
+
+        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+        const total = expectedSize ?? Number(response.headers.get('content-length') ?? 0);
+        const buffer = Buffer.from(await response.arrayBuffer());
+        fs.writeFileSync(outputPath, buffer);
+        this.sendStatus({
+            state: 'downloading',
+            progress: total > 0 ? 100 : undefined,
+            bytesPerSecond: undefined,
+            total,
+            transferred: buffer.byteLength,
+        });
+    }
+
+    private normalizeVersion(version: string): string | null {
+        const cleaned = version.trim().replace(/^v/i, '');
+        return cleaned.length > 0 ? cleaned : null;
+    }
+
+    private compareVersions(left: string, right: string): number {
+        const parse = (value: string) => value.split('.').map(part => Number.parseInt(part, 10) || 0);
+        const [a1, a2 = 0, a3 = 0] = parse(left);
+        const [b1, b2 = 0, b3 = 0] = parse(right);
+        if (a1 !== b1) { return a1 - b1; }
+        if (a2 !== b2) { return a2 - b2; }
+        return a3 - b3;
+    }
+
+    private sendStatus(status: UpdaterStatus): void {
+        if (this.window && !this.window.isDestroyed()) {
+            this.window.webContents.send('update:status', status);
+        }
+    }
+
+    private handleError(error: unknown): void {
+        const message = this.toMessage(error);
+        this.logError('Update error', error);
+        this.sendStatus({ state: 'error', error: message });
+    }
+
+    private toMessage(error: unknown): string {
+        if (error instanceof Error) {
+            return error.message;
+        }
+
+        return String(error);
     }
 }
+

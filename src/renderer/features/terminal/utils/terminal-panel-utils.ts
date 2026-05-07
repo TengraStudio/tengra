@@ -150,3 +150,4 @@ export function normalizeDockerContainers(raw: RendererDataValue): RemoteDockerC
     });
     return containers;
 }
+

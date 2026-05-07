@@ -91,3 +91,4 @@ export function TipModal({ language = 'en' }: { language?: Language }) {
         </Modal>
     );
 }
+

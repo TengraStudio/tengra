@@ -9,8 +9,6 @@
  */
 
 import { WORKSPACE_COMPAT_ALIAS_VALUES } from '@shared/constants';
-import { beforeEach, describe, expect, it } from 'vitest';
-
 import {
     __resetUiLayoutStoreForTests,
     exportUiLayoutState,
@@ -20,7 +18,8 @@ import {
     sanitizeUiLayoutState,
     setAppShellState,
     setWorkspaceShellState,
-} from '@/ui/store/ui-layout.store';
+} from '@ui/store/ui-layout.store';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('ui layout store', () => {
     beforeEach(() => {
@@ -101,3 +100,4 @@ describe('ui layout store', () => {
         });
     });
 });
+

@@ -105,3 +105,4 @@ describe('SettingsButton', () => {
         expect(mockOnSave).toHaveBeenCalledTimes(3);
     });
 });
+

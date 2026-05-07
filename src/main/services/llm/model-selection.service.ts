@@ -186,7 +186,7 @@ export class ModelSelectionService {
     private providerAliases(provider: string): string[] {
         switch (provider) {
             case 'antigravity': return ['antigravity', 'google'];
-            case 'copilot': return ['copilot', 'github'];
+            case 'copilot': return ['copilot'];
             case 'codex': return ['codex'];
             case 'claude': return ['claude'];
             case 'anthropic': return ['anthropic'];
@@ -214,9 +214,6 @@ export class ModelSelectionService {
 
     private providerCategory(model: ModelProviderInfo): string {
         const raw = (model.providerCategory ?? model.sourceProvider ?? model.provider).trim().toLowerCase();
-        if (raw === 'github') {
-            return 'copilot';
-        }
         if (raw === 'google' || raw === 'gemini') {
             return 'antigravity';
         }
@@ -316,7 +313,7 @@ export class ModelSelectionService {
         accessToken?: string;
         refreshToken?: string;
         sessionToken?: string;
-        metadata?: unknown;
+        metadata?: RuntimeValue;
     }): boolean {
         const metadata = (account.metadata && typeof account.metadata === 'object' && !Array.isArray(account.metadata))
             ? (account.metadata as Record<string, unknown>)
@@ -342,7 +339,7 @@ export class ModelSelectionService {
         accessToken?: string;
         refreshToken?: string;
         sessionToken?: string;
-        metadata?: unknown;
+        metadata?: RuntimeValue;
     }): boolean {
         const metadata = (account.metadata && typeof account.metadata === 'object' && !Array.isArray(account.metadata))
             ? (account.metadata as Record<string, unknown>)
@@ -383,3 +380,4 @@ export class ModelSelectionService {
         return undefined;
     }
 }
+

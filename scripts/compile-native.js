@@ -12,12 +12,13 @@ const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const { getExecutableName, getManagedRuntimeBinDir, getNativeTargetReleaseDir } = require('./build-runtime-paths');
+const { getAssetsBinDir, getExecutableName, getManagedRuntimeBinDir, getNativeTargetReleaseDir } = require('./build-runtime-paths');
 
 const SERVICES_DIR = path.join(__dirname, '../src/native');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
 const STAMP_FILE = path.join(SERVICES_DIR, 'target', 'native-build-stamp.json');
 const BIN_DIR = getManagedRuntimeBinDir();
+const ASSETS_BIN_DIR = getAssetsBinDir();
 const SERVICE_BASENAMES = ['db-service', 'memory-service', 'proxy'];
 const ALLOW_LOCKED_NATIVE_SKIP = process.env.CI !== 'true' && process.env.TENGRA_ALLOW_LOCKED_NATIVE_SKIP !== 'false';
 
@@ -104,6 +105,12 @@ function ensureBinDir() {
     } 
 }
 
+function ensureAssetsBinDir() {
+    if (!fs.existsSync(ASSETS_BIN_DIR)) {
+        fs.mkdirSync(ASSETS_BIN_DIR, { recursive: true });
+    }
+}
+
 function getNativeBinaryMappings() {
     return SERVICE_BASENAMES.map(base => {
         const output = getExecutableName(`tengra-${base}`);
@@ -175,12 +182,14 @@ function persistNativeBuildStamp() {
 
 async function copyNativeBinariesFromTarget() {
     ensureBinDir();
+    ensureAssetsBinDir();
     const mappings = getNativeBinaryMappings();
     const missingBinaries = [];
 
     const copyTasks = mappings.map(async (mapping) => {
         const src = path.join(TARGET_DIR, mapping.output);
         const dest = path.join(BIN_DIR, mapping.output); 
+        const assetDest = path.join(ASSETS_BIN_DIR, mapping.output);
 
         if (!fs.existsSync(src)) {
             missingBinaries.push(src);
@@ -189,7 +198,8 @@ async function copyNativeBinariesFromTarget() {
 
         try { 
             await copyWithRetry(src, dest, mapping.output);
-            writeStdout(`Copied ${mapping.output} to runtime and build bin`);
+            await copyWithRetry(src, assetDest, mapping.output);
+            writeStdout(`Copied ${mapping.output} to assets and runtime bin`);
         } catch (error) {
             const maybeError = error;
             const code = maybeError && typeof maybeError === 'object' ? maybeError.code : undefined;

@@ -149,3 +149,4 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
         </>
     );
 }
+

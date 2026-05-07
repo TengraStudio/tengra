@@ -86,3 +86,4 @@ export function getIpcMetrics(): IpcChannelMetrics[] {
 export function resetIpcMetrics(): void {
   metricsStore.clear();
 }
+

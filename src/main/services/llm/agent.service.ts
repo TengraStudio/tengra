@@ -17,6 +17,7 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { t } from '@main/utils/i18n.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { AGENT_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
@@ -102,7 +103,7 @@ export class AgentService extends BaseService {
         return row?.id ?? id;
     }
 
-    @ipc('agent:create')
+    @ipc(AGENT_CHANNELS.CREATE)
     async createAgentIpc(payload: { agent: AgentDefinition; options?: AgentCreateOptions }): Promise<RuntimeValue> {
         const { agent, options } = payload;
         const result = await this.createAgent(agent, options);
@@ -137,7 +138,7 @@ export class AgentService extends BaseService {
         }
     }
 
-    @ipc('agent:clone')
+    @ipc(AGENT_CHANNELS.CLONE)
     async cloneAgentIpc(id: string, newName?: string): Promise<RuntimeValue> {
         const result = await this.cloneAgent(id, newName);
         return serializeToIpc(result);
@@ -158,7 +159,7 @@ export class AgentService extends BaseService {
         return { success: true, id };
     }
 
-    @ipc('agent:export')
+    @ipc(AGENT_CHANNELS.EXPORT)
     async exportAgentIpc(id: string): Promise<string | null> {
         const agent = await this.getAgent(id);
         if (!agent) { return null; }
@@ -173,7 +174,7 @@ export class AgentService extends BaseService {
         }, null, 2);
     }
 
-    @ipc('agent:import')
+    @ipc(AGENT_CHANNELS.IMPORT)
     async importAgentIpc(payload: string): Promise<RuntimeValue> {
         const result = await this.importAgent(payload);
         return serializeToIpc(result);
@@ -192,7 +193,7 @@ export class AgentService extends BaseService {
         }
     }
 
-    @ipc('agent:get-templates-library')
+    @ipc(AGENT_CHANNELS.GET_TEMPLATES_LIBRARY)
     async getAgentTemplatesLibraryIpc(): Promise<RuntimeValue> {
         const result = await this.getAgentTemplatesLibrary();
         return serializeToIpc(result);
@@ -245,13 +246,13 @@ export class AgentService extends BaseService {
         return { valid: errors.length === 0, errors };
     }
 
-    @ipc('agent:validate-template')
+    @ipc(AGENT_CHANNELS.VALIDATE_TEMPLATE)
     async validateAgentTemplateIpc(template: Partial<AgentDefinition>): Promise<RuntimeValue> {
         const result = this.validateAgentTemplate(template);
         return serializeToIpc(result);
     }
 
-    @ipc('agent:delete')
+    @ipc(AGENT_CHANNELS.DELETE)
     async deleteAgentIpc(id: string, options: AgentDeleteOptions = { confirm: false }): Promise<RuntimeValue> {
         const result = await this.deleteAgent(id, options);
         return serializeToIpc(result);
@@ -288,7 +289,7 @@ export class AgentService extends BaseService {
         }
     }
 
-    @ipc('agent:recover')
+    @ipc(AGENT_CHANNELS.RECOVER)
     async recoverAgentFromArchiveIpc(archiveId: string): Promise<RuntimeValue> {
         const result = await this.recoverAgentFromArchive(archiveId);
         return serializeToIpc(result);
@@ -310,7 +311,7 @@ export class AgentService extends BaseService {
         return { success: true, id };
     }
 
-    @ipc('agent:get')
+    @ipc(AGENT_CHANNELS.GET)
     async getAgentIpc(idOrName: string): Promise<RuntimeValue> {
         const result = await this.getAgent(idOrName);
         return serializeToIpc(result);
@@ -338,7 +339,7 @@ export class AgentService extends BaseService {
         };
     }
 
-    @ipc('agent:get-all')
+    @ipc(AGENT_CHANNELS.GET_ALL)
     async getAllAgentsIpc(): Promise<RuntimeValue> {
         const result = await this.getAllAgents();
         return serializeToIpc(result);
@@ -427,3 +428,4 @@ export class AgentService extends BaseService {
         return id;
     }
 }
+

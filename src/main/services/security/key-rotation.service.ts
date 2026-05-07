@@ -13,6 +13,7 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { KEY_ROTATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 
 export class KeyRotationService extends BaseService {
@@ -30,14 +31,14 @@ export class KeyRotationService extends BaseService {
         return provider.trim();
     }
 
-    @ipc('key-rotation:getCurrentKey')
+    @ipc(KEY_ROTATION_CHANNELS.GET_CURRENT_KEY)
     async getCurrentKeyIpc(providerRaw: RuntimeValue): Promise<RuntimeValue> {
         const provider = this.validateProvider(providerRaw);
         const key = this.getCurrentKey(provider);
         return serializeToIpc(key);
     }
 
-    @ipc('key-rotation:rotate')
+    @ipc(KEY_ROTATION_CHANNELS.ROTATE)
     async rotateKeyIpc(providerRaw: RuntimeValue): Promise<RuntimeValue> {
         const provider = this.validateProvider(providerRaw);
         const success = this.rotateKey(provider);
@@ -45,7 +46,7 @@ export class KeyRotationService extends BaseService {
         return serializeToIpc({ success, currentKey });
     }
 
-    @ipc('key-rotation:initialize')
+    @ipc(KEY_ROTATION_CHANNELS.INITIALIZE)
     async initializeProviderKeysIpc(providerRaw: RuntimeValue, keyStringRaw: RuntimeValue): Promise<RuntimeValue> {
         const provider = this.validateProvider(providerRaw);
         if (typeof keyStringRaw !== 'string' || keyStringRaw.length > 4096) {
@@ -56,7 +57,7 @@ export class KeyRotationService extends BaseService {
         return serializeToIpc({ success: true, currentKey });
     }
 
-    @ipc('key-rotation:getStatus')
+    @ipc(KEY_ROTATION_CHANNELS.GET_STATUS)
     async getStatusIpc(providerRaw: RuntimeValue): Promise<RuntimeValue> {
         let safeProvider = '';
         try {
@@ -118,3 +119,4 @@ export class KeyRotationService extends BaseService {
         return true;
     }
 }
+

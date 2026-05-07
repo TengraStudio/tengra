@@ -15,7 +15,7 @@ import {
     PROXY_PERFORMANCE_BUDGETS,
     ProxyErrorCode,
     ProxyService,
-    ProxyTelemetryEvent
+    ProxyUsageStatsEvent
 } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -153,7 +153,7 @@ describe('ProxyService', () => {
                 return mockReq;
             });
 
-            const res = (await proxyService.initiateGitHubAuth('profile')) as DeviceCodeResponse;
+            const res = (await proxyService.initiateGitHubAuth('copilot')) as DeviceCodeResponse;
             expect(res.device_code).toBe('123');
         });
 
@@ -593,21 +593,21 @@ describe('ProxyErrorCode enum', () => {
     });
 });
 
-describe('ProxyTelemetryEvent enum', () => {
-    it('should have exactly 8 telemetry events', () => {
-        const values = Object.values(ProxyTelemetryEvent);
+describe('ProxyUsageStatsEvent enum', () => {
+    it('should have exactly 8 Stats events', () => {
+        const values = Object.values(ProxyUsageStatsEvent);
         expect(values).toHaveLength(8);
     });
 
-    it('should contain all expected telemetry events', () => {
-        expect(ProxyTelemetryEvent.PROXY_STARTED).toBe('proxy_started');
-        expect(ProxyTelemetryEvent.PROXY_STOPPED).toBe('proxy_stopped');
-        expect(ProxyTelemetryEvent.REQUEST_SENT).toBe('proxy_request_sent');
-        expect(ProxyTelemetryEvent.REQUEST_FAILED).toBe('proxy_request_failed');
-        expect(ProxyTelemetryEvent.AUTH_INITIATED).toBe('proxy_auth_initiated');
-        expect(ProxyTelemetryEvent.AUTH_COMPLETED).toBe('proxy_auth_completed');
-        expect(ProxyTelemetryEvent.AUTH_FAILED).toBe('proxy_auth_failed');
-        expect(ProxyTelemetryEvent.HEALTH_CHECK).toBe('proxy_health_check');
+    it('should contain all expected Stats events', () => {
+        expect(ProxyUsageStatsEvent.PROXY_STARTED).toBe('proxy_started');
+        expect(ProxyUsageStatsEvent.PROXY_STOPPED).toBe('proxy_stopped');
+        expect(ProxyUsageStatsEvent.REQUEST_SENT).toBe('proxy_request_sent');
+        expect(ProxyUsageStatsEvent.REQUEST_FAILED).toBe('proxy_request_failed');
+        expect(ProxyUsageStatsEvent.AUTH_INITIATED).toBe('proxy_auth_initiated');
+        expect(ProxyUsageStatsEvent.AUTH_COMPLETED).toBe('proxy_auth_completed');
+        expect(ProxyUsageStatsEvent.AUTH_FAILED).toBe('proxy_auth_failed');
+        expect(ProxyUsageStatsEvent.HEALTH_CHECK).toBe('proxy_health_check');
     });
 });
 
@@ -819,3 +819,5 @@ describe('ProxyService input validation', () => {
     });
 
 });
+
+

@@ -10,6 +10,7 @@
 
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
+import { LAZY_CHANNELS } from '@shared/constants/ipc-channels';
 
 /**
  * Factory function for lazily loaded services.
@@ -71,13 +72,17 @@ class LazyServiceRegistry {
 
     private async loadService<T extends object>(name: string, factory: LazyServiceFactory<T>): Promise<T> {
         const startTime = Date.now();
-        const { registerServiceIpc } = await import('@main/core/ipc-decorators');
+        const { getIpcMethodsForService, registerServiceIpc } = await import('@main/core/ipc-decorators');
 
         try {
             const service = await factory();
             
-            // Automatically register @ipc decorated methods
-            registerServiceIpc(service);
+            const ipcMethods = getIpcMethodsForService(service);
+            if (ipcMethods.length === 0) {
+                appLogger.warn('IPC', `Skipping IPC registration for lazy service without @ipc methods: ${name}`);
+            } else {
+                registerServiceIpc(service);
+            }
 
             const loadTime = Date.now() - startTime;
             appLogger.info('LazyServices', `Loaded service '${name}' in ${loadTime}ms`);
@@ -119,7 +124,7 @@ class LazyServiceRegistry {
     /**
      * Get a snapshot summary for diagnostics and UI indicators.
      */
-    @ipc('lazy:get-status')
+    @ipc(LAZY_CHANNELS.GET_STATUS)
     getStatus(): {
         registered: string[];
         loaded: string[];
@@ -168,11 +173,17 @@ export function createLazyServiceDependency<T extends object>(serviceName: strin
  *
  * @template T The service interface type
  * @param serviceName - Name of the service registered in the lazy registry
+ * @param serviceClass - Optional constructor function for metadata discovery
  * @returns A proxy object that behaves like T but loads on demand
  */
-export function createLazyServiceProxy<T extends object>(serviceName: string): T {
+export function createLazyServiceProxy<T extends object>(serviceName: string, serviceClass?: any): T {
     return new Proxy({} as T, {
         get(_target: T, prop: string | symbol, _receiver: T): RuntimeValue {
+            // Handle constructor access for metadata/IPC decorators
+            if (prop === 'constructor' && serviceClass) {
+                return serviceClass;
+            }
+
             // Handle async service loading
             if (prop === 'then') {
                 // If accessed via await/Promise, return the actual service
@@ -194,3 +205,4 @@ export function createLazyServiceProxy<T extends object>(serviceName: string): T
         }
     });
 }
+

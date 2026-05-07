@@ -101,3 +101,4 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
 });
 
 ComparisonCard.displayName = 'ComparisonCard';
+

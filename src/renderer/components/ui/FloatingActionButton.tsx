@@ -173,3 +173,4 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 };
 
 FloatingActionButton.displayName = 'FloatingActionButton';
+

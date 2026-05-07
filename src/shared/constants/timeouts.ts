@@ -53,8 +53,8 @@ export const SERVICE_INTERVALS = {
     MODEL_UPDATE: 3600000,
     /** Health check interval (30 seconds) */
     HEALTH_CHECK: 30000,
-    /** Telemetry flush interval (1 minute) */
-    TELEMETRY_FLUSH: 60000,
+    /** usageStats flush interval (1 minute) */
+    usageStats_FLUSH: 60000,
     /** Stats poll interval */
     STATS_POLL: 5000,
     /** Time tracking interval (1 minute) */
@@ -164,3 +164,4 @@ export const IPC_TIMEOUTS = {
     /** Delay between batch processing items */
     BATCH_DELAY: 100,
 } as const;
+

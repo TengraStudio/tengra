@@ -6,8 +6,9 @@ export interface IpcMethod {
     propertyKey: string | symbol;
     channel: string;
     withEvent?: boolean;
-    type?: 'handle' | 'on';
+    type?: 'handle' | 'on' | 'both';
     isBatchable?: boolean;
     argsSchema?: ZodTypeAny;
     defaultValue?: RuntimeValue;
 }
+

@@ -52,3 +52,4 @@ export interface ITerminalBackend {
      */
     create(options: TerminalCreateOptions): Promise<ITerminalProcess>;
 }
+

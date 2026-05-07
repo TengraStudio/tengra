@@ -38,13 +38,12 @@ vi.mock('@main/logging/logger', () => ({
 
 import * as fsp from 'fs/promises';
 
-import type { TelemetryService } from '@main/services/analysis/telemetry.service';
+
 import type { DataType } from '@main/services/data/data.service';
 import {
     DATA_SERVICE_PERFORMANCE_BUDGETS,
     DataService,
-    DataServiceErrorCode,
-    DataServiceTelemetryEvent} from '@main/services/data/data.service';
+    DataServiceErrorCode} from '@main/services/data/data.service';
 
 describe('DataService Integration', () => {
     let service: DataService;
@@ -81,11 +80,7 @@ describe('DataService Integration', () => {
         expect(DataServiceErrorCode.PERMISSION_DENIED).toBeDefined();
     });
 
-    it('should have valid telemetry events', () => {
-        expect(DataServiceTelemetryEvent.INITIALIZE_START).toBeDefined();
-        expect(DataServiceTelemetryEvent.INITIALIZE_COMPLETE).toBeDefined();
-        expect(DataServiceTelemetryEvent.PATH_ACCESSED).toBeDefined();
-    });
+
 
     it('should have valid performance budgets', () => {
         expect(DATA_SERVICE_PERFORMANCE_BUDGETS.INITIALIZE_MS).toBe(5000);
@@ -127,41 +122,7 @@ describe('DataService Integration', () => {
         await expect(service.cleanup()).resolves.toBeUndefined();
     });
 
-    describe('telemetry lifecycle (B-0485)', () => {
-        it('should track events through full init→use→cleanup cycle', async () => {
-            const freshService = new DataService();
-            const trackFn = vi.fn().mockReturnValue({ success: true });
-            freshService.setTelemetryService({ track: trackFn } as never as TelemetryService);
 
-            await freshService.initialize();
-            freshService.getPath('db');
-            await freshService.cleanup();
-
-            const eventNames = trackFn.mock.calls.map((c: TestValue[]) => c[0]);
-            expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_START);
-            expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_COMPLETE);
-            expect(eventNames.filter(
-                (e): boolean => e === DataServiceTelemetryEvent.PATH_ACCESSED
-            ).length).toBe(1);
-        });
-
-        it('should include durationMs in initialize complete event', async () => {
-            const freshService = new DataService();
-            const trackFn = vi.fn().mockReturnValue({ success: true });
-            freshService.setTelemetryService({ track: trackFn } as never as TelemetryService);
-
-            await freshService.initialize();
-
-            const completeCall = trackFn.mock.calls.find(
-                (c: TestValue[]) => c[0] === DataServiceTelemetryEvent.INITIALIZE_COMPLETE
-            );
-            expect(completeCall).toBeDefined();
-            const props = completeCall![1] as Record<string, TestValue>;
-            expect(typeof props.durationMs).toBe('number');
-            expect(props.success).toBe(true);
-            await freshService.cleanup();
-        });
-    });
 
     describe('migration flow regression (B-0482)', () => {
         it('should survive migrate when no old paths exist', async () => {
@@ -301,3 +262,4 @@ describe('DataService Integration', () => {
         });
     });
 });
+

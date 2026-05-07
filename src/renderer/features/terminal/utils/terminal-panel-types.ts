@@ -122,3 +122,4 @@ export type TerminalBackendInfo = {
     /** Whether backend is available */
     available: boolean;
 };
+

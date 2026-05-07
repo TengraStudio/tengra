@@ -93,7 +93,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
     const [pullingOllama, setPullingOllama] = useState<string | null>(null);
 
     useEffect(() => {
-        void window.electron.getLibraryModels().then((libs) => {
+        void window.electron.ollama.getLibraryModels().then((libs) => {
             const typedLibs = libs.map(l => ({ ...l, provider: 'ollama' as const, pulls: undefined }));
             setOllamaLibrary(typedLibs);
         }).catch(error => {
@@ -110,7 +110,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
             appLogger.error('useModelExplorer', 'Failed to load Hugging Face watchlist', error as Error);
         });
 
-        window.electron.onPullProgress((progress) => {
+        window.electron.ollama.onPullProgress((progress) => {
             if (progress.status === 'success') {
                 setPullingOllama(null);
                 onRefreshModels?.(true);
@@ -118,7 +118,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         });
 
         return () => {
-            window.electron.removePullProgressListener();
+            window.electron.ollama.removePullProgressListener();
         };
     }, [onRefreshModels]);
 
@@ -191,7 +191,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         const fullModelName = `${modelName}:${tag}`;
         setPullingOllama(fullModelName);
         try {
-            await window.electron.pullModel(fullModelName);
+            await window.electron.ollama.pullModel(fullModelName);
             onRefreshModels?.(true);
         } catch (e) { appLogger.error('useModelExplorer', `Failed to pull Ollama model: ${fullModelName}`, e as Error); } finally { setPullingOllama(null); }
     };
@@ -302,3 +302,4 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         clearComparison
     };
 }
+

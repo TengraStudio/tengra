@@ -75,3 +75,4 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
 ));
 
 PromptCommandMenu.displayName = 'PromptCommandMenu';
+

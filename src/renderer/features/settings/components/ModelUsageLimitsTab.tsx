@@ -29,7 +29,6 @@ const C_MODELUSAGELIMITSTAB_4 = "bg-card rounded-card-xl border border-border/40
 interface ModelUsageLimitsTabProps {
     settings: AppSettings | null;
     setSettings: (s: AppSettings) => void;
-    handleSave: (s?: AppSettings) => void;
     groupedModels?: GroupedModels;
     copilotQuota?: {
         accounts: Array<
@@ -45,7 +44,6 @@ interface ModelUsageLimitsTabProps {
 export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
     settings,
     setSettings,
-    handleSave,
     groupedModels,
     copilotQuota,
     t,
@@ -92,7 +90,6 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
             },
         };
         setSettings(updated);
-        handleSave(updated);
     };
 
     const updateAntigravityLimit = (
@@ -114,7 +111,6 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
             },
         };
         setSettings(updated);
-        handleSave(updated);
     };
 
     const updateCodexLimit = (
@@ -136,7 +132,6 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
             },
         };
         setSettings(updated);
-        handleSave(updated);
     };
 
     const firstAccount = copilotQuota?.accounts[0];
@@ -230,3 +225,4 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
         </div>
     );
 };
+

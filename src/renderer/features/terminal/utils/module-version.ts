@@ -36,3 +36,4 @@ export function isTerminalModuleVersionCompatible(candidate: string): boolean {
     const major = Number(match[1]);
     return Number.isFinite(major) && major === TERMINAL_MODULE_VERSION.major;
 }
+

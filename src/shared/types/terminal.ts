@@ -47,3 +47,10 @@ export interface FixErrorResult {
     confidence: 'low' | 'medium' | 'high';
     alternativeCommands?: string[];
 }
+
+export interface TerminalScrollbackSearchOptions {
+    regex?: boolean;
+    caseSensitive?: boolean;
+    limit?: number;
+}
+

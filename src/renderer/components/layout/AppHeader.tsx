@@ -68,7 +68,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         <h1 className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
                             {currentView === 'chat' && currentChatTitle
                                 ? currentChatTitle
-                                : t(`nav.${currentView}`)}
+                                : t(`frontend.nav.${currentView}`)}
                         </h1>
                     </div>
                 </div>
@@ -125,3 +125,4 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 };
 
 export const MemoizedAppHeader = React.memo(AppHeader);
+

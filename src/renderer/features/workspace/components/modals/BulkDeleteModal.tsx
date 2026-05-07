@@ -60,3 +60,4 @@ export const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({ isOpen, count,
         </AnimatePresence>
     );
 };
+

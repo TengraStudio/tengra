@@ -17,3 +17,4 @@ export * from '@/features/workspace/workspace-agent/WorkspaceAgentCouncilSetup';
 export * from '@/features/workspace/workspace-agent/WorkspaceAgentPanelHeader';
 export * from '@/features/workspace/workspace-agent/WorkspaceAgentPermissionEditor';
 export * from '@/features/workspace/workspace-agent/WorkspaceAgentSessionModal';
+

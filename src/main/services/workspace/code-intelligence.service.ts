@@ -23,6 +23,7 @@ import {
 } from '@main/services/workspace/workspace-ignore.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { CODE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     WorkspaceCodeMap,
     WorkspaceCodeMapFile,
@@ -275,7 +276,7 @@ export class CodeIntelligenceService {
         });
     }
 
-    @ipc('code:queryIndexedSymbols')
+    @ipc(CODE_CHANNELS.QUERY_INDEXED_SYMBOLS)
     async queryIndexedSymbolsIpc(query: string): Promise<RuntimeValue> {
         const result = await this.queryIndexedSymbols(query);
         return serializeToIpc(result);
@@ -306,7 +307,7 @@ export class CodeIntelligenceService {
         return combined;
     }
 
-    @ipc('code:getSymbolAnalytics')
+    @ipc(CODE_CHANNELS.GET_SYMBOL_ANALYTICS)
     async getSymbolAnalyticsIpc(rootPath: string): Promise<RuntimeValue> {
         const result = await this.getSymbolAnalytics(rootPath);
         return serializeToIpc(result);
@@ -374,7 +375,7 @@ export class CodeIntelligenceService {
         }
     }
 
-    @ipc('code:getWorkspaceDependencyGraph')
+    @ipc(CODE_CHANNELS.GET_WORKSPACE_DEPENDENCY_GRAPH)
     async getWorkspaceDependencyGraphIpc(rootPath: string): Promise<RuntimeValue> {
         const result = await this.getWorkspaceDependencyGraph(rootPath);
         return serializeToIpc(result);
@@ -390,7 +391,7 @@ export class CodeIntelligenceService {
         return this.dependencyGraphCache.get(rootPath) ?? this.buildEmptyDependencyGraph(rootPath);
     }
 
-    @ipc('code:getWorkspaceCodeMap')
+    @ipc(CODE_CHANNELS.GET_WORKSPACE_CODE_MAP)
     async getWorkspaceCodeMapIpc(rootPath: string): Promise<RuntimeValue> {
         const result = await this.getWorkspaceCodeMap(rootPath);
         return serializeToIpc(result);
@@ -406,7 +407,7 @@ export class CodeIntelligenceService {
         return this.codeMapCache.get(rootPath) ?? this.buildEmptyCodeMap(rootPath);
     }
 
-    @ipc('code:indexWorkspace')
+    @ipc(CODE_CHANNELS.INDEX_WORKSPACE)
     async indexWorkspaceIpc(payload: { rootPath: string; workspaceId: string; force?: boolean }): Promise<boolean> {
         const { rootPath, workspaceId, force } = payload;
         await this.indexWorkspace(rootPath, workspaceId, force);
@@ -790,7 +791,7 @@ export class CodeIntelligenceService {
         };
     }
 
-    @ipc('code:findSymbols')
+    @ipc(CODE_CHANNELS.FIND_SYMBOLS)
     async findSymbolsIpc(payload: { rootPath: string; query: string }): Promise<RuntimeValue> {
         const { rootPath, query } = payload;
         const result = await this.findSymbols(rootPath, query);
@@ -801,7 +802,7 @@ export class CodeIntelligenceService {
         return await findWorkspaceSymbols(this.db, rootPath, query);
     }
 
-    @ipc('code:searchFiles')
+    @ipc(CODE_CHANNELS.SEARCH_FILES)
     async searchFilesIpc(payload: { rootPath: string; query: string; workspaceId?: string; isRegex?: boolean }): Promise<RuntimeValue> {
         const { rootPath, query, workspaceId, isRegex } = payload;
         const result = await this.searchFiles(rootPath, query, workspaceId, isRegex);
@@ -812,7 +813,7 @@ export class CodeIntelligenceService {
         return await searchWorkspaceFiles(this.db, rootPath, query, workspaceId, isRegex);
     }
 
-    @ipc('code:scanTodos')
+    @ipc(CODE_CHANNELS.SCAN_TODOS)
     async scanTodosIpc(rootPath: string): Promise<RuntimeValue> {
         const result = await this.scanTodos(rootPath);
         return serializeToIpc(result);
@@ -875,7 +876,7 @@ export class CodeIntelligenceService {
         return await readFileOutline(filePath);
     }
 
-    @ipc('code:getFileOutline')
+    @ipc(CODE_CHANNELS.GET_FILE_OUTLINE)
     async getFileOutlineIpc(filePath: string): Promise<RuntimeValue> {
         const result = await this.getFileOutline(filePath);
         return serializeToIpc(result);
@@ -885,7 +886,7 @@ export class CodeIntelligenceService {
         return await readFileOutline(filePath);
     }
 
-    @ipc('code:findDefinition')
+    @ipc(CODE_CHANNELS.FIND_DEFINITION)
     async findDefinitionIpc(payload: { rootPath: string; symbol: string }): Promise<RuntimeValue> {
         const { rootPath, symbol } = payload;
         const result = await this.findDefinition(rootPath, symbol);
@@ -900,7 +901,7 @@ export class CodeIntelligenceService {
         return await findSymbolUsage(rootPath, symbol);
     }
 
-    @ipc('code:findReferences')
+    @ipc(CODE_CHANNELS.FIND_REFERENCES)
     async findReferencesIpc(payload: { rootPath: string; symbol: string }): Promise<RuntimeValue> {
         const { rootPath, symbol } = payload;
         const result = await this.findReferences(rootPath, symbol);
@@ -911,7 +912,7 @@ export class CodeIntelligenceService {
         return await this.findUsage(rootPath, symbol);
     }
 
-    @ipc('code:findImplementations')
+    @ipc(CODE_CHANNELS.FIND_IMPLEMENTATIONS)
     async findImplementationsIpc(payload: { rootPath: string; symbol: string }): Promise<RuntimeValue> {
         const { rootPath, symbol } = payload;
         const result = await this.findImplementations(rootPath, symbol);
@@ -922,7 +923,7 @@ export class CodeIntelligenceService {
         return await findSymbolImplementations(rootPath, symbol);
     }
 
-    @ipc('code:getSymbolRelationships')
+    @ipc(CODE_CHANNELS.GET_SYMBOL_RELATIONSHIPS)
     async getSymbolRelationshipsIpc(payload: { rootPath: string; symbol: string; maxItems?: number }): Promise<RuntimeValue> {
         const { rootPath, symbol, maxItems } = payload;
         const result = await this.getSymbolRelationships(rootPath, symbol, maxItems);
@@ -933,14 +934,14 @@ export class CodeIntelligenceService {
         return await getRelatedSymbols(this.db, rootPath, symbol, maxItems);
     }
 
-    @ipc('code:previewRenameSymbol')
+    @ipc(CODE_CHANNELS.PREVIEW_RENAME_SYMBOL)
     async previewRenameSymbolIpc(payload: { rootPath: string; symbol: string; newSymbol: string; maxFiles?: number }): Promise<RuntimeValue> {
         const { rootPath, symbol, newSymbol, maxFiles } = payload;
         const result = await this.renameSymbol(rootPath, symbol, newSymbol, false, maxFiles);
         return serializeToIpc(result);
     }
 
-    @ipc('code:applyRenameSymbol')
+    @ipc(CODE_CHANNELS.APPLY_RENAME_SYMBOL)
     async applyRenameSymbolIpc(payload: { rootPath: string; symbol: string; newSymbol: string; maxFiles?: number }): Promise<RuntimeValue> {
         const { rootPath, symbol, newSymbol, maxFiles } = payload;
         const result = await this.renameSymbol(rootPath, symbol, newSymbol, true, maxFiles);
@@ -957,7 +958,7 @@ export class CodeIntelligenceService {
         return await renameWorkspaceSymbol(rootPath, symbol, newSymbol, apply, maxFiles);
     }
 
-    @ipc('code:generateFileDocumentation')
+    @ipc(CODE_CHANNELS.GENERATE_FILE_DOCUMENTATION)
     async generateFileDocumentationIpc(payload: { filePath: string; format?: 'markdown' | 'jsdoc-comments' }): Promise<RuntimeValue> {
         const { filePath, format } = payload;
         const result = await this.generateFileDocumentation(filePath, format);
@@ -971,7 +972,7 @@ export class CodeIntelligenceService {
         return await createFileDocumentation(filePath, format);
     }
 
-    @ipc('code:generateWorkspaceDocumentation')
+    @ipc(CODE_CHANNELS.GENERATE_WORKSPACE_DOCUMENTATION)
     async generateWorkspaceDocumentationIpc(payload: { rootPath: string; maxFiles?: number }): Promise<RuntimeValue> {
         const { rootPath, maxFiles } = payload;
         const result = await this.generateWorkspaceDocumentation(rootPath, maxFiles);
@@ -985,7 +986,7 @@ export class CodeIntelligenceService {
         return await createWorkspaceDocumentation(rootPath, maxFiles);
     }
 
-    @ipc('code:analyzeQuality')
+    @ipc(CODE_CHANNELS.ANALYZE_QUALITY)
     async analyzeCodeQualityIpc(payload: { rootPath: string; maxFiles?: number }): Promise<RuntimeValue> {
         const { rootPath, maxFiles } = payload;
         const result = await this.analyzeCodeQuality(rootPath, maxFiles);
@@ -1120,3 +1121,4 @@ export class CodeIntelligenceService {
         }
     }
 }
+

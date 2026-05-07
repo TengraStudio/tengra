@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
+import type { ExplainErrorResult, FixErrorResult } from '@shared/types/terminal';
 import { useState } from 'react';
 
-import type { ExplainErrorResult, FixErrorResult } from '../utils/terminal-ipc';
 import type { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 
 /**
@@ -48,3 +48,4 @@ export function useTerminalAI() {
         setAiResult,
     };
 }
+

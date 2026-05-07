@@ -67,3 +67,4 @@ describe('useWorkspaceListManager', () => {
         expect(mockUnsubscribe).toHaveBeenCalledOnce();
     });
 });
+

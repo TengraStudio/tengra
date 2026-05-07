@@ -310,3 +310,4 @@ export class MemoryProfilingService extends BaseService {
         this.clearSnapshots();
     }
 }
+

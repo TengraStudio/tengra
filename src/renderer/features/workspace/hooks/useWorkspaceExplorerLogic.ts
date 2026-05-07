@@ -43,6 +43,10 @@ export function useWorkspaceExplorerLogic(
 
     const loadRoot = useCallback(
         async (mount: WorkspaceMount) => {
+            if (!mount.rootPath || mount.rootPath.trim().length === 0) {
+                appLogger.warn('WorkspaceExplorer', 'Skipping mount root load with empty rootPath', { mountId: mount.id });
+                return;
+            }
             setLoadingMounts(prev => ({ ...prev, [mount.id]: true }));
             const isReady = onEnsureMount ? await onEnsureMount(mount) : true;
             if (!isReady) {
@@ -195,3 +199,4 @@ export function useWorkspaceExplorerLogic(
         closeContextMenu,
     };
 }
+

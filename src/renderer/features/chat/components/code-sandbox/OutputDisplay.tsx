@@ -62,3 +62,4 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({
 };
 
 OutputDisplay.displayName = 'OutputDisplay';
+

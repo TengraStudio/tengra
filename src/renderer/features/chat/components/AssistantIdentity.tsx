@@ -112,3 +112,4 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
 
     return <BrandIcon config={config} />;
 };
+

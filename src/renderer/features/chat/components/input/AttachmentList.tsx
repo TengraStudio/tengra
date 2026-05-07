@@ -84,3 +84,4 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
 });
 
 AttachmentList.displayName = 'AttachmentList';
+

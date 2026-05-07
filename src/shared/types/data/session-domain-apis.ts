@@ -12,7 +12,7 @@ import type {
     WorkspaceStep,
 } from '../ai/council';
 import type {
-    WorkspaceAgentContextTelemetry,
+    WorkspaceAgentContextusageStats,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSession,
     WorkspaceAgentSessionListResponse,
@@ -84,9 +84,9 @@ export interface SessionWorkspaceAgentApi {
         sessionId: string;
         strategy: WorkspaceAgentSession['strategy'];
     }) => Promise<WorkspaceAgentSession>;
-    getContextTelemetry: (payload: {
+    getContextusageStats: (payload: {
         sessionId: string;
-    }) => Promise<WorkspaceAgentContextTelemetry | null>;
+    }) => Promise<WorkspaceAgentContextusageStats | null>;
     archive: (payload: {
         sessionId: string;
         archived: boolean;
@@ -99,3 +99,4 @@ export interface SessionWorkspaceAgentApi {
         activeSessionId: string | null;
     }) => Promise<WorkspaceAgentSessionPersistence>;
 }
+

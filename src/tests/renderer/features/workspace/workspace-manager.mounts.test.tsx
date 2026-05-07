@@ -338,3 +338,4 @@ describe('useWorkspaceManager mount flows', () => {
         expect(result.current.refreshSignal).toBe(0);
     });
 });
+

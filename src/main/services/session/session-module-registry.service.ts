@@ -13,6 +13,7 @@ import { BaseService } from '@main/services/base.service';
 import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { SESSION_CHANNELS } from '@shared/constants/ipc-channels';
 import { SESSION_CAPABILITY_DESCRIPTORS } from '@shared/constants/session-capabilities';
 import { RuntimeValue } from '@shared/types/common';
 import {
@@ -88,9 +89,10 @@ export class SessionModuleRegistryService extends BaseService {
 
     // --- IPC Decorated Methods ---
 
-    @ipc('session:list-capabilities')
+    @ipc(SESSION_CHANNELS.LIST_CAPABILITIES)
     async listCapabilitiesIpc(): Promise<RuntimeValue> {
         const result = this.listCapabilityDescriptors();
-        return serializeToIpc(result as unknown);
+        return serializeToIpc(result);
     }
 }
+

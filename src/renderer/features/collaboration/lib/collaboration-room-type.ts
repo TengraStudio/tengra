@@ -19,3 +19,4 @@ export function normalizeCollaborationRoomType(
 ): CollaborationRoomType {
     return type === WORKSPACE_COMPAT_ALIAS_VALUES.SINGULAR ? WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE : type;
 }
+

@@ -49,6 +49,12 @@ export const SidebarChatItem = React.memo(
         cancelEdit,
     }: SidebarChatItemProps) => {
         const { t } = useTranslation();
+        const actionButtonClassName =
+            "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/45 bg-background/92 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:-translate-y-px hover:border-border/70 hover:bg-muted/90 hover:text-foreground";
+        const deleteButtonClassName = cn(
+            actionButtonClassName,
+            "hover:border-destructive/30 hover:bg-destructive/12 hover:text-destructive"
+        );
 
         return (
             <div className="group relative">
@@ -63,36 +69,42 @@ export const SidebarChatItem = React.memo(
                 />
 
                 {!isEditing && !isCollapsed && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-1 rounded-xl border border-border/45 bg-background/88 p-1.5 shadow-lg backdrop-blur-md opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:opacity-100">
                         <button
                             onClick={e => {
                                 e.stopPropagation();
                                 startEdit(chat.id, chat.title);
                             }}
-                            className={UI_PRIMITIVES.ACTION_BUTTON_GHOST}
+                            className={actionButtonClassName}
                             title={t('common.edit')}
+                            aria-label={t('common.edit')}
                         >
-                            <IconEdit className="w-3 h-3" />
+                            <IconEdit className="h-3.5 w-3.5" />
                         </button>
                         <button
                             onClick={e => {
                                 e.stopPropagation();
                                 togglePin(chat.id, !chat.isPinned);
                             }}
-                            className={UI_PRIMITIVES.ACTION_BUTTON_GHOST}
+                            className={cn(
+                                actionButtonClassName,
+                                chat.isPinned && "border-primary/25 bg-primary/10 text-primary"
+                            )}
                             title={chat.isPinned ? t('common.unpin') : t('common.pin')}
+                            aria-label={chat.isPinned ? t('common.unpin') : t('common.pin')}
                         >
-                            <IconPin className={cn('w-3 h-3', chat.isPinned && 'fill-current')} />
+                            <IconPin className={cn('h-3.5 w-3.5', chat.isPinned && 'fill-current')} />
                         </button>
                         <button
                             onClick={e => {
                                 e.stopPropagation();
                                 deleteChat(chat.id);
                             }}
-                            className={cn(UI_PRIMITIVES.ACTION_BUTTON_GHOST, "hover:text-destructive hover:bg-destructive/10")}
+                            className={deleteButtonClassName}
                             title={t('common.delete')}
+                            aria-label={t('common.delete')}
                         >
-                            <IconTrash className="w-3 h-3" />
+                            <IconTrash className="h-3.5 w-3.5" />
                         </button>
                     </div>
                 )}
@@ -125,3 +137,4 @@ export const SidebarChatItem = React.memo(
 );
 
 SidebarChatItem.displayName = 'SidebarChatItem';
+

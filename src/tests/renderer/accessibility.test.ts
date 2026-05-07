@@ -61,7 +61,7 @@ describe('Accessibility Utilities', () => {
             const { getA11ySettings } = await import('@/utils/accessibility');
             const settings = getA11ySettings();
 
-            // expect(settings.highContrast).toBe(false);
+            expect(settings.highContrast).toBe(false);
             expect(settings.screenReaderAnnouncements).toBe(true);
             expect(settings.enhancedFocusIndicators).toBe(false);
         });
@@ -69,10 +69,10 @@ describe('Accessibility Utilities', () => {
         it('should persist settings to localStorage', async () => {
             const { setA11ySettings, getA11ySettings } = await import('@/utils/accessibility');
 
-            // setA11ySettings({ highContrast: true });
+            setA11ySettings({ highContrast: true });
 
             const settings = getA11ySettings();
-            // expect(settings.highContrast).toBe(true);
+            expect(settings.highContrast).toBe(true);
             expect(localStorageMock.setItem).toHaveBeenCalled();
         });
 
@@ -159,3 +159,4 @@ describe('Accessibility Utilities', () => {
         });
     });
 });
+

@@ -160,3 +160,4 @@ export const ResizableContainer: React.FC<ResizableContainerProps> = ({
 ResizablePane.displayName = 'ResizablePane';
 ResizableHandle.displayName = 'ResizableHandle';
 ResizableContainer.displayName = 'ResizableContainer';
+

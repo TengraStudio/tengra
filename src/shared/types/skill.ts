@@ -44,3 +44,4 @@ export interface ProxySkillListResponse {
 export interface ProxySkillItemResponse {
     item: ProxySkill;
 }
+

@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { SECURITY_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface SecurityBridge {
@@ -16,6 +17,7 @@ export interface SecurityBridge {
 
 export function createSecurityBridge(ipc: IpcRenderer): SecurityBridge {
     return {
-        resetMasterKey: () => ipc.invoke('security:reset-master-key'),
+        resetMasterKey: () => ipc.invoke(SECURITY_CHANNELS.RESET_MASTER_KEY),
     };
 }
+

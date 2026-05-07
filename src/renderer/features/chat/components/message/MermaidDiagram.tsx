@@ -84,3 +84,4 @@ export const MermaidDiagram = memo(({ code, t }: MermaidDiagramProps) => {
 });
 
 MermaidDiagram.displayName = 'MermaidDiagram';
+

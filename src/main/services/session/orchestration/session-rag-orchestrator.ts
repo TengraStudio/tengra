@@ -79,3 +79,4 @@ function sanitizeConversationContext(context: string): string {
         .replace(/ignore (all |any )?(previous|above|prior) (instructions|prompts|rules)/gi, '[filtered]')
         .replace(/you are now|act as|pretend to be|new instructions:/gi, '[filtered]');
 }
+

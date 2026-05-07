@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { AGENT_CHANNELS } from '@shared/constants/ipc-channels';
 import { AgentDefinition } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -56,15 +57,16 @@ export interface AgentBridge {
 
 export function createAgentBridge(ipc: IpcRenderer): AgentBridge {
     return {
-        getAll: () => ipc.invoke('agent:get-all'),
-        get: id => ipc.invoke('agent:get', id),
-        create: payload => ipc.invoke('agent:create', payload),
-        delete: (id, options) => ipc.invoke('agent:delete', { id, options }),
-        clone: (id, newName) => ipc.invoke('agent:clone', { id, newName }),
-        exportAgent: id => ipc.invoke('agent:export', id),
-        importAgent: payload => ipc.invoke('agent:import', payload),
-        getTemplatesLibrary: () => ipc.invoke('agent:get-templates'),
-        validateTemplate: template => ipc.invoke('agent:validate-template', template),
-        recover: archiveId => ipc.invoke('agent:recover', archiveId),
+        getAll: () => ipc.invoke(AGENT_CHANNELS.GET_ALL),
+        get: id => ipc.invoke(AGENT_CHANNELS.GET, id),
+        create: payload => ipc.invoke(AGENT_CHANNELS.CREATE, payload),
+        delete: (id, options) => ipc.invoke(AGENT_CHANNELS.DELETE, { id, options }),
+        clone: (id, newName) => ipc.invoke(AGENT_CHANNELS.CLONE, { id, newName }),
+        exportAgent: id => ipc.invoke(AGENT_CHANNELS.EXPORT, id),
+        importAgent: payload => ipc.invoke(AGENT_CHANNELS.IMPORT, payload),
+        getTemplatesLibrary: () => ipc.invoke(AGENT_CHANNELS.GET_TEMPLATES_LIBRARY),
+        validateTemplate: template => ipc.invoke(AGENT_CHANNELS.VALIDATE_TEMPLATE, template),
+        recover: archiveId => ipc.invoke(AGENT_CHANNELS.RECOVER, archiveId),
     };
 }
+

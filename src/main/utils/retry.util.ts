@@ -183,3 +183,4 @@ function isAuthOrConfigError(error: CatchError): boolean {
         message.includes('model not found')
     );
 }
+

@@ -188,3 +188,4 @@ export function buildWorkspaceExplorerDiagnosticsSnapshot(args: {
 
     return snapshot;
 }
+

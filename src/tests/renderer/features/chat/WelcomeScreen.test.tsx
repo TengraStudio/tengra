@@ -104,3 +104,4 @@ describe('WelcomeScreen', () => {
         expect(logo).toBeInTheDocument();
     });
 });
+

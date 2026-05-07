@@ -149,3 +149,4 @@ export function recordToolResultAsEvidence(store: SessionEvidenceStore, toolName
     return store.addToolResult(toolName, result);
 }
 
+

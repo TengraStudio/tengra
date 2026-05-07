@@ -21,6 +21,7 @@
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { BATCH_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue } from '@shared/types/common';
 import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -181,7 +182,7 @@ export class IpcBatchService extends BaseService {
     /**
      * Handle batch invoke requests in parallel.
      */
-    @ipc({ channel: 'batch:invoke', withEvent: true })
+    @ipc({ channel: BATCH_CHANNELS.INVOKE, withEvent: true })
     async invokeParallel(event: IpcMainInvokeEvent, requests: BatchRequest[]): Promise<BatchResponse> {
         const startTime = Date.now();
 
@@ -222,7 +223,7 @@ export class IpcBatchService extends BaseService {
     /**
      * Handle batch invoke requests sequentially.
      */
-    @ipc({ channel: 'batch:invokeSequential', withEvent: true })
+    @ipc({ channel: BATCH_CHANNELS.INVOKE_SEQUENTIAL, withEvent: true })
     async invokeSequential(
         event: IpcMainInvokeEvent,
         requests: BatchRequest[]
@@ -265,7 +266,7 @@ export class IpcBatchService extends BaseService {
     /**
      * Get list of all registered batchable channels.
      */
-    @ipc('batch:getChannels')
+    @ipc({ channel: BATCH_CHANNELS.GET_CHANNELS })
     async getChannels(): Promise<string[]> {
         return getBatchableChannels();
     }
@@ -278,15 +279,15 @@ export class IpcBatchService extends BaseService {
 export function registerBatchIpc(): void {
     const service = new IpcBatchService();
     
-    ipcMain.handle('batch:invoke', async (event, requests) => {
+    ipcMain.handle(BATCH_CHANNELS.INVOKE, async (event, requests) => {
         return await service.invokeParallel(event, requests);
     });
 
-    ipcMain.handle('batch:invokeSequential', async (event, requests) => {
+    ipcMain.handle(BATCH_CHANNELS.INVOKE_SEQUENTIAL, async (event, requests) => {
         return await service.invokeSequential(event, requests);
     });
 
-    ipcMain.handle('batch:getChannels', async () => {
+    ipcMain.handle(BATCH_CHANNELS.GET_CHANNELS, async () => {
         return await service.getChannels();
     });
 }
@@ -315,3 +316,4 @@ export function makeBatchable<T extends IpcValue>(
 ): void {
     registerBatchableHandler(channel, handler);
 }
+

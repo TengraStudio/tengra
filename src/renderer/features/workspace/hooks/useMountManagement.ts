@@ -56,9 +56,12 @@ function usePersistMounts(
     return useCallback(
         async (nextMounts: WorkspaceMount[]): Promise<boolean> => {
             const startedAt = Date.now();
-            setMounts(nextMounts);
+            const sanitizedMounts = nextMounts.filter(
+                mount => typeof mount.rootPath === 'string' && mount.rootPath.trim().length > 0
+            );
+            setMounts(sanitizedMounts);
             try {
-                await window.electron.db.updateWorkspace(workspaceId, { mounts: nextMounts });
+                await window.electron.db.updateWorkspace(workspaceId, { mounts: sanitizedMounts });
                 recordWorkspacesPageHealthEvent({
                     channel: 'workspace.persistMounts',
                     status: 'success',
@@ -281,3 +284,4 @@ export function useMountManagement({
         pickLocalFolder,
     };
 }
+

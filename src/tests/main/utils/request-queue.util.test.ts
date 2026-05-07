@@ -142,3 +142,4 @@ describe('RequestQueue', () => {
         expect(completed.length).toBe(2);
     });
 });
+

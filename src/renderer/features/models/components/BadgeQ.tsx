@@ -26,3 +26,4 @@ export function BadgeQ({ quantization }: { quantization: string }) {
         </span>
     );
 }
+

@@ -41,3 +41,4 @@ export const ModelsSkeleton: React.FC = React.memo(() => (
 ));
 
 ModelsSkeleton.displayName = 'ModelsSkeleton';
+

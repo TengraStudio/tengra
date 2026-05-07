@@ -291,3 +291,4 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         editing: { isEditingName, setIsEditingName, editName, setEditName, handleSaveName, isEditingDesc, setIsEditingDesc, editDesc, setEditDesc, handleSaveDesc }
     };
 }
+

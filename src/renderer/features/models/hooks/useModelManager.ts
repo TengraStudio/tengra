@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchLinkedAccountsSnapshot } from '@/features/settings/hooks/useLinkedAccounts';
 import { useTranslation } from '@/i18n';
 import { pushNotification } from '@/store/notification-center.store';
+import { getSettingsSnapshot } from '@/store/settings.store';
 import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
@@ -253,7 +254,7 @@ export function useModelManager(
     useEffect(() => {
         void refreshLinkedProviders();
 
-        const removeListener = window.electron.ipcRenderer.on('auth:account-changed', () => {
+        const removeListener = window.electron.auth.onAccountChanged(() => {
             void refreshLinkedProviders();
         });
 
@@ -323,10 +324,6 @@ export function useModelManager(
         }
 
         hasScheduledRemoteRetryRef.current = true;
-        appLogger.debug('ModelManager', 'Remote provider coverage incomplete; scheduling proxy refresh retry', {
-            expectedRemoteProviders,
-            currentModelCount: models.length,
-        });
         const retryTimer = window.setTimeout(() => {
             void refreshModels(true);
             hasScheduledRemoteRetryRef.current = false;
@@ -359,11 +356,12 @@ export function useModelManager(
     ]);
 
     useEffect(() => {
-        if (!appSettings) { return; }
-        
-        const defaultModel = appSettings.general.defaultModel;
-        const lastProvider = appSettings.general.lastProvider;
-        const locale = appSettings.general.language ?? 'en';
+        const currentSettings = getSettingsSnapshot().settings ?? appSettings;
+        if (!currentSettings) { return; }
+
+        const defaultModel = currentSettings.general.defaultModel;
+        const lastProvider = currentSettings.general.lastProvider;
+        const locale = currentSettings.general.language ?? 'en';
 
         // Stricter guard using refs to prevent recursive runs within the same render cycle
         if (lastSyncedRef.current.defaultModel === defaultModel && lastSyncedRef.current.lastProvider === lastProvider) {
@@ -426,14 +424,14 @@ export function useModelManager(
 
             // Sync settings if different
             if (
-                appSettings.general.defaultModel !== fallback.model ||
-                appSettings.general.lastProvider !== fallback.provider
+                currentSettings.general.defaultModel !== fallback.model ||
+                currentSettings.general.lastProvider !== fallback.provider
             ) {
                 lastSyncedRef.current = { defaultModel: fallback.model, lastProvider: fallback.provider };
                 setAppSettings({
-                    ...appSettings,
+                    ...currentSettings,
                     general: {
-                        ...appSettings.general,
+                        ...currentSettings.general,
                         defaultModel: fallback.model,
                         lastProvider: fallback.provider
                     }
@@ -452,12 +450,12 @@ export function useModelManager(
         // CASE 2: Valid pair exists, ensure UI state matches settings
         if (defaultModel && resolvedPersistedProvider && persistedPairExists) {
             // First ensure lastProvider in settings is normalized
-            if (appSettings.general.lastProvider !== resolvedPersistedProvider) {
+            if (currentSettings.general.lastProvider !== resolvedPersistedProvider) {
                 lastSyncedRef.current = { defaultModel, lastProvider: resolvedPersistedProvider };
                 setAppSettings({
-                    ...appSettings,
+                    ...currentSettings,
                     general: {
-                        ...appSettings.general,
+                        ...currentSettings.general,
                         lastProvider: resolvedPersistedProvider
                     }
                 });
@@ -512,7 +510,7 @@ export function useModelManager(
             return;
         }
 
-        setAppSettings({
+        void setAppSettings({
             ...currentSettings,
             general: {
                 ...currentSettings.general,
@@ -621,3 +619,4 @@ export function useModelManager(
         persistLastSelection, toggleFavorite, isFavorite, getModelReasoningLevel, setModelReasoningLevel
     ]);
 }
+

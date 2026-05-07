@@ -98,3 +98,4 @@ export function parseFileSymbols(filePath: string, content: string): CodeSymbol[
     }
     return results;
 }
+

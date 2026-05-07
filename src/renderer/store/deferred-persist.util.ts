@@ -48,3 +48,4 @@ export function createDeferredPersist(options: DeferredPersistOptions): Deferred
 
     return { schedule, cancel, flush };
 }
+

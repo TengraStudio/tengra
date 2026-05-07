@@ -84,3 +84,4 @@ export const RuntimeManifestSchema = z.object({
     generatedAt: z.string().datetime(),
     components: z.array(RuntimeManifestComponentSchema).max(128),
 });
+

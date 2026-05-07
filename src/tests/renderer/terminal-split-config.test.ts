@@ -100,3 +100,4 @@ describe('terminal split config utils', () => {
         ).toBeNull();
     });
 });
+

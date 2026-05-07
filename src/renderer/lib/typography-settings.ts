@@ -67,3 +67,4 @@ export function resolveTypographyScale(scale?: string): {
         ...APP_TYPOGRAPHY_SCALES[resolvedId],
     };
 }
+

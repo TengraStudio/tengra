@@ -20,6 +20,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { resolveWindowsCommand } from '@main/utils/windows-command.util';
+import { PROCESS_CHANNELS } from '@shared/constants/ipc-channels';
 import { IPC_TIMEOUTS } from '@shared/constants/timeouts';
 import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -114,7 +115,7 @@ export class ProcessService extends BaseService {
         const win = this.mainWindowProvider();
         if (win && !win.isDestroyed()) {
             this.buffers.forEach((data, id) => {
-                win.webContents.send('process:data', { id, data });
+                win.webContents.send(PROCESS_CHANNELS.DATA, { id, data });
             });
         }
         this.buffers.clear();
@@ -172,7 +173,7 @@ export class ProcessService extends BaseService {
 
     // --- Task Runner ---
 
-    @ipc('process:spawn')
+    @ipc(PROCESS_CHANNELS.SPAWN)
     async spawnIpc(commandRaw: RuntimeValue, argsRaw: RuntimeValue, cwdRaw: RuntimeValue): Promise<string | null> {
         const command = this.validateCommand(commandRaw);
         if (!command) {
@@ -231,7 +232,7 @@ export class ProcessService extends BaseService {
         return id;
     }
 
-    @ipc('process:kill')
+    @ipc(PROCESS_CHANNELS.KILL)
     async killIpc(idRaw: RuntimeValue): Promise<boolean> {
         const id = this.validateId(idRaw);
         if (!id) {
@@ -254,7 +255,7 @@ export class ProcessService extends BaseService {
 
     // --- Script Auto-Discovery ---
 
-    @ipc('process:scan-scripts')
+    @ipc(PROCESS_CHANNELS.SCAN_SCRIPTS)
     async scanScriptsIpc(rootPathRaw: RuntimeValue): Promise<Record<string, string>> {
         const rootPath = this.validatePath(rootPathRaw);
         if (!rootPath) {
@@ -286,7 +287,7 @@ export class ProcessService extends BaseService {
 
     // --- Process Manager ---
 
-    @ipc('process:list')
+    @ipc(PROCESS_CHANNELS.LIST)
     async getRunningTasksIpc(): Promise<UnsafeValue[]> {
         return this.getRunningTasks();
     }
@@ -317,7 +318,7 @@ export class ProcessService extends BaseService {
         }));
     }
 
-    @ipc('process:resize')
+    @ipc(PROCESS_CHANNELS.RESIZE)
     async resizeIpc(idRaw: RuntimeValue, colsRaw: RuntimeValue, rowsRaw: RuntimeValue): Promise<boolean> {
         const id = this.validateId(idRaw);
         if (!id) {
@@ -345,7 +346,7 @@ export class ProcessService extends BaseService {
         }
     }
 
-    @ipc('process:write')
+    @ipc(PROCESS_CHANNELS.WRITE)
     async writeIpc(idRaw: RuntimeValue, dataRaw: RuntimeValue): Promise<boolean> {
         const id = this.validateId(idRaw);
         if (!id) {

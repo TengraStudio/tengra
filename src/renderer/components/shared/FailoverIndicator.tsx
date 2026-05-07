@@ -49,3 +49,4 @@ const FailoverIndicator: React.FC<FailoverIndicatorProps> = ({
 };
 
 export default FailoverIndicator;
+

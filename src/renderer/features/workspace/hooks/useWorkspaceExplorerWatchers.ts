@@ -99,7 +99,12 @@ export function useWorkspaceExplorerWatchers({
     }, [pendingDirectoryReloadsRef, pendingReloadTimeoutRef]);
 
     useEffect(() => {
-        const localMounts = mounts.filter(mount => mount.type === 'local');
+        const localMounts = mounts.filter(
+            mount =>
+                mount.type === 'local' &&
+                typeof mount.rootPath === 'string' &&
+                mount.rootPath.trim().length > 0
+        );
         const nextRoots = new Set(localMounts.map(mount => mount.rootPath));
 
         for (const watchedRoot of Array.from(watchedRootsRef.current)) {
@@ -135,6 +140,8 @@ export function useWorkspaceExplorerWatchers({
                 const mount = mountsRef.current.find(
                     item =>
                         item.type === 'local' &&
+                        typeof item.rootPath === 'string' &&
+                        item.rootPath.trim().length > 0 &&
                         item.rootPath.replace(/\\/g, '/') === rootPath.replace(/\\/g, '/')
                 );
                 if (!mount) {
@@ -156,3 +163,4 @@ export function useWorkspaceExplorerWatchers({
         stopAllWorkspaceWatches,
     ]);
 }
+

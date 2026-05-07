@@ -241,3 +241,4 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
         </div>
     );
 };
+

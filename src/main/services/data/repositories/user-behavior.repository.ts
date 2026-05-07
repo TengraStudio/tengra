@@ -106,3 +106,4 @@ export class UserBehaviorRepository extends BaseRepository {
         };
     }
 }
+

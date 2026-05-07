@@ -17,7 +17,6 @@
 import type { ThemeManifest, ThemeRegistry, ThemeType } from '@shared/types/theme';
 
 import { appLogger } from '@/utils/renderer-logger';
-import { themeIpc } from '@/utils/theme-ipc.util';
 
 /**
  * Theme Registry API
@@ -29,8 +28,8 @@ export class ThemeRegistryService {
 
     constructor() {
         // Listen for theme updates from Main process (e.g. after marketplace install)
-        if (window.electron?.ipcRenderer) {
-            window.electron.ipcRenderer.on('theme:runtime:updated', () => {
+        if (window.electron?.theme) {
+            window.electron.theme.onRuntimeUpdated(() => {
                 appLogger.info('ThemeRegistry', 'Received theme update notification, reloading themes...');
                 void this.reloadThemes();
             });
@@ -43,7 +42,7 @@ export class ThemeRegistryService {
      */
     async loadThemes(): Promise<void> {
         try {
-            const manifests = await themeIpc.getAllThemes();
+            const manifests = await window.electron.theme.runtime.getAll();
             this.themes = {};
 
             for (const manifest of manifests) {
@@ -171,3 +170,4 @@ export class ThemeRegistryService {
 
 // Singleton instance
 export const themeRegistry = new ThemeRegistryService();
+

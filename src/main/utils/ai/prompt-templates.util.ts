@@ -478,3 +478,4 @@ export class TemplateManager {
 
 // Singleton
 export const templateManager = new TemplateManager();
+

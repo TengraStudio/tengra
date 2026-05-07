@@ -124,3 +124,4 @@ export const AddMemoryModal = ({ onClose, onAdd }: AddMemoryModalProps) => {
         </div>
     );
 };
+

@@ -42,3 +42,4 @@ export function toTerminalSessionId(value: string): TerminalSessionId {
 export function isTerminalSessionId(value: RuntimeValue): value is TerminalSessionId {
     return typeof value === 'string' && value.length > 0 && value.startsWith('term-');
 }
+

@@ -181,3 +181,4 @@ test.describe('Chat Input Attachments E2E', () => {
         expect(isFocused).toBe(true);
     });
 });
+

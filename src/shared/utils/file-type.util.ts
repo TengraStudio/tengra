@@ -60,3 +60,4 @@ export async function validateFileSignature(file: File): Promise<boolean> {
     // Strict equality check
     return detected === provided;
 }
+

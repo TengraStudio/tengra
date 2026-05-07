@@ -104,3 +104,4 @@ export const Confetti: React.FC<ConfettiProps> = ({
 };
 
 Confetti.displayName = 'Confetti';
+

@@ -138,3 +138,4 @@ offlineQueueWindow.__tengraOfflineQueueOfflineHandler__ = handleOffline;
 
 window.addEventListener('online', handleOnline);
 window.addEventListener('offline', handleOffline);
+

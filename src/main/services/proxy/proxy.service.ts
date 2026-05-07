@@ -25,6 +25,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { getMainWindow } from '@main/startup/window';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { proxyAccountIdSchema, sessionKeySchema } from '@main/utils/ipc-validation';
+import { PROXY_CHANNELS, PROXY_EMBED_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, JsonValue, RuntimeValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import {
@@ -90,9 +91,9 @@ export const ProxyErrorCode = {
 } as const;
 
 /**
- * Telemetry events emitted by ProxyService
+ * usageStats events emitted by ProxyService
  */
-export enum ProxyTelemetryEvent {
+export enum ProxyUsageStatsEvent {
   PROXY_STARTED = 'proxy_started',
   PROXY_STOPPED = 'proxy_stopped',
   REQUEST_SENT = 'proxy_request_sent',
@@ -810,8 +811,8 @@ export class ProxyService extends BaseService {
    * @param appId - OAuth app to use
    * @returns Device code response for user authorization
    */
-  async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
-    this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_INITIATED, { provider: 'github', appId });
+  async initiateGitHubAuth(appId: 'copilot' = 'copilot'): Promise<DeviceCodeResponse> {
+    this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_INITIATED, { provider: 'github', appId });
     
     const response = await this.makeRequest<{
       device_code: string;
@@ -827,7 +828,7 @@ export class ProxyService extends BaseService {
     );
 
     if (typeof response === 'object' && response !== null && 'error' in response && response.error) {
-      this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_FAILED, { provider: 'github', appId, error: response.error as string });
+      this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_FAILED, { provider: 'github', appId, error: response.error as string });
       throw new Error(`GitHub auth initiation failed: ${response.error}`);
     }
 
@@ -856,7 +857,7 @@ export class ProxyService extends BaseService {
    * @returns Token response
    * @throws ValidationError if inputs invalid
    */
-  async waitForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<TokenResponse> {
+  async waitForGitHubToken(deviceCode: string, interval: number, appId: 'copilot' = 'copilot'): Promise<TokenResponse> {
     const codeError = validateToken(deviceCode, 'Device code');
     if (codeError) {
       throw new ValidationError(`waitForGitHubToken: ${codeError}`);
@@ -891,9 +892,7 @@ export class ProxyService extends BaseService {
           token_type: typeof response.token_type === 'string' ? response.token_type : 'bearer',
           scope: typeof response.scope === 'string'
             ? response.scope
-            : appId === 'copilot'
-              ? 'read:user user:email'
-              : 'read:user user:email repo',
+            : 'read:user user:email',
           refresh_token: typeof response.refresh_token === 'string' ? response.refresh_token : undefined,
           refresh_token_expires_in: typeof response.refresh_token_expires_in === 'number' ? response.refresh_token_expires_in : undefined,
           session_token: typeof response.session_token === 'string' ? response.session_token : undefined,
@@ -1088,7 +1087,7 @@ export class ProxyService extends BaseService {
 
     const normalized = this.normalizeBrowserAuthUrlResponse(response);
     if (normalized) {
-      this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_INITIATED, {
+      this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_INITIATED, {
         provider,
         state: normalized.state,
         accountId: normalized.accountId
@@ -1100,7 +1099,7 @@ export class ProxyService extends BaseService {
       ? response.error
       : `Failed to get ${provider} auth URL`;
     appLogger.error('ProxyService', `getBrowserAuthUrl: failed for ${provider}: ${errorMessage}`);
-    this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_FAILED, { provider, error: errorMessage });
+    this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_FAILED, { provider, error: errorMessage });
     throw new ProxyServiceError(errorMessage, AppErrorCode.PROXY_AUTH_FAILED, false, { provider });
   }
 
@@ -1196,7 +1195,7 @@ export class ProxyService extends BaseService {
    * @returns Proxy status
    * @throws on invalid port
    */
-  @ipc('proxy-embed:start')
+  @ipc(PROXY_EMBED_CHANNELS.START)
   async startEmbeddedProxy(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
     const previous = this.operationLock;
     const current = (async () => {
@@ -1234,7 +1233,7 @@ export class ProxyService extends BaseService {
       this.logWarn(`startEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.START_MS}ms`);
     }
     this.startQuotaStream();
-    this.eventBus.emitCustom(ProxyTelemetryEvent.PROXY_STARTED, { port: this.currentPort, elapsedMs: elapsed });
+    this.eventBus.emitCustom(ProxyUsageStatsEvent.PROXY_STARTED, { port: this.currentPort, elapsedMs: elapsed });
     return status;
   }
 
@@ -1253,7 +1252,7 @@ export class ProxyService extends BaseService {
   }
 
   /** Stops the embedded proxy process. @throws ProxyServiceError on failure */
-  @ipc('proxy-embed:stop')
+  @ipc(PROXY_EMBED_CHANNELS.STOP)
   async stopEmbeddedProxy(): Promise<void> {
     const previous = this.operationLock;
     const current = (async () => {
@@ -1284,15 +1283,15 @@ export class ProxyService extends BaseService {
       this.logWarn(`stopEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.STOP_MS}ms`);
     }
     this.stopQuotaStream();
-    this.eventBus.emitCustom(ProxyTelemetryEvent.PROXY_STOPPED, { elapsedMs: elapsed });
+    this.eventBus.emitCustom(ProxyUsageStatsEvent.PROXY_STOPPED, { elapsedMs: elapsed });
   }
 
   /** Returns current embedded proxy running status. @returns Proxy embed status */
-  @ipc('proxy-embed:status')
+  @ipc(PROXY_EMBED_CHANNELS.STATUS)
   getEmbeddedProxyStatus(): ProxyEmbedStatus {
     const status = this.processManager.getStatus();
     if (status.running && status.port) { this.currentPort = status.port; }
-    this.eventBus.emitCustom(ProxyTelemetryEvent.HEALTH_CHECK, { running: status.running, port: status.port });
+    this.eventBus.emitCustom(ProxyUsageStatsEvent.HEALTH_CHECK, { running: status.running, port: status.port });
     return status;
   }
 
@@ -1850,7 +1849,7 @@ export class ProxyService extends BaseService {
             if (requestElapsed > PROXY_PERFORMANCE_BUDGETS.REQUEST_MS) {
               appLogger.warn('ProxyService', `makeRequest exceeded budget: ${requestElapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.REQUEST_MS}ms (${method} ${path})`);
             }
-            this.eventBus.emitCustom(ProxyTelemetryEvent.REQUEST_SENT, { method, path, elapsedMs: requestElapsed, statusCode: res.statusCode });
+            this.eventBus.emitCustom(ProxyUsageStatsEvent.REQUEST_SENT, { method, path, elapsedMs: requestElapsed, statusCode: res.statusCode });
             const parsed = safeJsonParse<JsonObject | null>(d, null);
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
               if (res.statusCode && res.statusCode >= 400) {
@@ -1883,7 +1882,7 @@ export class ProxyService extends BaseService {
             clearTimeout(timeoutHandle);
             timeoutHandle = null;
           }
-          this.eventBus.emitCustom(ProxyTelemetryEvent.REQUEST_FAILED, { method, path, error: err.message });
+          this.eventBus.emitCustom(ProxyUsageStatsEvent.REQUEST_FAILED, { method, path, error: err.message });
           const isConnectionError = 'code' in err && (
             (err as NodeJS.ErrnoException).code === 'ECONNREFUSED' ||
             (err as NodeJS.ErrnoException).code === 'ECONNRESET'
@@ -2060,53 +2059,53 @@ export class ProxyService extends BaseService {
 
   // --- IPC Decorated Methods ---
 
-  @ipc('proxy:getQuota')
+  @ipc(PROXY_CHANNELS.GET_QUOTA)
   async getQuotaIpc(): Promise<RuntimeValue> {
     return serializeToIpc(await this.getQuota());
   }
 
-  @ipc('proxy:getCopilotQuota')
+  @ipc(PROXY_CHANNELS.GET_COPILOT_QUOTA)
   async getCopilotQuotaIpc(): Promise<RuntimeValue> {
     return serializeToIpc(await this.getCopilotQuota());
   }
 
-  @ipc('proxy:getCodexUsage')
+  @ipc(PROXY_CHANNELS.GET_CODEX_USAGE)
   async getCodexUsageIpc(): Promise<RuntimeValue> {
     return serializeToIpc(await this.getCodexUsage());
   }
 
-  @ipc('proxy:getClaudeQuota')
+  @ipc(PROXY_CHANNELS.GET_CLAUDE_QUOTA)
   async getClaudeQuotaIpc(): Promise<RuntimeValue> {
     return serializeToIpc(await this.getClaudeQuota());
   }
 
-  @ipc('proxy:antigravityLogin')
+  @ipc(PROXY_CHANNELS.ANTIGRAVITY_LOGIN)
   async antigravityLoginIpc(_accountId?: string): Promise<RuntimeValue> {
     const result = await this.getAntigravityAuthUrl(_accountId);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:ollamaLogin')
+  @ipc(PROXY_CHANNELS.OLLAMA_LOGIN)
   async ollamaLoginIpc(_accountId?: string): Promise<RuntimeValue> {
     proxyAccountIdSchema.parse(_accountId);
     const result = await this.getOllamaAuthUrl(_accountId);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:ollamaSignout')
+  @ipc(PROXY_CHANNELS.OLLAMA_SIGNOUT)
   async ollamaSignoutIpc(_accountId?: string): Promise<RuntimeValue> {
     proxyAccountIdSchema.parse(_accountId);
     const result = await this.ollamaSignout(_accountId);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:claudeLogin')
+  @ipc(PROXY_CHANNELS.CLAUDE_LOGIN)
   async claudeLoginIpc(_accountId?: string): Promise<RuntimeValue> {
     const result = await this.getAnthropicAuthUrl(_accountId);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:saveClaudeSession')
+  @ipc(PROXY_CHANNELS.SAVE_CLAUDE_SESSION)
   async saveClaudeSessionIpc(sessionKey: string, accountId?: string): Promise<RuntimeValue> {
     sessionKeySchema.parse(sessionKey);
     proxyAccountIdSchema.parse(accountId);
@@ -2119,7 +2118,7 @@ export class ProxyService extends BaseService {
     }
   }
 
-  @ipc('proxy:codexLogin')
+  @ipc(PROXY_CHANNELS.CODEX_LOGIN)
   async codexLoginIpc(accountId?: string): Promise<RuntimeValue> {
     this.logInfo(`proxy:codexLogin requested${accountId ? ` for ${accountId}` : ''}`);
     try {
@@ -2131,69 +2130,70 @@ export class ProxyService extends BaseService {
     }
   }
 
-  @ipc('proxy:getAuthStatus')
+  @ipc(PROXY_CHANNELS.GET_AUTH_STATUS)
   async getAuthStatusIpc(provider: string, state: string, accountId: string): Promise<RuntimeValue> {
     const result = await this.getBrowserAuthStatus(provider as UnsafeValue, state, accountId);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:verifyAuthBridge')
+  @ipc(PROXY_CHANNELS.VERIFY_AUTH_BRIDGE)
   async verifyAuthBridgeIpc(provider?: string): Promise<RuntimeValue> {
     const result = await this.verifyAuthBridge(provider as UnsafeValue);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:cancelAuth')
+  @ipc(PROXY_CHANNELS.CANCEL_AUTH)
   async cancelAuthIpc(provider: string, state: string, accountId: string): Promise<RuntimeValue> {
     const result = await this.cancelBrowserAuth(provider as UnsafeValue, state, accountId);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:getModels')
+  @ipc(PROXY_CHANNELS.GET_MODELS)
   async getModelsIpc(): Promise<RuntimeValue> {
     const result = await this.getModels();
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:listSkills')
+  @ipc(PROXY_CHANNELS.LIST_SKILLS)
   async listSkillsIpc(): Promise<RuntimeValue> {
     const result = await this.listSkills();
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:saveSkill')
+  @ipc(PROXY_CHANNELS.SAVE_SKILL)
   async saveSkillIpc(input: UnsafeValue): Promise<RuntimeValue> {
     const result = await this.saveSkill(input);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:toggleSkill')
+  @ipc(PROXY_CHANNELS.TOGGLE_SKILL)
   async toggleSkillIpc(skillId: string, enabled: boolean): Promise<RuntimeValue> {
     const result = await this.toggleSkill(skillId, { enabled });
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:deleteSkill')
+  @ipc(PROXY_CHANNELS.DELETE_SKILL)
   async deleteSkillIpc(skillId: string): Promise<RuntimeValue> {
     const result = await this.deleteSkill(skillId);
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:listMarketplaceSkills')
+  @ipc(PROXY_CHANNELS.LIST_MARKETPLACE_SKILLS)
   async listMarketplaceSkillsIpc(): Promise<RuntimeValue> {
     const result = await this.listMarketplaceSkills();
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:installMarketplaceSkill')
+  @ipc(PROXY_CHANNELS.INSTALL_MARKETPLACE_SKILL)
   async installMarketplaceSkillIpc(skillId: string): Promise<RuntimeValue> {
     const result = await this.installMarketplaceSkill({ id: skillId });
     return serializeToIpc(result);
   }
 
-  @ipc('proxy:forceRefreshQuota')
+  @ipc(PROXY_CHANNELS.FORCE_REFRESH_QUOTA)
   async forceRefreshQuotaIpc(): Promise<RuntimeValue> {
     await this.triggerQuotaSnapshotRefresh(true);
     return serializeToIpc(true);
   }
 }
+

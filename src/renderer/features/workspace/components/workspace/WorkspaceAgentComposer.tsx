@@ -158,3 +158,4 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = (pr
         </>
     );
 };
+

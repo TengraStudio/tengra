@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { USAGE_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 /** Result of a usage limit check */
@@ -32,10 +33,11 @@ export interface UsageBridge {
 export function createUsageBridge(ipc: IpcRenderer): UsageBridge {
     return {
         checkLimit: (provider, model) =>
-            ipc.invoke('usage:checkLimit', provider, model),
+            ipc.invoke(USAGE_CHANNELS.CHECK_LIMIT, provider, model),
         getUsageCount: (period, provider, model) =>
-            ipc.invoke('usage:getUsageCount', period, provider, model),
+            ipc.invoke(USAGE_CHANNELS.GET_USAGE_COUNT, period, provider, model),
         recordUsage: (provider, model) =>
-            ipc.invoke('usage:recordUsage', provider, model),
+            ipc.invoke(USAGE_CHANNELS.RECORD_USAGE, provider, model),
     };
 }
+

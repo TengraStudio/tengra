@@ -106,3 +106,4 @@ export function registerLifecycleHandlers(settingsService: SettingsService, isIp
         }
     }
 }
+

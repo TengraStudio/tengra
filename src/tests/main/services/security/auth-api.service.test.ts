@@ -389,3 +389,4 @@ describe('AuthAPIService - Legacy Provider Aliases', () => {
         );
     });
 });
+

@@ -61,3 +61,4 @@ describe('settings-page-health.store', () => {
         expect(snapshot.metrics.channels['settings.load'].budgetExceeded).toBe(1);
     });
 });
+

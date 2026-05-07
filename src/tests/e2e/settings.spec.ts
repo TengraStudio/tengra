@@ -134,3 +134,4 @@ test.describe('Settings Language Switching E2E', () => {
         await expect(languageSelectors.first()).toBeVisible();
     });
 });
+

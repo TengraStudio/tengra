@@ -40,3 +40,4 @@ describe('Card', () => {
         expect(screen.getByText('Details')).toBeInTheDocument();
     });
 });
+

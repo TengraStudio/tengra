@@ -287,3 +287,4 @@ export const WorkspaceSetupModal: React.FC<WorkspaceSetupModalProps> = ({ isOpen
 };
 
 // Workspace alias for the new naming convention
+

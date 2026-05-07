@@ -72,3 +72,4 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
 };
 
 ToolsSectionComponent.displayName = 'ToolsSection';
+

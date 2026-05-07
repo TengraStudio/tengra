@@ -104,3 +104,4 @@ describe('advanced memory workspace compatibility', () => {
         expect(hardenedStatistics.byCategory.fact).toBe(4);
     });
 });
+

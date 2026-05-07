@@ -9,7 +9,7 @@
  */
 
 
-import { TelemetryService } from '@main/services/analysis/telemetry.service';
+
 import { LLMService } from '@main/services/llm/llm.service';
 import { type ImageGenerationOptions, type ImageGenerationRecord, LocalImageService, type LocalImageServiceDeps } from '@main/services/llm/local/local-image.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -42,7 +42,7 @@ vi.mock('fs', async (importOriginal) => {
 describe('LocalImageService Integration', () => {
     let service: LocalImageService;
     let mockSettingsService: SettingsService;
-    let mockTelemetryService: TelemetryService;
+
     let mockEventBusService: EventBusService;
 
     beforeEach(() => {
@@ -56,9 +56,7 @@ describe('LocalImageService Integration', () => {
             saveSettings: vi.fn().mockResolvedValue(undefined),
         } as never as SettingsService;
 
-        mockTelemetryService = {
-            track: vi.fn(),
-        } as never as TelemetryService;
+
 
         mockEventBusService = {
             emit: vi.fn(),
@@ -66,7 +64,6 @@ describe('LocalImageService Integration', () => {
 
         const deps: LocalImageServiceDeps = {
             settingsService: mockSettingsService,
-            telemetryService: mockTelemetryService,
             eventBusService: mockEventBusService,
             authService: { getAllAccountsFull: vi.fn().mockResolvedValue([]) } as never as AuthService,
             llmService: {} as never as LLMService,
@@ -134,7 +131,6 @@ describe('LocalImageService Integration', () => {
             ).mockRejectedValue(new Error('sd-cpp failed'));
 
             await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('sd-cpp failed');
-            expect(mockTelemetryService.track).toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
         });
 
         it('should propagate provider errors when provider is not sd-cpp', async () => {
@@ -150,35 +146,11 @@ describe('LocalImageService Integration', () => {
             ).mockRejectedValue(new Error('ollama unavailable'));
 
             await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('ollama unavailable');
-            expect(mockTelemetryService.track).not.toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
         });
 
     });
 
-    describe('Telemetry Tracking', () => {
-        it('should track metrics with correct properties', async () => {
-            (
-                service as never as {
-                    trackSdCppMetric: (name: string, properties?: Record<string, RuntimeValue>) => void;
-                }
-            ).trackSdCppMetric('test-event', { detail: 'info' });
 
-            expect(mockTelemetryService.track).toHaveBeenCalledWith('test-event', {
-                provider: 'sd-cpp',
-                detail: 'info'
-            });
-        });
-
-        it('should emit telemetry when sd-cpp status is checked', async () => {
-            const status = await service.getSDCppStatus();
-
-            expect(status).toBe('notConfigured');
-            expect(mockTelemetryService.track).toHaveBeenCalledWith(
-                'sd-cpp-status-checked',
-                expect.objectContaining({ provider: 'sd-cpp', status: 'notConfigured' })
-            );
-        });
-    });
 
     describe('Health Metrics', () => {
         it('should expose dashboard-friendly health metrics', async () => {
@@ -424,3 +396,4 @@ describe('LocalImageService Integration', () => {
         });
     });
 });
+

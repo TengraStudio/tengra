@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { FILES_CHANNELS } from '@shared/constants/ipc-channels';
 import { FileEntry, ServiceResponse } from '@shared/types';
 import { FileDiff } from '@shared/types/file-diff';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
@@ -60,28 +61,39 @@ export interface FilesBridge {
 }
 
 export function createFilesBridge(ipc: IpcRenderer): FilesBridge {
+    const invalidPathResponse = (path: string | undefined): FileListResponse => ({
+        success: false,
+        data: [],
+        error: `Invalid path for listDirectory: ${typeof path}`,
+    });
+
     return {
-        listDirectory: (path: string) => ipc.invoke('files:listDirectory', path),
-        readFile: (path: string) => ipc.invoke('files:readFile', path),
-        readImage: (path: string) => ipc.invoke('files:readImage', path),
+        listDirectory: (path: string) => {
+            if (typeof path !== 'string' || path.trim().length === 0) {
+                return Promise.resolve(invalidPathResponse(path));
+            }
+            return ipc.invoke(FILES_CHANNELS.LIST_DIRECTORY, path);
+        },
+        readFile: (path: string) => ipc.invoke(FILES_CHANNELS.READ_FILE, path),
+        readImage: (path: string) => ipc.invoke(FILES_CHANNELS.READ_IMAGE, path),
         writeFile: (
             path: string,
             content: string,
             context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }
-        ) => ipc.invoke('files:writeFile', path, content, context),
-        exists: (path: string) => ipc.invoke('files:exists', path),
-        readPdf: (path: string) => ipc.invoke('files:readPdf', path),
-        selectDirectory: () => ipc.invoke('files:selectDirectory'),
-        selectFile: (options) => ipc.invoke('files:selectFile', options),
-        createDirectory: (path: string) => ipc.invoke('files:createDirectory', path),
-        deleteFile: (path: string) => ipc.invoke('files:deleteFile', path),
-        deleteDirectory: (path: string) => ipc.invoke('files:deleteDirectory', path),
+        ) => ipc.invoke(FILES_CHANNELS.WRITE_FILE, path, content, context),
+        exists: (path: string) => ipc.invoke(FILES_CHANNELS.EXISTS, path),
+        readPdf: (path: string) => ipc.invoke(FILES_CHANNELS.READ_PDF, path),
+        selectDirectory: () => ipc.invoke(FILES_CHANNELS.SELECT_DIRECTORY),
+        selectFile: (options) => ipc.invoke(FILES_CHANNELS.SELECT_FILE, options),
+        createDirectory: (path: string) => ipc.invoke(FILES_CHANNELS.CREATE_DIRECTORY, path),
+        deleteFile: (path: string) => ipc.invoke(FILES_CHANNELS.DELETE_FILE, path),
+        deleteDirectory: (path: string) => ipc.invoke(FILES_CHANNELS.DELETE_DIRECTORY, path),
         copyPath: (sourcePath: string, destinationPath: string) =>
-            ipc.invoke('files:copyPath', sourcePath, destinationPath),
-        renamePath: (oldPath: string, newPath: string) => ipc.invoke('files:renamePath', oldPath, newPath),
-        searchFiles: (rootPath: string, pattern: string) => ipc.invoke('files:searchFiles', rootPath, pattern),
-        revertFileChange: (diffId: string) => ipc.invoke('files:revertFileChange', diffId),
-        getFileDiff: (diffId: string) => ipc.invoke('files:getFileDiff', diffId),
+            ipc.invoke(FILES_CHANNELS.COPY_PATH, sourcePath, destinationPath),
+        renamePath: (oldPath: string, newPath: string) => ipc.invoke(FILES_CHANNELS.RENAME_PATH, oldPath, newPath),
+        searchFiles: (rootPath: string, pattern: string) => ipc.invoke(FILES_CHANNELS.SEARCH_FILES, rootPath, pattern),
+        revertFileChange: (diffId: string) => ipc.invoke(FILES_CHANNELS.REVERT_FILE_CHANGE, diffId),
+        getFileDiff: (diffId: string) => ipc.invoke(FILES_CHANNELS.GET_FILE_DIFF, diffId),
         searchFilesStream: (rootPath, pattern, onResult, onComplete) => {
             const jobId = Math.random().toString(36).substring(7);
             const listener = (_event: IpcRendererEvent, path: string) => onResult(path);
@@ -93,7 +105,7 @@ export function createFilesBridge(ipc: IpcRenderer): FilesBridge {
             ipc.on(`files:searchResult:${jobId}`, listener);
             ipc.on(`files:searchComplete:${jobId}`, completeListener);
 
-            void ipc.invoke('files:searchFilesStream', rootPath, pattern, jobId).catch(() => {
+            void ipc.invoke(FILES_CHANNELS.SEARCH_FILES_STREAM, rootPath, pattern, jobId).catch(() => {
                 completeListener();
             });
 
@@ -102,7 +114,8 @@ export function createFilesBridge(ipc: IpcRenderer): FilesBridge {
                 ipc.removeListener(`files:searchComplete:${jobId}`, completeListener);
             };
         },
-        saveFile: (content: string, filename: string) => ipc.invoke('files:saveFile', content, filename),
-        exportChatToPdf: (chatId: string, title: string) => ipc.invoke('files:exportChatToPdf', chatId, title),
+        saveFile: (content: string, filename: string) => ipc.invoke(FILES_CHANNELS.SAVE_FILE, content, filename),
+        exportChatToPdf: (chatId: string, title: string) => ipc.invoke(FILES_CHANNELS.EXPORT_CHAT_TO_PDF, chatId, title),
     };
 }
+

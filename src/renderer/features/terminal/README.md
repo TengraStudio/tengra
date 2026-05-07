@@ -14,7 +14,7 @@ This feature is split into a small module surface to keep `TerminalPanel.tsx` fo
 Terminal module compatibility is tracked in `utils/module-version.ts`.
 
 - `TERMINAL_MODULE_VERSION`: current semantic version of the modular terminal stack.
-- `serializeTerminalModuleVersion()`: stable string form for telemetry/debug.
+- `serializeTerminalModuleVersion()`: stable string form for usageStats/debug.
 - `isTerminalModuleVersionCompatible()`: major-version compatibility check.
 
 `TerminalPanel.tsx` publishes the current module version via:

@@ -10,7 +10,8 @@
 
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
-import { BrowserWindow, dialog } from 'electron';
+import { DIALOG_CHANNELS } from '@shared/constants/ipc-channels';
+import { BrowserWindow, dialog, IpcMainInvokeEvent } from 'electron';
 
 const DIALOG_MESSAGE_KEY = {
     WINDOW_NOT_FOUND: 'mainProcess.dialog.windowNotFound',
@@ -37,15 +38,15 @@ export class DialogService extends BaseService {
         return { success: false, error, messageKey };
     }
 
-    @ipc('dialog:selectDirectory')
+    @ipc(DIALOG_CHANNELS.SELECT_DIRECTORY)
     async selectDirectoryIpc() {
         return this.showOpenDialog({
             properties: ['openDirectory', 'createDirectory']
         });
     }
 
-    @ipc('dialog:showOpenDialog')
-    async showOpenDialogIpc(_event: unknown, options: Electron.OpenDialogOptions) {
+    @ipc(DIALOG_CHANNELS.SHOW_OPEN_DIALOG)
+    async showOpenDialogIpc(_event: IpcMainInvokeEvent, options: Electron.OpenDialogOptions) {
         return this.showOpenDialog(options);
     }
 
@@ -70,8 +71,8 @@ export class DialogService extends BaseService {
         return { success: true, filePaths: result.filePaths, path: result.filePaths[0] };
     }
 
-    @ipc('dialog:saveFile')
-    async saveFileIpc(_event: unknown, options: { filename: string; content: string }) {
+    @ipc(DIALOG_CHANNELS.SAVE_FILE)
+    async saveFileIpc(_event: IpcMainInvokeEvent, options: { filename: string; content: string }) {
         if (!options?.filename) {
             return this.createDialogFailure(
                 DIALOG_ERROR_MESSAGE.INVALID_OPTIONS,
@@ -101,3 +102,4 @@ export class DialogService extends BaseService {
         return { success: true, filePath: result.filePath };
     }
 }
+

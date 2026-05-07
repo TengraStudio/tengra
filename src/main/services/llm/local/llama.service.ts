@@ -22,10 +22,13 @@ import { DataService } from '@main/services/data/data.service';
 import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { getManagedRuntimeBinDir, getManagedRuntimeModelsDir } from '@main/services/system/runtime-path.service';
+import type { SettingsService } from '@main/services/system/settings.service';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
+import { LLAMA_CHANNELS } from '@shared/constants/ipc-channels';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { RuntimeValue } from '@shared/types/common';
+import type { AppSettings } from '@shared/types/settings';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { IpcMainInvokeEvent } from 'electron';
@@ -54,6 +57,10 @@ interface LlamaConfig {
     port?: number               // Server port, default 8080
     host?: string               // Server host, default 127.0.0.1
     backend?: 'auto' | 'cpu' | 'cuda' | 'vulkan' | 'metal'
+    mainGpu?: number            // Select primary GPU
+    tensorSplit?: string        // GPU tensor split ratios
+    sleepIdleSeconds?: number   // Unload model after idle period
+    extraArgs?: string          // Advanced raw llama-server args
 }
 
 interface ModelInfo {
@@ -61,6 +68,28 @@ interface ModelInfo {
     path: string
     size: number
     loaded: boolean
+}
+
+const DEFAULT_LLAMA_CONFIG: LlamaConfig = {
+    gpuLayers: -1,
+    contextSize: 8192,
+    batchSize: 512,
+    flashAttn: true,
+    continuousBatching: true,
+    mlock: true,
+    mmap: true,
+    port: 8080,
+    host: '127.0.0.1',
+    backend: 'auto',
+    metrics: false,
+    extraArgs: ''
+};
+
+function tokenizeExtraArgs(extraArgs: string): string[] {
+    const tokens = extraArgs.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? [];
+    return tokens
+        .map(token => token.replace(/^['"]|['"]$/g, '').trim())
+        .filter(token => token.length > 0);
 }
 
 export class LlamaService extends BaseService {
@@ -73,25 +102,15 @@ export class LlamaService extends BaseService {
     private runtimeBootstrapAttempted = false;
     private serverPort: number = 8080;
     private serverHost: string = '127.0.0.1';
-    private config: LlamaConfig = {
-        gpuLayers: -1,
-        contextSize: 8192,
-        batchSize: 512,
-        flashAttn: true,
-        continuousBatching: true,
-        mlock: true,
-        mmap: true,
-        port: 8080,
-        host: '127.0.0.1',
-        backend: 'auto'
-    };
+    private config: LlamaConfig = { ...DEFAULT_LLAMA_CONFIG };
     private activeDownloadAbortController: AbortController | null = null;
 
     private localImageService?: LocalImageService;
 
     constructor(
         dataService?: DataService,
-        private runtimeBootstrapService?: RuntimeBootstrapService
+        private runtimeBootstrapService?: RuntimeBootstrapService,
+        private settingsService?: SettingsService
     ) {
         super('LlamaService');
         // Get paths
@@ -109,6 +128,7 @@ export class LlamaService extends BaseService {
         }
 
         this.binDir = getManagedRuntimeBinDir();
+        this.config = this.resolveEffectiveConfig();
     }
 
     setLocalImageService(localImageService: LocalImageService): void {
@@ -131,6 +151,23 @@ export class LlamaService extends BaseService {
     async cleanup(): Promise<void> {
         await this.stopServer();
         this.logInfo('Cleanup complete');
+    }
+
+    private getPersistedConfig(): LlamaConfig {
+        const persisted = this.settingsService?.getSettings().llama;
+        if (!persisted) {
+            return {};
+        }
+
+        return persisted satisfies NonNullable<AppSettings['llama']>;
+    }
+
+    private resolveEffectiveConfig(overrides: Partial<LlamaConfig> = {}): LlamaConfig {
+        return {
+            ...DEFAULT_LLAMA_CONFIG,
+            ...this.getPersistedConfig(),
+            ...overrides,
+        };
     }
 
     private getServerPath(): string {
@@ -209,7 +246,7 @@ export class LlamaService extends BaseService {
         }
     }
 
-    @ipc('llama:isServerRunning')
+    @ipc(LLAMA_CHANNELS.IS_SERVER_RUNNING)
     async isServerRunning(): Promise<boolean> {
         return new Promise((resolve) => {
             const req = http.request({
@@ -230,8 +267,8 @@ export class LlamaService extends BaseService {
         });
     }
 
-    @ipc('llama:start')
-    @ipc('llama:loadModel')
+    @ipc(LLAMA_CHANNELS.START)
+    @ipc(LLAMA_CHANNELS.LOAD_MODEL)
     async loadModel(modelPathRaw: RuntimeValue, configRaw?: RuntimeValue): Promise<{ success: boolean; error?: string }> {
         const modelPath = this.validatePath(modelPathRaw);
         if (!modelPath) {
@@ -268,10 +305,7 @@ export class LlamaService extends BaseService {
             // Stop existing server
             await this.stopServer();
 
-            // Merge config
-            if (config) {
-                this.config = { ...this.config, ...config };
-            }
+            this.config = this.resolveEffectiveConfig(config);
             this.serverPort = this.config.port ?? 8080;
             this.serverHost = this.config.host ?? '127.0.0.1';
 
@@ -367,6 +401,14 @@ export class LlamaService extends BaseService {
             args.push('--defrag-thold', this.config.defragThold.toString());
         }
 
+        if (this.config.mainGpu !== undefined) {
+            args.push('--main-gpu', this.config.mainGpu.toString());
+        }
+
+        if (typeof this.config.tensorSplit === 'string' && this.config.tensorSplit.trim() !== '') {
+            args.push('--tensor-split', this.config.tensorSplit.trim());
+        }
+
         // Newer llama-server builds expect an explicit value for --flash-attn.
         // Keep default behavior on auto by not forcing the flag unless disabled.
         if (this.config.flashAttn === false) {
@@ -390,6 +432,14 @@ export class LlamaService extends BaseService {
 
         if (this.config.metrics) {
             args.push('--metrics');
+        }
+
+        if (typeof this.config.sleepIdleSeconds === 'number' && Number.isFinite(this.config.sleepIdleSeconds)) {
+            args.push('--sleep-idle-seconds', this.config.sleepIdleSeconds.toString());
+        }
+
+        if (typeof this.config.extraArgs === 'string' && this.config.extraArgs.trim() !== '') {
+            args.push(...tokenizeExtraArgs(this.config.extraArgs));
         }
 
         return args;
@@ -474,8 +524,8 @@ export class LlamaService extends BaseService {
         this.currentModelPath = null;
     }
 
-    @ipc('llama:stop')
-    @ipc('llama:unloadModel')
+    @ipc(LLAMA_CHANNELS.STOP)
+    @ipc(LLAMA_CHANNELS.UNLOAD_MODEL)
     async unloadModel(): Promise<{ success: boolean }> {
         await this.stopServer();
         return { success: true };
@@ -486,7 +536,7 @@ export class LlamaService extends BaseService {
         event: IpcMainInvokeEvent,
         messageRaw: RuntimeValue,
         systemPromptRaw?: RuntimeValue
-    ): Promise<{ success: boolean; response?: unknown; error?: string }> {
+    ): Promise<{ success: boolean; response?: RuntimeValue; error?: string }> {
         return this.chat(messageRaw, systemPromptRaw, (token) => {
             event.sender.send(SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, { content: token, reasoning: '' });
         });
@@ -496,7 +546,7 @@ export class LlamaService extends BaseService {
         messageRaw: RuntimeValue,
         systemPromptRaw?: RuntimeValue,
         onToken?: (token: string) => void
-    ): Promise<{ success: boolean; response?: unknown; error?: string }> {
+    ): Promise<{ success: boolean; response?: RuntimeValue; error?: string }> {
         const message = this.validateMessage(messageRaw);
         if (!message) {
             return { success: false, response: { success: false } };
@@ -628,13 +678,13 @@ export class LlamaService extends BaseService {
         });
     }
 
-    @ipc('llama:resetSession')
+    @ipc(LLAMA_CHANNELS.RESET_SESSION)
     async resetSession(): Promise<{ success: boolean }> {
         // llama-server doesn't have persistent sessions
         return { success: true };
     }
 
-    @ipc('llama:status')
+    @ipc(LLAMA_CHANNELS.STATUS)
     async getLlamaStatus(): Promise<{ running: boolean; model: string | null }> {
         const running = await this.isServerRunning();
         const model = this.getLoadedModel();
@@ -645,7 +695,7 @@ export class LlamaService extends BaseService {
         return this.currentModelPath;
     }
 
-    @ipc('llama:getModelsDir')
+    @ipc(LLAMA_CHANNELS.GET_MODELS_DIR)
     async getModelsDirIpc(): Promise<string> {
         try {
             return this.getModelsDir();
@@ -658,7 +708,7 @@ export class LlamaService extends BaseService {
         return this.modelsDir;
     }
 
-    @ipc('llama:setModelsDir')
+    @ipc(LLAMA_CHANNELS.SET_MODELS_DIR)
     async setModelsDir(dirRaw: RuntimeValue): Promise<boolean> {
         const dir = this.validatePath(dirRaw);
         if (!dir) {
@@ -673,7 +723,7 @@ export class LlamaService extends BaseService {
         return this.binDir;
     }
 
-    @ipc('llama:getModels')
+    @ipc(LLAMA_CHANNELS.GET_MODELS)
     async getModels(): Promise<ModelInfo[]> {
         const models: ModelInfo[] = [];
         try {
@@ -702,7 +752,7 @@ export class LlamaService extends BaseService {
         return models;
     }
 
-    @ipc('llama:downloadModel')
+    @ipc(LLAMA_CHANNELS.DOWNLOAD_MODEL)
     async downloadModel(urlRaw: RuntimeValue, filenameRaw: RuntimeValue, onProgress?: (downloadedSize: number, total: number) => void): Promise<{ success: boolean; path?: string; error?: string }> {
         const url = typeof urlRaw === 'string' ? urlRaw : '';
         const filename = typeof filenameRaw === 'string' ? filenameRaw : '';
@@ -772,7 +822,7 @@ export class LlamaService extends BaseService {
         });
     }
 
-    @ipc('llama:abortDownload')
+    @ipc(LLAMA_CHANNELS.ABORT_DOWNLOAD)
     async abortDownload(modelIdRaw: RuntimeValue): Promise<boolean> {
         if (typeof modelIdRaw !== 'string') {
             throw new Error('Invalid model ID');
@@ -784,7 +834,7 @@ export class LlamaService extends BaseService {
         return true;
     }
 
-    @ipc('llama:deleteModel')
+    @ipc(LLAMA_CHANNELS.DELETE_MODEL)
     async deleteModel(modelPathRaw: RuntimeValue): Promise<{ success: boolean; error?: string }> {
         const modelPath = this.validatePath(modelPathRaw);
         if (!modelPath) {
@@ -803,23 +853,23 @@ export class LlamaService extends BaseService {
         }
     }
 
-    @ipc('llama:getConfig')
+    @ipc(LLAMA_CHANNELS.GET_CONFIG)
     getConfig(): LlamaConfig {
-        return { ...this.config };
+        return this.resolveEffectiveConfig(this.config);
     }
 
-    @ipc('llama:setConfig')
+    @ipc(LLAMA_CHANNELS.SET_CONFIG)
     setConfig(configRaw: RuntimeValue): { success: boolean } {
         const config = (configRaw && typeof configRaw === 'object') ? configRaw as Partial<LlamaConfig> : {};
         try {
-            this.config = { ...this.config, ...config };
+            this.config = this.resolveEffectiveConfig(config);
             return { success: true };
         } catch (e) {
             return { success: false };
         }
     }
 
-    @ipc('llama:getGpuInfo')
+    @ipc(LLAMA_CHANNELS.GET_GPU_INFO)
     async getGpuInfo(): Promise<{ available: boolean; backends: string[]; name?: string }> {
         const backends: string[] = [];
         let detectedName = 'Generic GPU';
@@ -855,7 +905,7 @@ export class LlamaService extends BaseService {
         };
     }
 
-    @ipc('llama:is-installed')
+    @ipc(LLAMA_CHANNELS.IS_INSTALLED)
     isServerAvailable(): boolean {
         return fs.existsSync(this.getServerPath());
     }
@@ -903,3 +953,4 @@ export class LlamaService extends BaseService {
         return value;
     }
 }
+

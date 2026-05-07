@@ -70,3 +70,4 @@ describe('createWindow', () => {
         expect(vi.mocked(BrowserWindow).mock.calls).toHaveLength(1);
     });
 });
+

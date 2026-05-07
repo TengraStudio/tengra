@@ -346,3 +346,4 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
 
 /** Return type of the core terminal panel hook */
 export type TerminalPanelCoreResult = ReturnType<typeof useTerminalPanelCore>;
+

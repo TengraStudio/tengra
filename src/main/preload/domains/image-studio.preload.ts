@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { IpcRenderer } from 'electron';
+import { IMAGE_STUDIO_CHANNELS } from '@shared/constants/ipc-channels';
 import type { RuntimeValue } from '@shared/types/common';
+import { IpcRenderer } from 'electron';
 
 interface ImageStudioGeneratePayload {
     prompt: string;
@@ -41,12 +42,17 @@ export interface ImageStudioBridge {
     generate: (payload: ImageStudioGeneratePayload) => Promise<RuntimeValue>;
     edit: (payload: ImageStudioEditPayload) => Promise<RuntimeValue>;
     save: (payload: ImageStudioSavePayload) => Promise<RuntimeValue>;
+    loadSettings: () => Promise<RuntimeValue>;
+    saveSettings: (settings: string) => Promise<RuntimeValue>;
 }
 
 export function createImageStudioBridge(ipc: IpcRenderer): ImageStudioBridge {
     return {
-        generate: (payload) => ipc.invoke('image-studio:generate', payload),
-        edit: (payload) => ipc.invoke('image-studio:edit', payload),
-        save: (payload) => ipc.invoke('image-studio:save', payload),
+        generate: (payload) => ipc.invoke(IMAGE_STUDIO_CHANNELS.GENERATE, payload),
+        edit: (payload) => ipc.invoke(IMAGE_STUDIO_CHANNELS.EDIT, payload),
+        save: (payload) => ipc.invoke(IMAGE_STUDIO_CHANNELS.SAVE, payload),
+        loadSettings: () => ipc.invoke(IMAGE_STUDIO_CHANNELS.LOAD_SETTINGS),
+        saveSettings: (settings) => ipc.invoke(IMAGE_STUDIO_CHANNELS.SAVE_SETTINGS, settings),
     };
 }
+

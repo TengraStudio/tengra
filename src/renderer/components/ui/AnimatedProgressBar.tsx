@@ -91,3 +91,4 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
 );
 
 AnimatedProgressBar.displayName = 'AnimatedProgressBar';
+

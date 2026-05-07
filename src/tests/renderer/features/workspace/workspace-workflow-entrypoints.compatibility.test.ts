@@ -38,3 +38,4 @@ describe('workspace/workflow renderer entrypoint compatibility shims', () => {
         expect(content).toBe("export * from './AutomationWorkflowTab';");
     });
 });
+

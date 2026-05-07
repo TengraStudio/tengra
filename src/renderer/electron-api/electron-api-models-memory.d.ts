@@ -375,6 +375,7 @@ export interface ElectronApiModelsMemoryDomain {
             callback: (progress: { filename: string; received: number; total: number }) => void
         ) => void;
         cancelDownload: () => void;
+        deleteModel: (modelId: string) => Promise<{ success: boolean; error?: string }>;
     };
 
     gallery: {
@@ -592,3 +593,4 @@ export interface ElectronApiModelsMemoryDomain {
 
     // IPC Batching API
 }
+

@@ -46,8 +46,8 @@ function formatTokens(value: number | undefined): string {
 }
 
 function getContextUsagePercent(session: WorkspaceAgentSessionSummary | null): number {
-    const usedTokens = session?.contextTelemetry?.usedTokens ?? 0;
-    const contextWindow = session?.contextTelemetry?.contextWindow ?? 0;
+    const usedTokens = session?.usageStats?.usedTokens ?? 0;
+    const contextWindow = session?.usageStats?.contextWindow ?? 0;
     if (contextWindow <= 0) {
         return 0;
     }
@@ -61,7 +61,7 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
     onCreateSession,
     onOpenSessionPicker,
 }) => {
-    const telemetry = currentSession?.contextTelemetry;
+    const usageStats = currentSession?.usageStats;
     const usagePercent = getContextUsagePercent(currentSession);
 
     return (
@@ -126,7 +126,7 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                     <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                         <span>Context</span>
                         <span>
-                            {formatTokens(telemetry?.usedTokens)} / {formatTokens(telemetry?.contextWindow)}
+                            {formatTokens(usageStats?.usedTokens)} / {formatTokens(usageStats?.contextWindow)}
                         </span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -140,3 +140,4 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
         </div>
     );
 };
+

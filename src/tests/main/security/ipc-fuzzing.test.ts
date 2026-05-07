@@ -267,3 +267,4 @@ describe('IPC Fuzzing – Type confusion', () => {
         expect(result).toHaveProperty('key', 'value');
     });
 });
+

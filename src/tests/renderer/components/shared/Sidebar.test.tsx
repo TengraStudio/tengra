@@ -68,3 +68,4 @@ describe('Sidebar', () => {
         expect(screen.getByLabelText('aria.applicationSidebar')).toBeInTheDocument();
     });
 });
+

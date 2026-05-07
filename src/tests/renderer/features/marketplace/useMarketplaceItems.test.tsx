@@ -171,3 +171,4 @@ describe('useMarketplaceItems MCP filtering', () => {
         expect(ids).not.toContain('tengra.internal-core');
     });
 });
+

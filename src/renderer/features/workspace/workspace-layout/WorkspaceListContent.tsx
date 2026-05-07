@@ -160,3 +160,4 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
         </div>
     );
 };
+

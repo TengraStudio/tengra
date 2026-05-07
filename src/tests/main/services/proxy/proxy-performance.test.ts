@@ -226,3 +226,4 @@ describe('ProxyService performance instrumentation', () => {
         });
     });
 });
+

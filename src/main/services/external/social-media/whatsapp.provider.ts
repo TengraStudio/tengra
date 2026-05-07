@@ -181,3 +181,4 @@ export class WhatsAppProvider extends SocialMediaProvider {
         appLogger.info('WhatsAppProvider', 'Stopped');
     }
 }
+

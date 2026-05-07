@@ -22,6 +22,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { t } from '@main/utils/i18n.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
+import { MCP_CHANNELS, MCP_PERMISSIONS_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import { McpPermission, McpPermissionProfile,MCPServerConfig } from '@shared/types/settings';
 
@@ -82,7 +83,7 @@ export class McpPluginService extends BaseService {
         return trimmed;
     }
 
-    @ipc('mcp:list')
+    @ipc(MCP_CHANNELS.LIST)
     async listServicesIpc(): Promise<RuntimeValue> {
         const plugins = await this.listPlugins();
         const settings = this.settingsService.getSettings();
@@ -96,7 +97,7 @@ export class McpPluginService extends BaseService {
         })));
     }
 
-    @ipc('mcp:dispatch')
+    @ipc(MCP_CHANNELS.DISPATCH)
     async dispatchIpc(serviceRaw: RuntimeValue, actionRaw: RuntimeValue, argsRaw: RuntimeValue): Promise<RuntimeValue> {
         const service = this.validateServiceName(serviceRaw);
         const action = this.validateActionName(actionRaw);
@@ -108,7 +109,7 @@ export class McpPluginService extends BaseService {
         return serializeToIpc(result);
     }
 
-    @ipc('mcp:toggle')
+    @ipc(MCP_CHANNELS.TOGGLE)
     async toggleServiceIpc(serviceRaw: RuntimeValue, enabledRaw: RuntimeValue): Promise<RuntimeValue> {
         const service = this.validateServiceName(serviceRaw);
         const enabled = enabledRaw === true;
@@ -128,7 +129,7 @@ export class McpPluginService extends BaseService {
         return serializeToIpc({ success: true, isEnabled: enabled });
     }
 
-    @ipc('mcp:install')
+    @ipc(MCP_CHANNELS.INSTALL)
     async installServiceIpc(config: MCPServerConfig): Promise<RuntimeValue> {
         if (!config || typeof config !== 'object') {
             throw new Error('Invalid MCP server config');
@@ -137,24 +138,24 @@ export class McpPluginService extends BaseService {
         return serializeToIpc(result);
     }
 
-    @ipc('mcp:uninstall')
+    @ipc(MCP_CHANNELS.UNINSTALL)
     async uninstallServiceIpc(nameRaw: RuntimeValue): Promise<RuntimeValue> {
         const name = this.validateServiceName(nameRaw);
         await this.unregisterPlugin(name);
         return serializeToIpc({ success: true });
     }
 
-    @ipc('mcp:debug-metrics')
+    @ipc(MCP_CHANNELS.DEBUG_METRICS)
     async getDebugMetricsIpc(): Promise<RuntimeValue> {
         return serializeToIpc(this.getDispatchMetrics());
     }
 
-    @ipc('mcp:permissions:list-requests')
+    @ipc(MCP_PERMISSIONS_CHANNELS.LIST_REQUESTS)
     async getPermissionRequestsIpc(): Promise<RuntimeValue> {
         return serializeToIpc(this.settingsService.getSettings().mcpPermissionRequests ?? []);
     }
 
-    @ipc('mcp:permissions:set')
+    @ipc(MCP_PERMISSIONS_CHANNELS.SET)
     async setActionPermissionIpc(serviceRaw: RuntimeValue, actionRaw: RuntimeValue, policyRaw: RuntimeValue): Promise<RuntimeValue> {
         const service = this.validateServiceName(serviceRaw);
         const action = this.validateActionName(actionRaw);
@@ -182,7 +183,7 @@ export class McpPluginService extends BaseService {
         return serializeToIpc({ success: true });
     }
 
-    @ipc('mcp:permissions:resolve-request')
+    @ipc(MCP_PERMISSIONS_CHANNELS.RESOLVE_REQUEST)
     async resolvePermissionRequestIpc(requestIdRaw: RuntimeValue, decisionRaw: RuntimeValue): Promise<RuntimeValue> {
         if (typeof requestIdRaw !== 'string' || requestIdRaw.trim().length === 0) {
             throw new Error('Invalid request id');
@@ -664,3 +665,4 @@ export class McpPluginService extends BaseService {
         await this.settingsService.saveSettings({ mcpUserServers: userServers });
     }
 }
+

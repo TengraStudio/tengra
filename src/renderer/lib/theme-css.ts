@@ -148,3 +148,4 @@ export function resolveCssVariableStyle(
 ): string {
     return resolveCssStyleValue(property, `var(${normalizeCssVariableName(name)})`, fallback);
 }
+

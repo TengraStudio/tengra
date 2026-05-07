@@ -20,6 +20,7 @@ import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { t } from '@main/utils/i18n.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { MODEL_DOWNLOADER_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow } from 'electron';
@@ -191,7 +192,7 @@ export class ModelDownloaderService extends BaseService {
         await this.restorePersistedQueue();
     }
 
-    @ipc('model-downloader:start')
+    @ipc(MODEL_DOWNLOADER_CHANNELS.START)
     async startDownloadIpc(requestRaw: RuntimeValue): Promise<RuntimeValue> {
         const request = requestRaw as ModelDownloadRequest;
         return serializeToIpc(this.startDownload(request));
@@ -251,7 +252,7 @@ export class ModelDownloaderService extends BaseService {
         };
     }
 
-    @ipc('model-downloader:pause')
+    @ipc(MODEL_DOWNLOADER_CHANNELS.PAUSE)
     async pauseDownloadIpc(downloadIdRaw: RuntimeValue): Promise<RuntimeValue> {
         const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
         return serializeToIpc({ success: this.pauseDownload(downloadId) });
@@ -301,7 +302,7 @@ export class ModelDownloaderService extends BaseService {
         return true;
     }
 
-    @ipc('model-downloader:cancel')
+    @ipc(MODEL_DOWNLOADER_CHANNELS.CANCEL)
     async cancelDownloadIpc(downloadIdRaw: RuntimeValue): Promise<RuntimeValue> {
         const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
         return serializeToIpc({ success: this.cancelDownload(downloadId) });
@@ -349,7 +350,7 @@ export class ModelDownloaderService extends BaseService {
         return true;
     }
 
-    @ipc('model-downloader:resume')
+    @ipc(MODEL_DOWNLOADER_CHANNELS.RESUME)
     async resumeDownloadIpc(downloadIdRaw: RuntimeValue): Promise<RuntimeValue> {
         const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
         return serializeToIpc(this.resumeDownload(downloadId));
@@ -393,7 +394,7 @@ export class ModelDownloaderService extends BaseService {
         };
     }
 
-    @ipc('model-downloader:history')
+    @ipc(MODEL_DOWNLOADER_CHANNELS.HISTORY)
     async getHistoryIpc(limitRaw: RuntimeValue): Promise<RuntimeValue> {
         const limit = typeof limitRaw === 'number' ? limitRaw : 100;
         const items = this.getHistory(limit);
@@ -413,7 +414,7 @@ export class ModelDownloaderService extends BaseService {
         return items;
     }
 
-    @ipc('model-downloader:retry')
+    @ipc(MODEL_DOWNLOADER_CHANNELS.RETRY)
     async retryFromHistoryIpc(historyIdRaw: RuntimeValue): Promise<RuntimeValue> {
         const historyId = typeof historyIdRaw === 'string' ? historyIdRaw : '';
         return serializeToIpc(this.retryFromHistory(historyId));
@@ -988,3 +989,4 @@ export class ModelDownloaderService extends BaseService {
         }
     }
 }
+

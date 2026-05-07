@@ -15,7 +15,6 @@ const execAsync = promisify(exec);
 
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
-import { PerformanceService } from '@main/services/analysis/performance.service';
 import { BaseService } from '@main/services/base.service';
 import { ExtensionService } from '@main/services/extension/extension.service';
 import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
@@ -25,11 +24,13 @@ import {
     ModelDownloaderService,
     ModelDownloadResult
 } from '@main/services/llm/model-downloader.service';
+import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { CodeLanguageService } from '@main/services/system/code-language.service';
 import { LocaleService } from '@main/services/system/locale.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { SystemService } from '@main/services/system/system.service';
 import { ThemeService } from '@main/services/theme/theme.service';
+import { MARKETPLACE_CHANNELS } from '@shared/constants/ipc-channels';
 import { localePackSchema } from '@shared/schemas/locale.schema';
 import {
     marketplaceInstallRequestSchema,
@@ -51,12 +52,10 @@ import {
 } from '@shared/types/marketplace';
 import { MCPServerConfig } from '@shared/types/settings';
 import axios from 'axios';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { app } from 'electron';
 import fs from 'fs-extra';
 import { z } from 'zod';
-
-import { McpPluginService } from '../mcp/mcp-plugin.service';
 
 type ExtensionPackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -84,7 +83,6 @@ export interface MarketplaceServiceDependencies {
     huggingFaceService?: HuggingFaceService;
     ollamaService?: OllamaService;
     systemService?: SystemService;
-    performanceService?: PerformanceService;
     llamaService?: LlamaService;
     extensionService?: ExtensionService;
     settingsService?: SettingsService;
@@ -121,7 +119,6 @@ export class MarketplaceService extends BaseService {
     private readonly huggingFaceService?: HuggingFaceService;
     private readonly ollamaService?: OllamaService;
     private readonly systemService?: SystemService;
-    private readonly performanceService?: PerformanceService;
     private readonly llamaService?: LlamaService;
     private readonly extensionService?: ExtensionService;
     private readonly settingsService?: SettingsService;
@@ -139,40 +136,39 @@ export class MarketplaceService extends BaseService {
         this.huggingFaceService = deps.huggingFaceService;
         this.ollamaService = deps.ollamaService;
         this.systemService = deps.systemService;
-        this.performanceService = deps.performanceService;
         this.llamaService = deps.llamaService;
         this.extensionService = deps.extensionService;
         this.settingsService = deps.settingsService;
         this.mcpPluginService = deps.mcpPluginService;
     }
 
-    @ipc('marketplace:fetch')
+    @ipc(MARKETPLACE_CHANNELS.FETCH)
     async fetchRegistryIpc() {
         return await this.fetchRegistry();
     }
 
-    @ipc('marketplace:getRuntimeProfile')
+    @ipc(MARKETPLACE_CHANNELS.GET_RUNTIME_PROFILE)
     async getRuntimeProfileIpc() {
         return await this.getRuntimeProfile();
     }
 
-    @ipc('marketplace:get-update-count')
+    @ipc(MARKETPLACE_CHANNELS.GET_UPDATE_COUNT)
     async getUpdateCountIpc() {
         return await this.getUpdateCount();
     }
 
-    @ipc('marketplace:check-live-updates')
+    @ipc(MARKETPLACE_CHANNELS.CHECK_LIVE_UPDATES)
     async checkLiveUpdatesIpc() {
         return await this.checkLiveExtensionUpdates();
     }
 
-    @ipc('marketplace:fetch-readme')
-    async fetchReadmeIpc(_event: unknown, extensionId: string, repository?: string) {
+    @ipc(MARKETPLACE_CHANNELS.FETCH_README)
+    async fetchReadmeIpc(_event: IpcMainInvokeEvent, extensionId: string, repository?: string) {
         return await this.fetchExtensionReadme(extensionId, repository);
     }
 
-    @ipc('marketplace:install')
-    async installItemIpc(_event: unknown, request: InstallRequest) {
+    @ipc(MARKETPLACE_CHANNELS.INSTALL)
+    async installItemIpc(_event: IpcMainInvokeEvent, request: InstallRequest) {
         try {
             const validatedRequest = marketplaceInstallRequestSchema.parse(request);
             const baseInstallItem = {
@@ -245,10 +241,11 @@ export class MarketplaceService extends BaseService {
         }
     }
 
-    @ipc('marketplace:uninstall')
-    async uninstallItemIpc(_event: unknown, itemId: string, itemType: MarketplaceItem['itemType']) {
-        const result = await this.uninstallItem(itemId, itemType);
-        if (result.success && itemType === 'code-language-pack') {
+    @ipc(MARKETPLACE_CHANNELS.UNINSTALL)
+    async uninstallItemIpc(_event: IpcMainInvokeEvent, itemId: string, itemType?: MarketplaceItem['itemType']) {
+        const resolvedItemType = itemType ?? await this.resolveMarketplaceItemType(itemId);
+        const result = await this.uninstallItem(itemId, resolvedItemType);
+        if (result.success && resolvedItemType === 'code-language-pack') {
             if (this.codeLanguageService) {
                 await this.codeLanguageService.reload();
             }
@@ -429,11 +426,10 @@ export class MarketplaceService extends BaseService {
      * Collects a device runtime profile used for marketplace compatibility estimates.
      */
     async getRuntimeProfile(): Promise<MarketplaceRuntimeProfile> {
-        const [systemInfo, storageStats, usageStats, dashboard, gpuInfo, llamaGpu, ollamaGpu] = await Promise.all([
+        const [systemInfo, storageStats, usageStats, gpuInfo, llamaGpu, ollamaGpu] = await Promise.all([
             this.getSystemInfoSafe(),
             this.getStorageStatsSafe(),
             this.getUsageStatsSafe(),
-            this.getDashboardSafe(),
             this.getGpuInfoSafe(),
             this.getLlamaGpuSafe(),
             this.getOllamaGpuSafe(),
@@ -441,7 +437,7 @@ export class MarketplaceService extends BaseService {
         return {
             system: this.buildSystemProfile(systemInfo, storageStats, usageStats),
             gpu: this.buildGpuProfile(gpuInfo, llamaGpu, ollamaGpu),
-            performance: this.buildPerformanceProfile(dashboard),
+            performance: this.buildPerformanceProfile(),
         };
     }
 
@@ -674,12 +670,30 @@ export class MarketplaceService extends BaseService {
                 }
 
                 case 'model': {
-                    // We don't usually delete model binaries here as they might be used elsewhere,
-                    // but we can try if there's a corresponding .model.json
+                    const model = await this.resolveMarketplaceModel(itemId);
+                    if (model?.provider === 'ollama' && this.ollamaService) {
+                        const result = await this.ollamaService.deleteModel(this.resolveOllamaModelName(model));
+                        if (!result.success) {
+                            return result;
+                        }
+                    } else if (model?.provider === 'huggingface' && this.huggingFaceService) {
+                        const modelId = this.resolveHuggingFaceModelId(model) ?? itemId;
+                        const result = await this.huggingFaceService.deleteModel(modelId);
+                        if (!result.success) {
+                            return result;
+                        }
+                    } else if (this.llamaService) {
+                        const result = await this.llamaService.deleteModel(itemId);
+                        if (!result.success) {
+                            return result;
+                        }
+                    }
+
                     const modelJsonPath = path.join(this.USER_MODELS_PATH, `${this.sanitizeFileNameStem(itemId)}.model.json`);
                     if (await fs.pathExists(modelJsonPath)) {
                         await fs.remove(modelJsonPath);
                     }
+                    this.invalidateRegistryCache();
                     return { success: true };
                 }
 
@@ -693,6 +707,35 @@ export class MarketplaceService extends BaseService {
                 error: error instanceof Error ? error.message : String(error)
             };
         }
+    }
+
+    private async resolveMarketplaceItemType(itemId: string): Promise<MarketplaceItem['itemType']> {
+        const registry = await this.fetchRegistry();
+        const collections: Array<Array<MarketplaceItem | undefined> | undefined> = [
+            registry.extensions,
+            registry.mcp,
+            registry.themes,
+            registry.models,
+            registry.prompts,
+            registry.languages,
+            registry.skills,
+            registry.iconPacks,
+            registry.codeLanguagePacks,
+        ];
+
+        for (const collection of collections) {
+            const match = collection?.find(item => item?.id === itemId);
+            if (match?.itemType) {
+                return match.itemType;
+            }
+        }
+
+        return 'model';
+    }
+
+    private async resolveMarketplaceModel(itemId: string): Promise<MarketplaceModel | null> {
+        const registry = await this.fetchRegistry();
+        return registry.models?.find(model => model.id === itemId) ?? null;
     }
 
     async dispose(): Promise<void> {
@@ -988,17 +1031,17 @@ export class MarketplaceService extends BaseService {
         return trimmed.length > 0 ? trimmed : undefined;
     }
 
-    private normalizeRegistryBeforeValidation(rawRegistry: unknown): MarketplaceRegistry {
+    private normalizeRegistryBeforeValidation(rawRegistry: RuntimeValue): MarketplaceRegistry {
         const registryRecord = rawRegistry && typeof rawRegistry === 'object' && !Array.isArray(rawRegistry)
-            ? (rawRegistry as Record<string, unknown>)
+            ? (rawRegistry as Record<string, RuntimeValue>)
             : {};
 
         const normalizedModels = Array.isArray(registryRecord.models)
-            ? registryRecord.models.map((rawModel): unknown => {
+            ? registryRecord.models.map((rawModel): RuntimeValue => {
                 if (!rawModel || typeof rawModel !== 'object' || Array.isArray(rawModel)) {
                     return rawModel;
                 }
-                const modelRecord = { ...(rawModel as Record<string, unknown>) };
+                const modelRecord = { ...(rawModel as Record<string, RuntimeValue>) };
                 if (typeof modelRecord.pipelineTag === 'string' && modelRecord.pipelineTag.trim().length === 0) {
                     delete modelRecord.pipelineTag;
                 }
@@ -1279,18 +1322,12 @@ export class MarketplaceService extends BaseService {
         };
     }
 
-    private buildPerformanceProfile(
-        dashboard: Awaited<ReturnType<PerformanceService['getDashboard']>> | null
-    ): MarketplaceRuntimeProfile['performance'] {
-        const safeData = dashboard?.success && dashboard.data ? dashboard.data : undefined;
-        const safeProcesses = safeData?.processes ?? [];
-        const safeMemory = safeData?.memory ?? { latestRss: 0, latestHeapUsed: 0 };
-        const alerts = safeData?.alerts ?? [];
+    private buildPerformanceProfile(): MarketplaceRuntimeProfile['performance'] {
         return {
-            rssBytes: safeMemory.latestRss ?? 0,
-            heapUsedBytes: safeMemory.latestHeapUsed ?? 0,
-            processCount: safeProcesses.length,
-            alertCount: alerts.length,
+            rssBytes: 0,
+            heapUsedBytes: 0,
+            processCount: 0,
+            alertCount: 0,
         };
     }
 
@@ -1338,18 +1375,6 @@ export class MarketplaceService extends BaseService {
             return await this.systemService.getUsage();
         } catch (error) {
             appLogger.warn('MarketplaceService', 'Failed to read usage stats for runtime profile', error as Error);
-            return null;
-        }
-    }
-
-    private async getDashboardSafe(): Promise<Awaited<ReturnType<PerformanceService['getDashboard']>> | null> {
-        if (!this.performanceService) {
-            return null;
-        }
-        try {
-            return this.performanceService.getDashboard();
-        } catch (error) {
-            appLogger.warn('MarketplaceService', 'Failed to read performance dashboard for runtime profile', error as Error);
             return null;
         }
     }
@@ -1998,3 +2023,4 @@ export class MarketplaceService extends BaseService {
         }
     }
 }
+

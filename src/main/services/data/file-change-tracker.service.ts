@@ -21,6 +21,7 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { FILES_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject } from '@shared/types/common';
 import { AISystemType, DiffStats, FileDiff } from '@shared/types/file-diff';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -138,7 +139,7 @@ export class FileChangeTracker extends BaseService {
     /**
      * Get a specific file diff by ID (IPC)
      */
-    @ipc('files:getFileDiff')
+    @ipc(FILES_CHANNELS.GET_FILE_DIFF)
     async getFileDiffIpc(_diffId: string) {
         const row = await this.databaseService.getFileDiff(_diffId);
         if (!row) {
@@ -155,7 +156,7 @@ export class FileChangeTracker extends BaseService {
     /**
      * Revert a file to its previous state
      */
-    @ipc('files:revertFileChange')
+    @ipc(FILES_CHANNELS.REVERT_FILE_CHANGE)
     async revertFileChange(diffId: string): Promise<{ success: boolean; error?: string }> {
         try {
             const row = await this.databaseService.getFileDiff(diffId);
@@ -220,3 +221,4 @@ export class FileChangeTracker extends BaseService {
         }
     }
 }
+

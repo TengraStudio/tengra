@@ -278,3 +278,4 @@ export function __resetWorkspaceExplorerStoreForTests(): void {
     workspaceState.clear();
     workspaceListeners.clear();
 }
+

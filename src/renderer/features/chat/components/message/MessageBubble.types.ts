@@ -40,3 +40,4 @@ export interface MessageProps {
     onSourceClick?: (path: string) => void;
     footerConfig?: MessageFooterConfig;
 }
+

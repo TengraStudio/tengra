@@ -12,7 +12,7 @@ import * as fs from 'fs';
 
 import { appLogger } from '@main/logging/logger';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
-import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme';
+import { CustomTheme, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 interface ThemeStoreData {
@@ -27,10 +27,10 @@ class ThemeStore {
     private static instance: ThemeStore | null = null;
     private storePath: string;
     private store: ThemeStoreData = {
-        currentTheme: 'tengra-white',
+        currentTheme: 'tengra-black',
         customThemes: [],
         favorites: [],
-        history: [''],
+        history: ['tengra-black'],
         preset: null
     };
 
@@ -54,17 +54,17 @@ class ThemeStore {
             await fs.promises.access(this.storePath);
             const data = await fs.promises.readFile(this.storePath, 'utf8');
             const loaded = safeJsonParse<ThemeStoreData>(data, {
-                currentTheme: 'tengra-white',
+                currentTheme: 'tengra-black',
                 customThemes: [],
                 favorites: [],
-                history: [''],
+                history: ['tengra-black'],
                 preset: null
             });
             return { ...loaded };
         } catch {
             appLogger.warn('ThemeStore', 'Failed to load, using defaults');
         }
-        return { currentTheme: 'tengra-white', customThemes: [], favorites: [], history: [''], preset: null };
+        return { currentTheme: 'tengra-black', customThemes: [], favorites: [], history: ['tengra-black'], preset: null };
     }
 
     private async saveStore(): Promise<void> {
@@ -170,7 +170,7 @@ class ThemeStore {
         this.store.customThemes.splice(index, 1);
 
         if (this.store.currentTheme === id) {
-            await this.setTheme('graphite');
+            await this.setTheme('tengra-black');
         }
 
         await this.saveStore();
@@ -206,27 +206,6 @@ class ThemeStore {
     async clearHistory(): Promise<void> {
         this.store.history = [];
         await this.saveStore();
-    }
-
-    getPresets(): ThemePreset[] {
-        return [...DEFAULT_THEME_PRESETS];
-    }
-
-    getPreset(id: string): ThemePreset | undefined {
-        return DEFAULT_THEME_PRESETS.find(p => p.id === id);
-    }
-
-    async applyPreset(presetId: string): Promise<boolean> {
-        const preset = this.getPreset(presetId);
-        if (!preset) {
-            appLogger.warn('ThemeStore', `Preset not found: ${presetId}`);
-            return false;
-        }
-
-        this.store.preset = preset;
-        await this.setTheme(preset.themeId);
-        appLogger.info('ThemeStore', `Preset applied: ${presetId}`);
-        return true;
     }
 
     getCurrentPreset(): ThemePreset | null {
@@ -309,3 +288,4 @@ const themeStoreProxy = new Proxy({} as ThemeStore, {
 });
 
 export const themeStore = themeStoreProxy; 
+

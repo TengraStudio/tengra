@@ -90,3 +90,4 @@ export function* interceptEmbeddedToolCalls(chunk: StreamChunk, state: Intercept
         }
     }
 }
+

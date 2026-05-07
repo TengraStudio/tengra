@@ -87,3 +87,4 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
         </nav>
     );
 };
+

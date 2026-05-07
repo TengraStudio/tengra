@@ -59,3 +59,4 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
 };
 
 ChatSearch.displayName = 'ChatSearch';
+

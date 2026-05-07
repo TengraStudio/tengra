@@ -82,3 +82,4 @@ export const CONVERSATION_TEMPLATES: ConversationTemplate[] = [
         starterMessage: 'conversationTemplates.refactoring.starter',
     },
 ];
+

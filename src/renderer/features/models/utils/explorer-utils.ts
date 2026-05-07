@@ -26,3 +26,4 @@ export const parsePulls = (pulls?: string): number => {
     if (str.endsWith('B')) { return num * 1000000000; }
     return num;
 };
+

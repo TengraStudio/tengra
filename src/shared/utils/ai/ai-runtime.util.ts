@@ -327,20 +327,11 @@ function isLikelyAgenticWorkPrompt(message: Message): boolean {
 export function classifyAiIntent(message: Message, systemMode: AiRuntimeSystemMode): AiIntentClassification {
     const isAgent = systemMode === 'agent';
     const isThinking = systemMode === 'thinking' || systemMode === 'architect';
+    const isSingleLookup = isLikelySingleLookupPrompt(message);
+    const isAgenticWork = isLikelyAgenticWorkPrompt(message);
 
     const text = getMessageText(message).toLowerCase().trim();
     const isGreeting = /^(hi|hello|hey|selam|merhaba|nasılsın|nasilsin|günaydın|gunaydin|tünaydın|tunaydin|iyi akşamlar|iyi aksamlar|hey tengra|hi tengra|hello tengra|selam tengra|merhaba tengra)$/i.test(text);
-
-    if (isAgent && !isGreeting) {
-        return {
-            intent: 'agentic_workflow',
-            confidence: 'high',
-            systemMode,
-            requiresTooling: true,
-            preferredMaxModelTurns: 999,
-            preferredMaxToolTurns: 999,
-        };
-    }
 
     if (isGreeting) {
         return {
@@ -353,36 +344,36 @@ export function classifyAiIntent(message: Message, systemMode: AiRuntimeSystemMo
         };
     }
 
-    if (isLikelyAgenticWorkPrompt(message)) {
+    if (isAgenticWork) {
         return {
             intent: 'agentic_workflow',
             confidence: 'high',
             systemMode,
             requiresTooling: true,
-            preferredMaxModelTurns: 24,
-            preferredMaxToolTurns: 16,
+            preferredMaxModelTurns: isAgent ? 999 : 24,
+            preferredMaxToolTurns: isAgent ? 999 : 16,
         };
     }
 
-    if (isThinking) {
-        return {
-            intent: 'multi_lookup',
-            confidence: 'high',
-            systemMode,
-            requiresTooling: true,
-            preferredMaxModelTurns: 999,
-            preferredMaxToolTurns: 999,
-        };
-    }
-
-    if (isLikelySingleLookupPrompt(message)) {
+    if (isSingleLookup) {
         return {
             intent: 'single_lookup',
             confidence: 'high',
             systemMode,
             requiresTooling: true,
-            preferredMaxModelTurns: 4,
-            preferredMaxToolTurns: 2,
+            preferredMaxModelTurns: isAgent ? 12 : 4,
+            preferredMaxToolTurns: isAgent ? 6 : 2,
+        };
+    }
+
+    if (isThinking) {
+        return {
+            intent: 'direct_answer',
+            confidence: 'medium',
+            systemMode,
+            requiresTooling: false,
+            preferredMaxModelTurns: 16,
+            preferredMaxToolTurns: 0,
         };
     }
 
@@ -392,7 +383,7 @@ export function classifyAiIntent(message: Message, systemMode: AiRuntimeSystemMo
         systemMode,
         requiresTooling: false,
         preferredMaxModelTurns: 999,
-        preferredMaxToolTurns: 16, // Allow tools if the model decides to use them, even for simple prompts
+        preferredMaxToolTurns: 0,
     };
 }
 
@@ -703,3 +694,4 @@ export function buildAiPresentationMetadata(context: AiPresentationContext): AiP
         ) === 'complete',
     };
 }
+

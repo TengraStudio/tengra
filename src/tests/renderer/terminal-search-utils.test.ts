@@ -64,3 +64,4 @@ describe('terminal search utils', () => {
     });
 });
 
+

@@ -73,9 +73,18 @@ function deduplicateEditorTabs(tabs: EditorTab[]): EditorTab[] {
     return Array.from(nextTabsById.values());
 }
 
+function sanitizeWorkspaceMounts(mounts: WorkspaceMount[] | undefined): WorkspaceMount[] {
+    if (!Array.isArray(mounts)) {
+        return [];
+    }
+
+    return mounts.filter(mount => typeof mount.rootPath === 'string' && mount.rootPath.trim().length > 0);
+}
+
 function buildWorkspaceMounts(workspace: Workspace): WorkspaceMount[] {
-    if (Array.isArray(workspace.mounts) && workspace.mounts.length > 0) {
-        return workspace.mounts;
+    const sanitizedMounts = sanitizeWorkspaceMounts(workspace.mounts);
+    if (sanitizedMounts.length > 0) {
+        return sanitizedMounts;
     }
     return workspace.path
         ? [{ id: `local-${workspace.id}`, name: 'Local', type: 'local', rootPath: workspace.path }]
@@ -89,6 +98,14 @@ function areMountListsEqual(left: WorkspaceMount[], right: WorkspaceMount[]): bo
 // Helper hook for mount state initialization and sync
 function useMountState(workspace: Workspace): [WorkspaceMount[], (mounts: WorkspaceMount[]) => void] {
     const [mounts, setMounts] = useState<WorkspaceMount[]>(() => buildWorkspaceMounts(workspace));
+
+    useEffect(() => {
+        const nextMounts = buildWorkspaceMounts(workspace);
+        setMounts(currentMounts =>
+            areMountListsEqual(currentMounts, nextMounts) ? currentMounts : nextMounts
+        );
+    }, [workspace]);
+
     return [
         mounts,
         nextMounts => {
@@ -1161,3 +1178,4 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         testConnection,
     };
 }
+

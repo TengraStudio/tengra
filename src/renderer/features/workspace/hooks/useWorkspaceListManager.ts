@@ -214,3 +214,4 @@ export function useWorkspaceListManager() {
         handleOpenTerminal
     ]);
 }
+

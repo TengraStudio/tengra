@@ -114,7 +114,7 @@ export const SendButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
                 isLoading
                     ? ctrl.stopGeneration
                     : () => {
-                        void ctrl.sendMessageWithTelemetry();
+                        void ctrl.sendMessageWithusageStats();
                     }
             }
             disabled={!isLoading && !hasContent}
@@ -250,3 +250,4 @@ export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
     </div>
 ));
 ImageCountPanel.displayName = 'ImageCountPanel';
+

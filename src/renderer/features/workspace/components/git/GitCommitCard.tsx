@@ -51,3 +51,4 @@ export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, o
         </div>
     );
 };
+

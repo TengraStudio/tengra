@@ -12,15 +12,12 @@ import { useCallback, useState } from 'react';
 
 import { GitStash } from '../components/git/types';
 
-type InvokeGitFn = <T>(channel: string, ...args: (string | number | boolean)[]) => Promise<T>;
-
 /**
  * Hook for git stash operations
  */
 export function useGitStashes(
     canRun: boolean,
-    workspacePath: string | undefined,
-    invokeGit: InvokeGitFn
+    workspacePath: string | undefined
 ) {
     const [stashes, setStashes] = useState<GitStash[]>([]);
 
@@ -28,22 +25,18 @@ export function useGitStashes(
         if (!canRun || !workspacePath) {
             return;
         }
-        const response = await invokeGit<{ success: boolean; stashes?: GitStash[] }>(
-            'git:getStashes',
-            workspacePath
-        );
+        const response = await window.electron.git.getStashes(workspacePath);
         if (response.success) {
             setStashes(response.stashes ?? []);
         }
-    }, [canRun, workspacePath, invokeGit]);
+    }, [canRun, workspacePath]);
 
     const createStash = useCallback(
         async (message: string, includeUntracked = true) => {
             if (!canRun || !workspacePath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:createStash',
+            const response = await window.electron.git.createStash(
                 workspacePath,
                 message,
                 includeUntracked
@@ -51,7 +44,7 @@ export function useGitStashes(
             await fetchStashes();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchStashes]
+        [canRun, workspacePath, fetchStashes]
     );
 
     const applyStash = useCallback(
@@ -59,8 +52,7 @@ export function useGitStashes(
             if (!canRun || !workspacePath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:applyStash',
+            const response = await window.electron.git.applyStash(
                 workspacePath,
                 stashRef,
                 pop
@@ -68,7 +60,7 @@ export function useGitStashes(
             await fetchStashes();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchStashes]
+        [canRun, workspacePath, fetchStashes]
     );
 
     const dropStash = useCallback(
@@ -76,11 +68,11 @@ export function useGitStashes(
             if (!canRun || !workspacePath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>('git:dropStash', workspacePath, stashRef);
+            const response = await window.electron.git.dropStash(workspacePath, stashRef);
             await fetchStashes();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchStashes]
+        [canRun, workspacePath, fetchStashes]
     );
 
     const exportStash = useCallback(
@@ -88,8 +80,7 @@ export function useGitStashes(
             if (!canRun || !workspacePath) {
                 return;
             }
-            const response = await invokeGit<{ success: boolean; patch?: string }>(
-                'git:exportStash',
+            const response = await window.electron.git.exportStash(
                 workspacePath,
                 stashRef
             );
@@ -105,7 +96,7 @@ export function useGitStashes(
             anchor.click();
             URL.revokeObjectURL(url);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     return {
@@ -117,3 +108,4 @@ export function useGitStashes(
         exportStash,
     };
 }
+

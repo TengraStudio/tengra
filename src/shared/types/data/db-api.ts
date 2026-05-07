@@ -381,3 +381,4 @@ export interface DbServiceClient {
     // Raw queries
     executeQuery(req: DbQueryRequest): Promise<DbApiResponse<DbQueryResponse>>
 }
+

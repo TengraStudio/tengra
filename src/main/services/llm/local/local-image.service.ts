@@ -15,6 +15,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { SD_CPP_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -91,7 +92,7 @@ export class LocalImageService extends BaseService {
         super('LocalImageService');
         this.settingsSvc = deps.settingsService;
         this.state = new LocalImageStateManager();
-        this.analytics = new LocalImageAnalytics({ telemetryService: deps.telemetryService });
+        this.analytics = new LocalImageAnalytics();
         this.providers = new LocalImageProviders({
             settingsService: deps.settingsService,
             authService: deps.authService,
@@ -102,7 +103,6 @@ export class LocalImageService extends BaseService {
         this.sdcpp = new SdCppManager({
             settingsService: deps.settingsService,
             eventBusService: deps.eventBusService,
-            telemetryService: deps.telemetryService,
         });
         this.scheduler = new LocalImageScheduler(
             {
@@ -186,10 +186,6 @@ export class LocalImageService extends BaseService {
             } catch (error) {
                 if (preferredProvider === 'sd-cpp') {
                     this.logWarn('SD-CPP generation failed', error as Error);
-                    this.trackSdCppMetric('sd-cpp-fallback-triggered', {
-                        errorCode: LocalImageService.ERROR_CODES.SDCPP_FALLBACK_TRIGGERED,
-                        error: getErrorMessage(error as Error),
-                    });
                 } else {
                     throw error;
                 }
@@ -484,10 +480,6 @@ export class LocalImageService extends BaseService {
         return this.sdcpp.generate(options);
     }
 
-    private trackSdCppMetric(name: string, properties?: Record<string, RuntimeValue>): void {
-        this.sdcpp.trackMetric(name, properties);
-    }
-
     private normalizeGenerationOptions(options: ImageGenerationOptions): ImageGenerationOptions {
         const width = options.width ?? 1024;
         const height = options.height ?? 1024;
@@ -497,9 +489,6 @@ export class LocalImageService extends BaseService {
         const scale = Math.sqrt(maxPixels / currentPixels);
         const normalizedWidth = Math.max(256, Math.floor(width * scale / 64) * 64);
         const normalizedHeight = Math.max(256, Math.floor(height * scale / 64) * 64);
-        this.trackSdCppMetric('image-resolution-normalized', {
-            originalWidth: width, originalHeight: height, normalizedWidth, normalizedHeight,
-        });
         return { ...options, width: normalizedWidth, height: normalizedHeight };
     }
 
@@ -559,109 +548,109 @@ export class LocalImageService extends BaseService {
 
     // --- IPC Decorated Methods ---
 
-    @ipc('sd-cpp:getStatus')
+    @ipc(SD_CPP_CHANNELS.GET_STATUS)
     async getSDCppStatusIpc(): Promise<RuntimeValue> {
         const status = await this.getSDCppStatus();
         return serializeToIpc(status);
     }
 
-    @ipc('sd-cpp:reinstall')
+    @ipc(SD_CPP_CHANNELS.REINSTALL)
     async repairSDCppIpc(): Promise<RuntimeValue> {
         await this.repairSDCpp();
         return serializeToIpc(void 0);
     }
 
-    @ipc('sd-cpp:getHistory')
+    @ipc(SD_CPP_CHANNELS.GET_HISTORY)
     async getHistoryIpc(limit?: number): Promise<RuntimeValue> {
         const result = this.getGenerationHistory(limit);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:regenerate')
+    @ipc(SD_CPP_CHANNELS.REGENERATE)
     async regenerateIpc(historyId: string): Promise<RuntimeValue> {
         const result = await this.regenerateFromHistory(historyId);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:getAnalytics')
+    @ipc(SD_CPP_CHANNELS.GET_ANALYTICS)
     async getAnalyticsIpc(): Promise<RuntimeValue> {
         const result = this.getImageAnalytics();
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:getPresetAnalytics')
+    @ipc(SD_CPP_CHANNELS.GET_PRESET_ANALYTICS)
     async getPresetAnalyticsIpc(): Promise<RuntimeValue> {
         const result = this.getPresetAnalytics();
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:getScheduleAnalytics')
+    @ipc(SD_CPP_CHANNELS.GET_SCHEDULE_ANALYTICS)
     async getScheduleAnalyticsIpc(): Promise<RuntimeValue> {
         const result = this.getScheduleAnalytics();
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:listPresets')
+    @ipc(SD_CPP_CHANNELS.LIST_PRESETS)
     async listPresetsIpc(): Promise<RuntimeValue> {
         const result = this.listGenerationPresets();
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:savePreset')
+    @ipc(SD_CPP_CHANNELS.SAVE_PRESET)
     async savePresetIpc(preset: UnsafeValue): Promise<RuntimeValue> {
         const result = await this.saveGenerationPreset(preset);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:deletePreset')
+    @ipc(SD_CPP_CHANNELS.DELETE_PRESET)
     async deletePresetIpc(id: string): Promise<RuntimeValue> {
         const result = await this.deleteGenerationPreset(id);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:exportPresetShare')
+    @ipc(SD_CPP_CHANNELS.EXPORT_PRESET_SHARE)
     async exportPresetShareIpc(id: string): Promise<RuntimeValue> {
         const result = this.exportGenerationPresetShareCode(id);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:importPresetShare')
+    @ipc(SD_CPP_CHANNELS.IMPORT_PRESET_SHARE)
     async importPresetShareIpc(code: string): Promise<RuntimeValue> {
         const result = await this.importGenerationPresetShareCode(code);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:listWorkflowTemplates')
+    @ipc(SD_CPP_CHANNELS.LIST_WORKFLOW_TEMPLATES)
     async listWorkflowTemplatesIpc(): Promise<RuntimeValue> {
         const result = this.listComfyWorkflowTemplates();
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:saveWorkflowTemplate')
+    @ipc(SD_CPP_CHANNELS.SAVE_WORKFLOW_TEMPLATE)
     async saveWorkflowTemplateIpc(payload: UnsafeValue): Promise<RuntimeValue> {
         const result = await this.saveComfyWorkflowTemplate(payload);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:deleteWorkflowTemplate')
+    @ipc(SD_CPP_CHANNELS.DELETE_WORKFLOW_TEMPLATE)
     async deleteWorkflowTemplateIpc(id: string): Promise<RuntimeValue> {
         const result = await this.deleteComfyWorkflowTemplate(id);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:exportWorkflowTemplateShare')
+    @ipc(SD_CPP_CHANNELS.EXPORT_WORKFLOW_TEMPLATE_SHARE)
     async exportWorkflowTemplateShareIpc(id: string): Promise<RuntimeValue> {
         const result = this.exportComfyWorkflowTemplateShareCode(id);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:importWorkflowTemplateShare')
+    @ipc(SD_CPP_CHANNELS.IMPORT_WORKFLOW_TEMPLATE_SHARE)
     async importWorkflowTemplateShareIpc(code: string): Promise<RuntimeValue> {
         const result = await this.importComfyWorkflowTemplateShareCode(code);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:schedule')
+    @ipc(SD_CPP_CHANNELS.SCHEDULE)
     async scheduleIpc(payload: UnsafeValue): Promise<RuntimeValue> {
         const result = await this.scheduleGeneration(payload.runAt, payload.options, {
             priority: payload.priority,
@@ -670,61 +659,61 @@ export class LocalImageService extends BaseService {
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:listSchedules')
+    @ipc(SD_CPP_CHANNELS.LIST_SCHEDULES)
     async listSchedulesIpc(): Promise<RuntimeValue> {
         const result = this.listScheduledGenerations();
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:cancelSchedule')
+    @ipc(SD_CPP_CHANNELS.CANCEL_SCHEDULE)
     async cancelScheduleIpc(id: string): Promise<RuntimeValue> {
         const result = await this.cancelScheduledGeneration(id);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:compare')
+    @ipc(SD_CPP_CHANNELS.COMPARE)
     async compareIpc(ids: string[]): Promise<RuntimeValue> {
         const result = await this.compareGenerations(ids);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:exportComparison')
+    @ipc(SD_CPP_CHANNELS.EXPORT_COMPARISON)
     async exportComparisonIpc(payload: UnsafeValue): Promise<RuntimeValue> {
         const result = await this.exportComparison(payload.ids, payload.format ?? 'json');
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:shareComparison')
+    @ipc(SD_CPP_CHANNELS.SHARE_COMPARISON)
     async shareComparisonIpc(ids: string[]): Promise<RuntimeValue> {
         const result = await this.shareComparison(ids);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:batchGenerate')
+    @ipc(SD_CPP_CHANNELS.BATCH_GENERATE)
     async batchGenerateIpc(requests: UnsafeValue[]): Promise<RuntimeValue> {
         const result = await this.runBatchGeneration(requests);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:getQueueStats')
+    @ipc(SD_CPP_CHANNELS.GET_QUEUE_STATS)
     async getQueueStatsIpc(): Promise<RuntimeValue> {
         const result = this.getQueueStats();
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:searchHistory')
+    @ipc(SD_CPP_CHANNELS.SEARCH_HISTORY)
     async searchHistoryIpc(query: string, limit?: number): Promise<RuntimeValue> {
         const result = this.searchGenerationHistory(query, limit);
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:exportHistory')
+    @ipc(SD_CPP_CHANNELS.EXPORT_HISTORY)
     async exportHistoryIpc(format?: 'json' | 'csv'): Promise<RuntimeValue> {
         const result = await this.exportGenerationHistory(format ?? 'json');
         return serializeToIpc(result);
     }
 
-    @ipc('sd-cpp:edit')
+    @ipc(SD_CPP_CHANNELS.EDIT)
     async editIpc(options: UnsafeValue): Promise<RuntimeValue> {
         const result = await this.editImage(options);
         return serializeToIpc(result);

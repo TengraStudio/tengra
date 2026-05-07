@@ -33,3 +33,4 @@ export class DatabaseError extends AppError {
     this.operation = options?.operation;
   }
 }
+

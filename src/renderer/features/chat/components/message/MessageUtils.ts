@@ -329,3 +329,4 @@ export const useQuotaDetails = (chatError: ChatError | null, t: TranslationFn): 
             model: chatError.model ?? null,
         };
     }, [chatError, t]);
+

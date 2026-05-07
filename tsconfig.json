@@ -43,11 +43,23 @@
             "@renderer/*": [
                 "src/renderer/*"
             ],
+            "@common/*": [
+                "src/renderer/common/*"
+            ],
+            "@ui/*": [
+                "src/renderer/ui/*"
+            ],
+            "@system/*": [
+                "src/renderer/system/*"
+            ],
             "@shared/*": [
                 "src/shared/*"
             ],
             "@assets/*": [
                 "assets/*"
+            ],
+            "@tests/*": [
+                "src/tests/*"
             ]
         },
         "types": [

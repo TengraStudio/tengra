@@ -17,7 +17,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { ThemeErrorCode, ThemeService, ThemeTelemetryEvent } from '@main/services/theme/theme.service';
+import { ThemeErrorCode, ThemeService, ThemeUsageStatsEvent } from '@main/services/theme/theme.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the entire module to have full control
@@ -276,3 +276,4 @@ describe('ThemeService Integration Tests', () => {
         expect(result).toBe(false);
     });
 });
+

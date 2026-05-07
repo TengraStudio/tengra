@@ -12,8 +12,6 @@ import { useCallback, useState } from 'react';
 
 import { GitFileHistoryItem, GitFlowStatus, GitHookInfo, GitHotspot, GitRebasePlanCommit, GitRefComparison, GitRepositoryStats, GitSubmodule } from '../components/git/types';
 
-type InvokeGitFn = <T>(channel: string, ...args: (string | number | boolean)[]) => Promise<T>;
-
 const DEFAULT_FLOW_STATUS: GitFlowStatus = {
     currentBranch: '',
     byType: {
@@ -30,8 +28,7 @@ const DEFAULT_FLOW_STATUS: GitFlowStatus = {
  */
 export function useGitAdvancedOperations(
     canRun: boolean,
-    workspacePath: string | undefined,
-    invokeGit: InvokeGitFn
+    workspacePath: string | undefined
 ) {
     const DEFAULT_OPERATION_TIMEOUT_MS = 60000;
     const [rebasePlan, setRebasePlan] = useState<GitRebasePlanCommit[]>([]);
@@ -64,13 +61,7 @@ export function useGitAdvancedOperations(
             setActiveOperationId(operationId);
             setLastOperationError(null);
             try {
-                const response = await invokeGit<{
-                    success: boolean;
-                    error?: string;
-                    stdout?: string;
-                    stderr?: string;
-                }>(
-                    'git:runControlledOperation',
+                const response = await window.electron.git.runControlledOperation(
                     workspacePath,
                     command,
                     operationId,
@@ -84,7 +75,7 @@ export function useGitAdvancedOperations(
                 setActiveOperationId(null);
             }
         },
-        [canRun, invokeGit, operationTimeoutMs, workspacePath]
+        [canRun, operationTimeoutMs, workspacePath]
     );
 
     const fetchRebasePlan = useCallback(
@@ -92,8 +83,7 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !ontoBranch.trim()) {
                 return;
             }
-            const response = await invokeGit<{ success: boolean; plan?: GitRebasePlanCommit[] }>(
-                'git:getRebasePlan',
+            const response = await window.electron.git.getRebasePlan(
                 workspacePath,
                 ontoBranch
             );
@@ -101,7 +91,7 @@ export function useGitAdvancedOperations(
                 setRebasePlan(response.plan ?? []);
             }
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const runRebaseAction = useCallback(
@@ -135,14 +125,11 @@ export function useGitAdvancedOperations(
         if (!canRun || !workspacePath) {
             return;
         }
-        const response = await invokeGit<{ success: boolean; submodules?: GitSubmodule[] }>(
-            'git:getSubmodules',
-            workspacePath
-        );
+        const response = await window.electron.git.getSubmodules(workspacePath);
         if (response.success) {
             setSubmodules(response.submodules ?? []);
         }
-    }, [canRun, workspacePath, invokeGit]);
+    }, [canRun, workspacePath]);
 
     const runSubmoduleAction = useCallback(
         async (
@@ -193,33 +180,29 @@ export function useGitAdvancedOperations(
         if (!activeOperationId) {
             return false;
         }
-        const response = await invokeGit<{ success: boolean }>('git:cancelOperation', activeOperationId);
+        const response = await window.electron.git.cancelOperation(activeOperationId);
         if (!response.success) {
             setLastOperationError('error.git.cancel_failed');
         }
         return response.success;
-    }, [activeOperationId, invokeGit]);
+    }, [activeOperationId]);
 
     const fetchFlowStatus = useCallback(async () => {
         if (!canRun || !workspacePath) {
             return;
         }
-        const response = await invokeGit<{ success: boolean; flowStatus?: GitFlowStatus }>(
-            'git:getFlowStatus',
-            workspacePath
-        );
+        const response = await window.electron.git.getFlowStatus(workspacePath);
         if (response.success && response.flowStatus) {
             setFlowStatus(response.flowStatus);
         }
-    }, [canRun, workspacePath, invokeGit]);
+    }, [canRun, workspacePath]);
 
     const startFlowBranch = useCallback(
         async (branchType: 'feature' | 'release' | 'hotfix' | 'support', branchName: string, baseBranch?: string) => {
             if (!canRun || !workspacePath || !branchName.trim()) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:startFlowBranch',
+            const response = await window.electron.git.startFlowBranch(
                 workspacePath,
                 branchType,
                 branchName,
@@ -228,7 +211,7 @@ export function useGitAdvancedOperations(
             await fetchFlowStatus();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchFlowStatus]
+        [canRun, workspacePath, fetchFlowStatus]
     );
 
     const finishFlowBranch = useCallback(
@@ -236,8 +219,7 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !branchName.trim()) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:finishFlowBranch',
+            const response = await window.electron.git.finishFlowBranch(
                 workspacePath,
                 branchName,
                 targetBranch || '',
@@ -246,30 +228,26 @@ export function useGitAdvancedOperations(
             await fetchFlowStatus();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchFlowStatus]
+        [canRun, workspacePath, fetchFlowStatus]
     );
 
     const fetchHooks = useCallback(async () => {
         if (!canRun || !workspacePath) {
             return;
         }
-        const response = await invokeGit<{ success: boolean; hooks?: GitHookInfo[]; templates?: string[] }>(
-            'git:getHooks',
-            workspacePath
-        );
+        const response = await window.electron.git.getHooks(workspacePath);
         if (response.success) {
             setHooks(response.hooks ?? []);
             setHookTemplates(response.templates ?? []);
         }
-    }, [canRun, workspacePath, invokeGit]);
+    }, [canRun, workspacePath]);
 
     const installHook = useCallback(
         async (hookName: string, templateName: string) => {
             if (!canRun || !workspacePath || !hookName.trim()) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:installHook',
+            const response = await window.electron.git.installHook(
                 workspacePath,
                 hookName,
                 templateName
@@ -277,7 +255,7 @@ export function useGitAdvancedOperations(
             await fetchHooks();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchHooks]
+        [canRun, workspacePath, fetchHooks]
     );
 
     const validateHook = useCallback(
@@ -285,15 +263,12 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !hookName.trim()) {
                 return;
             }
-            const response = await invokeGit<{
-                success: boolean;
-                validation?: { hookName: string; hasShebang: boolean; executable: boolean; valid: boolean };
-            }>('git:validateHook', workspacePath, hookName);
+            const response = await window.electron.git.validateHook(workspacePath, hookName);
             if (response.success && response.validation) {
                 setHookValidation(response.validation);
             }
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const testHook = useCallback(
@@ -301,8 +276,7 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !hookName.trim()) {
                 return;
             }
-            const response = await invokeGit<{ success: boolean; stdout?: string; stderr?: string }>(
-                'git:testHook',
+            const response = await window.electron.git.testHook(
                 workspacePath,
                 hookName
             );
@@ -310,7 +284,7 @@ export function useGitAdvancedOperations(
                 setHookTestOutput({ stdout: response.stdout ?? '', stderr: response.stderr ?? '' });
             }
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const exportHooks = useCallback(async () => {
@@ -329,8 +303,7 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath) {
                 return;
             }
-            const response = await invokeGit<{ success: boolean; stats?: GitRepositoryStats }>(
-                'git:getRepositoryStats',
+            const response = await window.electron.git.getRepositoryStats(
                 workspacePath,
                 days || 365
             );
@@ -338,15 +311,14 @@ export function useGitAdvancedOperations(
                 setStats(response.stats);
             }
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const exportStats = useCallback(async (days?: number) => {
         if (!canRun || !workspacePath) {
             return;
         }
-        const response = await invokeGit<{ success: boolean; export?: { authorsCsv: string } }>(
-            'git:exportRepositoryStats',
+        const response = await window.electron.git.exportRepositoryStats(
             workspacePath,
             days || 365
         );
@@ -359,16 +331,16 @@ export function useGitAdvancedOperations(
             anchor.click();
             URL.revokeObjectURL(url);
         }
-    }, [canRun, workspacePath, invokeGit]);
+    }, [canRun, workspacePath]);
 
     const createBranch = useCallback(
         async (name: string, startPoint?: string) => {
             if (!canRun || !workspacePath || !name.trim()) {
                 return { success: false, error: 'error.git.invalid_branch_name' };
             }
-            return await invokeGit<{ success: boolean; error?: string }>('git:createBranch', workspacePath, name, startPoint || '');
+            return await window.electron.git.createBranch(workspacePath, name, startPoint || '');
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const deleteBranch = useCallback(
@@ -376,9 +348,9 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !name.trim()) {
                 return { success: false, error: 'error.git.invalid_branch_name' };
             }
-            return await invokeGit<{ success: boolean; error?: string }>('git:deleteBranch', workspacePath, name, force);
+            return await window.electron.git.deleteBranch(workspacePath, name, force);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const renameBranch = useCallback(
@@ -386,9 +358,9 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !oldName.trim() || !newName.trim()) {
                 return { success: false, error: 'error.git.invalid_branch_names' };
             }
-            return await invokeGit<{ success: boolean; error?: string }>('git:renameBranch', workspacePath, oldName, newName);
+            return await window.electron.git.renameBranch(workspacePath, oldName, newName);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const setUpstream = useCallback(
@@ -396,9 +368,9 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !branch.trim() || !remote.trim() || !upstreamBranch.trim()) {
                 return { success: false, error: 'error.git.invalid_parameters' };
             }
-            return await invokeGit<{ success: boolean; error?: string }>('git:setUpstream', workspacePath, branch, remote, upstreamBranch);
+            return await window.electron.git.setUpstream(workspacePath, branch, remote, upstreamBranch);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const generatePrSummary = useCallback(
@@ -406,9 +378,9 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !base.trim() || !head.trim()) {
                 return { success: false, error: 'error.git.invalid_branch_names' };
             }
-            return await invokeGit<{ success: boolean; summary?: string; error?: string }>('git:generatePrSummary', workspacePath, base, head);
+            return await window.electron.git.generatePrSummary(workspacePath, base, head);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const fetchFileHistory = useCallback(
@@ -416,9 +388,9 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !filePath.trim()) {
                 return { success: false, commits: [] };
             }
-            return await invokeGit<{ success: boolean; commits: GitFileHistoryItem[] }>('git:getFileHistory', workspacePath, filePath, limit || 20);
+            return await window.electron.git.getFileHistory(workspacePath, filePath, limit || 20);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const compareRefs = useCallback(
@@ -426,9 +398,9 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath || !base.trim() || !head.trim()) {
                 return { success: false, ahead: 0, behind: 0, files: [] };
             }
-            return await invokeGit<GitRefComparison>('git:compareRefs', workspacePath, base, head);
+            return await window.electron.git.compareRefs(workspacePath, base, head);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const fetchHotspots = useCallback(
@@ -436,9 +408,9 @@ export function useGitAdvancedOperations(
             if (!canRun || !workspacePath) {
                 return { success: false, hotspots: [] };
             }
-            return await invokeGit<{ success: boolean; hotspots: GitHotspot[] }>('git:getHotspots', workspacePath, limit || 10, days || 30);
+            return await window.electron.git.getHotspots(workspacePath, limit || 10, days || 30);
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
 
@@ -481,3 +453,4 @@ export function useGitAdvancedOperations(
         fetchHotspots,
     };
 }
+

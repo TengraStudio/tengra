@@ -60,3 +60,4 @@ describe('workspaces-page-health.store', () => {
         expect(snapshot.status).toBe('degraded');
     });
 });
+

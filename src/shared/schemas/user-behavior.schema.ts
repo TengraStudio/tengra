@@ -34,3 +34,4 @@ export const UserBehaviorSummarySchema = z.object({
 
 export type UserBehaviorRecord = z.infer<typeof UserBehaviorRecordSchema>;
 export type UserBehaviorSummary = z.infer<typeof UserBehaviorSummarySchema>;
+

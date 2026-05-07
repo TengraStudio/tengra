@@ -69,3 +69,4 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
 ));
 
 EmptyState.displayName = 'EmptyState';
+

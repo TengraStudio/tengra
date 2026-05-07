@@ -391,3 +391,4 @@ function deduplicateResultsWithType(results: FileSearchResult[], limit: number):
         return true;
     }).slice(0, limit);
 }
+

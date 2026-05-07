@@ -189,3 +189,4 @@ export interface ChatError {
     reason?: string | null;
     retryable?: boolean;
 }
+

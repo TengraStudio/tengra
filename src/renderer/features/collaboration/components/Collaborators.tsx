@@ -82,3 +82,4 @@ export const Collaborators: React.FC<CollaboratorsProps> = ({ awareness }) => {
         </div>
     );
 };
+

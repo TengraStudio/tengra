@@ -104,3 +104,4 @@ export function collectTerminalSearchMatches(
     return { matches: rows, invalidRegex: false };
 }
 
+

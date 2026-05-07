@@ -40,3 +40,4 @@ export function unwrapSettingsResponse(response: AppSettings | ServiceResponse<A
 
     return isAppSettings(payload) ? payload : null;
 }
+

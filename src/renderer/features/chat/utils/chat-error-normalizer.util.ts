@@ -308,3 +308,4 @@ export function parseChatErrorFromText(content: string, model: string | null): C
     const parsed = normalizeChatError(trimmed, model);
     return parsed.kind === 'generic' && !trimmed.includes('{') ? null : parsed;
 }
+

@@ -169,7 +169,7 @@ export function MarketplaceView(): JSX.Element {
         }
         skillsInFlightRef.current = (async () => {
             try {
-                setInstalledSkills(await window.electron.listSkills());
+                setInstalledSkills(await window.electron.auth.listSkills());
             } catch {
                 pushNotification({ type: 'error', message: tRef.current('frontend.marketplace.loadError') });
             } finally {
@@ -323,3 +323,4 @@ export function MarketplaceView(): JSX.Element {
 }
 
 export default MarketplaceView;
+

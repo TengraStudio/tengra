@@ -23,3 +23,4 @@ export function sanitizeBackendId(raw: RendererDataValue): string | undefined {
     const normalized = raw.trim();
     return normalized.length > 0 ? normalized : undefined;
 }
+

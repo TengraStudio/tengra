@@ -233,3 +233,4 @@ export const AccessibilitySettings: React.FC = () => {
 };
 
 export default AccessibilitySettings;
+

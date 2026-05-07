@@ -12,13 +12,12 @@ import { exec } from 'child_process';
 import * as http from 'http';
 import { promisify } from 'util';
 
+import { appLogger } from '@main/logging/logger';
 import { t } from '@main/utils/i18n.util';
 import { OPERATION_TIMEOUTS, REQUEST_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { BrowserWindow, dialog } from 'electron';
-
-import { appLogger } from '../logging/logger';
 
 
 const execAsync = promisify(exec);
@@ -232,3 +231,4 @@ async function waitForReady(): Promise<boolean> {
     }
     return false;
 }
+

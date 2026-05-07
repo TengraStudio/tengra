@@ -128,6 +128,318 @@ function toCachedToolMessageContents(
     );
 }
 
+function tryParseLooseJsonObject(content: string): Record<string, JsonValue> | null {
+    const direct = safeJsonParse<Record<string, JsonValue>>(content, {});
+    if (Object.keys(direct).length > 0) {
+        return direct;
+    }
+
+    const normalized = content
+        .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_-]*)(\s*:)/g, '$1"$2"$3')
+        .replace(/,(\s*[}\]])/g, '$1');
+    const parsed = safeJsonParse<Record<string, JsonValue>>(normalized, {});
+    return Object.keys(parsed).length > 0 ? parsed : null;
+}
+
+function stripShellQuotes(value: string): string {
+    const trimmed = value.trim();
+    if (
+        (trimmed.startsWith('"') && trimmed.endsWith('"'))
+        || (trimmed.startsWith('\'') && trimmed.endsWith('\''))
+    ) {
+        return trimmed.slice(1, -1);
+    }
+    return trimmed;
+}
+
+function joinShellPath(cwd: string | undefined, target: string): string {
+    const normalizedTarget = stripShellQuotes(target).trim();
+    if (normalizedTarget.length === 0) {
+        return normalizedTarget;
+    }
+    if (/^[A-Za-z]:[\\/]/.test(normalizedTarget) || normalizedTarget.startsWith('/')) {
+        return normalizedTarget;
+    }
+    if (!cwd || cwd.trim().length === 0) {
+        return normalizedTarget;
+    }
+    const normalizedCwd = cwd.replace(/[\\/]+$/, '');
+    return `${normalizedCwd}/${normalizedTarget}`.replace(/\\/g, '/');
+}
+
+function splitShellCommands(command: string): string[] {
+    return command
+        .split(/\s*(?:&&|;)\s*/g)
+        .map(part => part.trim())
+        .filter(part => part.length > 0);
+}
+
+function tryBuildFilesystemWriteFromCommandBatch(commands: Array<{ command: string; cwd?: string }>): ToolCall | null {
+    let targetPath: string | null = null;
+    let content = '';
+    let wrote = false;
+
+    for (const entry of commands) {
+        const parts = splitShellCommands(entry.command);
+        for (const part of parts) {
+            if (/^mkdir(?:\s+-p)?\s+/i.test(part) || /^touch\s+/i.test(part)) {
+                continue;
+            }
+
+            const echoMatch = /^echo\s+([\s\S]+?)\s*(>>|>)\s*(.+)$/i.exec(part);
+            if (echoMatch) {
+                const nextPath = joinShellPath(entry.cwd, echoMatch[3]);
+                if (nextPath.length === 0) {
+                    return null;
+                }
+                if (targetPath && targetPath !== nextPath) {
+                    return null;
+                }
+                targetPath = nextPath;
+
+                const nextLine = `${stripShellQuotes(echoMatch[1])}\n`;
+                if (echoMatch[2] === '>') {
+                    content = nextLine;
+                } else {
+                    content += nextLine;
+                }
+                wrote = true;
+                continue;
+            }
+
+            return null;
+        }
+    }
+
+    if (!wrote || !targetPath) {
+        return null;
+    }
+
+    return {
+        id: `synthetic-tool-${generateId()}`,
+        type: 'function',
+        function: {
+            name: 'mcp__filesystem__write',
+            arguments: JSON.stringify({
+                path: targetPath,
+                content,
+            }),
+        },
+    };
+}
+
+function tryBuildToolCallFromRawText(content: string): ToolCall | null {
+    const trimmed = content.trim();
+    if (trimmed.length === 0 || !trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+        return null;
+    }
+
+    const payload = tryParseLooseJsonObject(trimmed);
+    if (!payload) {
+        return null;
+    }
+
+    const explicitName = typeof payload['name'] === 'string' ? payload['name'].trim() : '';
+    const explicitParams = payload['parameters'];
+    if (explicitName.length > 0 && explicitParams && typeof explicitParams === 'object' && !Array.isArray(explicitParams)) {
+        return {
+            id: `synthetic-tool-${generateId()}`,
+            type: 'function',
+            function: {
+                name: explicitName,
+                arguments: JSON.stringify(explicitParams),
+            },
+        };
+    }
+
+    const rootTool = typeof payload['tool'] === 'string' ? payload['tool'].trim() : '';
+    const rootArgs = payload['args'];
+    if (rootTool.length > 0 && rootArgs && typeof rootArgs === 'object' && !Array.isArray(rootArgs)) {
+        return {
+            id: `synthetic-tool-${generateId()}`,
+            type: 'function',
+            function: {
+                name: rootTool,
+                arguments: JSON.stringify(rootArgs),
+            },
+        };
+    }
+
+    if ((payload['type'] === 'query' || payload['type'] === 'tool') && payload['body'] && typeof payload['body'] === 'object' && !Array.isArray(payload['body'])) {
+        const body = payload['body'] as Record<string, JsonValue>;
+        const queryCandidate = typeof body['name'] === 'string'
+            ? body['name']
+            : (Array.isArray(body['value']) && typeof body['value'][0] === 'string' ? body['value'][0] : '');
+        if (queryCandidate.trim().length > 0) {
+            return {
+                id: `synthetic-tool-${generateId()}`,
+                type: 'function',
+                function: {
+                    name: 'mcp__web__search',
+                    arguments: JSON.stringify({ query: queryCandidate.trim() }),
+                },
+            };
+        }
+    }
+
+    const commandEnvelope = payload['commands'];
+    const commandScope = commandEnvelope && typeof commandEnvelope === 'object' && !Array.isArray(commandEnvelope)
+        ? commandEnvelope as Record<string, JsonValue>
+        : payload;
+    const commandList = Array.isArray(commandEnvelope)
+        ? commandEnvelope.filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+        : [];
+
+    const commandValue = commandScope['command'] ?? commandScope['cmd'];
+    const argsValue = payload['args'];
+    if (!commandValue && !argsValue && commandList.length === 0) { return null; }
+
+    let command = '';
+    if (typeof commandValue === 'string') {
+        command = commandValue.trim();
+    } else if (Array.isArray(commandValue)) {
+        const joined = commandValue
+            .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+            .join(' ')
+            .trim();
+        command = joined;
+    }
+    if (!command && Array.isArray(argsValue)) {
+        command = argsValue
+            .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+            .join(' ')
+            .trim();
+    }
+    if (!command && commandList.length > 0) {
+        command = commandList.join(' && ');
+    }
+    if (!command) {
+        return null;
+    }
+
+    const cwd = typeof commandScope['cwd'] === 'string' ? commandScope['cwd'] : undefined;
+    const fileWriteToolCall = tryBuildFilesystemWriteFromCommandBatch([{ command, cwd }]);
+    if (fileWriteToolCall) {
+        return fileWriteToolCall;
+    }
+    return {
+        id: `synthetic-tool-${generateId()}`,
+        type: 'function',
+        function: {
+            name: 'mcp__terminal__run_command',
+            arguments: JSON.stringify({
+                command,
+                ...(cwd ? { cwd } : {}),
+            }),
+        },
+    };
+}
+
+function extractBalancedJsonObjects(content: string): Array<{ raw: string; start: number; end: number }> {
+    const matches: Array<{ raw: string; start: number; end: number }> = [];
+    let depth = 0;
+    let start = -1;
+    let inString = false;
+    let escaped = false;
+
+    for (let index = 0; index < content.length; index += 1) {
+        const char = content[index];
+
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        if (char === '\\') {
+            escaped = true;
+            continue;
+        }
+        if (char === '"') {
+            inString = !inString;
+            continue;
+        }
+        if (inString) {
+            continue;
+        }
+        if (char === '{') {
+            if (depth === 0) {
+                start = index;
+            }
+            depth += 1;
+            continue;
+        }
+        if (char === '}') {
+            if (depth === 0) {
+                continue;
+            }
+            depth -= 1;
+            if (depth === 0 && start >= 0) {
+                matches.push({
+                    raw: content.slice(start, index + 1),
+                    start,
+                    end: index + 1,
+                });
+                start = -1;
+            }
+        }
+    }
+
+    return matches;
+}
+
+function extractSyntheticToolCallsFromText(content: string): { toolCalls: ToolCall[]; cleanedContent: string } {
+    const candidates = extractBalancedJsonObjects(content);
+    if (candidates.length === 0) {
+        return { toolCalls: [], cleanedContent: content };
+    }
+
+    const accepted: Array<{ toolCall: ToolCall; start: number; end: number }> = [];
+    for (const candidate of candidates) {
+        const toolCall = tryBuildToolCallFromRawText(candidate.raw);
+        if (!toolCall) {
+            continue;
+        }
+        accepted.push({ toolCall, start: candidate.start, end: candidate.end });
+    }
+
+    if (accepted.length === 0) {
+        return { toolCalls: [], cleanedContent: content };
+    }
+
+    const mergedFilesystemWrite = tryBuildFilesystemWriteFromCommandBatch(
+        accepted
+            .filter(({ toolCall }) => toolCall.function.name === 'mcp__terminal__run_command')
+            .map(({ toolCall }) => {
+                const args = tryParseLooseJsonObject(toolCall.function.arguments);
+                return {
+                    command: typeof args?.['command'] === 'string' ? args.command : '',
+                    cwd: typeof args?.['cwd'] === 'string' ? args.cwd : undefined,
+                };
+            })
+            .filter(entry => entry.command.length > 0)
+    );
+    const toolCalls = mergedFilesystemWrite
+        ? [
+            mergedFilesystemWrite,
+            ...accepted
+                .filter(({ toolCall }) => toolCall.function.name !== 'mcp__terminal__run_command')
+                .map(item => item.toolCall),
+        ]
+        : accepted.map(item => item.toolCall);
+
+    let cleaned = '';
+    let cursor = 0;
+    for (const acceptedCandidate of accepted) {
+        cleaned += content.slice(cursor, acceptedCandidate.start);
+        cursor = acceptedCandidate.end;
+    }
+    cleaned += content.slice(cursor);
+
+    return {
+        toolCalls,
+        cleanedContent: cleaned.replace(/\s{2,}/g, ' ').trim(),
+    };
+}
+
 function readToolMessagePayload(message: Message): Record<string, JsonValue> {
     if (message.role !== 'tool' || typeof message.content !== 'string') {
         return {};
@@ -400,11 +712,29 @@ async function performModelTurn(params: {
         reasonings.push(turnReasoning);
     }
 
+    const syntheticExtraction = result.finalToolCalls.length === 0
+        ? extractSyntheticToolCallsFromText(streamedContent)
+        : { toolCalls: [], cleanedContent: streamedContent };
+    const mergedTurnToolCalls = syntheticExtraction.toolCalls.length > 0
+        ? [...result.finalToolCalls, ...syntheticExtraction.toolCalls]
+        : result.finalToolCalls;
+
     const previousHistoryCount = toolCallsHistory.length;
-    const updatedHistory = mergeToolCallHistory(toolCallsHistory, result.finalToolCalls);
+    const updatedHistory = mergeToolCallHistory(toolCallsHistory, mergedTurnToolCalls);
     const turnToolCalls = updatedHistory.slice(previousHistoryCount);
 
-    let turnDisplayContent = streamedContent.trim().length > 0 ? streamedContent : accumulatedContent;
+    let turnDisplayContent = syntheticExtraction.cleanedContent.trim().length > 0
+        ? syntheticExtraction.cleanedContent
+        : (streamedContent.trim().length > 0 ? streamedContent : accumulatedContent);
+    if (syntheticExtraction.toolCalls.length > 0) {
+        if (turnDisplayContent === streamedContent) {
+            turnDisplayContent = '';
+        }
+        appLogger.info(
+            'useChatGenerator',
+            `[${traceId}] Converted raw payloads into synthetic tool calls: ${syntheticExtraction.toolCalls.map(toolCall => toolCall.function.name).join(', ')}`
+        );
+    }
     if (turnToolCalls.length > 0 && turnDisplayContent.trim().length === 0) {
         turnDisplayContent = buildInFlightToolProgressMessage(turnToolCalls, t);
         if (turnDisplayContent.trim().length > 0) {
@@ -923,3 +1253,4 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
     }
     return assistantId;
 }
+

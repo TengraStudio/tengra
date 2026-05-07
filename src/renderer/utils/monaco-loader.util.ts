@@ -150,3 +150,4 @@ export async function ensureMonacoInitialized(): Promise<MonacoModule> {
 
     return monacoInitPromise;
 }
+

@@ -94,3 +94,4 @@ export const GitSection: React.FC<SettingsSectionProps> = ({ formData, setFormDa
         </div>
     );
 };
+

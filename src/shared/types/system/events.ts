@@ -76,11 +76,11 @@ export type SystemEvents = {
     'sd-cpp:progress': { downloaded: number; total: number; filename: string }
     'sd-cpp:status': { state: 'installing' | 'ready' | 'failed'; error?: string }
     'image:schedule-alert': { taskId: string; status: 'completed' | 'failed' | 'canceled'; prompt: string; error?: string; timestamp: number }
-    // Model Registry Cache & Telemetry
+    // Model Registry Cache & usageStats
     'model-registry.cache.update.started': { provider?: string }
     'model-registry.cache.update.completed': { provider?: string; count: number }
     'model-registry.provider.fetch.failed': { provider: string; error: string }
-    'telemetry:model-registry': { name: SystemEventKey; [key: string]: RuntimeValue; timestamp: number }
+    'usageStats:model-registry': { name: SystemEventKey; [key: string]: RuntimeValue; timestamp: number }
     'security:vulnerabilities-found': { critical: number; high: number; timestamp: number }
     // User behavior tracking events
     'user:feature-used': { featureId: string; metadata?: Record<string, RuntimeValue> }
@@ -94,3 +94,4 @@ export type SystemEvents = {
 }
 
 export type SystemEventKey = keyof SystemEvents;
+

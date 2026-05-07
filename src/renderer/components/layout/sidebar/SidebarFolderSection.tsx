@@ -72,3 +72,4 @@ export const SidebarFolderSection = React.memo(({
 });
 
 SidebarFolderSection.displayName = 'SidebarFolderSection';
+

@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { WINDOW_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface WindowControlsBridge {
@@ -25,15 +26,16 @@ export interface WindowControlsBridge {
 
 export function createWindowControlsBridge(ipc: IpcRenderer): WindowControlsBridge {
     return {
-        minimize: () => ipc.send('window:minimize'),
-        maximize: () => ipc.send('window:maximize'),
-        fullscreen: () => ipc.send('window:toggle-fullscreen'),
-        close: () => ipc.send('window:close'),
-        toggleCompact: enabled => ipc.send('window:toggle-compact', enabled),
-        resizeWindow: resolution => ipc.send('window:resize', resolution),
-        getZoomFactor: () => ipc.invoke('window:get-zoom-factor'),
-        setZoomFactor: zoomFactor => ipc.invoke('window:set-zoom-factor', zoomFactor),
-        stepZoomFactor: direction => ipc.invoke('window:step-zoom-factor', direction),
-        resetZoomFactor: () => ipc.invoke('window:reset-zoom-factor'),
+        minimize: () => ipc.send(WINDOW_CHANNELS.MINIMIZE),
+        maximize: () => ipc.send(WINDOW_CHANNELS.MAXIMIZE),
+        fullscreen: () => ipc.send(WINDOW_CHANNELS.TOGGLE_FULLSCREEN),
+        close: () => ipc.send(WINDOW_CHANNELS.CLOSE),
+        toggleCompact: enabled => ipc.send(WINDOW_CHANNELS.TOGGLE_COMPACT, enabled),
+        resizeWindow: resolution => ipc.send(WINDOW_CHANNELS.RESIZE, resolution),
+        getZoomFactor: () => ipc.invoke(WINDOW_CHANNELS.GET_ZOOM_FACTOR),
+        setZoomFactor: zoomFactor => ipc.invoke(WINDOW_CHANNELS.SET_ZOOM_FACTOR, zoomFactor),
+        stepZoomFactor: direction => ipc.invoke(WINDOW_CHANNELS.STEP_ZOOM_FACTOR, direction),
+        resetZoomFactor: () => ipc.invoke(WINDOW_CHANNELS.RESET_ZOOM_FACTOR),
     };
 }
+

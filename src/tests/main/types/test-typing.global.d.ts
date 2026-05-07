@@ -20,3 +20,4 @@ declare global {
         [index: number]: TestLooseMock;
     }
 }
+

@@ -396,3 +396,4 @@ export const WorkspaceIdentitySchema = z.object({
 export const WorkspaceActiveStateSchema = z.object({
     rootPath: WorkspaceActiveRootPathSchema,
 });
+

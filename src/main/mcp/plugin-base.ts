@@ -155,3 +155,4 @@ export class NativeMcpPlugin implements IMcpPlugin {
         return this.proxyService.getEmbeddedProxyStatus().running;
     }
 }
+

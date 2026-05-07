@@ -132,3 +132,4 @@ if (typeof window !== 'undefined' && window.electron) {
 } else {
     appLogger.debug('ExtensionStore', 'Skipping extension store bootstrap (electron bridge unavailable)');
 }
+

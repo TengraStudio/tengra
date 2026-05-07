@@ -158,3 +158,4 @@ describe('ServiceRegistry', () => {
         registry.unregister('test:defaults');
     });
 });
+

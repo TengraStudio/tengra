@@ -654,3 +654,4 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
         </div>
     );
 });
+

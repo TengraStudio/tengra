@@ -94,3 +94,4 @@ describe('Workspace setup SSH integration flow', () => {
         expect(loadRemoteDirectory).toHaveBeenNthCalledWith(2, 'conn-1', '/src');
     });
 });
+

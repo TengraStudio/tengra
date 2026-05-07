@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { PROXY_EMBED_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface ProxyEmbedBridge {
@@ -26,8 +27,9 @@ export interface ProxyEmbedBridge {
 
 export function createProxyEmbedBridge(ipc: IpcRenderer): ProxyEmbedBridge {
     return {
-        start: options => ipc.invoke('proxy-embed:start', options),
-        stop: () => ipc.invoke('proxy-embed:stop'),
-        getStatus: () => ipc.invoke('proxy-embed:status'),
+        start: options => ipc.invoke(PROXY_EMBED_CHANNELS.START, options),
+        stop: () => ipc.invoke(PROXY_EMBED_CHANNELS.STOP),
+        getStatus: () => ipc.invoke(PROXY_EMBED_CHANNELS.STATUS),
     };
 }
+

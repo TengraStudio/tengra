@@ -16,6 +16,7 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { createWindowsSpawnCommand } from '@main/utils/windows-command.util';
+import { SHELL_CHANNELS,WINDOW_CHANNELS } from '@shared/constants/ipc-channels';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, shell } from 'electron';
 import { z } from 'zod';
@@ -66,12 +67,12 @@ export class WindowService extends BaseService {
         super('WindowService');
     }
 
-    @ipc('window:minimize')
+    @ipc({ channel: WINDOW_CHANNELS.MINIMIZE, type: 'both' })
     minimize(): void {
         this.getMainWindow()?.minimize();
     }
 
-    @ipc('window:maximize')
+    @ipc({ channel: WINDOW_CHANNELS.MAXIMIZE, type: 'both' })
     maximize(): void {
         const win = this.getMainWindow();
         if (!win) {return;}
@@ -82,19 +83,19 @@ export class WindowService extends BaseService {
         }
     }
 
-    @ipc('window:toggle-fullscreen')
+    @ipc({ channel: WINDOW_CHANNELS.TOGGLE_FULLSCREEN, type: 'both' })
     toggleFullscreen(): void {
         const win = this.getMainWindow();
         if (!win) {return;}
         win.setFullScreen(!win.isFullScreen());
     }
 
-    @ipc('window:close')
+    @ipc({ channel: WINDOW_CHANNELS.CLOSE, type: 'both' })
     close(): void {
         this.getMainWindow()?.close();
     }
 
-    @ipc('window:toggle-compact')
+    @ipc({ channel: WINDOW_CHANNELS.TOGGLE_COMPACT, type: 'both' })
     toggleCompact(enabled: boolean): void {
         const win = this.getMainWindow();
         if (!win) {return;}
@@ -105,7 +106,7 @@ export class WindowService extends BaseService {
         }
     }
 
-    @ipc('window:resize')
+    @ipc({ channel: WINDOW_CHANNELS.RESIZE, type: 'both' })
     resize(resolution: string): void {
         const win = this.getMainWindow();
         if (!win) {return;}
@@ -116,13 +117,13 @@ export class WindowService extends BaseService {
         }
     }
 
-    @ipc('window:get-zoom-factor')
+    @ipc(WINDOW_CHANNELS.GET_ZOOM_FACTOR)
     async getZoomFactor(): Promise<{ zoomFactor: number }> {
         const win = this.getMainWindow();
         return { zoomFactor: win?.webContents.getZoomFactor() ?? 1 };
     }
 
-    @ipc('window:set-zoom-factor')
+    @ipc(WINDOW_CHANNELS.SET_ZOOM_FACTOR)
     async setZoomFactor(zoomFactor: number): Promise<{ zoomFactor: number }> {
         const win = this.getMainWindow();
         const nextZoomFactor = this.clampZoomFactor(zoomFactor);
@@ -131,7 +132,7 @@ export class WindowService extends BaseService {
         return { zoomFactor: nextZoomFactor };
     }
 
-    @ipc('window:step-zoom-factor')
+    @ipc(WINDOW_CHANNELS.STEP_ZOOM_FACTOR)
     async stepZoomFactor(direction: number): Promise<{ zoomFactor: number }> {
         const win = this.getMainWindow();
         const currentZoomFactor = win?.webContents.getZoomFactor() ?? 1;
@@ -141,7 +142,7 @@ export class WindowService extends BaseService {
         return { zoomFactor: nextZoomFactor };
     }
 
-    @ipc('window:reset-zoom-factor')
+    @ipc(WINDOW_CHANNELS.RESET_ZOOM_FACTOR)
     async resetZoomFactor(): Promise<{ zoomFactor: number }> {
         const win = this.getMainWindow();
         win?.webContents.setZoomFactor(1);
@@ -149,7 +150,7 @@ export class WindowService extends BaseService {
         return { zoomFactor: 1 };
     }
 
-    @ipc('shell:openExternal')
+    @ipc(SHELL_CHANNELS.OPEN_EXTERNAL)
     async openExternal(url: string): Promise<{ success: boolean; error?: string }> {
         this.logInfo(`shell:openExternal called with URL: ${this.redactUrlForLogs(url)}`);
 
@@ -186,7 +187,7 @@ export class WindowService extends BaseService {
         }
     }
 
-    @ipc('shell:runCommand')
+    @ipc(SHELL_CHANNELS.RUN_COMMAND)
     async runCommand(command: string, args: string[], cwd?: string): Promise<{ stdout: string; stderr: string; code: number; error: string }> {
         const MAX_COMMAND_LENGTH = 256;
         const MAX_ARGS_COUNT = 50;
@@ -225,13 +226,13 @@ export class WindowService extends BaseService {
         });
     }
 
-    @ipc('shell:openTerminal')
+    @ipc(SHELL_CHANNELS.OPEN_TERMINAL)
     async openTerminal(_command: string): Promise<boolean> {
         return true; // Placeholder
     }
 
-    @ipc('window:captureCookies')
-    async captureCookies(url: string): Promise<{ success: boolean; cookies: unknown[]; error?: string }> {
+    @ipc(WINDOW_CHANNELS.CAPTURE_COOKIES)
+    async captureCookies(url: string): Promise<{ success: boolean; cookies: Electron.Cookie[]; error?: string }> {
         try {
             const parsedUrl = new URL(url);
             if (!COOKIE_CAPTURE_ALLOWED_HOSTS.has(parsedUrl.hostname)) {
@@ -299,3 +300,4 @@ export class WindowService extends BaseService {
         return { stdout: '', stderr: error, code: 1, error: WINDOW_ERROR_MESSAGE.COMMAND_VALIDATION_FAILED };
     }
 }
+

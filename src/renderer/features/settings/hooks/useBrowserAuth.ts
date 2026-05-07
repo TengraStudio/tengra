@@ -49,13 +49,6 @@ interface BrowserAccountSnapshot {
     createdAt?: number
 }
 
-interface AuthAccountChangedPayload {
-    type?: string
-    provider?: string
-    accountId?: string
-    account_id?: string
-}
-
 interface BrowserAuthRequest {
     provider: BrowserOAuthProvider
     state: string
@@ -154,17 +147,6 @@ function toBrowserAuthRequest(authBusy: AuthBusyState | null): BrowserAuthReques
         initialAccountIds: authBusy.initialAccountIds ?? [],
         startedAt: authBusy.startedAt
     };
-}
-
-function extractPayloadAccountId(payload?: AuthAccountChangedPayload): string | undefined {
-    if (!payload) {
-        return undefined;
-    }
-    return payload.accountId ?? payload.account_id;
-}
-
-function extractPayloadProvider(payload?: AuthAccountChangedPayload): string | undefined {
-    return payload?.provider?.toLowerCase();
 }
 
 function extractStatusAccountId(status: BrowserAuthPollStatus): string | undefined {
@@ -314,7 +296,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         }
 
         try {
-            await window.electron.cancelAuth(request.provider, request.state, request.accountId);
+            await window.electron.auth.cancelAuth(request.provider, request.state, request.accountId);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             appLogger.warn('BrowserAuth', `Failed to cancel ${request.provider} auth: ${message}`);
@@ -334,7 +316,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
     const handleClaudeAccountShow = useCallback(async () => {
         try {
-            const accounts = await window.electron.getAccountsByProvider('claude');
+            const accounts = await window.electron.auth.getAccountsByProvider('claude');
             const firstAccount = accounts[0];
             if (firstAccount) {
                 onShowManualSession?.(firstAccount.id, firstAccount.email);
@@ -345,18 +327,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
     }, [onShowManualSession]);
 
     const invokeBrowserAuthStatus = useCallback((request: BrowserAuthRequest) => {
-        const electronInvoke = window.electron.invoke;
-        if (typeof electronInvoke === 'function') {
-            return electronInvoke(
-                'proxy:getAuthStatus',
-                request.provider,
-                request.state,
-                request.accountId
-            ) as Promise<BrowserAuthPollStatus>;
-        }
-
-        return window.electron.ipcRenderer.invoke(
-            'proxy:getAuthStatus',
+        return window.electron.auth.getBrowserAuthStatus(
             request.provider,
             request.state,
             request.accountId
@@ -386,7 +357,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
     const findLinkedBrowserAccount = useCallback(async (request: BrowserAuthRequest) => {
         const accounts = await withTimeout(
-            window.electron.getLinkedAccounts(),
+            window.electron.auth.getLinkedAccounts(),
             BROWSER_AUTH_ACCOUNT_LOAD_TIMEOUT_MS,
             `${request.provider} linked-account refresh`
         );
@@ -405,53 +376,19 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
     }, [completeBrowserAuth, linkedAccounts.accounts, pendingBrowserAuth]);
 
     useEffect(() => {
-        const removeListener = window.electron.ipcRenderer.on('auth:account-changed', (_event, payload?: AuthAccountChangedPayload) => {
+        const removeListener = window.electron.auth.onAccountChanged(() => {
             const request = pendingBrowserAuthRef.current;
             if (!request) {
                 return;
             }
 
-            const changedProvider = extractPayloadProvider(payload);
-            const changedAccountId = extractPayloadAccountId(payload);
-            if (!changedProvider || !PROVIDER_ACCOUNT_ALIASES[request.provider].includes(changedProvider)) {
-                return;
-            }
-
-            appLogger.debug(
-                'BrowserAuth',
-                `Received auth change event for ${request.provider}: payloadProvider=${changedProvider}, payloadAccount=${changedAccountId ?? 'missing'}, type=${payload?.type ?? 'missing'}`
-            );
-
-            if (payload?.type === 'linked' || payload?.type === 'updated') {
-                sawProviderAuthUpdateRef.current = true;
-            }
-
-            if (changedAccountId === request.accountId) {
-                void completeBrowserAuth(request);
-                return;
-            }
-
-            if (changedAccountId && !request.initialAccountIds.includes(changedAccountId)) {
-                void completeBrowserAuth(request);
-                return;
-            }
-
-            if (payload?.type === 'linked' || payload?.type === 'updated') {
-                void completeBrowserAuth(request);
-                return;
-            }
-
-            void findLinkedBrowserAccount(request).then(completedAccount => {
-                if (completedAccount && pendingBrowserAuthRef.current?.accountId === request.accountId) {
-                    void completeBrowserAuth(request);
-                }
-            });
+            void refreshAuthStatus();
         });
 
         return () => {
             removeListener();
         };
-    }, [completeBrowserAuth, findLinkedBrowserAccount]);
+    }, [refreshAuthStatus]);
 
     const pollConnection = useCallback((request: BrowserAuthRequest) => {
         const requestId = activeRequestRef.current;
@@ -514,7 +451,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 }
 
                 if (sawProviderAuthUpdateRef.current) {
-                    const providerAccounts = getProviderAccounts(request, await window.electron.getLinkedAccounts());
+                    const providerAccounts = getProviderAccounts(request, await window.electron.auth.getLinkedAccounts());
                     if (providerAccounts.length > 0) {
                         await completeBrowserAuth(request);
                         return;
@@ -577,7 +514,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         try {
             appLogger.debug('BrowserAuth', `[${provider}] Step 1: Getting linked accounts (requestId=${requestId})`);
             const existingAccounts = await withTimeout(
-                window.electron.getLinkedAccounts(),
+                window.electron.auth.getLinkedAccounts(),
                 BROWSER_AUTH_ACCOUNT_LOAD_TIMEOUT_MS,
                 `${provider} linked-account bootstrap`
             );
@@ -640,10 +577,10 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
             appLogger.debug('BrowserAuth', `[${provider}] Step 2: Calling ${provider}Login (initialAccounts=${initialAccountIds.length})`);
             const loginRequest = provider === 'codex'
-                ? window.electron.codexLogin()
+                ? window.electron.auth.codexLogin()
                 : provider === 'claude'
-                    ? window.electron.claudeLogin()
-                    : window.electron.antigravityLogin();
+                    ? window.electron.auth.claudeLogin()
+                    : window.electron.auth.antigravityLogin();
 
             const response = await withTimeout(
                 loginRequest,
@@ -708,7 +645,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
     const handleSaveClaudeSession = useCallback(async (key: string, id?: string) => {
         setAuthNotice(t('frontend.auth.savingSession'));
         try {
-            const result = await window.electron.saveClaudeSession(key.trim(), id);
+            const result = await window.electron.auth.saveClaudeSession(key.trim(), id);
             if (!result.success) {
                 const errorMessage = result.error ?? t('common.unknownError');
                 setAuthNotice(t('frontend.auth.failedWithReason', { reason: errorMessage }));
@@ -739,12 +676,12 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         }
 
         const updatedSettings = PROVIDER_SETTINGS_UPDATERS[provider](settings);
-        if (provider === 'ollama' && window.electron.ollamaSignout) {
+        if (provider === 'ollama' && window.electron.auth.ollamaSignout) {
             const ollamaAccountId = linkedAccounts.accounts.find(account =>
                 PROVIDER_ACCOUNT_ALIASES.ollama.includes(account.provider.toLowerCase())
             )?.id;
             try {
-                const result = await window.electron.ollamaSignout(ollamaAccountId);
+                const result = await window.electron.auth.ollamaSignout(ollamaAccountId);
                 if (!result.success && !result.alreadySignedOut) {
                     appLogger.warn('BrowserAuth', `Ollama signout failed: ${result.error ?? 'UnsafeValue error'}`);
                 }
@@ -753,7 +690,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             }
         }
         try {
-            await window.electron.unlinkProvider(provider);
+            await window.electron.auth.unlinkProvider(provider);
         } catch (error) {
             appLogger.error('BrowserAuth', 'Provider unlink failed', error as Error);
         }
@@ -772,3 +709,4 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         disconnectProvider
     };
 }
+

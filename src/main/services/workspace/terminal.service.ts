@@ -32,6 +32,7 @@ import {
 } from '@main/services/terminal/backends/terminal-backend.interface';
 import { WarpBackend } from '@main/services/terminal/backends/warp.backend';
 import { WindowsTerminalBackend } from '@main/services/terminal/backends/windows-terminal.backend';
+import { TERMINAL_CHANNELS } from '@shared/constants/ipc-channels';
 import { 
     terminalCreateOptionsSchema, 
     terminalGetDiscoverySnapshotArgsSchema 
@@ -1248,7 +1249,7 @@ export class TerminalService extends BaseService {
         return { restored, failed, sessionIds };
     }
 
-    @ipc('terminal:setSessionTitle')
+    @ipc(TERMINAL_CHANNELS.SET_SESSION_TITLE)
     async setSessionTitle(sessionId: string, title: string): Promise<boolean> {
         const normalized = title.trim().slice(0, 120);
         if (!normalized) {
@@ -1274,7 +1275,7 @@ export class TerminalService extends BaseService {
         return true;
     }
 
-    @ipc('terminal:searchScrollback')
+    @ipc(TERMINAL_CHANNELS.SEARCH_SCROLLBACK)
     async searchSessionScrollback(
         sessionId: string,
         query: string,
@@ -1338,7 +1339,7 @@ export class TerminalService extends BaseService {
         return results;
     }
 
-    @ipc('terminal:getSearchSuggestions')
+    @ipc(TERMINAL_CHANNELS.GET_SEARCH_SUGGESTIONS)
     getSearchSuggestions(query = '', limit = 10): string[] {
         const normalizedQuery = query.trim().toLowerCase();
         const max = Math.max(1, Math.min(limit, 100));
@@ -1367,7 +1368,7 @@ export class TerminalService extends BaseService {
         return suggestions.slice(0, max);
     }
 
-    @ipc('terminal:exportSearchResults')
+    @ipc(TERMINAL_CHANNELS.EXPORT_SEARCH_RESULTS)
     async exportSearchResults(
         sessionId: string,
         query: string,
@@ -1406,7 +1407,7 @@ export class TerminalService extends BaseService {
         }
     }
 
-    @ipc('terminal:exportScrollback')
+    @ipc(TERMINAL_CHANNELS.EXPORT_SCROLLBACK)
     async exportSessionScrollback(
         sessionId: string,
         exportPath?: string
@@ -1431,7 +1432,7 @@ export class TerminalService extends BaseService {
         }
     }
 
-    @ipc('terminal:getSessionAnalytics')
+    @ipc(TERMINAL_CHANNELS.GET_SESSION_ANALYTICS)
     async getSessionAnalytics(sessionId: string): Promise<TerminalSessionAnalytics> {
         const content = await this.readLogAll(sessionId);
         const bytes = Buffer.byteLength(content, 'utf-8');
@@ -1447,12 +1448,12 @@ export class TerminalService extends BaseService {
         return { sessionId, bytes, lineCount, commandCount, updatedAt };
     }
 
-    @ipc('terminal:getSearchAnalytics')
+    @ipc(TERMINAL_CHANNELS.GET_SEARCH_ANALYTICS)
     getSearchAnalytics(): TerminalSearchAnalytics {
         return { ...this.searchAnalytics };
     }
 
-    @ipc('terminal:addScrollbackMarker')
+    @ipc(TERMINAL_CHANNELS.ADD_SCROLLBACK_MARKER)
     async addScrollbackMarker(
         sessionId: string,
         label: string,
@@ -1477,7 +1478,7 @@ export class TerminalService extends BaseService {
         return marker;
     }
 
-    @ipc('terminal:listScrollbackMarkers')
+    @ipc(TERMINAL_CHANNELS.LIST_SCROLLBACK_MARKERS)
     listScrollbackMarkers(sessionId?: string): TerminalScrollbackMarker[] {
         const list = sessionId
             ? this.scrollbackMarkers.filter(item => item.sessionId === sessionId)
@@ -1485,7 +1486,7 @@ export class TerminalService extends BaseService {
         return [...list].sort((a, b) => b.createdAt - a.createdAt);
     }
 
-    @ipc('terminal:deleteScrollbackMarker')
+    @ipc(TERMINAL_CHANNELS.DELETE_SCROLLBACK_MARKER)
     async deleteScrollbackMarker(markerId: string): Promise<boolean> {
         const prevLength = this.scrollbackMarkers.length;
         this.scrollbackMarkers = this.scrollbackMarkers.filter(item => item.id !== markerId);
@@ -1496,7 +1497,7 @@ export class TerminalService extends BaseService {
         return true;
     }
 
-    @ipc('terminal:filterScrollback')
+    @ipc(TERMINAL_CHANNELS.FILTER_SCROLLBACK)
     async filterSessionScrollback(
         sessionId: string,
         options: TerminalScrollbackFilterOptions = {}
@@ -1525,7 +1526,7 @@ export class TerminalService extends BaseService {
             .map(item => item.line);
     }
 
-    @ipc('terminal:clearCommandHistory')
+    @ipc(TERMINAL_CHANNELS.CLEAR_COMMAND_HISTORY)
     async clearCommandHistory(): Promise<boolean> {
         this.commandHistory = [];
         this.lineBuffers.clear();
@@ -2028,3 +2029,4 @@ export class TerminalService extends BaseService {
     }
 
 }
+

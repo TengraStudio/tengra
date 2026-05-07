@@ -90,7 +90,7 @@ const sharedProps = {
         isOpen: false,
         userCode: '',
         verificationUri: '',
-        provider: 'github',
+        provider: 'copilot',
         status: 'pending',
     },
     closeDeviceCodeModal: vi.fn(),
@@ -120,3 +120,4 @@ describe('SettingsTabContent', () => {
         expect(screen.queryByText('appearance-tab')).not.toBeInTheDocument();
     });
 });
+

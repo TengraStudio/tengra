@@ -72,3 +72,4 @@ describe('workspace explorer store', () => {
         expect(getWorkspaceExplorerSnapshot(WORKSPACE_ID).inlineAction).toBeNull();
     });
 });
+

@@ -59,3 +59,4 @@ export const SidebarSettingsMenu: React.FC<SidebarSettingsMenuProps> = ({
 };
 
 SidebarSettingsMenu.displayName = 'SidebarSettingsMenu';
+

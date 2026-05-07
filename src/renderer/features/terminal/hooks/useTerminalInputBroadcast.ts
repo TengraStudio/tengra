@@ -9,11 +9,6 @@
  */
 
 import { type MutableRefObject,useCallback } from 'react';
-import { z } from 'zod';
-
-import { invokeTypedIpc } from '@/lib/ipc-client';
-
-import type { TerminalIpcContract } from '../utils/terminal-ipc';
 
 interface UseTerminalInputBroadcastParams {
     activeTabIdRef: MutableRefObject<string | null>;
@@ -52,13 +47,7 @@ export function useTerminalInputBroadcast({
                 return;
             }
             await Promise.all(
-                targets.map(sessionId =>
-                    invokeTypedIpc<TerminalIpcContract, 'terminal:write'>(
-                        'terminal:write',
-                        [sessionId, value],
-                        { responseSchema: z.boolean() }
-                    )
-                )
+                targets.map(sessionId => window.electron.terminal.write(sessionId, value))
             );
         },
         [resolveInputTargetSessionIds]
@@ -80,3 +69,4 @@ export function useTerminalInputBroadcast({
         writeCommandToActiveTerminal,
     };
 }
+

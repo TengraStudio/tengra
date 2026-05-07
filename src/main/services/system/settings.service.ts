@@ -29,7 +29,7 @@ const SETTINGS_PERFORMANCE_BUDGET_MS = {
     GET: 40,
     SAVE: 150
 } as const;
-const MAX_SETTINGS_TELEMETRY_EVENTS = 120;
+const MAX_SETTINGS_usageStats_EVENTS = 120;
 
 const SETTINGS_ERROR_CODE = {
     VALIDATION: 'SETTINGS_VALIDATION_ERROR',
@@ -52,8 +52,30 @@ const SettingsCredentialSchema = z.object({
 const AppSettingsSchema = z.object({
     general: z.object({
         language: z.string().min(2).max(32).regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/).optional(),
-        telemetryEnabled: z.boolean().optional()
+        usageStatsEnabled: z.boolean().optional()
     }).passthrough().optional(),
+    llama: z.object({
+        host: z.string().max(255).optional(),
+        port: z.number().int().min(1).max(65535).optional(),
+        backend: z.enum(['auto', 'cpu', 'cuda', 'vulkan', 'metal']).optional(),
+        gpuLayers: z.number().int().min(-1).max(999).optional(),
+        contextSize: z.number().int().min(256).max(1048576).optional(),
+        batchSize: z.number().int().min(1).max(1048576).optional(),
+        ubatchSize: z.number().int().min(1).max(1048576).optional(),
+        parallel: z.number().int().min(1).max(128).optional(),
+        threads: z.number().int().min(1).max(512).optional(),
+        threadsBatch: z.number().int().min(1).max(512).optional(),
+        flashAttn: z.boolean().optional(),
+        continuousBatching: z.boolean().optional(),
+        mlock: z.boolean().optional(),
+        mmap: z.boolean().optional(),
+        defragThold: z.number().min(0).max(1).optional(),
+        metrics: z.boolean().optional(),
+        mainGpu: z.number().int().min(0).max(32).optional(),
+        tensorSplit: z.string().max(255).optional(),
+        sleepIdleSeconds: z.number().int().min(0).max(86400).optional(),
+        extraArgs: z.string().max(2048).optional(),
+    }).optional(),
     openai: SettingsCredentialSchema.optional(),
     anthropic: SettingsCredentialSchema.optional(),
     groq: SettingsCredentialSchema.optional(),
@@ -71,6 +93,20 @@ const DEFAULT_SETTINGS: AppSettings = {
         url: 'http://127.0.0.1:11434',
         numCtx: 16384,
         orchestrationPolicy: 'auto',
+    },
+    llama: {
+        host: '127.0.0.1',
+        port: 8080,
+        backend: 'auto',
+        gpuLayers: -1,
+        contextSize: 8192,
+        batchSize: 512,
+        flashAttn: true,
+        continuousBatching: true,
+        mlock: true,
+        mmap: true,
+        metrics: false,
+        extraArgs: '',
     },
     embeddings: {
         provider: 'ollama',
@@ -94,7 +130,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     activeAccountId: 'default',
     general: {
         language: 'en',
-        theme: 'graphite',
+        theme: 'tengra-black',
         resolution: '1280x800',
         fontSize: 14,
         fontFamily: 'system',
@@ -104,6 +140,7 @@ const DEFAULT_SETTINGS: AppSettings = {
         defaultTerminalBackend: 'node-pty',
         lastModel: '',
         lastProvider: '',
+        chatMode: 'instant',
         responseStyle: 'balanced',
         responseTone: 'neutral',
         responseFormat: 'auto',
@@ -162,7 +199,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpRevokedSignatures: [],
     mcpSecurityScans: {},
     mcpExtensionReviews: {},
-    mcpTelemetry: {
+    mcpusageStats: {
         enabled: true,
         anonymize: true,
         crashReporting: true,
@@ -313,6 +350,7 @@ interface WhatsappRemoteChannelSettings extends RemoteChannelSettings {
 }
 
 import { OllamaHealthService } from '@main/services/llm/local/ollama-health.service';
+import { SETTINGS_CHANNELS } from '@shared/constants/ipc-channels';
 
 export class SettingsService extends BaseService {
     private static readonly ERROR_CODES = {
@@ -338,7 +376,7 @@ export class SettingsService extends BaseService {
     private saveInProgress: boolean = false;
     private pendingSave: Partial<AppSettings> | null = null;
     private initialized: boolean = false;
-    private telemetry = {
+    private usageStats = {
         loadAttempts: 0,
         saveAttempts: 0,
         saveFailures: 0,
@@ -371,31 +409,31 @@ export class SettingsService extends BaseService {
     }
 
     private trackSettingsEvent(event: string, details: { durationMs?: number; code?: string } = {}) {
-        this.telemetry.events = [...this.telemetry.events, {
+        this.usageStats.events = [...this.usageStats.events, {
             event,
             timestamp: Date.now(),
             durationMs: details.durationMs,
             code: details.code
-        }].slice(-MAX_SETTINGS_TELEMETRY_EVENTS);
+        }].slice(-MAX_SETTINGS_usageStats_EVENTS);
     }
 
     private trackSettingsBudget(durationMs: number, budgetMs: number) {
         if (durationMs > budgetMs) {
-            this.telemetry.budgetExceededCount += 1;
+            this.usageStats.budgetExceededCount += 1;
         }
     }
 
     private getSettingsHealthSummary() {
-        const operationCount = this.telemetry.loadAttempts + this.telemetry.saveAttempts;
-        const errorCount = this.telemetry.saveFailures + this.telemetry.validationFailures;
+        const operationCount = this.usageStats.loadAttempts + this.usageStats.saveAttempts;
+        const errorCount = this.usageStats.saveFailures + this.usageStats.validationFailures;
         const errorRate = operationCount === 0 ? 0 : errorCount / operationCount;
-        const status = errorRate > 0.05 || this.telemetry.budgetExceededCount > 0 ? 'degraded' : 'healthy';
+        const status = errorRate > 0.05 || this.usageStats.budgetExceededCount > 0 ? 'degraded' : 'healthy';
 
         return {
             status,
             uiState: status === 'healthy' ? 'ready' : 'failure',
             metrics: {
-                ...this.telemetry,
+                ...this.usageStats,
                 errorRate
             },
             budgets: {
@@ -431,7 +469,6 @@ export class SettingsService extends BaseService {
                 path: executablePath,
                 args: shouldStartHidden ? ['--hidden'] : []
             });
-            appLogger.debug('SettingsService', `Startup behavior synced. Path: ${executablePath}, Enabled: ${settings.window.startOnStartup}`);
         } catch (error) {
             appLogger.error('SettingsService', 'Failed to sync startup behavior', error as Error);
         }
@@ -500,7 +537,7 @@ export class SettingsService extends BaseService {
         }
 
         appLogger.info('SettingsService', 'Initialized successfully');
-        this.recordTelemetryEvent('settings.initialize.success');
+        this.recordUsageStatsEvent('settings.initialize.success');
     }
 
     /** Persists any pending settings to disk and cleans up resources. */
@@ -517,13 +554,13 @@ export class SettingsService extends BaseService {
     }
 
     private async loadSettings(): Promise<AppSettings> {
-        this.telemetry.loadAttempts += 1;
+        this.usageStats.loadAttempts += 1;
         try {
             await fs.promises.access(this.settingsPath);
         } catch {
             const defaults = await this.initializeDefaults();
-            this.telemetry.lastLoadAt = Date.now();
-            this.recordTelemetryEvent('settings.load.defaults');
+            this.usageStats.lastLoadAt = Date.now();
+            this.recordUsageStatsEvent('settings.load.defaults');
             return defaults;
         }
 
@@ -553,8 +590,8 @@ export class SettingsService extends BaseService {
         }
 
         const merged = await this.mergeWithDefaults(loaded);
-        this.telemetry.lastLoadAt = Date.now();
-        this.recordTelemetryEvent('settings.load.success');
+        this.usageStats.lastLoadAt = Date.now();
+        this.recordUsageStatsEvent('settings.load.success');
         return merged;
     }
 
@@ -637,6 +674,7 @@ export class SettingsService extends BaseService {
             ...DEFAULT_SETTINGS,
             ...loaded,
             ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama ?? {}) },
+            llama: { ...DEFAULT_SETTINGS.llama, ...(loaded.llama ?? {}) },
             images: {
                 ...DEFAULT_SETTINGS.images,
                 ...(loaded.images ?? {}),
@@ -700,7 +738,7 @@ export class SettingsService extends BaseService {
         const tokenVal = loadedObj[keyField] as string | undefined;
         const authToken = this.findTokenInAuth(authAccounts, String(provider));
         const token = authToken !== '' ? authToken : (tokenVal ?? '');
-        
+
         const result = {
             ...def,
             ...loadedObj,
@@ -895,33 +933,36 @@ export class SettingsService extends BaseService {
         return -1;
     }
 
-    @ipc('settings:get')
-    async getSettingsIpc(_event: IpcMainInvokeEvent) {
+    @ipc(SETTINGS_CHANNELS.GET)
+    async getSettingsIpc() {
         const startedAt = Date.now();
         const settings = this.getSettings();
         const durationMs = Date.now() - startedAt;
-        this.telemetry.loadAttempts += 1; 
-        this.telemetry.lastGetDurationMs = durationMs;
+        this.usageStats.loadAttempts += 1;
+        this.usageStats.lastGetDurationMs = durationMs;
         this.trackSettingsBudget(durationMs, SETTINGS_PERFORMANCE_BUDGET_MS.GET);
         this.trackSettingsEvent('settings.get.success', { durationMs });
         return settings;
     }
 
-    @ipc('settings:save')
-    async saveSettingsIpc(event: IpcMainInvokeEvent, newSettings: AppSettings) {
+    @ipc({ channel: SETTINGS_CHANNELS.SAVE, withEvent: true })
+    async saveSettingsIpc(event: IpcMainInvokeEvent, newSettings: AppSettings | undefined) {
         const startedAt = Date.now();
         try {
+            if (!newSettings || typeof newSettings !== 'object' || Array.isArray(newSettings)) {
+                return this.getSettings();
+            }
             AppSettingsSchema.parse(newSettings);
             const finalSettings = await this.saveSettings(newSettings);
-            
+
             const durationMs = Date.now() - startedAt;
-            this.telemetry.saveAttempts += 1;
-            this.telemetry.lastSaveDurationMs = durationMs;
+            this.usageStats.saveAttempts += 1;
+            this.usageStats.lastSaveDurationMs = durationMs;
             this.trackSettingsBudget(durationMs, SETTINGS_PERFORMANCE_BUDGET_MS.SAVE);
             this.trackSettingsEvent('settings.save.success', { durationMs });
 
             this.syncStartupBehavior(finalSettings);
-            
+
             this.updateOpenAIConnection(event);
             void this.updateOllamaConnection(event);
 
@@ -930,29 +971,28 @@ export class SettingsService extends BaseService {
             const durationMs = Date.now() - startedAt;
             const isValidation = error instanceof z.ZodError;
             const errorCode = isValidation ? SETTINGS_ERROR_CODE.VALIDATION : SETTINGS_ERROR_CODE.SAVE_FAILED;
-            
+
             if (isValidation) {
-                this.telemetry.validationFailures += 1;
+                this.usageStats.validationFailures += 1;
             } else {
-                this.telemetry.saveFailures += 1;
+                this.usageStats.saveFailures += 1;
             }
-            
-            this.telemetry.lastErrorCode = errorCode;
-            this.telemetry.lastSaveDurationMs = durationMs;
+
+            this.usageStats.lastErrorCode = errorCode;
+            this.usageStats.lastSaveDurationMs = durationMs;
             this.trackSettingsBudget(durationMs, SETTINGS_PERFORMANCE_BUDGET_MS.SAVE);
             this.trackSettingsEvent(isValidation ? 'settings.save.validation-failed' : 'settings.save.failed', { durationMs, code: errorCode });
-            
+
             throw new TengraError((error as Error).message, errorCode);
         }
     }
 
-    @ipc('settings:health')
-    async getHealthIpc(_event: IpcMainInvokeEvent) {
+    @ipc(SETTINGS_CHANNELS.HEALTH)
+    async getHealthIpc() {
         return this.getSettingsHealthSummary();
     }
 
     private updateOpenAIConnection(_event: IpcMainInvokeEvent) {
-        appLogger.debug('SettingsService', 'OpenAI connection update requested');
     }
 
     private async updateOllamaConnection(event: IpcMainInvokeEvent) {
@@ -995,8 +1035,8 @@ export class SettingsService extends BaseService {
         }
 
         this.saveInProgress = true;
-        this.telemetry.saveAttempts += 1;
-        this.recordTelemetryEvent('settings.save.started');
+        this.usageStats.saveAttempts += 1;
+        this.recordUsageStatsEvent('settings.save.started');
         const currentSettings = { ...this.settings };
 
         if (this.authService) {
@@ -1014,11 +1054,11 @@ export class SettingsService extends BaseService {
         const persisted = await this.persistSettingsToDisk();
         if (!persisted) {
             this.settings = currentSettings;
-            this.telemetry.saveFailures += 1;
-            this.recordTelemetryEvent('settings.save.failed');
+            this.usageStats.saveFailures += 1;
+            this.recordUsageStatsEvent('settings.save.failed');
         } else {
-            this.telemetry.lastSaveAt = Date.now();
-            this.recordTelemetryEvent('settings.save.success');
+            this.usageStats.lastSaveAt = Date.now();
+            this.recordUsageStatsEvent('settings.save.success');
         }
 
         this.saveInProgress = false;
@@ -1327,11 +1367,11 @@ export class SettingsService extends BaseService {
      */
     async reloadSettings(): Promise<AppSettings> {
         this.settings = await this.loadSettings();
-        this.recordTelemetryEvent('settings.reload.success');
+        this.recordUsageStatsEvent('settings.reload.success');
         return this.settings;
     }
 
-    /** Returns service health metrics including load/save stats and recent telemetry events. */
+    /** Returns service health metrics including load/save stats and recent usageStats events. */
     getHealthMetrics(): {
         status: 'healthy' | 'degraded';
         uiState: 'ready' | 'empty' | 'failure';
@@ -1344,32 +1384,32 @@ export class SettingsService extends BaseService {
         lastSaveAt: number;
         recentEvents: Array<{ name: string; timestamp: number }>;
     } {
-        const uiState = this.telemetry.saveFailures > 0
+        const uiState = this.usageStats.saveFailures > 0
             ? 'failure'
             : this.initialized
                 ? 'ready'
                 : 'empty';
         return {
-            status: this.telemetry.saveFailures > 0 ? 'degraded' : 'healthy',
+            status: this.usageStats.saveFailures > 0 ? 'degraded' : 'healthy',
             uiState,
             messageKey: SettingsService.UI_MESSAGE_KEYS[uiState],
             performanceBudget: SettingsService.PERFORMANCE_BUDGET,
-            loadAttempts: this.telemetry.loadAttempts,
-            saveAttempts: this.telemetry.saveAttempts,
-            saveFailures: this.telemetry.saveFailures,
-            lastLoadAt: this.telemetry.lastLoadAt,
-            lastSaveAt: this.telemetry.lastSaveAt,
-            recentEvents: [...this.telemetry.recentEvents],
+            loadAttempts: this.usageStats.loadAttempts,
+            saveAttempts: this.usageStats.saveAttempts,
+            saveFailures: this.usageStats.saveFailures,
+            lastLoadAt: this.usageStats.lastLoadAt,
+            lastSaveAt: this.usageStats.lastSaveAt,
+            recentEvents: [...this.usageStats.recentEvents],
         };
     }
 
-    private recordTelemetryEvent(name: string): void {
-        this.telemetry.recentEvents.push({
+    private recordUsageStatsEvent(name: string): void {
+        this.usageStats.recentEvents.push({
             name,
             timestamp: Date.now(),
         });
-        if (this.telemetry.recentEvents.length > 20) {
-            this.telemetry.recentEvents.shift();
+        if (this.usageStats.recentEvents.length > 20) {
+            this.usageStats.recentEvents.shift();
         }
     }
 
@@ -1582,3 +1622,4 @@ export class SettingsService extends BaseService {
         }
     }
 }
+

@@ -123,3 +123,4 @@ describe('ModelSelector', () => {
         expect(onOpenChange).toHaveBeenNthCalledWith(2, false);
     });
 });
+

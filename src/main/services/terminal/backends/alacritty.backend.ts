@@ -133,3 +133,4 @@ export class AlacrittyBackend implements ITerminalBackend {
         return null;
     }
 }
+

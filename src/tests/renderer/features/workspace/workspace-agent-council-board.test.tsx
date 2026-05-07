@@ -43,7 +43,7 @@ function createSession(): WorkspaceAgentSessionSummary {
             disallowedCommands: [],
             allowedPaths: ['c:/workspace'],
         },
-        contextTelemetry: {
+        usageStats: {
             model: 'sonnet',
             provider: 'claude',
             strategy: 'reasoning-first',
@@ -139,3 +139,4 @@ describe('WorkspaceAgentCouncilBoard', () => {
         expect(screen.getByText('Escalate reasoning depth')).toBeInTheDocument();
     });
 });
+

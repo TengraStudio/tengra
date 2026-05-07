@@ -297,12 +297,12 @@ describe('ThemeService Integration', () => {
             expect(service.getCurrentTheme()).toBe('obsidian');
         });
 
-        it('should emit save.failed telemetry after all retries fail', async () => {
+        it('should emit save.failed Stats after all retries fail', async () => {
             await service.initialize();
             mockWriteFile.mockRejectedValue(new Error('persistent'));
 
             await service.setTheme('obsidian');
-            const ev = service.getTelemetryLog().find(e => e.action === 'theme.save.failed');
+            const ev = service.getusageStatsLog().find(e => e.action === 'theme.save.failed');
             expect(ev).toBeDefined();
         });
     });
@@ -490,3 +490,4 @@ describe('ThemeService Export/Import/Persistence', () => {
         await expect(service.clearHistory()).resolves.not.toThrow();
     });
 });
+

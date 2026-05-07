@@ -28,3 +28,4 @@ describe('terminal toolbar validation', () => {
         expect(sanitizeBackendId(undefined)).toBeUndefined();
     });
 });
+

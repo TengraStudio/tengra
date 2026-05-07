@@ -311,3 +311,4 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
         </div>
     );
 };
+

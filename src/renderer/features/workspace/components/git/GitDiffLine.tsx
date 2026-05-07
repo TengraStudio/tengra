@@ -39,3 +39,4 @@ export const GitDiffLine: React.FC<DiffLineProps> = ({ line, idx }) => {
         </div>
     );
 };
+

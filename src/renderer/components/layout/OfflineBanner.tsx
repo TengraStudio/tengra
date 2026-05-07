@@ -49,3 +49,4 @@ export function OfflineBanner(): JSX.Element | null {
         </div>
     );
 }
+

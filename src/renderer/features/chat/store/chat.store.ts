@@ -147,3 +147,4 @@ export function clearAllChats(): void {
     state = { ...state, chats: [], currentChatId: null, streamingStates: {} };
     emit();
 }
+

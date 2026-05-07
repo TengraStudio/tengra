@@ -171,7 +171,6 @@ export const ModelSelector = memo(({
                 codexUsageResult,
                 antigravityQuotaResult,
                 copilotAccount,
-                githubAccount,
                 claudeAccount,
                 anthropicAccount,
                 codexAccount,
@@ -180,22 +179,21 @@ export const ModelSelector = memo(({
                 googleAccount,
                 opencodeAccount
             ] = await Promise.all([
-                window.electron.getCopilotQuota().catch(() => ({ accounts: [] })),
-                window.electron.getClaudeQuota().catch(() => ({ accounts: [] })),
-                window.electron.getCodexUsage().catch(() => ({ accounts: [] })),
-                window.electron.getQuota().catch(() => null),
-                window.electron.getActiveLinkedAccount('copilot').catch(() => null),
-                window.electron.getActiveLinkedAccount('github').catch(() => null),
-                window.electron.getActiveLinkedAccount('claude').catch(() => null),
-                window.electron.getActiveLinkedAccount('anthropic').catch(() => null),
-                window.electron.getActiveLinkedAccount('codex').catch(() => null),
-                window.electron.getActiveLinkedAccount('openai').catch(() => null),
-                window.electron.getActiveLinkedAccount('antigravity').catch(() => null),
-                window.electron.getActiveLinkedAccount('google').catch(() => null),
-                window.electron.getActiveLinkedAccount('opencode').catch(() => null)
+                window.electron.auth.getCopilotQuota().catch(() => ({ accounts: [] })),
+                window.electron.auth.getClaudeQuota().catch(() => ({ accounts: [] })),
+                window.electron.auth.getCodexUsage().catch(() => ({ accounts: [] })),
+                window.electron.auth.getQuota().catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('copilot').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('claude').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('anthropic').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('codex').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('openai').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('antigravity').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('google').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('opencode').catch(() => null)
             ]);
 
-            const activeCopilotAccount = copilotAccount ?? githubAccount;
+            const activeCopilotAccount = copilotAccount;
             const activeClaudeAccount = claudeAccount ?? anthropicAccount;
             const activeCodexAccount = codexAccount ?? openaiAccount;
             const activeAntigravityAccount = antigravityAccount ?? googleAccount;
@@ -394,3 +392,5 @@ export const ModelSelector = memo(({
     );
 });
 ModelSelector.displayName = 'ModelSelector';
+
+

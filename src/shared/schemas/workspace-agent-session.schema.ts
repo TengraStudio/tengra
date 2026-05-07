@@ -22,7 +22,7 @@ import {
     QuotaBucket,
     QuotaWindow,
     WORKSPACE_AGENT_SESSION_STATUSES,
-    WorkspaceAgentContextTelemetry,
+    WorkspaceAgentUsageStats,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionStatus,
@@ -56,7 +56,7 @@ const workspaceAgentPermissionPolicySchema: z.ZodType<WorkspaceAgentPermissionPo
         allowedPaths: z.array(z.string().trim().min(1)).max(200),
     });
 
-const workspaceAgentContextTelemetrySchema: z.ZodType<WorkspaceAgentContextTelemetry> =
+const workspaceAgentUsageStatsSchema: z.ZodType<WorkspaceAgentUsageStats> =
     z.object({
         model: z.string().trim().min(1),
         provider: z.string().trim().min(1),
@@ -155,7 +155,7 @@ export const workspaceAgentSessionSummarySchema = z.object({
     modes: workspaceAgentSessionModesSchema,
     strategy: z.enum(['reasoning-first', 'balanced', 'local-first-simple']),
     permissionPolicy: workspaceAgentPermissionPolicySchema,
-    contextTelemetry: workspaceAgentContextTelemetrySchema.optional(),
+    usageStats: workspaceAgentUsageStatsSchema.optional(),
     councilConfig: councilRunConfigSchema.optional(),
     background: z.boolean(),
     archived: z.boolean(),
@@ -294,7 +294,7 @@ export const workspaceAgentSessionDeleteRequestSchema = z.tuple([
         sessionId: z.string().trim().min(1),
     }),
 ]);
-export const workspaceAgentSessionTelemetryRequestSchema = z.tuple([
+export const workspaceAgentSessionStatsRequestSchema = z.tuple([
     z.object({
         sessionId: z.string().trim().min(1),
     }),
@@ -305,8 +305,8 @@ export const workspaceAgentSessionListResponseSchema = z.object({
     persistence: workspaceAgentSessionPersistenceSchema,
 });
 export const workspaceAgentSessionResponseSchema = workspaceAgentSessionSchema;
-export const workspaceAgentContextTelemetryResponseSchema =
-    workspaceAgentContextTelemetrySchema.nullable();
+export const workspaceAgentContextStatsResponseSchema =
+    workspaceAgentUsageStatsSchema.nullable();
 export const workspaceAgentSessionPersistenceResponseSchema =
     workspaceAgentSessionPersistenceSchema;
 export const workspaceAgentSessionStatusResponseSchema: z.ZodType<WorkspaceAgentSessionStatus> =
@@ -314,3 +314,4 @@ export const workspaceAgentSessionStatusResponseSchema: z.ZodType<WorkspaceAgent
 export const workspaceAgentSessionDeleteResponseSchema = z.object({
     success: z.boolean(),
 });
+

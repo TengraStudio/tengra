@@ -48,3 +48,4 @@ export abstract class BaseRepository {
         return first as T;
     }
 }
+

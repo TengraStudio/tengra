@@ -92,3 +92,4 @@ export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setF
         </div>
     );
 };
+

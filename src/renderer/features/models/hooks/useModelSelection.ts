@@ -10,6 +10,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
+import { getSettingsSnapshot } from '@/store/settings.store';
 import { AppSettings } from '@/types';
 
 function normalizeSelectedModelId(provider: string, model: string): string {
@@ -30,7 +31,8 @@ export function useModelSelection(
     const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 
     const handleSelectModel = useCallback((provider: string, model: string, isMultiSelect = false) => {
-        if (!appSettings) { return; }
+        const currentSettings = getSettingsSnapshot().settings ?? appSettings;
+        if (!currentSettings) { return; }
         const normalizedModel = normalizeSelectedModelId(provider, model);
 
         if (isMultiSelect) {
@@ -48,17 +50,17 @@ export function useModelSelection(
             
             // Optimization: Only update settings if they actually differ
             if (
-                appSettings.general.defaultModel !== normalizedModel ||
-                appSettings.general.lastProvider !== provider
+                currentSettings.general.defaultModel !== normalizedModel ||
+                currentSettings.general.lastProvider !== provider
             ) {
-                setAppSettings({
-                    ...appSettings,
+                void Promise.resolve(setAppSettings({
+                    ...currentSettings,
                     general: {
-                        ...appSettings.general,
+                        ...currentSettings.general,
                         defaultModel: normalizedModel,
                         lastProvider: provider
                     }
-                });
+                }));
             }
             setIsModelMenuOpen(false);
         }
@@ -113,3 +115,4 @@ export function useModelSelection(
         clearMultiSelection
     ]);
 }
+

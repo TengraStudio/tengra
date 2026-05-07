@@ -30,3 +30,4 @@ export function assertPathWithinRoot(candidatePath: string, rootPath: string, la
     }
     return resolvedPath;
 }
+

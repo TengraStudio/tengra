@@ -89,3 +89,4 @@ describe('SidebarNavigation', () => {
         expect(preloadViewResources).toHaveBeenCalledWith('workspace');
     });
 });
+

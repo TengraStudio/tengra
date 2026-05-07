@@ -250,3 +250,4 @@ export const remoteModelSourceSchema = z.object({
     source: z.enum(['ollama', 'huggingface', 'custom']).optional(),
     models: z.array(remoteModelRecordSchema),
 });
+

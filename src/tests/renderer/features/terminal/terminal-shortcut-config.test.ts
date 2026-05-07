@@ -103,3 +103,4 @@ describe('terminal shortcut config utils', () => {
         expect(parseShortcutShareCode('not-base64')).toEqual({ preset: null, bindings: {} });
     });
 });
+

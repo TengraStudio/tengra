@@ -15,22 +15,12 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { useTerminalSmartSuggestions } from '../hooks/useTerminalSmartSuggestions';
-import {
-    terminalCreateResponseSchema,
-    TerminalIpcContract,
-    terminalIsAvailableResponseSchema,
-    terminalKillResponseSchema,
-    terminalReadBufferResponseSchema,
-    terminalResizeResponseSchema,
-    terminalWriteResponseSchema
-} from '../utils/terminal-ipc';
 
 
 const TERMINAL_SCROLLBACK_LINES = 10000;
@@ -95,18 +85,18 @@ export const TerminalSession = memo(
 
         const initializeBackend = useCallback(
             async (term: XTerm) => {
-                if (!(await invokeTypedIpc<TerminalIpcContract, 'terminal:isAvailable'>('terminal:isAvailable', [], { responseSchema: terminalIsAvailableResponseSchema }))) {
+                if (!(await window.electron.terminal.isAvailable())) {
                     term.write('\r\n\x1b[31m[ERROR] Terminal service unavailable.\x1b[0m\r\n');
                     initializingTerminals.delete(tab.id);
                     return null;
                 }
-                const sessionId = await invokeTypedIpc<TerminalIpcContract, 'terminal:create'>('terminal:create', [{
+                const sessionId = await window.electron.terminal.create({
                     id: tab.id,
                     shell: tab.type,
                     ...(workspacePath ? { cwd: workspacePath } : {}),
                     cols: term.cols,
                     rows: term.rows,
-                }], { responseSchema: terminalCreateResponseSchema });
+                });
                 if (!sessionId) {
                     term.write(`\r\n\x1b[31m[ERROR] Failed to create session\x1b[0m\r\n`);
                     setTimeout(() => setHasError(true), 0);
@@ -140,16 +130,16 @@ export const TerminalSession = memo(
                     return false;
                 }
                 term.onResize(s => {
-                    invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [tab.id, s.cols, s.rows], { responseSchema: terminalResizeResponseSchema }).catch(error => {
+                    window.electron.terminal.resize(tab.id, s.cols, s.rows).catch(error => {
                         appLogger.warn('TerminalSession', 'Failed to resize terminal session', error as Error);
                     });
                 });
                 term.onData(d => {
-                    invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [tab.id, d], { responseSchema: terminalWriteResponseSchema }).catch(error => {
+                    window.electron.terminal.write(tab.id, d).catch(error => {
                         appLogger.warn('TerminalSession', 'Failed to write terminal session data', error as Error);
                     });
                 });
-                const buf = await invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [tab.id], { responseSchema: terminalReadBufferResponseSchema }).catch(() => null);
+                const buf = await window.electron.terminal.readBuffer(tab.id).catch(() => null);
                 if (buf) {
                     term.write(buf);
                 }
@@ -217,7 +207,7 @@ export const TerminalSession = memo(
                 isInitializedRef.current = false;
                 if (isActiveRef.current && sessionIdRef.current) {
                     initializedTerminals.delete(tab.id);
-                    invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionIdRef.current], { responseSchema: terminalKillResponseSchema }).catch(error => {
+                    window.electron.terminal.kill(sessionIdRef.current).catch(error => {
                         appLogger.warn('TerminalSession', 'Failed to kill terminal session during cleanup', error as Error);
                     });
                 }
@@ -257,3 +247,4 @@ export const TerminalSession = memo(
 );
 
 TerminalSession.displayName = 'TerminalSession';
+

@@ -230,3 +230,4 @@ export const ExtensionViewHost: React.FC<ExtensionViewHostProps> = ({ viewId }) 
 
     return <Component viewId={viewId} extension={activeExtension} />;
 };
+

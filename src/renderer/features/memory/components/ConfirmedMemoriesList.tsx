@@ -317,3 +317,4 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
     </Card>
   );
 };
+

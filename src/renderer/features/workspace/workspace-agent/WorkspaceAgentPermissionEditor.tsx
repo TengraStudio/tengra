@@ -206,3 +206,4 @@ export const WorkspaceAgentPermissionEditor: React.FC<
         </div>
     );
 };
+

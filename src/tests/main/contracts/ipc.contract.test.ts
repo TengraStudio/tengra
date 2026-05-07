@@ -53,3 +53,4 @@ describe('IPC Contract', () => {
         }
     });
 });
+

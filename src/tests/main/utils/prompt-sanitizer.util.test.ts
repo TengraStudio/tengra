@@ -74,3 +74,4 @@ describe('Prompt Security Validation', () => {
         expect(validatePromptSafety(safe).safe).toBe(true);
     });
 });
+

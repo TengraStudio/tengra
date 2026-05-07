@@ -240,3 +240,4 @@ export const WorkspaceHeader: React.FC<{
 }> = ({ onNewWorkspace, ...props }) => (
     <WorkspacesHeader {...props} onNewWorkspace={onNewWorkspace} />
 );
+

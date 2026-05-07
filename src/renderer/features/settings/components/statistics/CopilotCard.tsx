@@ -111,7 +111,7 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
 
                                 {acc.session_limits?.weekly && renderLimitRow(
                                     t('frontend.statistics.weeklyLimit'),
-                                    t('statistics.weeklyQuota'),
+                                    t('frontend.statistics.weeklyQuota'),
                                     acc.session_limits.weekly.current,
                                     acc.session_limits.weekly.limit,
                                     acc.session_limits.weekly.reset_at,
@@ -120,7 +120,7 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
 
                                 {acc.session_limits?.session && renderLimitRow(
                                     t('frontend.statistics.sessionLimit'),
-                                    t('statistics.sessionQuota'),
+                                    t('frontend.statistics.sessionQuota'),
                                     acc.session_limits.session.current,
                                     acc.session_limits.session.limit,
                                     acc.session_limits.session.reset_at,
@@ -160,4 +160,5 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
         </div>
     );
 };
+
 

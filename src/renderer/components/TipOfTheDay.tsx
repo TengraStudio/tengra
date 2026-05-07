@@ -71,3 +71,4 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
         </AnimatePresence>
     );
 };
+

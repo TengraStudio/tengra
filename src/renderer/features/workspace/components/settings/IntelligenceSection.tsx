@@ -129,3 +129,4 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({
         </div>
     );
 };
+

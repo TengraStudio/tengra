@@ -156,9 +156,9 @@ describe('InlineSuggestionService', () => {
         });
     });
 
-    describe('trackTelemetry', () => {
-        it('should record telemetry and return success', async () => {
-            const result = await service.trackTelemetry({
+    describe('trackUsageStats', () => {
+        it('should record Stats and return success', async () => {
+            const result = await service.trackUsageStats({
                 event: 'request',
                 source: 'custom',
                 provider: 'openai',
@@ -170,3 +170,4 @@ describe('InlineSuggestionService', () => {
         });
     });
 });
+

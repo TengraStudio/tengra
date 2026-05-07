@@ -8,171 +8,137 @@
  * (at your option) any later version.
  */
 
-import { existsSync } from 'fs';
+import * as fs from 'fs';
 
 import { SettingsService } from '@main/services/system/settings.service';
 import { UpdateService } from '@main/services/system/update.service';
-import { autoUpdater } from 'electron-updater';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockElectronApp = vi.hoisted(() => ({ isPackaged: false }));
+const mockSend = vi.fn();
+const mockQuit = vi.fn();
+const mockSpawn = vi.fn(() => ({ unref: vi.fn() }));
+
+vi.mock('child_process', () => ({
+    spawn: mockSpawn,
+}));
 
 vi.mock('fs', () => ({
     existsSync: vi.fn(),
+    mkdirSync: vi.fn(),
+    openSync: vi.fn(() => 1),
+    writeSync: vi.fn(),
+    closeSync: vi.fn(),
+    readFileSync: vi.fn(),
 }));
 
-vi.mock('@main/logging/logger', () => ({
-    appLogger: { info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }
-}));
-
-vi.mock('electron-updater', () => ({
-    autoUpdater: {
-        logger: null as never,
-        autoDownload: true,
-        autoInstallOnAppQuit: true,
-        on: vi.fn(),
-        checkForUpdates: vi.fn().mockResolvedValue(undefined),
-        downloadUpdate: vi.fn().mockResolvedValue(undefined),
-        quitAndInstall: vi.fn()
-    }
-}));
- 
 vi.mock('electron', () => ({
-    app: mockElectronApp,
+    app: {
+        isPackaged: true,
+        getVersion: vi.fn(() => '1.0.0'),
+        getPath: vi.fn(() => '/mock/app.exe'),
+        quit: mockQuit,
+    },
     BrowserWindow: vi.fn(),
-    ipcMain: { handle: vi.fn() }
 }));
 
-vi.mock('@shared/utils/error.util', () => ({
-    getErrorMessage: (e: Error) => e?.message ?? 'unknown'
+vi.mock('@main/services/system/runtime-path.service', () => ({
+    getManagedRuntimeTempDir: vi.fn(() => '/mock/temp'),
 }));
 
 describe('UpdateService', () => {
     let service: UpdateService;
-    let mockSettingsService: SettingsService;
+    let settingsService: SettingsService;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(existsSync).mockReturnValue(true);
-        mockElectronApp.isPackaged = false;
-
-        mockSettingsService = {
+        global.fetch = vi.fn();
+        settingsService = {
             getSettings: vi.fn().mockReturnValue({
-                autoUpdate: { enabled: false, checkOnStartup: false }
-            })
+                autoUpdate: { enabled: true, checkOnStartup: false },
+            }),
         } as never as SettingsService;
-
-
-        service = new UpdateService(mockSettingsService);
+        service = new UpdateService(settingsService);
     });
 
     afterEach(async () => {
-        await service?.cleanup();
+        await service.cleanup();
     });
 
-    describe('constructor', () => {
-        it('should disable updates when app-update.yml is missing', () => {
-            vi.mocked(existsSync).mockReturnValue(false);
-            autoUpdater.autoDownload = true;
-            autoUpdater.autoInstallOnAppQuit = true;
-            service = new UpdateService(mockSettingsService);
+    it('checks GitHub releases and reports an available update', async () => {
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+                tag_name: 'v1.0.1',
+                body: 'Release notes',
+                assets: [
+                    {
+                        name: 'Tengra.exe',
+                        browser_download_url: 'https://example.com/Tengra.exe',
+                        size: 10,
+                    },
+                ],
+            }),
+        } as never);
 
-            expect(autoUpdater.on).not.toHaveBeenCalled();
-        });
+        const result = await service.checkForUpdates();
 
-        it('should configure autoUpdater settings when app-update.yml exists', () => {
-            expect(autoUpdater.autoDownload).toBe(false);
-            expect(autoUpdater.autoInstallOnAppQuit).toBe(false);
-        });
-    });
-
-    describe('cleanup', () => {
-        it('should clear window reference', async () => {
-            await expect(service.cleanup()).resolves.not.toThrow();
-        });
-    });
-
-    describe('checkForUpdates', () => {
-        it('should call autoUpdater.checkForUpdates', async () => {
-            await service.checkForUpdates();
-            expect(autoUpdater.checkForUpdates).toHaveBeenCalled();
-        });
-
-        it('should swallow expected failures', async () => {
-            vi.mocked(autoUpdater.checkForUpdates).mockRejectedValueOnce(new Error('Network error'));
-            await expect(service.checkForUpdates()).resolves.toBeNull();
-        });
-
-        it('should surface feed access failures as warnings', async () => {
-            const mockWindow = {
-                isDestroyed: vi.fn().mockReturnValue(false),
-                webContents: { send: vi.fn() }
-            };
-
-            service.init(mockWindow as never);
-            vi.mocked(autoUpdater.checkForUpdates).mockRejectedValueOnce(
-                Object.assign(new Error('Request failed for releases.atom'), { statusCode: 404 })
-            );
-
-            await service.checkForUpdates();
-
-            expect(mockWindow.webContents.send).toHaveBeenCalledWith(
-                'update:status',
-                { state: 'warning', warning: 'Update feed unavailable for this repository' }
-            );
+        expect(result).toEqual({
+            available: true,
+            version: '1.0.1',
+            releaseNotes: 'Release notes',
         });
     });
 
-    describe('downloadUpdate', () => {
-        it('should call autoUpdater.downloadUpdate', async () => {
-            await service.downloadUpdate();
-            expect(autoUpdater.downloadUpdate).toHaveBeenCalled();
-        });
+    it('downloads the release asset to the managed temp folder', async () => {
+        vi.mocked(global.fetch)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    tag_name: 'v1.0.1',
+                    assets: [
+                        {
+                            name: 'Tengra.exe',
+                            browser_download_url: 'https://example.com/Tengra.exe',
+                            size: 10,
+                        },
+                    ],
+                }),
+            } as never)
+            .mockResolvedValueOnce({
+                ok: true,
+                body: new Response(new Uint8Array([1, 2, 3])).body,
+                headers: new Headers({ 'content-length': '3' }),
+            } as never);
 
-        it('should throw on failure', async () => {
-            vi.mocked(autoUpdater.downloadUpdate).mockRejectedValueOnce(new Error('Download failed'));
-            await expect(service.downloadUpdate()).rejects.toThrow('Download failed');
-        });
+        await expect(service.downloadUpdate()).resolves.toBe(true);
+        expect(fs.mkdirSync).toHaveBeenCalledWith('/mock/temp', { recursive: true });
     });
 
-    describe('quitAndInstall', () => {
-        it('should call autoUpdater.quitAndInstall', () => {
-            service.quitAndInstall();
-            expect(autoUpdater.quitAndInstall).toHaveBeenCalled();
+    it('spawns the detached updater helper before quitting', async () => {
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+                tag_name: 'v1.0.1',
+                assets: [
+                    {
+                        name: 'Tengra.exe',
+                        browser_download_url: 'https://example.com/Tengra.exe',
+                        size: 10,
+                    },
+                ],
+            }),
+        } as never);
+
+        vi.mocked(fs.existsSync).mockImplementation((targetPath: fs.PathLike) => {
+            return String(targetPath).includes('Tengra.exe');
         });
-    });
+        vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({}) as never);
 
-    describe('init', () => {
-        it('should skip auto-updater in dev mode', () => {
-            const mockWindow = { webContents: { send: vi.fn() } };
-            service.init(mockWindow as never);
-            // In dev mode, events should NOT be registered
-            expect(autoUpdater.on).not.toHaveBeenCalled();
-        });
+        await service.checkForUpdates();
+        await expect(service.quitAndInstall()).resolves.toBeUndefined();
 
-        it('should not require a GitHub token on startup', async () => {
-            mockElectronApp.isPackaged = true;
-            mockSettingsService.getSettings = vi.fn().mockReturnValue({
-                autoUpdate: { enabled: true, checkOnStartup: true }
-            });
-
-            const mockWindow = {
-                isDestroyed: vi.fn().mockReturnValue(false),
-                webContents: { send: vi.fn() }
-            };
-            vi.useFakeTimers();
-            vi.mocked(autoUpdater.checkForUpdates).mockRejectedValueOnce(
-                Object.assign(new Error('Request failed for releases.atom'), { statusCode: 404 })
-            );
-
-            service.init(mockWindow as never);
-            await vi.advanceTimersByTimeAsync(15001);
-            vi.useRealTimers();
-
-            expect(mockWindow.webContents.send).toHaveBeenCalledWith(
-                'update:status',
-                { state: 'warning', warning: 'Update feed unavailable for this repository' }
-            );
-        });
+        expect(mockSpawn).toHaveBeenCalled();
+        expect(mockQuit).toHaveBeenCalled();
     });
 });
+

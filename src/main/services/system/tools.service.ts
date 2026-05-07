@@ -23,7 +23,6 @@ import { WORKSPACE_AGENT_METADATA_KEY } from '@shared/constants/defaults';
 import { TOOLS_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import type { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
-import { IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
@@ -76,7 +75,7 @@ export class ToolsService extends BaseService {
         argsSchema: z.tuple([toolExecuteRequestSchema]),
         defaultValue: { success: false, error: 'Execution failed', errorType: 'unknown' }
     })
-    async executeTool(_event: IpcMainInvokeEvent, payload: {
+    async executeTool(payload: {
         toolName: string;
         args: JsonObject;
         toolCallId?: string;
@@ -188,7 +187,7 @@ export class ToolsService extends BaseService {
         argsSchema: z.tuple([z.string()]),
         defaultValue: false
     })
-    async killTool(_event: IpcMainInvokeEvent, toolCallId: string) {
+    async killTool(toolCallId: string) {
         return this.commandService.killCommand(toolCallId);
     }
 
@@ -196,7 +195,7 @@ export class ToolsService extends BaseService {
         channel: TOOLS_CHANNELS.GET_DEFINITIONS,
         defaultValue: []
     })
-    async getDefinitions(_event: IpcMainInvokeEvent) {
+    async getDefinitions() {
         appLogger.info('tools', `[Main] ${TOOLS_CHANNELS.GET_DEFINITIONS} called`);
         try {
             const defs = await this.toolExecutor.getToolDefinitions();
@@ -503,3 +502,4 @@ export class ToolsService extends BaseService {
         return /\b(error|exception|failed|failure|cannot|timeout|typeerror|referenceerror|enoent|eacces)\b/i.test(value);
     }
 }
+

@@ -20,10 +20,14 @@ import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { themeStore } from '@main/utils/theme-store.util';
+import { THEME_CHANNELS } from '@shared/constants/ipc-channels';
 import { BUILTIN_THEME_IDS, BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import type { ThemeManifest } from '@shared/types/theme';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, shell } from 'electron';
+import { BrowserWindow, IpcMainInvokeEvent, shell } from 'electron';
+
+// Performance budgets for theme operations (in milliseconds)
+// ... (rest of the file remains same, I'll only show the @ipc changes)
 
 // Performance budgets for theme operations (in milliseconds)
 const THEME_OPERATION_BUDGETS = {
@@ -48,7 +52,7 @@ export enum ThemeErrorCode {
     CORRUPT_THEME_FILE = 'THEME_CORRUPT_FILE'
 }
 
-export enum ThemeTelemetryEvent {
+export enum ThemeUsageStatsEvent {
     THEME_LOADED = 'theme_loaded',
     THEME_INSTALLED = 'theme_installed',
     THEME_UNINSTALLED = 'theme_uninstalled',
@@ -152,24 +156,24 @@ export class ThemeService extends BaseService {
     private notifyRenderer(): void {
         const mainWindow = this.mainWindowProvider?.();
         if (mainWindow) {
-            mainWindow.webContents.send('theme:runtime:updated');
+            mainWindow.webContents.send(THEME_CHANNELS.RUNTIME_UPDATED);
         }
     }
 
-    @ipc('theme:runtime:getAll')
+    @ipc(THEME_CHANNELS.RUNTIME_GET_ALL)
     async getAllThemesIpc() {
         return this.getAllThemes();
     }
 
-    @ipc('theme:runtime:install')
-    async installThemeIpc(_event: unknown, manifest: ThemeManifest) {
+    @ipc(THEME_CHANNELS.RUNTIME_INSTALL)
+    async installThemeIpc(manifest: ThemeManifest) {
         const result = await this.installTheme(manifest);
         this.notifyRenderer();
         return result;
     }
 
-    @ipc('theme:runtime:uninstall')
-    async uninstallThemeIpc(_event: unknown, themeIdRaw: RuntimeValue) {
+    @ipc(THEME_CHANNELS.RUNTIME_UNINSTALL)
+    async uninstallThemeIpc(themeIdRaw: RuntimeValue) {
         const themeId = this.validateThemeId(themeIdRaw);
         if (!themeId) {
             throw new Error('error.theme.invalid_id');
@@ -180,20 +184,20 @@ export class ThemeService extends BaseService {
         return result;
     }
 
-    @ipc('theme:runtime:openDirectory')
+    @ipc(THEME_CHANNELS.RUNTIME_OPEN_DIRECTORY)
     async openDirectoryIpc() {
         const themesDir = this.getThemesDirectory();
         await shell.openPath(themesDir);
         return true;
     }
 
-    @ipc('theme:getCurrent')
+    @ipc(THEME_CHANNELS.GET_CURRENT)
     async getCurrentThemeIpc() {
         return themeStore.getCurrentTheme();
     }
 
-    @ipc('theme:set')
-    async setThemeIpc(_event: unknown, themeIdRaw: RuntimeValue) {
+    @ipc(THEME_CHANNELS.SET)
+    async setThemeIpc(themeIdRaw: RuntimeValue) {
         const themeId = this.validateThemeId(themeIdRaw);
         if (!themeId) {
             return null;
@@ -202,7 +206,7 @@ export class ThemeService extends BaseService {
         return themeStore.setTheme(themeId);
     }
 
-    @ipc('theme:getAll')
+    @ipc(THEME_CHANNELS.GET_ALL)
     async getAllStoreThemesIpc() {
         return themeStore.getAllThemes();
     }
@@ -510,3 +514,4 @@ export class ThemeService extends BaseService {
         return this.themesDir;
     }
 }
+

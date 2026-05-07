@@ -9,12 +9,11 @@
  */
 
 import { FitAddon } from '@xterm/addon-fit';
-import { type ITheme,Terminal as XTerm } from '@xterm/xterm';
+import { type ITheme, Terminal as XTerm } from '@xterm/xterm';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTerminalSmartSuggestions } from '@/features/terminal/hooks/useTerminalSmartSuggestions';
 import { useTranslation } from '@/i18n';
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { cn } from '@/lib/utils';
 import type { TerminalTab } from '@/types';
 import { performanceMonitor } from '@/utils/performance';
@@ -31,14 +30,6 @@ import {
     markTerminalSessionInitialized,
     markTerminalSessionInitializing,
 } from '../utils/session-registry';
-import {
-    terminalCreateResponseSchema,
-    TerminalIpcContract,
-    terminalKillResponseSchema,
-    terminalReadBufferResponseSchema,
-    terminalResizeResponseSchema,
-    terminalWriteResponseSchema
-} from '../utils/terminal-ipc';
 
 type DetectedTerminalLink = {
     text: string;
@@ -289,12 +280,12 @@ function useTerminalSession(
         const setupEvents = (id: string) => {
             term.onResize(s => {
                 if (sessionCreated && isMountedRef.current) {
-                    void invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [id, s.cols, s.rows], { responseSchema: terminalResizeResponseSchema });
+                    void window.electron.terminal.resize(id, s.cols, s.rows);
                 }
             });
             term.onData(d => {
                 if (sessionCreated && isMountedRef.current) {
-                    void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [id, d], { responseSchema: terminalWriteResponseSchema });
+                    void window.electron.terminal.write(id, d);
                 }
             });
         };
@@ -303,7 +294,7 @@ function useTerminalSession(
             if (!isMountedRef.current) {
                 return null;
             }
-            const sessionId = await invokeTypedIpc<TerminalIpcContract, 'terminal:create'>('terminal:create', [{
+            const sessionId = await window.electron.terminal.create({
                 id: tab.id,
                 shell: tab.type,
                 ...(tab.backendId ? { backendId: tab.backendId } : {}),
@@ -311,7 +302,7 @@ function useTerminalSession(
                 ...(tab.metadata ? { metadata: tab.metadata } : {}),
                 cols,
                 rows,
-            }], { responseSchema: terminalCreateResponseSchema });
+            });
             if (!sessionId && isMountedRef.current) {
                 term.write(`\r\n\x1b[31m[ERROR] Failed to create session\x1b[0m\r\n`);
                 return null;
@@ -349,7 +340,7 @@ function useTerminalSession(
             markTerminalSessionInitialized(tab.id);
             setupEvents(tab.id);
             try {
-                const buffer = await invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [tab.id], { responseSchema: terminalReadBufferResponseSchema });
+                const buffer = await window.electron.terminal.readBuffer(tab.id);
                 if (buffer && isMountedRef.current) {
                     term.write(buffer);
                 }
@@ -371,10 +362,10 @@ function useTerminalSession(
                 hasBootstrappedRef.current = true;
                 window.requestAnimationFrame(() => {
                     if (isMountedRef.current) {
-                        void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [
+                        void window.electron.terminal.write(
                             tab.id,
                             `${tab.bootstrapCommand?.trim() ?? ''}\r`
-                        ], { responseSchema: terminalWriteResponseSchema });
+                        );
                     }
                 });
             }
@@ -390,7 +381,7 @@ function useTerminalSession(
 
             if (sessionCreated) {
                 clearTerminalSessionFlags(tab.id);
-                void invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [tab.id], { responseSchema: terminalKillResponseSchema });
+                void window.electron.terminal.kill(tab.id);
             } else {
                 clearTerminalSessionFlags(tab.id);
             }
@@ -613,3 +604,4 @@ export const TerminalInstance = memo(({
 });
 
 TerminalInstance.displayName = 'TerminalInstance';
+

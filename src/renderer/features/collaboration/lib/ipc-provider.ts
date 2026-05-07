@@ -159,3 +159,4 @@ export class IpcProvider extends Observable<string> {
         super.destroy();
     }
 }
+

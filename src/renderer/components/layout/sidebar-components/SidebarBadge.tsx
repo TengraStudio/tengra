@@ -96,3 +96,4 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
 });
 
 SidebarBadge.displayName = 'SidebarBadge';
+

@@ -158,3 +158,4 @@ export function parseSSHProfile(raw: RendererDataValue): ParsedSSHProfileResult 
 
     return { success: true, profile };
 }
+

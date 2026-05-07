@@ -14,6 +14,7 @@ export * from '@/features/workspace/workspace-layout/SavedProfileSelector';
 export * from '@/features/workspace/workspace-layout/ShortcutHelpOverlay';
 export * from '@/features/workspace/workspace-layout/VirtualizedWorkspaceGrid';
 export * from '@/features/workspace/workspace-layout/WorkspaceCard';
+export * from '@/features/workspace/workspace-layout/WorkspaceCreatePage';
 export * from '@/features/workspace/workspace-layout/WorkspaceDetails';
 export * from '@/features/workspace/workspace-layout/WorkspaceDialogs';
 export * from '@/features/workspace/workspace-layout/WorkspaceHeader';
@@ -29,3 +30,4 @@ export * from '@/features/workspace/workspace-layout/WorkspaceQuickSwitch';
 export * from '@/features/workspace/workspace-layout/WorkspaceSidebar';
 export * from '@/features/workspace/workspace-layout/WorkspaceTerminalLayer';
 export * from '@/features/workspace/workspace-layout/WorkspaceToolbar';
+

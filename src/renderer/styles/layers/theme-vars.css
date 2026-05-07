@@ -227,8 +227,7 @@
     }
 
     /* WHITE THEME (Light) */
-    :root,
-    [data-theme='white'] {
+    [data-theme='tengra-white'] {
         --background: 0 0% 100%;
         --foreground: 0 0% 0%;
 
@@ -329,7 +328,8 @@
     }
 
     /* BLACK THEME (Dark) */
-    [data-theme='black'] {
+    :root,
+    [data-theme='tengra-black'] {
         --background: 0 0% 0%;
         --foreground: 0 0% 100%;
 
@@ -431,7 +431,7 @@
     }
 
     /* Utility for logos that should be white in dark mode and original in light mode */
-    [data-theme='black'] .theme-logo-invert,
+    [data-theme='tengra-black'] .theme-logo-invert,
     .dark .theme-logo-invert {
         filter: grayscale(100%) brightness(0) invert(1);
         opacity: 0.9;

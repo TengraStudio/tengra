@@ -25,11 +25,27 @@ npm run build          # Builds everything
 npm run build:publish  # Creates installer/package
 ```
 
+## Screenshots
+
+Captured from the built app:
+
+---
+**Home Page** where you can chat with ai!
+![Home Page](./assets/readme-screenshots/home.png)
+
+**Image Studio** where you can generate images!
+![Image Studio](./assets/readme-screenshots/image-studio.png)
+
+**Marketplace Models** where you can download models!
+![Marketplace Models](./assets/readme-screenshots/marketplace-models.png)
+
+**Marketplace Themes** where you can download themes!
+![Marketplace Themes](./assets/readme-screenshots/marketplace-themes.png)
+
+**Settings** where you can change settings!
+![Settings](./assets/readme-screenshots/settings.png)
+
 ## Documentation
-
-Start with [docs/README.md](docs/README.md) for the full documentation index.
-
-Common entry points:
 
 - [Contributing](docs/CONTRIBUTING.md)
 - [Architecture](docs/ARCHITECTURE.md)  

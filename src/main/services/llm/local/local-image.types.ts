@@ -143,7 +143,6 @@ export interface LocalImageServiceDeps {
     llmService?: import('@main/services/llm/llm.service').LLMService;
     proxyService?: import('@main/services/proxy/proxy.service').ProxyService;
     advancedMemoryService?: import('@main/services/llm/advanced-memory.service').AdvancedMemoryService;
-    telemetryService?: import('@main/services/analysis/telemetry.service').TelemetryService;
 }
 
 export interface GenerationQueueItem {
@@ -156,3 +155,4 @@ export interface GenerationQueueItem {
     resolve: (value: string) => void;
     reject: (error: Error) => void;
 }
+

@@ -600,3 +600,4 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         </div>
     );
 }
+

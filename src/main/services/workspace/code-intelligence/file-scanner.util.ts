@@ -224,3 +224,4 @@ async function scanFileForText(
         }
     });
 }
+

@@ -118,3 +118,4 @@ describe('WorkspaceSettingsPanel', () => {
         expect(screen.getByText('intelligence-section')).toBeInTheDocument();
     });
 });
+

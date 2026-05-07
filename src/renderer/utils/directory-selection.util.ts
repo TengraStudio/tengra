@@ -30,3 +30,4 @@ export function normalizeDirectorySelectionResult(
 
     return { success: Boolean(value.success) };
 }
+

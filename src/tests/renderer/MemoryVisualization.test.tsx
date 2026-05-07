@@ -44,3 +44,4 @@ describe('MemoryVisualization', () => {
         expect(screen.getByText('timeline-view')).toBeInTheDocument();
     });
 });
+

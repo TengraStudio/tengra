@@ -40,3 +40,4 @@ export interface StoryRendererProps {
   /** The story to render */
   story: ComponentStory
 }
+

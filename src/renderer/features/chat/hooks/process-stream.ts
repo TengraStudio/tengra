@@ -686,9 +686,11 @@ const handleThrottledUpdates = (params: {
     if (shouldSaveToDb(now, lastDbSaveTime, finalContent)) {
         updatedLastDbSaveTime = now;
         queueDbSave({
+            chatId,
             assistantId,
             intentClassification,
             language,
+            provider: selectedProvider,
             model: activeModel,
             content: finalContent,
             reasoning: effectiveReasoning,
@@ -949,7 +951,9 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     });
 
     await saveMessageToDb({
+        chatId,
         assistantId, intentClassification, language, model: activeModel, content: finalContent, reasoning: effectiveFinalReasoning,
+        provider: selectedProvider,
         reasonings: allReasonings,
         variants: finalVariants, responseTime, sources: finalSources, images: finalImages, toolCalls: allToolCalls,
         usage: finalUsage,
@@ -1074,9 +1078,11 @@ const updateChatsState = (options: UpdateChatsStateOptions): void => {
 };
 
 interface SaveToDbOptions {
+    chatId: string
     assistantId: string
     intentClassification: AiIntentClassification
     language?: string
+    provider: string
     model: string
     content: string
     reasoning: string
@@ -1090,7 +1096,7 @@ interface SaveToDbOptions {
 }
 
 const saveMessageToDb = async (options: SaveToDbOptions): Promise<void> => {
-    const { assistantId, intentClassification, language, model, content, reasoning, reasonings, variants, responseTime, sources, images, toolCalls } = options;
+    const { chatId, assistantId, intentClassification, language, provider, model, content, reasoning, reasonings, variants, responseTime, sources, images, toolCalls } = options;
     const currentVariants = createVariantsArray(assistantId, model, variants);
     const updates: Partial<Message> = {
         content,
@@ -1115,7 +1121,24 @@ const saveMessageToDb = async (options: SaveToDbOptions): Promise<void> => {
     if (toolCalls && toolCalls.length > 0) { updates.toolCalls = toolCalls; }
     if (options.usage) { updates.usage = options.usage; }
     if (currentVariants.length > 1) { updates.variants = currentVariants; }
-    await window.electron.db.updateMessage(assistantId, updates);
+    const updated = await window.electron.db.updateMessage(assistantId, updates);
+    if (updated) {
+        return;
+    }
+
+    const addResult = await window.electron.db.addMessage({
+        id: assistantId,
+        chatId,
+        role: 'assistant',
+        content,
+        timestamp: Date.now(),
+        provider,
+        model,
+        ...updates,
+    } as Message & { chatId: string });
+    if (!addResult?.success) {
+        throw new Error('Failed to persist assistant message');
+    }
 };
 
 interface CreateCompletedMessageOptions {
@@ -1159,3 +1182,4 @@ const createCompletedMessage = (options: CreateCompletedMessageOptions): Message
         usage: options.usage,
     };
 };
+

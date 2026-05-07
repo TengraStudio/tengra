@@ -87,3 +87,4 @@ function ensureHFNativeRoute(target: HuggingFaceLocalRouteTarget): never {
         'GGUF models use llama.cpp; non-GGUF models need a native runtime adapter exposed through the local /v1 contract.'
     );
 }
+

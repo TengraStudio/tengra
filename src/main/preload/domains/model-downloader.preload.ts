@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { MODEL_DOWNLOADER_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface ModelDownloaderBridge {
@@ -37,11 +38,12 @@ export interface ModelDownloaderBridge {
 
 export function createModelDownloaderBridge(ipc: IpcRenderer): ModelDownloaderBridge {
     return {
-        start: request => ipc.invoke('model-downloader:start', request),
-        pause: downloadId => ipc.invoke('model-downloader:pause', downloadId),
-        resume: downloadId => ipc.invoke('model-downloader:resume', downloadId),
-        cancel: downloadId => ipc.invoke('model-downloader:cancel', downloadId),
-        history: (limit = 100) => ipc.invoke('model-downloader:history', limit),
-        retry: historyId => ipc.invoke('model-downloader:retry', historyId),
+        start: request => ipc.invoke(MODEL_DOWNLOADER_CHANNELS.START, request),
+        pause: downloadId => ipc.invoke(MODEL_DOWNLOADER_CHANNELS.PAUSE, downloadId),
+        resume: downloadId => ipc.invoke(MODEL_DOWNLOADER_CHANNELS.RESUME, downloadId),
+        cancel: downloadId => ipc.invoke(MODEL_DOWNLOADER_CHANNELS.CANCEL, downloadId),
+        history: (limit = 100) => ipc.invoke(MODEL_DOWNLOADER_CHANNELS.HISTORY, limit),
+        retry: historyId => ipc.invoke(MODEL_DOWNLOADER_CHANNELS.RETRY, historyId),
     };
 }
+

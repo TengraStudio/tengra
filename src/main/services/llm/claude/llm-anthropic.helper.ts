@@ -62,3 +62,4 @@ export function handleAnthropicError(error: RuntimeValue): Error {
     if (error instanceof ApiError || error instanceof AuthenticationError) { return error; }
     return new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'anthropic' });
 }
+

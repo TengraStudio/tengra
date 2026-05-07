@@ -112,3 +112,4 @@ export const ErrorBoundary = (props: Props): JSX.Element => {
         />
     );
 };
+

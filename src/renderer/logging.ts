@@ -146,3 +146,4 @@ function formatValue(value: LogValue): string {
     // we should only do it for errors/warnings or specific whitelisted cases.
     return '[Object]';
 }
+

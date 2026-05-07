@@ -11,7 +11,7 @@
 import { z } from 'zod';
 
 export const inlineSuggestionSourceSchema = z.enum(['copilot', 'custom']);
-export const inlineSuggestionTelemetryEventSchema = z.enum([
+export const inlineSuggestionStatsEventSchema = z.enum([
     'request',
     'show',
     'accept',
@@ -40,8 +40,8 @@ export const inlineSuggestionResponseSchema = z.object({
     provider: z.string().min(1).max(64).optional(),
 });
 
-export const inlineSuggestionTelemetrySchema = z.object({
-    event: inlineSuggestionTelemetryEventSchema,
+export const inlineSuggestionStatsSchema = z.object({
+    event: inlineSuggestionStatsEventSchema,
     source: inlineSuggestionSourceSchema,
     provider: z.string().min(1).max(64).optional(),
     model: z.string().min(1).max(200).optional(),
@@ -53,9 +53,10 @@ export const inlineSuggestionTelemetrySchema = z.object({
 });
 
 export type InlineSuggestionSource = z.infer<typeof inlineSuggestionSourceSchema>;
-export type InlineSuggestionTelemetryEvent = z.infer<
-    typeof inlineSuggestionTelemetryEventSchema
+export type InlineSuggestionUsageStatsEvent = z.infer<
+    typeof inlineSuggestionStatsEventSchema
 >;
-export type InlineSuggestionTelemetry = z.infer<typeof inlineSuggestionTelemetrySchema>;
+export type InlineSuggestionUsageStats = z.infer<typeof inlineSuggestionStatsSchema>;
 export type InlineSuggestionRequest = z.infer<typeof inlineSuggestionRequestSchema>;
 export type InlineSuggestionResponse = z.infer<typeof inlineSuggestionResponseSchema>;
+

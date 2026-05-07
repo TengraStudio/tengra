@@ -801,12 +801,12 @@ export class SessionConversationService extends BaseService {
             return undefined;
         }
         const context = await this.brainService.getBrainContext(query);
-        const rawFormatted = this.brainService.formatBrainContext(context) as unknown;
+        const rawFormatted = this.brainService.formatBrainContext(context) as RuntimeValue;
         const formatted = this.normalizeBrainContext(rawFormatted);
         return formatted.length > 0 ? formatted : undefined;
     }
 
-    private normalizeBrainContext(value: unknown): string {
+    private normalizeBrainContext(value: RuntimeValue): string {
         if (typeof value === 'string') {
             return value.trim();
         }
@@ -814,7 +814,7 @@ export class SessionConversationService extends BaseService {
             return '';
         }
         if (typeof value === 'object') {
-            const candidate = value as Record<string, unknown>;
+            const candidate = value as Record<string, RuntimeValue>;
             const textLike = candidate['content'] ?? candidate['text'] ?? candidate['context'];
             if (typeof textLike === 'string') {
                 return textLike.trim();
@@ -852,6 +852,7 @@ export class SessionConversationService extends BaseService {
         void this.brainService.extractUserFactsFromMessage(userText).catch(() => undefined);
     }
 }
+
 
 
 

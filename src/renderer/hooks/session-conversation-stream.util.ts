@@ -135,3 +135,4 @@ export function formatStreamErrorContent(
         ? `${existingContent}\n\n[${normalizedError}]`
         : normalizedError;
 }
+

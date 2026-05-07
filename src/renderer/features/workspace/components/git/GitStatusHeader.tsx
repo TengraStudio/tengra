@@ -116,3 +116,4 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
         </div>
     );
 };
+

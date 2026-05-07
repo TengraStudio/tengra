@@ -202,3 +202,4 @@ export interface SearchChatsOptions {
     endDate?: number;
     limit?: number;
 }
+

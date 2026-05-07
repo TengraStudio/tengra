@@ -63,3 +63,4 @@ export const TodoAddForm = ({ isAdding, onAdd, t }: TodoAddFormProps) => {
         </AnimatePresence>
     );
 };
+

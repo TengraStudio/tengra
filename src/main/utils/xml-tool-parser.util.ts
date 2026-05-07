@@ -19,6 +19,35 @@ export class XmlToolParser {
     private static readonly XML_TOOL_REGEX = /<function_calls>([\s\S]*?)<\/function_calls>/g;
     private static readonly INVOKE_REGEX = /<invoke\s+name="([^"]+)">([\s\S]*?)<\/invoke>/g;
     private static readonly PARAMETER_REGEX = /<parameter\s+name="([^"]+)">([\s\S]*?)<\/parameter>/g;
+    private static readonly TOOL_TAG_REGEX = /<tool\s+name="([^"]+)">([\s\S]*?)<\/tool>/g;
+
+    private static parseToolTagInvocation(
+        name: string,
+        rawArgs: string,
+        idPrefix: string
+    ): ToolCall | null {
+        const toolName = name.trim();
+        const trimmedArgs = rawArgs.trim();
+        if (toolName.length === 0 || trimmedArgs.length === 0) {
+            return null;
+        }
+        try {
+            const parsed = JSON.parse(trimmedArgs) as unknown;
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                return null;
+            }
+            return {
+                id: `${idPrefix}-${generateSecureId()}`,
+                type: 'function',
+                function: {
+                    name: toolName,
+                    arguments: JSON.stringify(parsed)
+                }
+            };
+        } catch {
+            return null;
+        }
+    }
 
     /**
      * Extracts tool calls from a block of text and returns the cleaned text.
@@ -96,6 +125,19 @@ export class XmlToolParser {
             cleanedText = cleanedText.replace(blockFullContent, '');
         }
 
+        // 6. Parse strict fallback tags: <tool name="tool_name">{...json args...}</tool>
+        const toolTags = [...cleanedText.matchAll(this.TOOL_TAG_REGEX)];
+        for (const match of toolTags) {
+            const full = match[0];
+            const name = match[1];
+            const rawArgs = match[2];
+            const toolCall = this.parseToolTagInvocation(name, rawArgs, 'xml-tool');
+            if (toolCall) {
+                toolCalls.push(toolCall);
+            }
+            cleanedText = cleanedText.replace(full, '');
+        }
+
         return { toolCalls, cleanedText: shouldTrim ? cleanedText.trim() : cleanedText };
     }
 
@@ -105,12 +147,12 @@ export class XmlToolParser {
      */
     static hasPotentialXmlCall(text: string): boolean {
         // Full tags (already closed, will be handled by parse())
-        if (text.includes('</function_calls>') || text.includes('</invoke>')) {
+        if (text.includes('</function_calls>') || text.includes('</invoke>') || text.includes('</tool>')) {
             return true;
         }
 
         // Open tags that are not yet closed
-        if (text.includes('<function_calls') || text.includes('<invoke')) {
+        if (text.includes('<function_calls') || text.includes('<invoke') || text.includes('<tool')) {
             return true;
         }
 
@@ -118,7 +160,7 @@ export class XmlToolParser {
         const lastOpen = text.lastIndexOf('<');
         if (lastOpen !== -1) {
             const fragment = text.slice(lastOpen);
-            if ('<function_calls>'.startsWith(fragment) || '<invoke'.startsWith(fragment)) {
+            if ('<function_calls>'.startsWith(fragment) || '<invoke'.startsWith(fragment) || '<tool'.startsWith(fragment)) {
                 return true;
             }
         }
@@ -130,17 +172,19 @@ export class XmlToolParser {
      * Strips any incomplete XML tags from the end of a string to prevent visual flickering.
      */
     static stripIncompleteTags(text: string): { content: string; buffered: string } {
-        // If we have an open <invoke or <function_calls without a closing tag, buffer everything from that point
+        // If we have an open <invoke or <function_calls or <tool> without a closing tag, buffer everything from that point
         const openInvoke = text.lastIndexOf('<invoke');
         const openFunc = text.lastIndexOf('<function_calls');
+        const openTool = text.lastIndexOf('<tool');
         
-        const lastStart = Math.max(openInvoke, openFunc);
+        const lastStart = Math.max(openInvoke, openFunc, openTool);
         
         if (lastStart !== -1) {
             // Check if it's closed AFTER this start
             const isFullyClosed = 
                 (openInvoke !== -1 && text.includes('</invoke>', lastStart)) ||
-                (openFunc !== -1 && text.includes('</function_calls>', lastStart));
+                (openFunc !== -1 && text.includes('</function_calls>', lastStart)) ||
+                (openTool !== -1 && text.includes('</tool>', lastStart));
 
             if (!isFullyClosed) {
                 return {
@@ -154,7 +198,7 @@ export class XmlToolParser {
         const lastBracket = text.lastIndexOf('<');
         if (lastBracket !== -1 && lastBracket > lastStart) {
             const fragment = text.slice(lastBracket);
-            if ('<function_calls>'.startsWith(fragment) || '<invoke'.startsWith(fragment)) {
+            if ('<function_calls>'.startsWith(fragment) || '<invoke'.startsWith(fragment) || '<tool'.startsWith(fragment)) {
                 return {
                     content: text.slice(0, lastBracket),
                     buffered: fragment
@@ -165,3 +209,4 @@ export class XmlToolParser {
         return { content: text, buffered: '' };
     }
 }
+

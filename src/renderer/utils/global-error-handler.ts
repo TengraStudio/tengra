@@ -73,3 +73,4 @@ export function installGlobalErrorHandlers(): void {
 
     appLogger.info(CONTEXT, 'Global error handlers installed');
 }
+

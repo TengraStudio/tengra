@@ -72,3 +72,4 @@ export function resolvePluginDependencies(plugins: ReadonlyArray<IMcpPlugin>): D
     }
     return { satisfied: errors.length === 0, errors };
 }
+

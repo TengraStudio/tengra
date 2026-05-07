@@ -17,6 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 
+import {
+    SettingsPanel,
+    SettingsTabHeader,
+    SettingsTabLayout,
+} from './SettingsPrimitives';
+
 /* Batch-02: Extracted Long Classes */
 const C_ABOUTTAB_1 = "relative mb-2 flex h-28 w-28 items-center justify-center rounded-card-lg border border-border/20 bg-muted/10 sm:h-32 sm:w-32";
 const C_ABOUTTAB_3 = "group/btn h-12 rounded-2xl border-border/30 bg-background typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground";
@@ -37,12 +43,19 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
     const { isLight } = useTheme();
 
     const logo = useMemo(() => {
-        return isLight ? logoWhite : logoBlack;
+        return isLight ? logoBlack : logoWhite;
     }, [isLight]);
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-16">
-            <div className="flex flex-col items-center space-y-8 rounded-3xl border border-border/30 bg-card p-8 text-center sm:p-10">
+        <SettingsTabLayout className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <SettingsTabHeader
+                title={t('frontend.app.name')}
+                description={t('frontend.about.description')}
+                icon={IconGlobe}
+            />
+
+            <SettingsPanel title={t('frontend.app.name')} icon={IconGlobe} className="text-center">
+                <div className="flex flex-col items-center space-y-8">
                 <div className="relative">
                     <div className={C_ABOUTTAB_1}>
                         <img
@@ -53,42 +66,39 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h2 className="text-4xl font-semibold leading-none text-foreground sm:text-5xl">
+                    <div className="space-y-4">
+                        <h2 className="text-4xl font-semibold leading-none text-foreground sm:text-5xl">
                         {t('frontend.app.name')}
-                    </h2> 
+                        </h2>
+                    </div>
+
+                    <div className="grid w-full max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
+                        <Button
+                            variant="outline"
+                            onClick={() =>
+                                window.electron.openExternal('https://github.com/TengraStudio/tengra')
+                            }
+                            className={C_ABOUTTAB_3}
+                        >
+                            <IconExternalLink className="mr-3 h-4 w-4" />
+                            {t('frontend.about.privacyPolicy')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() =>
+                                window.electron.openExternal('https://github.com/TengraStudio/tengra')
+                            }
+                            className={C_ABOUTTAB_4}
+                        >
+                            <IconGlobe className="mr-3 h-4 w-4" />
+                            {t('frontend.about.github')}
+                        </Button>
+                    </div>
                 </div>
+            </SettingsPanel>
 
-                <p className="max-w-lg text-sm leading-relaxed text-muted-foreground/70">
-                    {t('frontend.about.description')}
-                </p>
-
-                <div className="grid w-full max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Button
-                        variant="outline"
-                        onClick={() =>
-                            window.electron.openExternal('https://github.com/TengraStudio/tengra')
-                        }
-                        className={C_ABOUTTAB_3}
-                    >
-                        <IconExternalLink className="mr-3 h-4 w-4" />
-                        {t('frontend.about.privacyPolicy')}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() =>
-                            window.electron.openExternal('https://github.com/TengraStudio/tengra')
-                        }
-                        className={C_ABOUTTAB_4}
-                    >
-                        <IconGlobe className="mr-3 h-4 w-4" />
-                        {t('frontend.about.github')}
-                    </Button>
-                </div> 
-            </div>
-
-            <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
-                <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <SettingsPanel title={t('frontend.about.buildVersion')} icon={IconBolt}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     <div className="rounded-card-lg border border-border/20 bg-muted/5 p-5 transition-colors hover:bg-muted/10">
                         <div className="flex items-center gap-2 mb-4">
                             <IconDeviceMobile className="w-3.5 h-3.5 text-primary/60" />
@@ -121,7 +131,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         </Badge>
                     </div>
                 </div>
-            </div>
+            </SettingsPanel>
 
             <div className={C_ABOUTTAB_7}>
                 <div className="relative z-10 flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-center">
@@ -148,8 +158,9 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     </Button>
                 </div>
             </div>
-        </div>
+        </SettingsTabLayout>
     );
 };
+
 
 

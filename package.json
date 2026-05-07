@@ -28,12 +28,13 @@
         "test:e2e": "playwright test",
         "lint": "eslint . --ext .ts,.tsx",
         "lint:eslint": "eslint . --cache --cache-location node_modules/.cache/.eslintcache",
-        "lint:fix": "eslint . --ext .ts,.tsx --fix", 
+        "lint:fix": "eslint . --ext .ts,.tsx --fix",
+        "imports:audit": "node scripts/audit-import-paths.js",
         "type-check": "tsc --noEmit",
-        "verify": "npm run lint && npm run type-check && npm run test", 
+        "verify": "npm run lint && npm run type-check && npm run test",
         "themes:sync": "node scripts/sync-theme-manifests.js",
         "postinstall": "electron-builder install-app-deps --arch=x64 || node -e \"process.exit(0)\"",
-        "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\"", 
+        "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\"",
         "version": "node scripts/sync-versions.js && git add src/native/Cargo.toml"
     },
     "keywords": [
@@ -124,7 +125,6 @@
         "discord.js": "^14.26.3",
         "dockerfile-language-server-nodejs": "^0.15.0",
         "dompurify": "^3.4.1",
-        "electron-updater": "^6.8.3",
         "jose": "^6.2.2",
         "js-tiktoken": "1.0.21",
         "lib0": "^0.2.117",
@@ -141,6 +141,7 @@
         "react-file-icon": "^1.6.0",
         "react-markdown": "^10.1.0",
         "react-virtuoso": "^4.18.5",
+        "recharts": "^3.8.1",
         "rehype-katex": "^7.0.1",
         "remark-gfm": "^4.0.1",
         "remark-math": "^6.0.0",
@@ -173,6 +174,14 @@
         ],
         "extraResources": [
             {
+                "from": "assets/bin",
+                "to": "assets/bin"
+            },
+            {
+                "from": "assets/updater",
+                "to": "updater"
+            },
+            {
                 "from": "src/main/workers",
                 "to": "utility-workers"
             },
@@ -188,11 +197,15 @@
             "icon": "assets/icon.ico",
             "extraResources": [
                 {
-                    "from": "src/native/target/release",
-                    "to": "bin",
+                    "from": "assets/bin",
+                    "to": "assets/bin",
                     "filter": [
                         "tengra-*.exe"
                     ]
+                },
+                {
+                    "from": "assets/updater/tengra-updater.js",
+                    "to": "updater/tengra-updater.js"
                 }
             ]
         },
@@ -211,11 +224,15 @@
             "gatekeeperAssess": false,
             "extraResources": [
                 {
-                    "from": "src/native/target/release",
-                    "to": "bin",
+                    "from": "assets/bin",
+                    "to": "assets/bin",
                     "filter": [
                         "tengra-*"
                     ]
+                },
+                {
+                    "from": "assets/updater/tengra-updater.js",
+                    "to": "updater/tengra-updater.js"
                 }
             ]
         },
@@ -247,11 +264,15 @@
             "icon": "assets/icon.png",
             "extraResources": [
                 {
-                    "from": "src/native/target/release",
-                    "to": "bin",
+                    "from": "assets/bin",
+                    "to": "assets/bin",
                     "filter": [
                         "tengra-*"
                     ]
+                },
+                {
+                    "from": "assets/updater/tengra-updater.js",
+                    "to": "updater/tengra-updater.js"
                 }
             ]
         },

@@ -10,10 +10,10 @@
 
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage, getErrorRecoveryStrategy } from '@shared/utils/system/error.util';
+import { appLogger } from '@system/utils/renderer-logger';
 
 import { localeRegistry } from '@/i18n/locale-registry.service';
 import { enLocalePack } from '@/i18n/locales';
-import { appLogger } from '@/system/utils/renderer-logger';
 
 interface CustomWindow extends Window {
     showToast?: (options: { type: string; message: string }) => void
@@ -281,4 +281,5 @@ export function handleError(
 
     return userMessage;
 }
+
 

@@ -53,3 +53,4 @@ export const CATEGORY_CONFIG: Record<
     icon: IconSparkles,
   },
 };
+

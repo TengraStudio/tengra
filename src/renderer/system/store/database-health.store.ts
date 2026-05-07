@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { createComponentHealthStore } from '@/ui/store/component-health.store';
+import { createComponentHealthStore } from '@ui/store/component-health.store';
 
 /**
  * Database Health Store (BACKLOG-0495, BACKLOG-0497)
@@ -36,3 +36,4 @@ export const recordDatabaseFailure = databaseHealthStore.recordFailure;
 export const recordDatabaseRetry = databaseHealthStore.recordRetry;
 export const recordDatabaseFallback = databaseHealthStore.recordFallback;
 export const __resetDatabaseHealthForTests = databaseHealthStore.resetForTests;
+

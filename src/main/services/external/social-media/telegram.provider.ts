@@ -9,6 +9,7 @@
  */
 
 import { appLogger } from '@main/logging/logger';
+import type { JsonValue } from '@shared/types/common';
 import axios, { AxiosError } from 'axios';
 
 import { SocialMediaMessage, SocialMediaProvider } from './social-media.types';
@@ -29,7 +30,7 @@ interface TelegramApiResult {
     username?: string;
     update_id?: number;
     message?: TelegramMessagePayload;
-    [key: string]: unknown;
+    [key: string]: JsonValue | TelegramMessagePayload | undefined;
 }
 
 interface TelegramMessagePayload {
@@ -175,3 +176,4 @@ export class TelegramProvider extends SocialMediaProvider {
         appLogger.info('TelegramProvider', 'Stopped');
     }
 }
+

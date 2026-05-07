@@ -118,3 +118,4 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
         </div>
     );
 });
+

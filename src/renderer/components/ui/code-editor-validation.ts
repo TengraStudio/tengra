@@ -32,3 +32,4 @@ export function sanitizeCodeEditorLanguage(raw: RendererDataValue): string {
     }
     return SUPPORTED_CODE_EDITOR_LANGUAGES.has(normalized) ? normalized : 'javascript';
 }
+

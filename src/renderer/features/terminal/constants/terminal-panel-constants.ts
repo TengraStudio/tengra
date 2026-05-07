@@ -224,3 +224,4 @@ export function resolveTerminalAppearance(
         lineHeight: appearance.lineHeight,
     };
 }
+

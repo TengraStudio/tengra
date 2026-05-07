@@ -104,3 +104,4 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({
         </div>
     );
 };
+

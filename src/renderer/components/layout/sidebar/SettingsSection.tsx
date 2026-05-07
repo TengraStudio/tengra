@@ -210,3 +210,4 @@ const getIconForId = (id: SettingsCategory) => {
 };
 
 SettingsSectionComponent.displayName = 'SettingsSection';
+

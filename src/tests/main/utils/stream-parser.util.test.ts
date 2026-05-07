@@ -384,3 +384,4 @@ describe('StreamParser', () => {
         expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"path":"C:/Users"}');
     });
 });
+

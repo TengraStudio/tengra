@@ -62,3 +62,4 @@ test.describe('Sidebar Visual Regression', () => {
         });
     });
 });
+

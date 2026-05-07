@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import type { JsonObject, JsonValue } from '@shared/types/common';
+import type { JsonObject, JsonValue, RuntimeValue } from '@shared/types/common';
 
 declare global {
     type TypeAssertionValue =
+        | RuntimeValue
         | object
         | string
         | number
@@ -27,3 +28,4 @@ declare global {
 }
 
 export {};
+

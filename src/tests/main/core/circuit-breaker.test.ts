@@ -88,3 +88,4 @@ describe('CircuitBreaker', () => {
         expect(breaker.getState()).toBe(CircuitState.OPEN);
     });
 });
+

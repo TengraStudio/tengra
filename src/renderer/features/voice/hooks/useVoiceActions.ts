@@ -124,3 +124,4 @@ export function useVoiceActions({
         };
     }, [handleNavigate, handleExecute, handleScroll, handleChat]);
 }
+

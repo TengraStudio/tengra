@@ -8,15 +8,14 @@
  * (at your option) any later version.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
 import {
     __resetLoadingAnalyticsForTests,
     beginLoadingOperation,
     completeLoadingOperation,
     getLoadingAnalyticsSnapshot,
     updateLoadingOperationProgress,
-} from '@/ui/store/loading-analytics.store';
+} from '@ui/store/loading-analytics.store';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('loading analytics store', () => {
     let setItemSpy: ReturnType<typeof vi.spyOn>;
@@ -74,3 +73,4 @@ describe('loading analytics store', () => {
         expect(snapshot.history[0]?.progress).toBe(25);
     });
 });
+

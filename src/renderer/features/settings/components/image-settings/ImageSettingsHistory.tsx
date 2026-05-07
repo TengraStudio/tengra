@@ -301,3 +301,4 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
         </div>
     );
 };
+

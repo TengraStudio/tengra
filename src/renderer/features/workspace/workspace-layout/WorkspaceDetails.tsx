@@ -537,3 +537,4 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
 };
 
 // Workspace alias for the new naming convention
+

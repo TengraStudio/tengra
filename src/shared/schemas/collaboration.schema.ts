@@ -52,3 +52,4 @@ export const ParticipantSchema = z.object({
 });
 
 export type Participant = z.infer<typeof ParticipantSchema>;
+

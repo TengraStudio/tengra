@@ -21,3 +21,4 @@ export const recordTerminalToolbarFailure = terminalToolbarHealthStore.recordFai
 export const recordTerminalToolbarRetry = terminalToolbarHealthStore.recordRetry;
 export const recordTerminalToolbarFallback = terminalToolbarHealthStore.recordFallback;
 export const __resetTerminalToolbarHealthForTests = terminalToolbarHealthStore.resetForTests;
+

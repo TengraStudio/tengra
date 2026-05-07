@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { MCP_CHANNELS, MCP_PERMISSIONS_CHANNELS } from '@shared/constants/ipc-channels';
 import { MCPServerConfig } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -27,19 +28,20 @@ export interface McpBridge {
 
 export function createMcpBridge(ipc: IpcRenderer): McpBridge {
     return {
-        list: () => ipc.invoke('mcp:list'),
+        list: () => ipc.invoke(MCP_CHANNELS.LIST),
         dispatch: (service, action, args) =>
-            ipc.invoke('mcp:dispatch', service, action, args),
-        toggle: (service, enabled) => ipc.invoke('mcp:toggle', service, enabled),
-        install: config => ipc.invoke('mcp:install', config),
-        uninstall: name => ipc.invoke('mcp:uninstall', name),
-        getDebugMetrics: () => ipc.invoke('mcp:debug-metrics'),
-        listPermissionRequests: () => ipc.invoke('mcp:permissions:list-requests'),
+            ipc.invoke(MCP_CHANNELS.DISPATCH, service, action, args),
+        toggle: (service, enabled) => ipc.invoke(MCP_CHANNELS.TOGGLE, service, enabled),
+        install: config => ipc.invoke(MCP_CHANNELS.INSTALL, config),
+        uninstall: name => ipc.invoke(MCP_CHANNELS.UNINSTALL, name),
+        getDebugMetrics: () => ipc.invoke(MCP_CHANNELS.DEBUG_METRICS),
+        listPermissionRequests: () => ipc.invoke(MCP_PERMISSIONS_CHANNELS.LIST_REQUESTS),
         setActionPermission: (service, action, policy) =>
-            ipc.invoke('mcp:permissions:set', service, action, policy),
+            ipc.invoke(MCP_PERMISSIONS_CHANNELS.SET, service, action, policy),
         resolvePermissionRequest: (requestId, decision) =>
-            ipc.invoke('mcp:permissions:resolve-request', requestId, decision),
-        onResult: callback => ipc.on('mcp:result', (_event, result) => callback(result)),
-        removeResultListener: () => ipc.removeAllListeners('mcp:result'),
+            ipc.invoke(MCP_PERMISSIONS_CHANNELS.RESOLVE_REQUEST, requestId, decision),
+        onResult: callback => ipc.on(MCP_CHANNELS.RESULT, (_event, result) => callback(result)),
+        removeResultListener: () => ipc.removeAllListeners(MCP_CHANNELS.RESULT),
     };
 }
+

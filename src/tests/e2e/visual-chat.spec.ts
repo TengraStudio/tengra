@@ -67,3 +67,4 @@ test.describe('Chat Interface Visual Regression', () => {
         });
     });
 });
+

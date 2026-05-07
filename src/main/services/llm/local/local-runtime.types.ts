@@ -37,3 +37,4 @@ export function resolveLocalModelFileFormat(filePath: string): LocalModelFileFor
 export function resolveRuntimeProviderForLocalModel(filePath: string): LocalModelRuntimeProvider {
     return resolveLocalModelFileFormat(filePath) === 'gguf' ? 'llama.cpp' : 'hf-native';
 }
+

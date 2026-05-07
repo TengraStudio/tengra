@@ -110,3 +110,4 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
     );
 };
 
+

@@ -243,3 +243,4 @@ const SidebarCollapsedSection: React.FC<{
 
 SidebarCollapsedSection.displayName = 'SidebarCollapsedSection';
 SidebarSection.displayName = 'SidebarSection';
+

@@ -178,3 +178,4 @@ export function isWorkspaceCompatChannel(value?: string | null): boolean {
     const lookupValue = normalizeWorkspaceCompatLookup(value);
     return lookupValue !== undefined && WORKSPACE_COMPAT_CHANNEL_LOOKUP.has(lookupValue);
 }
+

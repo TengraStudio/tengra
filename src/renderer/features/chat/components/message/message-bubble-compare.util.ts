@@ -177,3 +177,4 @@ export const areMessagePropsEqual = (prev: MessageProps, next: MessageProps): bo
 
     return areMessageVariantsEqual(previousMessage.variants, nextMessage.variants);
 };
+

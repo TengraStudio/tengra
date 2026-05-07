@@ -131,3 +131,4 @@ export const getTerminalTheme = (): ITheme => {
         ),
     };
 };
+

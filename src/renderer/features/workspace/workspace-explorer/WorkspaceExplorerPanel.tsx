@@ -25,7 +25,8 @@ import {
     startWorkspaceInlineCreate,
     startWorkspaceInlineRename,
 } from '@/store/workspace-explorer.store';
-import type { WorkspaceEntry } from '@/types';
+import type { WorkspaceEntry, WorkspaceMount } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface WorkspaceExplorerPanelProps {
     workspaceId: string;
@@ -62,6 +63,38 @@ export const WorkspaceExplorerPanel = React.memo(({
             },
         })
     );
+    const effectiveMounts = React.useMemo<WorkspaceMount[]>(() => {
+        const usableMounts = wm.mounts.filter(mount =>
+            typeof mount.rootPath === 'string' && mount.rootPath.trim().length > 0
+        );
+        const hasUsableMount = usableMounts.length > 0;
+
+        appLogger.info('WorkspaceExplorerPanel', 'Calculating effective mounts', { 
+            workspacePath, 
+            mountsCount: wm.mounts.length,
+            usableMountsCount: usableMounts.length,
+            hasUsableMount 
+        });
+
+        if (hasUsableMount) {
+            return usableMounts;
+        }
+
+        if (!workspacePath || workspacePath.trim().length === 0) {
+            appLogger.warn('WorkspaceExplorerPanel', 'No usable mounts and no workspace path available');
+            return wm.mounts;
+        }
+
+        const fallbackMount: WorkspaceMount = {
+            id: `local-${workspaceId}`,
+            name: 'Local',
+            type: 'local',
+            rootPath: workspacePath,
+        };
+        
+        appLogger.info('WorkspaceExplorerPanel', 'Using fallback local mount', { fallbackMount });
+        return [fallbackMount];
+    }, [wm.mounts, workspaceId, workspacePath]);
 
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
         const { active, over } = event;
@@ -104,7 +137,7 @@ export const WorkspaceExplorerPanel = React.memo(({
 
 
     const handleGitContextAction = React.useCallback(async (action: ContextMenuAction) => {
-        const mount = wm.mounts.find(item => item.id === action.entry.mountId);
+        const mount = effectiveMounts.find(item => item.id === action.entry.mountId);
         if (mount?.type !== 'local') {
             return true;
         }
@@ -142,7 +175,9 @@ export const WorkspaceExplorerPanel = React.memo(({
 
         wm.setRefreshSignal(previousValue => previousValue + 1);
         return true;
-    }, [wm]);
+    }, [effectiveMounts, wm]);
+
+
 
     return (
         <div
@@ -171,7 +206,7 @@ export const WorkspaceExplorerPanel = React.memo(({
                         <WorkspaceExplorer
                             workspaceId={workspaceId}
                             workspacePath={workspacePath}
-                            mounts={wm.mounts}
+                            mounts={effectiveMounts}
                             refreshSignal={wm.refreshSignal}
                             onOpenFile={(...args) => {
                                 void wm.openFile(...args);
@@ -182,7 +217,7 @@ export const WorkspaceExplorerPanel = React.memo(({
                             onLastSelectedEntryChange={ps.setLastSelectedEntry}
                             onAddMount={() => ps.setShowMountModal(true)}
                             onRemoveMount={(id: string) => {
-                                void wm.persistMounts(wm.mounts.filter(m => m.id !== id));
+                                void wm.persistMounts(effectiveMounts.filter(m => m.id !== id));
                             }}
                             onEnsureMount={wm.ensureMountReady}
                             onContextAction={action => {

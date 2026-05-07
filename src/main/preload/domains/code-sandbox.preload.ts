@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { CODE_SANDBOX_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface CodeSandboxBridge {
@@ -59,8 +60,9 @@ export interface CodeSandboxBridge {
 
 export function createCodeSandboxBridge(ipc: IpcRenderer): CodeSandboxBridge {
     return {
-        languages: () => ipc.invoke('code-sandbox:languages'),
-        execute: payload => ipc.invoke('code-sandbox:execute', payload),
-        health: () => ipc.invoke('code-sandbox:health'),
+        languages: () => ipc.invoke(CODE_SANDBOX_CHANNELS.LANGUAGES),
+        execute: payload => ipc.invoke(CODE_SANDBOX_CHANNELS.EXECUTE, payload),
+        health: () => ipc.invoke(CODE_SANDBOX_CHANNELS.HEALTH),
     };
 }
+

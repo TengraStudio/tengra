@@ -53,3 +53,4 @@ describe('responsive analytics store', () => {
         expect(setItemSpy).toHaveBeenCalled();
     });
 });
+

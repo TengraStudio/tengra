@@ -129,3 +129,4 @@ export function DangerZone({ onDelete, t }: DangerZoneProps) {
 
 export const WorkspaceSearchResults = SearchResults;
 export const WorkspaceDangerZone = DangerZone;
+

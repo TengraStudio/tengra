@@ -16,3 +16,4 @@ export function sanitizeMcpSettingsView(raw: RendererDataValue): McpSettingsView
     }
     return 'servers';
 }
+

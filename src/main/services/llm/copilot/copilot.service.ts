@@ -40,3 +40,4 @@ export class CopilotService extends BaseService {
         return this.githubToken !== null || this.copilotToken !== null;
     }
 }
+

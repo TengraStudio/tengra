@@ -71,3 +71,4 @@ export { GlassModal } from '@/components/ui/GlassModal';
 export { RippleButton } from '@/components/ui/RippleButton';
 export { ScrollToBottomButton } from '@/components/ui/ScrollToBottomButton';
 export { TypingIndicator } from '@/components/ui/TypingIndicator';
+

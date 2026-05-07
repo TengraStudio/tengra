@@ -178,3 +178,4 @@ export async function analyzeCodeQuality(
         generatedAt: new Date().toISOString(),
     };
 }
+

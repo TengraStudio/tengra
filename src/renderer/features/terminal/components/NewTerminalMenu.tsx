@@ -61,3 +61,4 @@ export const NewTerminalMenu: React.FC<NewTerminalMenuProps> = ({
         </motion.div>
     );
 };
+

@@ -127,3 +127,4 @@ export function useWorkspaceShortcuts({
         };
     }, [wm, setShowShortcutHelp, setShowQuickSwitch, setQuickSwitchQuery, setQuickSwitchIndex]);
 }
+

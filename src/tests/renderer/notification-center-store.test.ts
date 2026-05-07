@@ -122,3 +122,4 @@ describe('notification center store', () => {
         expect(snapshot.active[7]?.message).toBe('Notification 5');
     });
 });
+

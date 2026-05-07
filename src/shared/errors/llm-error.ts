@@ -35,3 +35,4 @@ export class LLMError extends AppError {
     this.provider = provider;
   }
 }
+

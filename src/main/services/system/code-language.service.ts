@@ -15,6 +15,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { CODE_LANGUAGE_CHANNELS } from '@shared/constants/ipc-channels';
 import { marketplaceCodeLanguagePackSchema } from '@shared/schemas/marketplace.schema';
 import { RuntimeValue } from '@shared/types/common';
 import type { MarketplaceCodeLanguagePack } from '@shared/types/marketplace';
@@ -44,7 +45,7 @@ export class CodeLanguageService extends BaseService {
         await this.loadPacks();
     }
 
-    @ipc('code-language:runtime:getAll')
+    @ipc(CODE_LANGUAGE_CHANNELS.RUNTIME_GET_ALL)
     async getAllCodeLanguagePacksIpc(): Promise<RuntimeValue> {
         return serializeToIpc(await this.getAllCodeLanguagePacks());
     }
@@ -85,3 +86,4 @@ export class CodeLanguageService extends BaseService {
         }
     }
 }
+

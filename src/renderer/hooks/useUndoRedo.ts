@@ -63,3 +63,4 @@ export function useUndoRedo<T>(initialState: T, maxHistory = 20): UndoRedoHook<T
 
   return { state, set, undo, redo, canUndo, canRedo };
 }
+

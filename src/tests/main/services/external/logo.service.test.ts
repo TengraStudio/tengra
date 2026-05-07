@@ -145,7 +145,7 @@ describe('LogoService generation model fallback', () => {
 
         const result = await context.service.generateLogo(
             'C:\\workspaces\\brand-workspace',
-            'orbital telemetry',
+            'orbital Stats',
             'Minimalist',
             'openai/gpt-4.1-mini'
         );
@@ -161,7 +161,7 @@ describe('LogoService generation model fallback', () => {
         expect(saveSpy).toHaveBeenCalledWith(
             'C:\\workspaces\\brand-workspace',
             'https://assets.example/logo.png',
-            expect.stringContaining('Core Concept: orbital telemetry'),
+            expect.stringContaining('Core Concept: orbital Stats'),
             'openai/gpt-4.1-mini'
         );
     });
@@ -194,3 +194,4 @@ describe('LogoService generation model fallback', () => {
         );
     });
 });
+

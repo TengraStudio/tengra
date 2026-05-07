@@ -267,3 +267,4 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
         </div>
     );
 };
+

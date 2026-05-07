@@ -105,3 +105,4 @@ export function usePromptAnalysis(prompt: string): UsePromptAnalysisReturn {
 
     return { analysis, isAnalyzing, dismissSuggestion };
 }
+

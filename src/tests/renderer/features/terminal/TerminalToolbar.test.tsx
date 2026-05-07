@@ -128,3 +128,4 @@ describe('TerminalToolbar edge cases', () => {
     });
  
 });
+

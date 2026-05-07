@@ -111,3 +111,4 @@ export function applySessionStreamChunk(
         state.toolCalls = mergeSessionToolCalls(state.toolCalls, chunk.tool_calls);
     }
 }
+

@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { MARKETPLACE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     InstallRequest,
     InstallResult,
@@ -29,12 +30,13 @@ export interface MarketplaceBridge {
 
 export function createMarketplaceBridge(ipc: IpcRenderer): MarketplaceBridge {
     return {
-        fetch: () => ipc.invoke('marketplace:fetch'),
-        getRuntimeProfile: () => ipc.invoke('marketplace:getRuntimeProfile'),
-        install: (request) => ipc.invoke('marketplace:install', request),
-        getUpdateCount: () => ipc.invoke('marketplace:get-update-count'),
-        checkLiveUpdates: () => ipc.invoke('marketplace:check-live-updates'),
-        fetchReadme: (extensionId: string, repository?: string) => ipc.invoke('marketplace:fetch-readme', extensionId, repository),
-        uninstall: (itemId, itemType) => ipc.invoke('marketplace:uninstall', itemId, itemType),
+        fetch: () => ipc.invoke(MARKETPLACE_CHANNELS.FETCH),
+        getRuntimeProfile: () => ipc.invoke(MARKETPLACE_CHANNELS.GET_RUNTIME_PROFILE),
+        install: (request) => ipc.invoke(MARKETPLACE_CHANNELS.INSTALL, request),
+        getUpdateCount: () => ipc.invoke(MARKETPLACE_CHANNELS.GET_UPDATE_COUNT),
+        checkLiveUpdates: () => ipc.invoke(MARKETPLACE_CHANNELS.CHECK_LIVE_UPDATES),
+        fetchReadme: (extensionId: string, repository?: string) => ipc.invoke(MARKETPLACE_CHANNELS.FETCH_README, extensionId, repository),
+        uninstall: (itemId, itemType) => ipc.invoke(MARKETPLACE_CHANNELS.UNINSTALL, itemId, itemType),
     };
 }
+

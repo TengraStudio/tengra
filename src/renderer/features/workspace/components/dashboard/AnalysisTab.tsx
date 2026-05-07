@@ -41,3 +41,4 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         </div>
     );
 };
+

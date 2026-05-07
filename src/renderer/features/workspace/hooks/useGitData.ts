@@ -369,3 +369,4 @@ export function useGitData(workspace: Workspace) {
         handleLoadMoreCommits
     };
 }
+

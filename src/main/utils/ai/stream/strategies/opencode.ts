@@ -3,7 +3,7 @@
  * Copyright (c) 2026 TengraStudio
  */
 
-import { InterceptorState,IStreamParserStrategy, OpenCodeStreamState, StreamChunk, StreamPayload } from '../types';
+import { InterceptorState,IStreamParserStrategy, OpenCodeStreamState, StreamChunk, StreamPayload } from '@main/utils/ai/stream/types';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
@@ -312,3 +312,4 @@ export class OpenCodeParserStrategy implements IStreamParserStrategy {
         return null;
     }
 }
+

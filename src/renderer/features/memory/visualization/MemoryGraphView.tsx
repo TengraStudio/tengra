@@ -9,6 +9,7 @@
  */
 
 import { AdvancedSemanticFragment, coerceMemoryCategory, MemoryCategory } from '@shared/types/advanced-memory';
+import { appLogger } from '@system/utils/renderer-logger';
 import { IconNetwork, IconRotate } from '@tabler/icons-react';
 import {
     Background,
@@ -37,7 +38,6 @@ import { useTranslation } from '@/i18n';
 import { resolveCssColorVariable } from '@/lib/theme-css';
 import { cn } from '@/lib/utils';
 
-import { appLogger } from '../../../utils/renderer-logger';
 import { CATEGORY_CONFIG } from '../components/constants';
 
 /* Batch-02: Extracted Long Classes */
@@ -326,3 +326,4 @@ export const MemoryGraphView: React.FC = () => {
         </div>
     );
 };
+

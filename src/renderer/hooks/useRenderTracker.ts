@@ -30,3 +30,4 @@ export function useRenderTracker(componentName: string): void {
         appLogger.debug('RenderTracker', `${componentName} rendered #${renderCount.current}`);
     });
 }
+

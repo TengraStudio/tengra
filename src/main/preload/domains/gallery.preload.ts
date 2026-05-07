@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { GALLERY_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface GalleryBridge {
@@ -45,10 +46,11 @@ export interface GalleryBridge {
 
 export function createGalleryBridge(ipc: IpcRenderer): GalleryBridge {
     return {
-        list: () => ipc.invoke('gallery:list'),
-        delete: path => ipc.invoke('gallery:delete', path),
-        open: path => ipc.invoke('gallery:open', path),
-        reveal: path => ipc.invoke('gallery:reveal', path),
-        batchDownload: input => ipc.invoke('gallery:batch-download', input),
+        list: () => ipc.invoke(GALLERY_CHANNELS.LIST),
+        delete: path => ipc.invoke(GALLERY_CHANNELS.DELETE, path),
+        open: path => ipc.invoke(GALLERY_CHANNELS.OPEN, path),
+        reveal: path => ipc.invoke(GALLERY_CHANNELS.REVEAL, path),
+        batchDownload: input => ipc.invoke(GALLERY_CHANNELS.BATCH_DOWNLOAD, input),
     };
 }
+

@@ -594,3 +594,4 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
         </motion.div>
     );
 };
+

@@ -37,7 +37,6 @@ import { getTerminalTheme } from '@/lib/terminal-theme';
 import { resolveAppFontPreset } from '@/lib/typography-settings';
 import { cn } from '@/lib/utils';
 import { useA11ySettings } from '@/utils/accessibility';
-import { themeIpc } from '@/utils/theme-ipc.util';
 
 import type { SettingsSharedProps } from '../types';
 
@@ -262,7 +261,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
     const refreshThemes = useCallback(async () => {
         try {
-            const loadedThemes = await themeIpc.getAllThemes();
+            const loadedThemes = await window.electron.theme.runtime.getAll();
             setThemes(loadedThemes.length > 0 ? loadedThemes : BUILTIN_THEME_MANIFESTS);
         } catch {
             setThemes(BUILTIN_THEME_MANIFESTS);
@@ -309,7 +308,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         () => resolveTerminalAppearance(getTerminalTheme(), terminalAppearance),
         [terminalAppearance]
     );
-    const currentThemeId = settings?.general.theme ?? 'graphite';
+    const currentThemeId = settings?.general.theme ?? 'tengra-black';
     const currentThemeManifest = useMemo(
         () => availableThemes.find(theme => theme.id === currentThemeId) ?? null,
         [availableThemes, currentThemeId]
@@ -347,7 +346,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
         try {
             const themeManifest = JSON.parse(await file.text()) as ThemeManifest;
-            await themeIpc.installTheme(themeManifest);
+            await window.electron.theme.runtime.install(themeManifest);
             await refreshThemes();
             setThemeActionStatus({
                 tone: 'success',
@@ -390,7 +389,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
     const handleOpenThemesDirectory = useCallback(async () => {
         try {
-            await themeIpc.openThemesDirectory();
+            await window.electron.theme.runtime.openDirectory();
             setThemeActionStatus({
                 tone: 'success',
                 message: t('frontend.settings.themeManifestOpenFolderSuccess'),
@@ -451,7 +450,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                 {t('frontend.settings.theme')}
                             </label>
                             <Select
-                                value={settings?.general.theme ?? 'graphite'}
+                                value={settings?.general.theme ?? 'tengra-black'}
                                 onValueChange={value => {
                                     void updateGeneral({ theme: value });
                                 }}
@@ -539,7 +538,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     <div className="mt-8 flex flex-col gap-3 border-t border-border/10 px-1 pt-6 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4 font-mono text-sm uppercase  text-muted-foreground/50">
                             <span className="text-primary/70 font-bold">
-                                {themeOptions.find(option => option.value === (settings?.general.theme ?? 'graphite'))?.label}
+                                {themeOptions.find(option => option.value === (settings?.general.theme ?? 'tengra-black'))?.label}
                             </span>
                             <div className="h-1 w-1 rounded-full bg-border/40" />
                             <span>{resolvedAppFont.label}</span>
@@ -801,3 +800,4 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         </div>
     );
 };
+

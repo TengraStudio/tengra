@@ -15,7 +15,7 @@ import { app } from 'electron';
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 /**
- * Common PII patterns to scrub from logs and telemetry
+ * Common PII patterns to scrub from logs and usageStats
  */
 const PII_PATTERNS = {
     // Email addresses
@@ -147,3 +147,4 @@ export class PIIScrubber {
         return sensitiveKeys.some(s => lowerKey.includes(s));
     }
 }
+

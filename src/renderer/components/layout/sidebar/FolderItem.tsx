@@ -132,3 +132,4 @@ export const FolderItem: React.FC<FolderItemProps> = ({
 };
 
 FolderItem.displayName = 'FolderItem';
+

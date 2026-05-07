@@ -107,3 +107,4 @@ describe('MemorySubComponents', () => {
         expect(onRestore).toHaveBeenCalledTimes(0);
     });
 });
+

@@ -117,3 +117,4 @@ export const SidebarStatusIndicator: React.FC<SidebarStatusIndicatorProps> = ({
 };
 
 SidebarStatusIndicator.displayName = 'SidebarStatusIndicator';
+

@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { COLLABORATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { Message } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -47,12 +48,13 @@ export interface ModelCollaborationBridge {
 
 export function createModelCollaborationBridge(ipc: IpcRenderer): ModelCollaborationBridge {
     return {
-        run: request => ipc.invoke('collaboration:run', request),
-        getProviderStats: provider => ipc.invoke('collaboration:provider-stats', provider),
-        getActiveTaskCount: provider => ipc.invoke('collaboration:active-task-count', provider),
+        run: request => ipc.invoke(COLLABORATION_CHANNELS.RUN, request),
+        getProviderStats: provider => ipc.invoke(COLLABORATION_CHANNELS.GET_PROVIDER_STATS, provider),
+        getActiveTaskCount: provider => ipc.invoke(COLLABORATION_CHANNELS.GET_ACTIVE_TASK_COUNT, provider),
         setProviderConfig: (provider, config) =>
-            ipc.invoke('collaboration:set-provider-config', { provider, config }),
+            ipc.invoke(COLLABORATION_CHANNELS.SET_PROVIDER_CONFIG, { provider, config }),
     };
 }
 
 export const createCollaborationBridge = createModelCollaborationBridge;
+

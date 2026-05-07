@@ -55,3 +55,4 @@ export function toSafeFileUrl(inputPath: string | null | undefined): string | nu
     const normalizedUrl = normalizeSafeFilePath(inputPath);
     return normalizedUrl.length > 0 ? normalizedUrl : null;
 }
+

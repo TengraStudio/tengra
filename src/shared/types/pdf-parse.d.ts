@@ -23,3 +23,4 @@ declare module 'pdf-parse' {
     const pdfParse: PdfParseFunction;
     export default pdfParse;
 }
+

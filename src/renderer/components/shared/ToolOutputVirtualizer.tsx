@@ -72,3 +72,4 @@ export const ToolOutputVirtualizer: React.FC<ToolOutputVirtualizerProps> = ({
 };
 
 ToolOutputVirtualizer.displayName = 'ToolOutputVirtualizer';
+

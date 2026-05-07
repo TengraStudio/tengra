@@ -8,14 +8,13 @@
  * (at your option) any later version.
  */
 
+import { SessionRuntimeModule } from '@main/services/session/base-session-engine.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import {
     SessionMode,
     SessionState,
     SessionStatus,
 } from '@shared/types/session-engine';
-
-import { SessionRuntimeModule } from '../base-session-engine.service';
 
 export class TaskPlanningSessionModule implements SessionRuntimeModule {
     readonly id = 'task_planning' as const;
@@ -48,3 +47,4 @@ export class TaskPlanningSessionModule implements SessionRuntimeModule {
         });
     }
 }
+

@@ -49,3 +49,4 @@ export function generateTimestampedId(): string {
 export function generateShortId(): string {
     return randomUUID().substring(0, 8);
 }
+

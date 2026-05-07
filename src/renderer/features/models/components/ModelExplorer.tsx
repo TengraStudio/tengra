@@ -255,3 +255,4 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
         </div>
     );
 }
+

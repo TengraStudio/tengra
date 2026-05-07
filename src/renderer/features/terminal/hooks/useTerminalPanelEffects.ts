@@ -294,3 +294,4 @@ export function useTerminalPanelEffects(core: TerminalPanelCoreResult): void {
         activeTabIdRef,
     ]);
 }
+

@@ -116,3 +116,4 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
 };
 
 RippleButton.displayName = 'RippleButton';
+

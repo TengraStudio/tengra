@@ -18,6 +18,7 @@
  */
 
 
+import { BATCH_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/system/error.util';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
@@ -175,7 +176,7 @@ export function registerBatchIpc(): void {
      * Handle batch invoke requests in parallel.
      * Channels: batch:invoke
      */
-    ipcMain.handle('batch:invoke', async (
+    ipcMain.handle(BATCH_CHANNELS.INVOKE, async (
         event: IpcMainInvokeEvent,
         requests: BatchRequest[]
     ): Promise<BatchResponse> => {
@@ -220,7 +221,7 @@ export function registerBatchIpc(): void {
      * Handle batch invoke requests sequentially.
      * Channels: batch:invokeSequential
      */
-    ipcMain.handle('batch:invokeSequential', async (
+    ipcMain.handle(BATCH_CHANNELS.INVOKE_SEQUENTIAL, async (
         event: IpcMainInvokeEvent,
         requests: BatchRequest[]
     ): Promise<BatchResponse> => {
@@ -263,7 +264,7 @@ export function registerBatchIpc(): void {
      * Get list of all registered batchable channels.
      * Channels: batch:getChannels
      */
-    ipcMain.handle('batch:getChannels', async (): Promise<string[]> => {
+    ipcMain.handle(BATCH_CHANNELS.GET_CHANNELS, async (): Promise<string[]> => {
         return getBatchableChannels();
     });
 }
@@ -292,3 +293,4 @@ export function makeBatchable<T extends IpcValue>(
 ): void {
     registerBatchableHandler(channel, handler);
 }
+

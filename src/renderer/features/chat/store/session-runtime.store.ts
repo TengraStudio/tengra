@@ -229,3 +229,4 @@ export async function ensureSessionCapabilityCatalog(): Promise<SessionCapabilit
     }
     return refreshSessionCapabilityCatalog();
 }
+

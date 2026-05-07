@@ -54,3 +54,4 @@ export interface DiffStats {
 }
 
 export type AISystemType = 'chat' | 'workspace' | 'council'
+

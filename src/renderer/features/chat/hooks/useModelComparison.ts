@@ -132,3 +132,4 @@ export function useModelComparison(): UseModelComparisonReturn {
         clearResults, ratings, rateModel,
     };
 }
+

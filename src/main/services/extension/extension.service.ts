@@ -20,6 +20,7 @@ import * as vm from 'vm';
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { EXTENSION_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     ConfigurationChangeEvent,
     ExtensionContext,
@@ -265,7 +266,7 @@ export class ExtensionService extends BaseService {
 
     // IPC Handlers - These are now called by @main/ipc/extension.ts
 
-    @ipc('extension:get-all')
+    @ipc(EXTENSION_CHANNELS.GET_ALL)
     public getAllExtensions(): { success: boolean; extensions: ExtensionRuntimeInfo[] } {
         const extensions = Array.from(this.state.extensions.values()).map((instance) => ({
             manifest: instance.manifest,
@@ -277,7 +278,7 @@ export class ExtensionService extends BaseService {
         return { success: true, extensions };
     }
     
-    @ipc('extension:get')
+    @ipc(EXTENSION_CHANNELS.GET)
     public getExtension(extensionId: string): { success: boolean; extension?: ExtensionRuntimeInfo } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
@@ -295,7 +296,7 @@ export class ExtensionService extends BaseService {
         };
     }
     
-    @ipc('extension:install')
+    @ipc(EXTENSION_CHANNELS.INSTALL)
     public async handleInstall(_event: Electron.IpcMainInvokeEvent, extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> {
         try {
             return await this.installExtension(extensionPath);
@@ -304,7 +305,7 @@ export class ExtensionService extends BaseService {
         }
     }
     
-    @ipc('extension:uninstall')
+    @ipc(EXTENSION_CHANNELS.UNINSTALL)
     public async handleUninstall(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string; messageKey?: string; messageParams?: Record<string, string | number> }> {
         try {
             return await this.uninstallExtension(extensionId);
@@ -313,7 +314,7 @@ export class ExtensionService extends BaseService {
         }
     }
     
-    @ipc('extension:activate')
+    @ipc(EXTENSION_CHANNELS.ACTIVATE)
     public async handleActivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<ExtensionActionResult> {
         try {
             const result = await this.activateExtension(extensionId);
@@ -329,7 +330,7 @@ export class ExtensionService extends BaseService {
         }
     }
     
-    @ipc('extension:deactivate')
+    @ipc(EXTENSION_CHANNELS.DEACTIVATE)
     public async handleDeactivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
         try {
             const result = await this.deactivateExtension(extensionId);
@@ -346,7 +347,7 @@ export class ExtensionService extends BaseService {
         }
     }
     
-    @ipc('extension:dev-start')
+    @ipc(EXTENSION_CHANNELS.DEV_START)
     public async handleDevStart(_event: Electron.IpcMainInvokeEvent, options: ExtensionDevOptions): Promise<{ success: boolean; error?: string }> {
         try {
             return await this.startDevServer(options);
@@ -355,7 +356,7 @@ export class ExtensionService extends BaseService {
         }
     }
     
-    @ipc('extension:dev-stop')
+    @ipc(EXTENSION_CHANNELS.DEV_STOP)
     public async handleDevStop(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
         try {
             return await this.stopDevServer(extensionId);
@@ -364,7 +365,7 @@ export class ExtensionService extends BaseService {
         }
     }
     
-    @ipc('extension:dev-reload')
+    @ipc(EXTENSION_CHANNELS.DEV_RELOAD)
     public async handleDevReload(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
         try {
             return await this.reloadExtension(extensionId);
@@ -373,17 +374,17 @@ export class ExtensionService extends BaseService {
         }
     }
     
-    @ipc('extension:test')
+    @ipc(EXTENSION_CHANNELS.TEST)
     public async handleTest(_event: Electron.IpcMainInvokeEvent, options: ExtensionTestOptions): Promise<ExtensionTestResult> {
         return await this.runTests(options);
     }
     
-    @ipc('extension:publish')
+    @ipc(EXTENSION_CHANNELS.PUBLISH)
     public async handlePublish(_event: Electron.IpcMainInvokeEvent, options: ExtensionPublishOptions): Promise<ExtensionPublishResult> {
         return await this.publishExtension(options);
     }
     
-    @ipc('extension:get-profile')
+    @ipc(EXTENSION_CHANNELS.GET_PROFILE)
     public handleGetProfile(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; profile?: ExtensionProfileData } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
@@ -396,7 +397,7 @@ export class ExtensionService extends BaseService {
         return { success: true, profile: instance.profileData };
     }
     
-    @ipc('extension:get-state')
+    @ipc(EXTENSION_CHANNELS.GET_STATE)
     public handleGetState(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; state?: { global: Record<string, RuntimeValue>, workspace: Record<string, RuntimeValue> } } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
@@ -416,12 +417,12 @@ export class ExtensionService extends BaseService {
         return { success: true, state: { global: globalState, workspace: workspaceState } };
     }
     
-    @ipc('extension:validate')
+    @ipc(EXTENSION_CHANNELS.VALIDATE)
     public handleValidate(_event: Electron.IpcMainInvokeEvent, manifest: RuntimeValue): { valid: boolean; errors: string[] } {
         return validateManifest(manifest);
     }
     
-    @ipc('extension:get-config')
+    @ipc(EXTENSION_CHANNELS.GET_CONFIG)
     public handleGetConfig(
         _event: Electron.IpcMainInvokeEvent,
         extensionId: string
@@ -433,7 +434,7 @@ export class ExtensionService extends BaseService {
         return { success: true, config: this.getExtensionConfigSnapshot(extensionId) };
     }
     
-    @ipc('extension:update-config')
+    @ipc(EXTENSION_CHANNELS.UPDATE_CONFIG)
     public async handleUpdateConfig(
         _event: Electron.IpcMainInvokeEvent,
         extensionId: string,
@@ -1389,5 +1390,6 @@ export class ExtensionService extends BaseService {
         return candidateIds.some(id => id.toLowerCase() === normalizedId);
     }
 }
+
 
 

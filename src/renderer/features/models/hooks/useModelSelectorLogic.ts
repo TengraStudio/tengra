@@ -77,7 +77,10 @@ function checkCodexDailyLimit(usage: { dailyLimit?: number; dailyUsedPercent?: n
     return dailyRemainingPercent < maxAllowedPercent && isCodexModel(lowerModelId);
 }
 
-function findAntigravityQuotaModel(quotas: { accounts: QuotaResponse[] }, lowerModelId: string, modelId: string) {
+function findAntigravityQuotaModel(quotas: { accounts?: QuotaResponse[] } | null | undefined, lowerModelId: string, modelId: string) {
+    if (!quotas?.accounts || !Array.isArray(quotas.accounts) || quotas.accounts.length === 0) {
+        return null;
+    }
     const aliases = new Set([
         lowerModelId,
         modelId.toLowerCase(),
@@ -113,8 +116,8 @@ function canUseAntigravityCredits(modelQuotaItem: ModelQuotaItem | null): boolea
     return false;
 }
 
-function checkAntigravityUserDefinedLimit(modelId: string, lowerModelId: string, quotas: { accounts: QuotaResponse[] } | null, settings?: AppSettings) {
-    if (!quotas) { return false; }
+function checkAntigravityUserDefinedLimit(modelId: string, lowerModelId: string, quotas: { accounts?: QuotaResponse[] } | null, settings?: AppSettings) {
+    if (!quotas?.accounts || !Array.isArray(quotas.accounts) || quotas.accounts.length === 0) { return false; }
     const antigravityLimits = settings?.modelUsageLimits?.antigravity;
     const modelLimit = antigravityLimits?.[modelId] ?? antigravityLimits?.[lowerModelId];
 
@@ -126,8 +129,8 @@ function checkAntigravityUserDefinedLimit(modelId: string, lowerModelId: string,
     return modelQuotaItem.percentage < modelLimit.percentage;
 }
 
-function checkAntigravityGeneralQuota(modelId: string, lowerModelId: string, quotas: { accounts: QuotaResponse[] } | null) {
-    if (!quotas) { return false; }
+function checkAntigravityGeneralQuota(modelId: string, lowerModelId: string, quotas: { accounts?: QuotaResponse[] } | null) {
+    if (!quotas?.accounts || !Array.isArray(quotas.accounts) || quotas.accounts.length === 0) { return false; }
 
     const modelQuotaItem = findAntigravityQuotaModel(quotas, lowerModelId, modelId);
     if (!modelQuotaItem) { return false; }
@@ -229,7 +232,7 @@ export function useModelSelectorLogic({
                         if (!modelId) { continue; }
                         const key = `${provider}:${modelId}`;
                         try {
-                            const result = await window.electron.checkUsageLimit(provider, modelId);
+                            const result = await window.electron.auth.checkUsageLimit(provider, modelId);
                             checks[key] = result;
                         } catch {
                             checks[key] = { allowed: true };
@@ -243,7 +246,7 @@ export function useModelSelectorLogic({
     }, [settings?.modelUsageLimits, groupedModels]);
 
     const isCodexDisabled = useCallback((_modelId: string, lowerModelId: string) => {
-        const codexAccount = activeCodexUsage ?? codexUsage?.accounts[0];
+        const codexAccount = activeCodexUsage ?? codexUsage?.accounts?.[0];
         if (!codexAccount) { return false; }
         return checkCodexUsageStatus(codexAccount, lowerModelId, settings);
     }, [activeCodexUsage, codexUsage, settings]);
@@ -267,7 +270,7 @@ export function useModelSelectorLogic({
         }
 
         // Priority 2: Embedded in Antigravity Quota (legacy/proxy)
-        if (quotas?.accounts) {
+        if (quotas?.accounts?.length) {
             const embedded = quotas.accounts.find(a => a.copilot)?.copilot;
             if (embedded) {
                 const q = embedded as { remaining: number; limit: number };
@@ -321,7 +324,7 @@ export function useModelSelectorLogic({
             }
         }
         // Fallback: check claudeQuota embedded in quotas.accounts
-        if (quotas?.accounts) {
+        if (quotas?.accounts?.length) {
             const embeddedQuota = quotas.accounts.find(a => a.claudeQuota)?.claudeQuota;
             if (embeddedQuota && checkClaudeQuotaExhausted(embeddedQuota as ClaudeQuota)) {
                 return true;
@@ -332,7 +335,7 @@ export function useModelSelectorLogic({
 
     const isAntigravityDisabled = useCallback((modelId: string, lowerModelId: string) => {
         const quotaSource = activeAntigravityQuota ? { accounts: [activeAntigravityQuota] } : quotas;
-        if (!quotaSource) { return false; }
+        if (!quotaSource?.accounts || !Array.isArray(quotaSource.accounts) || quotaSource.accounts.length === 0) { return false; }
         if (checkAntigravityUserDefinedLimit(modelId, lowerModelId, quotaSource, settings)) { return true; }
         if (checkAntigravityGeneralQuota(modelId, lowerModelId, quotaSource)) { return true; }
 
@@ -370,3 +373,4 @@ export function useModelSelectorLogic({
 
     return { isModelDisabled };
 }
+

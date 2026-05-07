@@ -8,42 +8,23 @@
  * (at your option) any later version.
  */
 
-import { registerServiceIpc } from '@main/core/ipc-decorators';
+import { getIpcMethodsForService, registerServiceIpc } from '@main/core/ipc-decorators';
 import { lazyServiceRegistry } from '@main/core/lazy-services';
 import { appLogger } from '@main/logging/logger';
-import { SharedPromptsService } from '@main/services/data/shared-prompts.service';
-import { ExtensionService } from '@main/services/extension/extension.service';
 import { LogoService } from '@main/services/external/logo.service';
 import { ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { DialogService } from '@main/services/system/dialog.service';
-import { LoggingService } from '@main/services/system/logging.service';
-import { SettingsService } from '@main/services/system/settings.service';
 import { UpdateService } from '@main/services/system/update.service';
-import { WindowService } from '@main/services/system/window.service';
+import { CodeSandboxService } from '@main/services/workspace/code-sandbox.service';
 import { DockerService } from '@main/services/workspace/docker.service';
 import { container, Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
-import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createMainWindowSenderValidator } from '@main/utils/ipc-sender-validator';
 import { safeHandle, setIpcEventBus } from '@main/utils/ipc-wrapper.util';
-import { createIpcHandler as baseCreateIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { SESSION_CHANNELS } from '@shared/constants/ipc-channels';
 import { SessionEventEnvelopeSchema } from '@shared/schemas/session-engine.schema';
-import { ExtensionDevOptions, ExtensionPublishOptions, ExtensionTestOptions } from '@shared/types/extension';
-import { BrowserWindow, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow } from 'electron';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
-
-export function registerMinimalIpcHandlers(
-    settingsService: SettingsService,
-    getMainWindow: () => BrowserWindow | null,
-    allowedFileRoots: Set<string>
-): void {
-    registerServiceIpc(container.resolve<WindowService>('windowService'));
-    registerServiceIpc(container.resolve<LoggingService>('loggingService'));
-    registerServiceIpc(container.resolve<DialogService>('dialogService'));
-}
-
 
 export function registerIpcHandlers(
     services: Services,
@@ -56,26 +37,102 @@ export function registerIpcHandlers(
 
     setIpcEventBus(services.eventBusService);
     const logoService = container.resolve<LogoService>('logoService');
-    const dockerService = container.resolve<DockerService>('dockerService');
-    // Registers
-    registerServiceIpc(services.windowService);
-    registerServiceIpc(services.systemService);
-    registerServiceIpc(lazyServiceRegistry);
-    registerServiceIpc(services.codeSandboxService);
-    registerServiceIpc(services.codeLanguageService);
-    const modelRegistryService = container.resolve<ModelRegistryService>('modelRegistryService');
-    services.modelRegistryService = modelRegistryService;
-    registerServiceIpc(modelRegistryService);
-    registerServiceIpc(services.modelDownloaderService);
+    
+    const servicesToRegister = [
+        { name: 'windowService', service: services.windowService },
+        { name: 'systemService', service: services.systemService },
+        { name: 'lazyServiceRegistry', service: lazyServiceRegistry },
+        { name: 'codeSandboxService', service: container.resolve<CodeSandboxService>('codeSandboxService') },
+        { name: 'codeLanguageService', service: services.codeLanguageService },
+        { name: 'modelRegistryService', service: services.modelRegistryService },
+        { name: 'modelDownloaderService', service: services.modelDownloaderService },
+        { name: 'runtimeBootstrapService', service: services.runtimeBootstrapService },
+        { name: 'healthCheckService', service: services.healthCheckService },
+        { name: 'localImageService', service: services.localImageService },
+        { name: 'imageStudioService', service: services.imageStudioService },
+        { name: 'authService', service: services.authService },
+        { name: 'proxyService', service: services.proxyService },
+        { name: 'keyRotationService', service: services.keyRotationService },
+        { name: 'securityService', service: services.securityService },
+        { name: 'workspaceService', service: services.workspaceService },
+        { name: 'logoService', service: logoService },
+        { name: 'inlineSuggestionService', service: services.inlineSuggestionService },
+        { name: 'agentService', service: services.agentService },
+        { name: 'processService', service: services.processService },
+        { name: 'codeIntelligenceService', service: services.codeIntelligenceService },
+        { name: 'extensionService', service: services.extensionService },
+        { name: 'databaseService', service: services.databaseService },
+        { name: 'embeddingService', service: services.embeddingService },
+        { name: 'llamaService', service: services.llamaService },
+        { name: 'memoryService', service: services.memoryService },
+        { name: 'brainService', service: services.brainService },
+        { name: 'fileSystemService', service: services.fileSystemService },
+        { name: 'fileChangeTracker', service: services.fileChangeTracker },
+        { name: 'gitService', service: services.gitService },
+        { name: 'terminalService', service: services.terminalService },
+        { name: 'terminalProfileService', service: services.terminalProfileService },
+        { name: 'terminalSmartService', service: services.terminalSmartService },
+        { name: 'dockerService', service: container.resolve<DockerService>('dockerService') },
+        { name: 'ollamaService', service: services.ollamaService },
+        { name: 'ollamaHealthService', service: services.ollamaHealthService },
+        { name: 'settingsService', service: services.settingsService },
+        { name: 'advancedMemoryService', service: services.advancedMemoryService },
+        { name: 'auditLogService', service: services.auditLogService },
+        { name: 'huggingFaceService', service: services.huggingFaceService },
+        { name: 'multiModelComparisonService', service: services.multiModelComparisonService },
+        { name: 'modelCollaborationService', service: services.modelCollaborationService },
+        { name: 'sessionDirectoryService', service: services.sessionDirectoryService },
+        { name: 'sessionModuleRegistryService', service: services.sessionModuleRegistryService },
+        { name: 'councilCapabilityService', service: services.councilCapabilityService },
+        { name: 'sessionWorkspaceService', service: services.sessionWorkspaceService },
+        { name: 'sessionConversationService', service: services.sessionConversationService },
+        { name: 'workspaceAgentSessionService', service: services.workspaceAgentSessionService },
+        { name: 'toolsService', service: services.toolsService },
+        { name: 'mcpPluginService', service: services.mcpPluginService },
+        { name: 'marketplaceService', service: services.marketplaceService },
+        { name: 'localeService', service: services.localeService },
+        { name: 'usageService', service: services.usageService },
+        { name: 'loggingService', service: services.loggingService },
+        { name: 'dialogService', service: services.dialogService },
+        { name: 'themeService', service: services.themeService },
+        { name: 'updateService', service: container.resolve<UpdateService>('updateService') },
+        { name: 'ipcBatchService', service: services.ipcBatchService },
+    ];
 
-    registerServiceIpc(services.performanceService);
     if (getIsMainProcessReady) {
         services.runtimeBootstrapService.setMainProcessReadyGetter(getIsMainProcessReady);
     }
-    registerServiceIpc(services.runtimeBootstrapService);
 
-    registerServiceIpc(services.healthCheckService);
-    registerServiceIpc(services.localImageService);
+    if (services.ollamaHealthService) {
+        services.settingsService.setOllamaHealthService(services.ollamaHealthService);
+    }
+
+    for (const { name, service } of servicesToRegister) {
+        if (service) { 
+            const ipcMethods = getIpcMethodsForService(service);
+            if (ipcMethods.length === 0) {
+                appLogger.warn('IPC', `Skipping IPC registration for service without @ipc methods: ${name}`);
+                continue;
+            }
+            if (name === 'proxyService' || name === 'keyRotationService' || name === 'agentService' || name === 'databaseService' || name === 'embeddingService' || name === 'llamaService' || name === 'ollamaService' || name === 'ollamaHealthService' || name === 'multiModelComparisonService' || name === 'modelCollaborationService' || name === 'toolsService' || name === 'mcpPluginService') {
+                registerServiceIpc(service, createMainWindowSenderValidator(getMainWindow, `${name} operation`));
+            } else if (name === 'extensionService') {
+                registerServiceIpc(service, getMainWindow);
+            } else {
+                registerServiceIpc(service);
+            }
+        } else {
+            appLogger.warn('IPC', `Service ${name} is missing, skipping IPC registration`);
+        }
+    }
+
+    // Manual fallback for diagnostic purposes - specifically for marketplace:fetch
+    if (services.marketplaceService) {
+        safeHandle('marketplace:fetch', async () => {
+            appLogger.debug('IPC', 'MANUAL marketplace:fetch called via safeHandle');
+            return await services.marketplaceService.fetchRegistryIpc();
+        });
+    }
 
     // Forward SD-CPP events to renderer
     services.eventBusService.on('sd-cpp:status', (status) => {
@@ -91,52 +148,6 @@ export function registerIpcHandlers(
             mainWindow.webContents.send('sd-cpp:progress', progress);
         }
     });
-
-    registerServiceIpc(services.imageStudioService);
-
-    registerServiceIpc(services.authService);
-    registerServiceIpc(services.proxyService, createMainWindowSenderValidator(getMainWindow, 'proxy operation'));
-    registerServiceIpc(services.keyRotationService, createMainWindowSenderValidator(getMainWindow, 'key-rotation operation'));
-    registerServiceIpc(services.securityService);
-
-
-
-    registerServiceIpc(services.workspaceService);
-    registerServiceIpc(logoService);
-    registerServiceIpc(services.inlineSuggestionService);
-    registerServiceIpc(services.agentService, createMainWindowSenderValidator(getMainWindow, 'agent operation'));
-    registerServiceIpc(services.processService);
-    registerServiceIpc(services.codeIntelligenceService);
-
-    registerServiceIpc(services.extensionService, getMainWindow);
-
-    registerServiceIpc(services.databaseService, createMainWindowSenderValidator(getMainWindow, 'database operation'));
-    registerServiceIpc(services.embeddingService, createMainWindowSenderValidator(getMainWindow, 'embedding operation'));
-
-    registerServiceIpc(services.llamaService, createMainWindowSenderValidator(getMainWindow, 'llama operation'));
-    registerServiceIpc(services.memoryService);
-    registerServiceIpc(services.brainService);
-    registerServiceIpc(services.fileSystemService);
-    registerServiceIpc(services.fileChangeTracker);
-
-    // Core services using decorator-based IPC
-    registerServiceIpc(services.gitService);
-    registerServiceIpc(services.terminalService);
-    registerServiceIpc(services.terminalProfileService);
-    registerServiceIpc(services.terminalSmartService);
-    registerServiceIpc(services.dockerService);
-    registerServiceIpc(services.ollamaService, createMainWindowSenderValidator(getMainWindow, 'ollama operation'));
-    registerServiceIpc(services.ollamaHealthService, createMainWindowSenderValidator(getMainWindow, 'ollama health'));
-    services.settingsService.setOllamaHealthService(services.ollamaHealthService);
-    registerServiceIpc(services.settingsService);
-    registerServiceIpc(services.advancedMemoryService);
-
-    registerServiceIpc(services.auditLogService);
-    registerServiceIpc(services.huggingFaceService);
-    registerServiceIpc(services.multiModelComparisonService, createMainWindowSenderValidator(getMainWindow, 'multi-model operation'));
-    registerServiceIpc(services.modelCollaborationService, createMainWindowSenderValidator(getMainWindow, 'collaboration operation'));
-    registerServiceIpc(services.sessionDirectoryService);
-    registerServiceIpc(services.sessionModuleRegistryService);
 
     // Forward Session events to renderer
     services.eventBusService.onCustom('session:event', payload => {
@@ -154,44 +165,7 @@ export function registerIpcHandlers(
         window.webContents.send(SESSION_CHANNELS.EVENT, parsed.data);
     });
 
-    registerServiceIpc(services.councilCapabilityService);
-    registerServiceIpc(services.sessionWorkspaceService);
-    registerServiceIpc(services.sessionConversationService);
-    registerServiceIpc(services.workspaceAgentSessionService);
-
-    registerServiceIpc(services.toolsService, createMainWindowSenderValidator(getMainWindow, 'tools operation'));
-    registerServiceIpc(services.mcpPluginService, createMainWindowSenderValidator(getMainWindow, 'mcp operation'));
-    registerServiceIpc(services.proxyService);
-    appLogger.debug('IPC', 'Registering MarketplaceService IPC...');
-    const mktConstructor = services.marketplaceService?.constructor;
-    const mktMethods = mktConstructor ? (mktConstructor as UnsafeValue)['_ipc_methods'] : null;
-    appLogger.debug('IPC', `MarketplaceService methods found: ${mktMethods ? mktMethods.length : 'NONE'}`);
-    
-    registerServiceIpc(services.marketplaceService);
-    
-    // Manual fallback for diagnostic purposes - specifically for marketplace:fetch
-    if (services.marketplaceService) {
-        safeHandle('marketplace:fetch', async () => {
-            appLogger.debug('IPC', 'MANUAL marketplace:fetch called via safeHandle');
-            return await services.marketplaceService.fetchRegistryIpc();
-        });
-    }
-    
-    appLogger.debug('IPC', 'MarketplaceService IPC registered.');
-    registerServiceIpc(services.localeService);
-    registerServiceIpc(services.usageService);
-
-    registerServiceIpc(services.loggingService);
-
-
-    registerServiceIpc(services.dialogService);
-    registerServiceIpc(services.themeService);
-
-    const updateService = container.resolve<UpdateService>('updateService');
-    registerServiceIpc(updateService);
-
-    // Register Batch IPC
-    registerServiceIpc(services.ipcBatchService);
+    appLogger.info('IPC', 'registerIpcHandlers: DONE');
 }
 
 
@@ -204,16 +178,32 @@ export function registerPostStartupIpcHandlers(
     if (window) {
         services.extensionService.setMainWindow(window);
     }
-    registerServiceIpc(services.exportService, createMainWindowSenderValidator(getMainWindow, 'export operation'));
-    registerServiceIpc(services.promptTemplatesService, createMainWindowSenderValidator(getMainWindow, 'prompt-templates operation'));
-    registerServiceIpc(services.galleryService);
+    if (getIpcMethodsForService(services.exportService).length > 0) {
+        registerServiceIpc(services.exportService, createMainWindowSenderValidator(getMainWindow, 'export operation'));
+    } else {
+        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: exportService');
+    }
+    if (getIpcMethodsForService(services.promptTemplatesService).length > 0) {
+        registerServiceIpc(services.promptTemplatesService, createMainWindowSenderValidator(getMainWindow, 'prompt-templates operation'));
+    } else {
+        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: promptTemplatesService');
+    }
+    if (getIpcMethodsForService(services.galleryService).length > 0) {
+        registerServiceIpc(services.galleryService);
+    } else {
+        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: galleryService');
+    }
 }
 
 export function registerPostInteractiveIpcHandlers(
     services: Services,
     _getMainWindow: () => BrowserWindow | null
 ): void {
-    registerServiceIpc(services.voiceService);
+    if (getIpcMethodsForService(services.voiceService).length > 0) {
+        registerServiceIpc(services.voiceService);
+    } else {
+        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: voiceService');
+    }
 }
 
 export async function registerDeferredIpcHandlers(
@@ -221,5 +211,10 @@ export async function registerDeferredIpcHandlers(
     getMainWindow: () => BrowserWindow | null
 ): Promise<void> {
     const sshService = await services.sshService.resolve();
-    registerServiceIpc(sshService, createMainWindowSenderValidator(getMainWindow, 'ssh operation'));
+    if (getIpcMethodsForService(sshService).length > 0) {
+        registerServiceIpc(sshService, createMainWindowSenderValidator(getMainWindow, 'ssh operation'));
+    } else {
+        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: sshService');
+    }
 }
+

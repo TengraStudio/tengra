@@ -60,3 +60,4 @@ export const DeleteWorkspaceModal: React.FC<DeleteWorkspaceModalProps> = ({ work
         </AnimatePresence>
     );
 };
+

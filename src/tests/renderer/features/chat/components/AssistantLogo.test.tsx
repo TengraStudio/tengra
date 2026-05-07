@@ -40,3 +40,4 @@ describe('AssistantLogo', () => {
         expect(screen.getByAltText('openai')).toBeInTheDocument();
     });
 });
+

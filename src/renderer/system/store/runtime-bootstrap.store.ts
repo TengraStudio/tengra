@@ -9,9 +9,8 @@
  */
 
 import { RuntimeBootstrapExecutionResult } from '@shared/types/system/runtime-manifest';
+import { appLogger } from '@system/utils/renderer-logger';
 import { useSyncExternalStore } from 'react';
-
-import { appLogger } from '@/system/utils/renderer-logger';
 
 interface RuntimeBootstrapStoreState {
     status: RuntimeBootstrapExecutionResult | null;
@@ -185,3 +184,4 @@ export function getOptionalRuntimePrompts(
         return entry.status === 'missing';
     });
 }
+

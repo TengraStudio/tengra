@@ -122,3 +122,4 @@ export const McpCard = ({ plugin, t, onUninstall }: McpCardProps): JSX.Element =
     );
 };
 
+

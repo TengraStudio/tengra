@@ -74,3 +74,4 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
         </div>
     );
 };
+

@@ -53,7 +53,7 @@ export const AccountManager: React.FC = () => {
         if (!newAccountName.trim()) { return; }
         try {
             setIsCreating(true);
-            await window.electron.ipcRenderer.invoke('auth:create-account', newAccountName);
+            await window.electron.auth.createAccount(newAccountName);
             setNewAccountName('');
             await loadAccounts();
             showMessage(t('frontend.accounts.createSuccess', { name: newAccountName }), 'success');
@@ -66,7 +66,7 @@ export const AccountManager: React.FC = () => {
 
     const handleSwitchAccount = async (id: string, name: string) => {
         try {
-            await window.electron.ipcRenderer.invoke('auth:switch-account', id);
+            await window.electron.auth.switchAccount(id);
             setActiveAccountId(id);
             showMessage(t('frontend.accounts.switchSuccess', { name }), 'success');
             setTimeout(() => window.location.reload(), 1000); // Reload to apply changes
@@ -156,3 +156,4 @@ export const AccountManager: React.FC = () => {
         </Card>
     );
 };
+

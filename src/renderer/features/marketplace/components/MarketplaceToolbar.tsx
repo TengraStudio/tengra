@@ -117,7 +117,7 @@ export function MarketplaceToolbar({
                                         : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/30'
                                 )}
                             >
-                                {t(`marketplace.tabs.${tab}`)}
+                                {t(`frontend.marketplace.tabs.${tab}`)}
                             </button>
                         ))}
                     </div>
@@ -256,3 +256,4 @@ export function MarketplaceToolbar({
         </div>
     );
 }
+

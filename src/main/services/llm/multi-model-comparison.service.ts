@@ -17,6 +17,7 @@ import { MemoryContextService } from '@main/services/llm/memory-context.service'
 import { LLMTask, MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { ChatMessage, OpenAIResponse } from '@main/types/llm.types';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { LLM_CHANNELS } from '@shared/constants/ipc-channels';
 import { ServiceResponse } from '@shared/types';
 import { Message as SharedMessage } from '@shared/types/chat';
 import { RuntimeValue } from '@shared/types/common';
@@ -67,7 +68,7 @@ export class MultiModelComparisonService extends BaseService {
         this.memoryContext = new MemoryContextService(advancedMemoryService);
     }
 
-    @ipc('llm:compare-models')
+    @ipc(LLM_CHANNELS.COMPARE_MODELS)
     async compareModelsIpc(requestRaw: RuntimeValue): Promise<RuntimeValue> {
         if (!requestRaw || typeof requestRaw !== 'object') {
             throw new Error('Invalid comparison request');
@@ -173,7 +174,7 @@ export class MultiModelComparisonService extends BaseService {
         // Stateless service; nothing to dispose currently.
     }
 
-    @ipc('llm:get-comparison-history')
+    @ipc(LLM_CHANNELS.GET_COMPARISON_HISTORY)
     async getHistoryIpc(): Promise<RuntimeValue> {
         return serializeToIpc(await this.getHistory());
     }
@@ -182,7 +183,7 @@ export class MultiModelComparisonService extends BaseService {
         return [...this.history];
     }
 
-    @ipc('llm:clear-comparison-history')
+    @ipc(LLM_CHANNELS.CLEAR_COMPARISON_HISTORY)
     async clearHistoryIpc(): Promise<RuntimeValue> {
         return serializeToIpc(await this.clearHistory());
     }
@@ -284,3 +285,4 @@ export class MultiModelComparisonService extends BaseService {
     }
 
 }
+

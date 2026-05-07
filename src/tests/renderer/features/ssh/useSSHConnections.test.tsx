@@ -133,3 +133,4 @@ describe('useSSHConnections', () => {
         expect(result.current.selectedConnectionId).toBeNull();
     });
 });
+

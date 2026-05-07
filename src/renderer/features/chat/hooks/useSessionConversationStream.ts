@@ -9,10 +9,10 @@
  */
 
 import { classifyAiIntent } from '@shared/utils/ai/ai-runtime.util';
+import { appLogger } from '@system/utils/renderer-logger';
 import { useCallback, useRef, useState } from 'react';
 
 import { buildAssistantPresentationMetadata } from '@/features/chat/hooks/ai-runtime-chat.util';
-import { appLogger } from '@/system/utils/renderer-logger';
 import { ChatError, Message } from '@/types';
 
 import {
@@ -135,3 +135,4 @@ export function useSessionConversationStream(
         retry,
     };
 }
+

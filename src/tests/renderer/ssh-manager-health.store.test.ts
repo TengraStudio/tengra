@@ -63,3 +63,4 @@ describe('ssh-manager-health.store', () => {
         expect(snapshot.metrics.channels['ssh.connect'].budgetExceeded).toBe(1);
     });
 });
+

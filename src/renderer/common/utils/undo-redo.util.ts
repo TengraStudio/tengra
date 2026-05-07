@@ -66,3 +66,4 @@ export class UndoRedoStack<T> {
     return structuredClone(this.current);
   }
 }
+

@@ -75,3 +75,4 @@ describe('VoiceControl', () => {
         expect(container.firstChild).toBeTruthy();
     });
 });
+

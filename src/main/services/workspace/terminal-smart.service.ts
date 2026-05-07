@@ -14,6 +14,7 @@ import { BaseService } from '@main/services/base.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
+import { TERMINAL_CHANNELS } from '@shared/constants/ipc-channels';
 import { Message } from '@shared/types/chat';
 
 import { TerminalService } from './terminal.service';
@@ -102,7 +103,7 @@ export class TerminalSmartService extends BaseService {
     /**
      * Get AI-powered command suggestions based on current input and history
      */
-    @ipc('terminal:getSuggestions')
+    @ipc(TERMINAL_CHANNELS.GET_SUGGESTIONS)
     async getSuggestions(options: SuggestionOptions): Promise<string[]> {
         try {
             const { command, shell, cwd, historyLimit = 10 } = options;
@@ -178,7 +179,7 @@ Return as a JSON array of strings.
     /**
      * Explain what a command does in plain language
      */
-    @ipc('terminal:explainCommand')
+    @ipc(TERMINAL_CHANNELS.EXPLAIN_COMMAND)
     async explainCommand(options: ExplainCommandOptions): Promise<ExplainCommandResult> {
         const { command, shell, cwd } = options;
         const TIMEOUT_MS = 30000;
@@ -253,7 +254,7 @@ Return ONLY valid JSON, no markdown or other text.
     /**
      * Explain an error message and provide troubleshooting guidance
      */
-    @ipc('terminal:explainError')
+    @ipc(TERMINAL_CHANNELS.EXPLAIN_ERROR)
     async explainError(options: ExplainErrorOptions): Promise<ExplainErrorResult> {
         const { errorOutput, command, shell, cwd } = options;
         const TIMEOUT_MS = 30000;
@@ -336,7 +337,7 @@ Return ONLY valid JSON, no markdown or other text.
     /**
      * Suggest a fix for a failed command based on the error
      */
-    @ipc('terminal:fixError')
+    @ipc(TERMINAL_CHANNELS.FIX_ERROR)
     async fixError(options: FixErrorOptions): Promise<FixErrorResult> {
         const { errorOutput, command, shell, cwd } = options;
         const TIMEOUT_MS = 30000;
@@ -525,3 +526,4 @@ Return ONLY valid JSON, no markdown or other text.
         });
     }
 }
+

@@ -65,3 +65,4 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = React.memo(({
 });
 
 TypingIndicator.displayName = 'TypingIndicator';
+

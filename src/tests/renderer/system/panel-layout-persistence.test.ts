@@ -47,3 +47,4 @@ describe('panel layout persistence helpers', () => {
         expect(parsed?.groups.bottom?.activePanel).toBe('terminal');
     });
 });
+

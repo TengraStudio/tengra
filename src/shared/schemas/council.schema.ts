@@ -130,3 +130,4 @@ export const QuotaInterruptEventSchema = CouncilEventEnvelopeSchema.extend({
     ),
     message: z.string().min(1),
 });
+

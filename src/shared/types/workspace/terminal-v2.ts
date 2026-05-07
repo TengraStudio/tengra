@@ -95,3 +95,4 @@ export interface TerminalCommand {
     sessionId?: string;
     payload?: RuntimeValue;
 }
+

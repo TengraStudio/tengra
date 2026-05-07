@@ -64,3 +64,4 @@ export function useQuickSwitch(openTabs: EditorTab[]) {
         quickSwitchItems,
     };
 }
+

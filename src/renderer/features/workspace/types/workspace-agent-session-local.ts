@@ -53,3 +53,4 @@ export const EMPTY_COUNCIL_STATE: SessionCouncilState = {
     proposal: [],
     timeline: [],
 };
+

@@ -123,3 +123,4 @@ export function useCodeEditorDirtyDecorations({
         };
     }, [dirtyDecorationColor, editorMounted, editorRef, monacoRef, savedValue]);
 }
+

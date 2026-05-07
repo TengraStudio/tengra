@@ -41,7 +41,7 @@ import { useWorkspaceAgentSessionCouncil } from './useWorkspaceAgentSessionCounc
 import { useWorkspaceAgentSessionManagement } from './useWorkspaceAgentSessionManagement';
 import { useWorkspaceAgentSessionMessaging } from './useWorkspaceAgentSessionMessaging';
 import { useWorkspaceAgentSessionState } from './useWorkspaceAgentSessionState';
-import { useWorkspaceAgentSessionTelemetry } from './useWorkspaceAgentSessionTelemetry';
+import { useWorkspaceAgentSessionStats } from './useWorkspaceAgentSessionStats';
 
 interface UseWorkspaceAgentSessionsOptions {
     workspace: Workspace;
@@ -243,7 +243,7 @@ export function useWorkspaceAgentSessions({
         return Boolean(currentStreamingState);
     }, [currentStreamingState]);
 
-    const { refreshTelemetry } = useWorkspaceAgentSessionTelemetry({
+    const { refreshStats } = useWorkspaceAgentSessionStats({
         currentSessionId,
         currentSession,
         setSessions,
@@ -333,7 +333,7 @@ export function useWorkspaceAgentSessions({
         generateResponse,
         loadWorkspaceSessions,
         refreshCouncilState,
-        refreshTelemetry,
+        refreshStats,
         updateChatCollection,
     });
 
@@ -635,3 +635,4 @@ export function useWorkspaceAgentSessions({
         sendDiscussionMessage,
     };
 }
+

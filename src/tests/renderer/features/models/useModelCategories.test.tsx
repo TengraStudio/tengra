@@ -48,3 +48,4 @@ describe('useModelCategories', () => {
         expect(huggingFaceCategory?.models[0]?.isLocal).toBe(true);
     });
 });
+

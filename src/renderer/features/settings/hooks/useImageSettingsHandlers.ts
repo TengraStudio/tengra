@@ -90,7 +90,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
         setIsDataRefreshing(true);
         try {
             const historyPromise = historySearchQuery.trim().length > 0
-                ? window.electron.ipcRenderer.invoke('sd-cpp:searchHistory', historySearchQuery.trim(), 24)
+                ? window.electron.sdCpp.searchHistory(historySearchQuery.trim(), 24)
                 : window.electron.sdCpp.getHistory(24);
             const [history, presets, schedulesRaw, stats, analytics, templatesRaw] = await Promise.all([
                 historyPromise,
@@ -98,7 +98,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
                 window.electron.sdCpp.listSchedules(),
                 window.electron.sdCpp.getQueueStats(),
                 window.electron.sdCpp.getAnalytics(),
-                window.electron.ipcRenderer.invoke('sd-cpp:listWorkflowTemplates'),
+                window.electron.sdCpp.listWorkflowTemplates(),
             ]);
             setHistoryEntries(Array.isArray(history) ? (history as ImageHistoryEntry[]) : []);
             setPresetEntries(presets);
@@ -215,7 +215,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     const handleExportPresetShare = useCallback(async (id: string) => {
         try {
-            const code = await window.electron.ipcRenderer.invoke('sd-cpp:exportPresetShare', id);
+            const code = await window.electron.sdCpp.exportPresetShare(id);
             setPresetShareCode(String(code));
             await window.electron.clipboard.writeText(String(code));
             setActionMessage(t('common.copied'));
@@ -232,7 +232,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             return;
         }
         try {
-            await window.electron.ipcRenderer.invoke('sd-cpp:importPresetShare', code);
+            await window.electron.sdCpp.importPresetShare(code);
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
@@ -306,7 +306,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             return;
         }
         try {
-            const csv = await window.electron.ipcRenderer.invoke('sd-cpp:exportComparison', {
+            const csv = await window.electron.sdCpp.exportComparison({
                 ids: selectedCompareIds,
                 format: 'csv'
             });
@@ -324,7 +324,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             return;
         }
         try {
-            const code = await window.electron.ipcRenderer.invoke('sd-cpp:shareComparison', selectedCompareIds);
+            const code = await window.electron.sdCpp.shareComparison(selectedCompareIds);
             setComparisonShareCode(String(code));
             await window.electron.clipboard.writeText(String(code));
             setActionMessage(t('common.copied'));
@@ -336,7 +336,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     const handleExportHistory = useCallback(async () => {
         try {
-            const report = await window.electron.ipcRenderer.invoke('sd-cpp:exportHistory', 'json');
+            const report = await window.electron.sdCpp.exportHistory('json');
             await window.electron.clipboard.writeText(String(report));
             setActionMessage(t('common.copied'));
         } catch (error) {
@@ -354,7 +354,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
         }
         try {
             const parsed = JSON.parse(trimmedJson) as Record<string, RendererDataValue>;
-            await window.electron.ipcRenderer.invoke('sd-cpp:saveWorkflowTemplate', {
+            await window.electron.sdCpp.saveWorkflowTemplate({
                 name: trimmedName,
                 workflow: parsed
             });
@@ -370,7 +370,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     const handleDeleteWorkflowTemplate = useCallback(async (id: string) => {
         try {
-            await window.electron.ipcRenderer.invoke('sd-cpp:deleteWorkflowTemplate', id);
+            await window.electron.sdCpp.deleteWorkflowTemplate(id);
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
@@ -381,7 +381,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     const handleExportWorkflowTemplateShare = useCallback(async (id: string) => {
         try {
-            const code = await window.electron.ipcRenderer.invoke('sd-cpp:exportWorkflowTemplateShare', id);
+            const code = await window.electron.sdCpp.exportWorkflowTemplateShare(id);
             setWorkflowShareCode(String(code));
             await window.electron.clipboard.writeText(String(code));
             setActionMessage(t('common.copied'));
@@ -398,7 +398,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             return;
         }
         try {
-            await window.electron.ipcRenderer.invoke('sd-cpp:importWorkflowTemplateShare', code);
+            await window.electron.sdCpp.importWorkflowTemplateShare(code);
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
@@ -560,3 +560,4 @@ function normalizeImageProvider(provider?: string): ImageProvider {
     }
     return 'antigravity';
 }
+

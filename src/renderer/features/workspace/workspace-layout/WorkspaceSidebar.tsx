@@ -77,3 +77,4 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         </div>
     );
 };
+

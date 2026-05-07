@@ -22,6 +22,7 @@ import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { DB_CHANNELS } from '@shared/constants/ipc-channels';
+import { MIGRATION_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     AdvancedSemanticFragment,
     PendingMemory,
@@ -32,7 +33,7 @@ import { Chat, Folder, Message, Prompt, SearchChatsOptions } from '@shared/types
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { AgentProfile } from '@shared/types/council';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
-import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
+import { DbCreateMessageRequest, DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
 import { Workspace } from '@shared/types/workspace';
 import { AppErrorCode, TengraError, ValidationError } from '@shared/utils/error.util';
@@ -204,6 +205,17 @@ interface ShardingConfig {
     shardCount: number;
 }
 
+interface NormalizedMessageRecord extends JsonObject {
+    id: string;
+    chatId: string;
+    role: string;
+    content: string;
+    timestamp: number;
+    provider?: string;
+    model?: string;
+    metadata?: JsonObject;
+}
+
 /**
  * Standardized error codes for DatabaseService
  */
@@ -215,7 +227,7 @@ export enum DatabaseServiceErrorCode {
     CONNECTION_FAILED = 'DB_CONNECTION_FAILED'
 }
 
-export enum DatabaseServiceTelemetryEvent {
+export enum DatabaseServiceUsageStatsEvent {
     QUERY_EXECUTED = 'db_query_executed',
     QUERY_FAILED = 'db_query_failed',
     BATCH_EXECUTED = 'db_batch_executed',
@@ -277,9 +289,30 @@ export class DatabaseService extends BaseService {
         private dataService: DataService,
         private eventBus: EventBusService,
         private dbClient: DatabaseClientService,
-        private readonly mainWindowProvider: () => BrowserWindow | null
+        private readonly mainWindowProvider: () => BrowserWindow | null,
+        private readonly allowedFileRoots?: Set<string>
     ) {
         super('DatabaseService');
+    }
+
+    private syncWorkspaceAllowedRoots(workspace: Partial<Workspace> | null | undefined): void {
+        if (!workspace || !this.allowedFileRoots) {
+            return;
+        }
+
+        if (typeof workspace.path === 'string' && workspace.path.trim().length > 0) {
+            this.allowedFileRoots.add(path.resolve(workspace.path));
+        }
+
+        if (!Array.isArray(workspace.mounts)) {
+            return;
+        }
+
+        for (const mount of workspace.mounts) {
+            if (mount && typeof mount.rootPath === 'string' && mount.rootPath.trim().length > 0) {
+                this.allowedFileRoots.add(path.resolve(mount.rootPath));
+            }
+        }
     }
 
     /** Validates that a value is a non-empty string, throwing with the given label if not. */
@@ -313,11 +346,11 @@ export class DatabaseService extends BaseService {
 
     @ipc(DB_CHANNELS.CREATE_CHAT)
     async createChatIpc(chat: Partial<Chat>): Promise<RuntimeValue> {
-        const result = await this._chats.create(chat as Chat);
+        const result = await this._chats.createChat(chat as Chat);
         return serializeToIpc(result);
     }
 
-    @ipc({ channel: 'db:getAllChats', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.GET_ALL_CHATS, isBatchable: true })
     async getAllChatsIpc(): Promise<RuntimeValue> {
         const result = await this._chats.getAllChats();
         return serializeToIpc(result);
@@ -341,25 +374,25 @@ export class DatabaseService extends BaseService {
         return serializeToIpc(result);
     }
 
-    @ipc({ channel: 'db:bulkDeleteChats', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.BULK_DELETE_CHATS, isBatchable: true })
     async bulkDeleteChatsIpc(ids: string[]): Promise<boolean> {
         await this.bulkDeleteChats(ids);
         return true;
     }
 
-    @ipc({ channel: 'db:bulkArchiveChats', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.BULK_ARCHIVE_CHATS, isBatchable: true })
     async bulkArchiveChatsIpc(ids: string[], isArchived: boolean): Promise<boolean> {
         await this.bulkArchiveChats(ids, isArchived);
         return true;
     }
 
-    @ipc({ channel: 'db:deleteAllChats', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.DELETE_ALL_CHATS, isBatchable: true })
     async deleteAllChatsIpc(): Promise<boolean> {
         const result = await this._chats.deleteAllChats();
         return result.success;
     }
 
-    @ipc({ channel: 'db:deleteChatsByTitle', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.DELETE_CHATS_BY_TITLE, isBatchable: true })
     async deleteChatsByTitleIpc(title: string): Promise<boolean> {
         const result = await this._chats.deleteChatsByTitle(title);
         return result.success;
@@ -402,28 +435,43 @@ export class DatabaseService extends BaseService {
 
     // --- Message IPC Handlers ---
 
-    @ipc({ channel: 'db:getMessages', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.GET_MESSAGES, isBatchable: true })
     async getMessagesIpc(chatId: string): Promise<RuntimeValue> {
         this.validateId(chatId, 'Chat ID');
         const result = await this._chats.getMessages(chatId);
         return serializeToIpc(result);
     }
 
-    @ipc({ channel: 'db:addMessage', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.ADD_MESSAGE, isBatchable: true })
     async addMessageIpc(message: Message): Promise<RuntimeValue> {
-        const result = await this._chats.addMessage(message as unknown as JsonObject);
-        return serializeToIpc(result);
+        const normalizedMessage = this.normalizeMessageRecord(message);
+        const repositoryResult = await this._chats.addMessage(normalizedMessage);
+        if (repositoryResult.success && await this.isMessagePersisted(normalizedMessage.id)) {
+            return serializeToIpc(repositoryResult);
+        }
+
+        const fallbackResult = await this.dbClient.addMessage(this.buildDbClientMessageRecord(normalizedMessage));
+        return serializeToIpc({
+            success: fallbackResult.success,
+            id: fallbackResult.message?.id ?? normalizedMessage.id,
+            error: fallbackResult.error,
+        });
     }
 
-    @ipc({ channel: 'db:updateMessage', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.UPDATE_MESSAGE, isBatchable: true })
     async updateMessageIpc(id: string, updates: Partial<Message>): Promise<boolean> {
         this.validateId(id, 'Message ID');
-        const result = await this._chats.updateMessage(id, updates as unknown as JsonObject);
+        const result = await this._chats.updateMessage(id, this.toJsonObject(updates as RuntimeValue, 'Message updates'));
         return result.success;
     }
 
     @ipc(DB_CHANNELS.DELETE_MESSAGES)
-    async deleteMessagesIpc(ids: string[]): Promise<boolean> {
+    async deleteMessagesIpc(ids: string[] | string): Promise<boolean> {
+        if (typeof ids === 'string') {
+            this.validateId(ids, 'Chat ID');
+            const result = await this._chats.deleteMessagesByChatId(ids);
+            return result.success;
+        }
         this.validateArray(ids, 'Message IDs');
         return this._chats.deleteMessages(ids);
     }
@@ -432,7 +480,7 @@ export class DatabaseService extends BaseService {
     async updateMessageVectorIpc(id: string, vector: number[]): Promise<boolean> {
         this.validateId(id, 'Message ID');
         this.validateArray(vector, 'Vector');
-        const result = await this._chats.updateMessage(id, { vector } as unknown as JsonObject);
+        const result = await this._chats.updateMessage(id, this.toJsonObject({ vector }, 'Message vector'));
         return result.success;
     }
 
@@ -501,6 +549,7 @@ export class DatabaseService extends BaseService {
     @ipc(DB_CHANNELS.GET_WORKSPACES)
     async getWorkspacesIpc(): Promise<RuntimeValue> {
         const result = await this._workspaces.list();
+        result.forEach(workspace => this.syncWorkspaceAllowedRoots(workspace));
         return serializeToIpc(result);
     }
 
@@ -508,12 +557,14 @@ export class DatabaseService extends BaseService {
     async getWorkspaceByIdIpc(id: string): Promise<RuntimeValue> {
         this.validateId(id, 'Workspace ID');
         const result = await this._workspaces.get(id);
+        this.syncWorkspaceAllowedRoots(result);
         return serializeToIpc(result);
     }
 
     @ipc(DB_CHANNELS.CREATE_WORKSPACE)
     async createWorkspaceIpc(workspace: Partial<Workspace>): Promise<RuntimeValue> {
         const result = await this._workspaces.create(workspace as Workspace);
+        this.syncWorkspaceAllowedRoots(result);
         this.notifyWorkspaceUpdate(result.id);
         return serializeToIpc(result);
     }
@@ -523,6 +574,8 @@ export class DatabaseService extends BaseService {
         this.validateId(id, 'Workspace ID');
         const success = await this._workspaces.update(id, updates);
         if (success) {
+            const updatedWorkspace = await this._workspaces.get(id);
+            this.syncWorkspaceAllowedRoots(updatedWorkspace);
             this.notifyWorkspaceUpdate(id);
         }
         return success;
@@ -538,14 +591,14 @@ export class DatabaseService extends BaseService {
         return success;
     }
 
-    @ipc({ channel: 'db:bulkDeleteWorkspaces', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.BULK_DELETE_WORKSPACES, isBatchable: true })
     async bulkDeleteWorkspacesIpc(ids: string[], deleteFiles: boolean = false): Promise<boolean> {
         await this.bulkDeleteWorkspaces(ids, deleteFiles);
         this.notifyWorkspaceUpdate();
         return true;
     }
 
-    @ipc({ channel: 'db:bulkArchiveWorkspaces', isBatchable: true })
+    @ipc({ channel: DB_CHANNELS.BULK_ARCHIVE_WORKSPACES, isBatchable: true })
     async bulkArchiveWorkspacesIpc(ids: string[], isArchived: boolean): Promise<boolean> {
         await this.bulkArchiveWorkspaces(ids, isArchived);
         this.notifyWorkspaceUpdate();
@@ -585,6 +638,134 @@ export class DatabaseService extends BaseService {
         if (!Array.isArray(value)) {
             throw new ValidationError(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] ${label} must be an array`);
         }
+    }
+
+    private toJsonObject(value: RuntimeValue, label: string): JsonObject {
+        const serialized = serializeToIpc(value);
+        if (!serialized || typeof serialized !== 'object' || Array.isArray(serialized)) {
+            throw new ValidationError(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] ${label} must be a JSON object`);
+        }
+        return serialized as JsonObject;
+    }
+
+    private normalizeMessageTimestamp(value: RuntimeValue): number {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value;
+        }
+        if (value instanceof Date) {
+            return value.getTime();
+        }
+        if (typeof value === 'string' && value.trim().length > 0) {
+            const parsed = Date.parse(value);
+            if (!Number.isNaN(parsed)) {
+                return parsed;
+            }
+        }
+        return Date.now();
+    }
+
+    private normalizeMessageContent(value: RuntimeValue): string {
+        if (typeof value === 'string') {
+            return value;
+        }
+        if (Array.isArray(value)) {
+            return value
+                .map(entry => {
+                    if (typeof entry === 'string') {
+                        return entry;
+                    }
+                    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+                        const text = (entry as JsonObject).text;
+                        return typeof text === 'string' ? text : JSON.stringify(entry);
+                    }
+                    return '';
+                })
+                .join('\n')
+                .trim();
+        }
+        if (value === null || typeof value === 'undefined') {
+            return '';
+        }
+        return String(value);
+    }
+
+    private normalizeMessageRecord(message: Message): NormalizedMessageRecord {
+        const rawMessage = this.toJsonObject(message as RuntimeValue, 'Message payload');
+        const chatId = typeof rawMessage.chatId === 'string' && rawMessage.chatId.trim().length > 0
+            ? rawMessage.chatId.trim()
+            : '';
+        if (!chatId) {
+            throw new ValidationError(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] Message payload must include chatId`);
+        }
+
+        const messageId = typeof rawMessage.id === 'string' && rawMessage.id.trim().length > 0
+            ? rawMessage.id.trim()
+            : uuidv4();
+        const role = typeof rawMessage.role === 'string' && rawMessage.role.trim().length > 0
+            ? rawMessage.role.trim()
+            : 'user';
+        const provider = typeof rawMessage.provider === 'string' && rawMessage.provider.trim().length > 0
+            ? rawMessage.provider.trim()
+            : undefined;
+        const model = typeof rawMessage.model === 'string' && rawMessage.model.trim().length > 0
+            ? rawMessage.model.trim()
+            : undefined;
+        const metadata = rawMessage.metadata && typeof rawMessage.metadata === 'object' && !Array.isArray(rawMessage.metadata)
+            ? rawMessage.metadata as JsonObject
+            : undefined;
+
+        return {
+            ...rawMessage,
+            id: messageId,
+            chatId,
+            role,
+            content: this.normalizeMessageContent(rawMessage.content as RuntimeValue),
+            timestamp: this.normalizeMessageTimestamp(rawMessage.timestamp as RuntimeValue),
+            ...(provider ? { provider } : {}),
+            ...(model ? { model } : {}),
+            ...(metadata ? { metadata } : {}),
+        };
+    }
+
+    private buildDbClientMessageRecord(message: NormalizedMessageRecord): DbCreateMessageRequest {
+        const metadata: JsonObject = {
+            ...(message.metadata ?? {}),
+        };
+        for (const field of ['reasoning', 'reasonings', 'toolCalls', 'toolResults', 'responseTime', 'sources', 'images', 'variants', 'attachments', 'recovery', 'usage'] as const) {
+            const value = message[field];
+            if (value !== undefined) {
+                metadata[field] = value as JsonValue;
+            }
+        }
+        if (message.isBookmarked !== undefined) {
+            metadata.isBookmarked = message.isBookmarked as JsonValue;
+        }
+        if (message.isPinned !== undefined) {
+            metadata.isPinned = message.isPinned as JsonValue;
+        }
+        if (message.rating !== undefined) {
+            metadata.rating = message.rating as JsonValue;
+        }
+        if (message.reactions !== undefined) {
+            metadata.reactions = message.reactions as JsonValue;
+        }
+
+        return {
+            id: message.id,
+            chat_id: message.chatId,
+            role: message.role,
+            content: message.content,
+            timestamp: message.timestamp,
+            provider: message.provider,
+            model: message.model,
+            metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+        };
+    }
+
+    private async isMessagePersisted(messageId: string): Promise<boolean> {
+        const adapter = await this.ensureDb();
+        const row = await adapter.prepare('SELECT id FROM messages WHERE id = ? LIMIT 1').get<JsonObject>(messageId);
+        return Boolean(row?.id);
     }
 
     override async initialize(): Promise<void> {
@@ -1026,7 +1207,7 @@ export class DatabaseService extends BaseService {
     }
 
     /** Returns the full migration history with version, name, checksum, and timestamps. */
-    @ipc('migration:history')
+    @ipc(MIGRATION_CHANNELS.HISTORY)
     async getMigrationHistory(): Promise<MigrationHistoryEntry[]> {
         const rows = await this.getMigrationHistoryRows();
         return rows.map(row => ({
@@ -1723,7 +1904,7 @@ export class DatabaseService extends BaseService {
     /** Returns detailed database statistics for the given period. */
     async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily'): Promise<DbDetailedStats> { await this.ensureInitialized(); return this._system.getDetailedStats(period); }
     /** Returns current migration version and last migration timestamp. */
-    @ipc('migration:status')
+    @ipc(MIGRATION_CHANNELS.STATUS)
     async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { await this.ensureInitialized(); return this._system.getMigrationStatus(); }
     /** Records token usage, resolving workspace UUID to path if needed. */
     async addTokenUsage(record: TokenUsageRecord) {
@@ -2076,4 +2257,5 @@ export class DatabaseService extends BaseService {
         return this._system.deleteAgentTemplate(id);
     }
 }
+
 

@@ -9,18 +9,10 @@
  */
 
 import { useCallback } from 'react';
-import { z } from 'zod';
 
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import {
-    explainErrorResultSchema,
-    fixErrorResultSchema,
-    terminalCommandHistoryEntrySchema,
-    type TerminalIpcContract,
-} from '../utils/terminal-ipc';
 import { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 
 import type { AiPanelMode, AiResult } from './useTerminalAI';
@@ -65,15 +57,11 @@ export function useTerminalAiActions({
             setAiResult(null);
 
             try {
-                const result = await invokeTypedIpc<TerminalIpcContract, 'terminal:explainError'>(
-                    'terminal:explainError',
-                    [{
-                        errorOutput: issue.message,
-                        shell: getActiveShellType(),
-                        cwd: workspacePath ?? undefined,
-                    }],
-                    { responseSchema: explainErrorResultSchema }
-                );
+                const result = await window.electron.terminal.explainError({
+                    errorOutput: issue.message,
+                    shell: getActiveShellType(),
+                    cwd: workspacePath ?? undefined,
+                });
                 setAiResult({ type: 'explain-error', data: result });
             } catch (err) {
                 appLogger.error('TerminalPanel', 'Failed to explain error', err as Error);
@@ -102,11 +90,7 @@ export function useTerminalAiActions({
 
             let lastCommand = '';
             try {
-                const history = await invokeTypedIpc<TerminalIpcContract, 'terminal:getCommandHistory'>(
-                    'terminal:getCommandHistory',
-                    ['', 1],
-                    { responseSchema: z.array(terminalCommandHistoryEntrySchema) }
-                );
+                const history = await window.electron.terminal.getCommandHistory('', 1);
                 if (history.length > 0) {
                     lastCommand = history[0]?.command ?? '';
                 }
@@ -115,16 +99,12 @@ export function useTerminalAiActions({
             }
 
             try {
-                const result = await invokeTypedIpc<TerminalIpcContract, 'terminal:fixError'>(
-                    'terminal:fixError',
-                    [{
-                        errorOutput: issue.message,
-                        command: lastCommand,
-                        shell: getActiveShellType(),
-                        cwd: workspacePath ?? undefined,
-                    }],
-                    { responseSchema: fixErrorResultSchema }
-                );
+                const result = await window.electron.terminal.fixError({
+                    errorOutput: issue.message,
+                    command: lastCommand,
+                    shell: getActiveShellType(),
+                    cwd: workspacePath ?? undefined,
+                });
                 setAiResult({ type: 'fix-error', data: result });
             } catch (err) {
                 appLogger.error('TerminalPanel', 'Failed to suggest fix', err as Error);
@@ -174,3 +154,4 @@ export function useTerminalAiActions({
         closeAiPanel,
     };
 }
+

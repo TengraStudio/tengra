@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
+import { FILES_CHANNELS, WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
-    InlineSuggestionTelemetry,
+    InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 import { IpcValue, WorkspaceAnalysis, WorkspaceDefinitionLocation, WorkspaceIssue, WorkspaceStats } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
@@ -42,8 +43,8 @@ export interface WorkspaceBridge {
     applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
     getCompletion: (text: string) => Promise<string>;
     getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
-    trackInlineSuggestionTelemetry: (
-        event: InlineSuggestionTelemetry
+    trackInlineSuggestionUsageStats: (
+        event: InlineSuggestionUsageStats
     ) => Promise<{ success: boolean }>;
     improveLogoPrompt: (prompt: string) => Promise<string>;
     uploadLogo: (workspacePath: string) => Promise<string | null>;
@@ -108,42 +109,42 @@ function unwrapWorkspaceResponse<T>(
 export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
     return {
         analyze: (rootPath, workspaceId) =>
-            ipc.invoke('workspace:analyze', rootPath, workspaceId).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.ANALYZE, rootPath, workspaceId).then(unwrapWorkspaceResponse),
         analyzeSummary: (rootPath, workspaceId) =>
-            ipc.invoke('workspace:analyzeSummary', rootPath, workspaceId).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.ANALYZE_SUMMARY, rootPath, workspaceId).then(unwrapWorkspaceResponse),
         getFileDiagnostics: (rootPath, filePath, content) =>
-            ipc.invoke('workspace:getFileDiagnostics', rootPath, filePath, content).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.GET_FILE_DIAGNOSTICS, rootPath, filePath, content).then(unwrapWorkspaceResponse),
         getFileDefinition: (rootPath, filePath, content, line, column) =>
             ipc.invoke(
-                'workspace:getFileDefinition',
+                WORKSPACE_CHANNELS.GET_FILE_DEFINITION,
                 rootPath,
                 filePath,
                 content,
                 { line, column }
             ).then(unwrapWorkspaceResponse),
         analyzeIdentity: rootPath =>
-            ipc.invoke('workspace:analyzeIdentity', rootPath).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.ANALYZE_IDENTITY, rootPath).then(unwrapWorkspaceResponse),
         generateLogo: (workspacePath, options) =>
-            ipc.invoke('workspace:generateLogo', workspacePath, options).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.GENERATE_LOGO, workspacePath, options).then(unwrapWorkspaceResponse),
         analyzeDirectory: dirPath =>
-            ipc.invoke('workspace:analyzeDirectory', dirPath).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.ANALYZE_DIRECTORY, dirPath).then(unwrapWorkspaceResponse),
         applyLogo: (workspacePath, tempLogoPath) =>
-            ipc.invoke('workspace:applyLogo', workspacePath, tempLogoPath).then(unwrapWorkspaceResponse),
-        getCompletion: text => ipc.invoke('workspace:getCompletion', text).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.APPLY_LOGO, workspacePath, tempLogoPath).then(unwrapWorkspaceResponse),
+        getCompletion: text => ipc.invoke(WORKSPACE_CHANNELS.GET_COMPLETION, text).then(unwrapWorkspaceResponse),
         getInlineSuggestion: request =>
-            ipc.invoke('workspace:getInlineSuggestion', request).then(unwrapWorkspaceResponse),
-        trackInlineSuggestionTelemetry: event =>
-            ipc.invoke('workspace:trackInlineSuggestionTelemetry', event).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.GET_INLINE_SUGGESTION, request).then(unwrapWorkspaceResponse),
+        trackInlineSuggestionUsageStats: event =>
+            ipc.invoke(WORKSPACE_CHANNELS.TRACK_INLINE_SUGGESTION_usageStats, event).then(unwrapWorkspaceResponse),
         improveLogoPrompt: prompt =>
-            ipc.invoke('workspace:improveLogoPrompt', prompt).then(unwrapWorkspaceResponse),
-        uploadLogo: workspacePath => ipc.invoke('workspace:uploadLogo', workspacePath).then(unwrapWorkspaceResponse),
-        watch: rootPath => ipc.invoke('workspace:watch', rootPath).then(unwrapWorkspaceResponse),
-        unwatch: rootPath => ipc.invoke('workspace:unwatch', rootPath).then(unwrapWorkspaceResponse),
-        setActive: rootPath => ipc.invoke('workspace:setActive', rootPath).then(unwrapWorkspaceResponse),
-        clearActive: rootPath => ipc.invoke('workspace:clearActive', rootPath).then(unwrapWorkspaceResponse),
-        getEnv: rootPath => ipc.invoke('workspace:getEnv', rootPath).then(unwrapWorkspaceResponse),
-        saveEnv: (rootPath, vars) => ipc.invoke('workspace:saveEnv', rootPath, vars).then(unwrapWorkspaceResponse),
-        getFileDiff: diffId => ipc.invoke('workspace:getFileDiff', diffId).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.IMPROVE_LOGO_PROMPT, prompt).then(unwrapWorkspaceResponse),
+        uploadLogo: workspacePath => ipc.invoke(WORKSPACE_CHANNELS.UPLOAD_LOGO, workspacePath).then(unwrapWorkspaceResponse),
+        watch: rootPath => ipc.invoke(WORKSPACE_CHANNELS.WATCH, rootPath).then(unwrapWorkspaceResponse),
+        unwatch: rootPath => ipc.invoke(WORKSPACE_CHANNELS.UNWATCH, rootPath).then(unwrapWorkspaceResponse),
+        setActive: rootPath => ipc.invoke(WORKSPACE_CHANNELS.SET_ACTIVE, rootPath).then(unwrapWorkspaceResponse),
+        clearActive: rootPath => ipc.invoke(WORKSPACE_CHANNELS.CLEAR_ACTIVE, rootPath).then(unwrapWorkspaceResponse),
+        getEnv: rootPath => ipc.invoke(WORKSPACE_CHANNELS.GET_ENV, rootPath).then(unwrapWorkspaceResponse),
+        saveEnv: (rootPath, vars) => ipc.invoke(WORKSPACE_CHANNELS.SAVE_ENV, rootPath, vars).then(unwrapWorkspaceResponse),
+        getFileDiff: diffId => ipc.invoke(FILES_CHANNELS.GET_FILE_DIFF, diffId).then(unwrapWorkspaceResponse),
         onFileChange: callback => {
             const listener = (_event: IpcRendererEvent, data: { event: string; path: string; rootPath: string }[] | { event: string; path: string; rootPath: string }) => {
                 const items = Array.isArray(data) ? data : [data];
@@ -151,8 +152,9 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
                     callback(item.event, item.path, item.rootPath);
                 }
             };
-            ipc.on('workspace:file-change', listener);
-            return () => ipc.removeListener('workspace:file-change', listener);
+            ipc.on(WORKSPACE_CHANNELS.FILE_CHANGE_EVENT, listener);
+            return () => ipc.removeListener(WORKSPACE_CHANNELS.FILE_CHANGE_EVENT, listener);
         },
     };
 }
+

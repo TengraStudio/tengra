@@ -331,3 +331,4 @@ export const WorkspaceExplorerRowView: React.FC<WorkspaceExplorerRowProps> = pro
         />
     );
 };
+

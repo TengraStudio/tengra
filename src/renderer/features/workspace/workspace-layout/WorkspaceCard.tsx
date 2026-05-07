@@ -43,7 +43,7 @@ interface WorkspaceCardSurfaceContextValue {
 const WorkspaceCardSurfaceContext = createContext<WorkspaceCardSurfaceContextValue | null>(null);
 const SLOW_WORKSPACE_CARD_RENDER_THRESHOLD_MS = 10;
 const MAX_ENTRANCE_ANIMATION_INDEX = 5;
-const IS_RENDER_TELEMETRY_ENABLED = import.meta.env.DEV || import.meta.env.MODE === 'test';
+const IS_RENDER_usageStats_ENABLED = import.meta.env.DEV || import.meta.env.MODE === 'test';
 
 function useWorkspaceCardSurfaceContext(): WorkspaceCardSurfaceContextValue {
     const context = useContext(WorkspaceCardSurfaceContext);
@@ -246,7 +246,7 @@ export const WorkspaceCard = memo<WorkspaceCardProps>(({
     const animationDelay = index <= MAX_ENTRANCE_ANIMATION_INDEX ? index * 0.02 : 0;
 
     useEffect(() => {
-        if (!IS_RENDER_TELEMETRY_ENABLED) {
+        if (!IS_RENDER_usageStats_ENABLED) {
             return;
         }
 
@@ -313,3 +313,4 @@ export const WorkspaceCard = memo<WorkspaceCardProps>(({
 });
 
 WorkspaceCard.displayName = 'WorkspaceCard';
+

@@ -9,10 +9,10 @@
  */
 
 import { MarketplaceRegistry } from '@shared/types/data/marketplace';
+import { appLogger } from '@system/utils/renderer-logger';
 import { useSyncExternalStore } from 'react';
 
 import { pushNotification } from '@/features/notifications/store/notification-center.store';
-import { appLogger } from '@/system/utils/renderer-logger';
 
 interface MarketplaceState {
     updateCount: number;
@@ -117,3 +117,4 @@ export function useMarketplaceStore<T>(selector: (state: MarketplaceState) => T)
     const state = useSyncExternalStore(marketplaceStore.subscribe, marketplaceStore.getState, marketplaceStore.getState);
     return selector(state);
 }
+

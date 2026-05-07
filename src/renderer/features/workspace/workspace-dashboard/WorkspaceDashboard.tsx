@@ -134,7 +134,6 @@ export const WorkspaceDashboard = ({
                 workspaceRoot={state.workspaceRoot}
                 analysis={analysis}
                 stats={state.stats}
-                loading={state.loading}
                 isEditingName={editing.isEditingName}
                 setIsEditingName={editing.setIsEditingName}
                 editName={editing.editName}
@@ -146,8 +145,6 @@ export const WorkspaceDashboard = ({
                 setEditDesc={editing.setEditDesc}
                 handleSaveDesc={editing.handleSaveDesc}
                 onUploadLogo={onUploadLogo}
-                analyzeWorkspace={actions.analyzeWorkspace}
-                onDelete={onDelete}
                 t={t}
             />
         ),
@@ -230,3 +227,4 @@ export const WorkspaceDashboard = ({
         </div>
     );
 };
+

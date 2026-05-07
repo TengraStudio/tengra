@@ -70,3 +70,4 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ t, statsData }) =>
         </div>
     );
 };
+

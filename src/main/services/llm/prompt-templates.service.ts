@@ -22,6 +22,7 @@ import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { BUILTIN_TEMPLATES, PromptTemplate, renderTemplate as renderUtil } from '@main/utils/prompt-templates.util';
+import { PROMPT_TEMPLATES_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -53,7 +54,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get all templates (builtin + custom)
      */
-    @ipc('prompt-templates:getAll')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.GET_ALL)
     getAllTemplatesIpc(): RuntimeValue {
         return serializeToIpc(this.getAllTemplates());
     }
@@ -65,7 +66,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get templates by category
      */
-    @ipc('prompt-templates:getByCategory')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.GET_BY_CATEGORY)
     getByCategoryIpc(category: RuntimeValue): RuntimeValue {
         if (typeof category !== 'string') {return serializeToIpc([]);}
         return serializeToIpc(this.getByCategory(category));
@@ -78,7 +79,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get templates by tag
      */
-    @ipc('prompt-templates:getByTag')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.GET_BY_TAG)
     getByTagIpc(tag: RuntimeValue): RuntimeValue {
         if (typeof tag !== 'string') {return serializeToIpc([]);}
         return serializeToIpc(this.getByTag(tag));
@@ -91,7 +92,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Search templates by name or description
      */
-    @ipc('prompt-templates:search')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.SEARCH)
     searchIpc(query: RuntimeValue): RuntimeValue {
         if (typeof query !== 'string') {return serializeToIpc([]);}
         return serializeToIpc(this.search(query));
@@ -109,7 +110,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get a template by ID
      */
-    @ipc('prompt-templates:get')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.GET)
     async getTemplateIpc(id: RuntimeValue): Promise<RuntimeValue> {
         if (typeof id !== 'string') {return serializeToIpc(null);}
         return serializeToIpc(this.getTemplate(id) ?? null);
@@ -122,7 +123,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Create a new custom template
      */
-    @ipc('prompt-templates:create')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.CREATE)
     async createTemplateIpc(template: UnsafeValue): Promise<RuntimeValue> {
         return serializeToIpc(await this.createTemplate(template));
     }
@@ -144,7 +145,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Update an existing custom template
      */
-    @ipc('prompt-templates:update')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.UPDATE)
     async updateTemplateIpc(id: RuntimeValue, updates: UnsafeValue): Promise<RuntimeValue> {
         if (typeof id !== 'string') {throw new Error('Invalid template ID');}
         const result = await this.updateTemplate(id, updates);
@@ -175,7 +176,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Delete a custom template
      */
-    @ipc('prompt-templates:delete')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.DELETE)
     async deleteTemplateIpc(id: RuntimeValue): Promise<RuntimeValue> {
         if (typeof id !== 'string') {throw new Error('Invalid template ID');}
         const success = await this.deleteTemplate(id);
@@ -199,7 +200,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Render a template with variables
      */
-    @ipc('prompt-templates:render')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.RENDER)
     async renderTemplateIpc(id: RuntimeValue, variables: UnsafeValue): Promise<RuntimeValue> {
         if (typeof id !== 'string' || !variables || typeof variables !== 'object') {
             return serializeToIpc('');
@@ -221,7 +222,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get all categories
      */
-    @ipc('prompt-templates:getCategories')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.GET_CATEGORIES)
     getCategoriesIpc(): RuntimeValue {
         return serializeToIpc(this.getCategories());
     }
@@ -239,7 +240,7 @@ export class PromptTemplatesService extends BaseService {
     /**
      * Get all tags
      */
-    @ipc('prompt-templates:getTags')
+    @ipc(PROMPT_TEMPLATES_CHANNELS.GET_TAGS)
     getTagsIpc(): RuntimeValue {
         return serializeToIpc(this.getTags());
     }
@@ -297,3 +298,4 @@ export class PromptTemplatesService extends BaseService {
         }
     }
 }
+

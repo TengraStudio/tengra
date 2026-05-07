@@ -175,7 +175,7 @@ export async function getRouteConfig(
         };
     }
 
-    if (p.includes('copilot') || p.includes('github')) {
+    if (p.includes('copilot')) {
         const proxyUrl = buildProxyBaseUrl(deps.proxyService);
         const proxyKey = await deps.proxyService.getProxyKey();
         return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'copilot', temperature: temp, workspaceRoot };
@@ -198,3 +198,5 @@ function buildProxyBaseUrl(proxyService: ProxyService): string {
     const port = proxyStatus.port ?? 8317;
     return `http://127.0.0.1:${port}/v1`;
 }
+
+

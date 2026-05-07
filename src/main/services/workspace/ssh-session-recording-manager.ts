@@ -75,3 +75,4 @@ export class SSHSessionRecordingManager {
         this.sessionRecordings.clear();
     }
 }
+

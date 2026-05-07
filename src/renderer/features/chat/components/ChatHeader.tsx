@@ -120,3 +120,4 @@ export const ChatHeader = memo(({
     );
 });
 ChatHeader.displayName = 'ChatHeader';
+

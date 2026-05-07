@@ -19,6 +19,7 @@ import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
+import { GIT_CHANNELS } from '@shared/constants';
 import {
     gitTreeStatusPreviewArgsSchema,
     gitTreeStatusPreviewResponseSchema,
@@ -228,7 +229,7 @@ export class GitService extends BaseService {
         return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     }
 
-    @ipc('git:getConflicts')
+    @ipc(GIT_CHANNELS.GET_CONFLICTS)
     async getConflicts(cwd: string) {
         const conflicts = await this.parseConflicts(cwd);
         const analytics = conflicts.reduce<Record<string, number>>((acc, item) => {
@@ -239,7 +240,7 @@ export class GitService extends BaseService {
         return { success: true, conflicts, analytics };
     }
 
-    @ipc('git:resolveConflict')
+    @ipc(GIT_CHANNELS.RESOLVE_CONFLICT)
     async resolveConflict(cwd: string, filePath: string, strategy: 'ours' | 'theirs' | 'manual') {
         const safePath = this.shellEscapeQuoted(filePath);
         if (strategy === 'ours') {
@@ -258,7 +259,7 @@ export class GitService extends BaseService {
         return { success: addResult.success, error: addResult.error };
     }
 
-    @ipc('git:openMergeTool')
+    @ipc(GIT_CHANNELS.OPEN_MERGE_TOOL)
     async openMergeTool(cwd: string, filePath?: string) {
         const command = filePath
             ? `mergetool -- "${this.shellEscapeQuoted(filePath)}"`
@@ -272,7 +273,7 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:getStashes')
+    @ipc(GIT_CHANNELS.GET_STASHES)
     async getStashes(cwd: string) {
         const result = await this.executeRaw(
             cwd,
@@ -299,7 +300,7 @@ export class GitService extends BaseService {
         return { success: true, stashes };
     }
 
-    @ipc('git:createStash')
+    @ipc(GIT_CHANNELS.CREATE_STASH)
     async createStash(cwd: string, message?: string, includeUntracked?: boolean) {
         const msg = message ? message.trim() : '';
         const messageArg = msg ? ` -m "${this.shellEscapeQuoted(msg)}"` : '';
@@ -310,7 +311,7 @@ export class GitService extends BaseService {
         return { success: result.success, error: result.error, stdout: result.stdout };
     }
 
-    @ipc('git:applyStash')
+    @ipc(GIT_CHANNELS.APPLY_STASH)
     async applyStash(cwd: string, stashRef: string, pop?: boolean) {
         const command = pop ? `stash pop ${stashRef}` : `stash apply ${stashRef}`;
         const result = await withOperationGuard('git', () => this.executeRaw(cwd, command));
@@ -322,7 +323,7 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:dropStash')
+    @ipc(GIT_CHANNELS.DROP_STASH)
     async dropStash(cwd: string, stashRef: string) {
         const result = await withOperationGuard('git', () =>
             this.executeRaw(cwd, `stash drop ${stashRef}`)
@@ -330,13 +331,13 @@ export class GitService extends BaseService {
         return { success: result.success, error: result.error, stdout: result.stdout };
     }
 
-    @ipc('git:exportStash')
+    @ipc(GIT_CHANNELS.EXPORT_STASH)
     async exportStash(cwd: string, stashRef: string) {
         const result = await this.executeRaw(cwd, `stash show -p ${stashRef}`);
         return { success: result.success, patch: result.stdout ?? '', error: result.error };
     }
 
-    @ipc('git:getRemotes')
+    @ipc(GIT_CHANNELS.GET_REMOTES)
     async getRemotes(cwd: string) {
         try {
             const result = await this.executeRaw(cwd, 'remote -v');
@@ -349,7 +350,7 @@ export class GitService extends BaseService {
         }
     }
 
-    @ipc('git:getTrackingInfo')
+    @ipc(GIT_CHANNELS.GET_TRACKING_INFO)
     async getTrackingInfo(cwd: string) {
         const branchResult = await this.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
         if (!branchResult.success || !branchResult.stdout) {
@@ -375,7 +376,7 @@ export class GitService extends BaseService {
         return this.parseTrackingCounts(countsResult, tracking);
     }
 
-    @ipc('git:getDetailedStatus')
+    @ipc(GIT_CHANNELS.GET_DETAILED_STATUS)
     async getDetailedStatus(cwd: string) {
         // Get staged files
         const stagedResult = await this.executeRaw(cwd, 'diff --cached --name-status');
@@ -429,7 +430,7 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:getDiffStats')
+    @ipc(GIT_CHANNELS.GET_DIFF_STATS)
     async getDiffStats(cwd: string) {
         const stagedResult = await this.executeRaw(cwd, 'diff --cached --numstat');
         const unstagedResult = await this.executeRaw(cwd, 'diff --numstat');
@@ -475,7 +476,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({ 
-        channel: 'git:getBranch', 
+        channel: GIT_CHANNELS.GET_BRANCH, 
         isBatchable: true,
         argsSchema: z.tuple([PathSchema]),
         defaultValue: { success: false, error: 'Not a git repository' }
@@ -493,7 +494,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({ 
-        channel: 'git:getLastCommit', 
+        channel: GIT_CHANNELS.GET_LAST_COMMIT, 
         isBatchable: true,
         argsSchema: z.tuple([PathSchema]),
         defaultValue: { success: false, error: 'No commits found' }
@@ -514,7 +515,7 @@ export class GitService extends BaseService {
         }
     }
 
-    @ipc('git:getBlame')
+    @ipc(GIT_CHANNELS.GET_BLAME)
     async getBlame(cwd: string, filePath: string) {
         const result = await this.executeRaw(
             cwd,
@@ -584,7 +585,7 @@ export class GitService extends BaseService {
         return { success: true, lines: blameLines };
     }
 
-    @ipc('git:getCommitDetails')
+    @ipc(GIT_CHANNELS.GET_COMMIT_DETAILS)
     async getCommitDetails(cwd: string, hash: string) {
         const detailsResult = await this.executeRaw(
             cwd,
@@ -620,12 +621,12 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:getRebaseStatus')
+    @ipc(GIT_CHANNELS.GET_REBASE_STATUS)
     async getRebaseStatus(cwd: string) {
         return this.getRebaseStatusInternal(cwd);
     }
 
-    @ipc('git:getRebasePlan')
+    @ipc(GIT_CHANNELS.GET_REBASE_PLAN)
     async getRebasePlan(cwd: string, baseBranch: string) {
         const result = await this.executeRaw(
             cwd,
@@ -647,7 +648,7 @@ export class GitService extends BaseService {
         return { success: true, commits };
     }
 
-    @ipc('git:getSubmodules')
+    @ipc(GIT_CHANNELS.GET_SUBMODULES)
     async getSubmodules(cwd: string) {
         const statusResult = await this.executeRaw(cwd, 'submodule status --recursive');
         const configResult = await this.executeRaw(
@@ -708,7 +709,7 @@ export class GitService extends BaseService {
         return { success: true, submodules };
     }
 
-    @ipc('git:getTreeStatus')
+    @ipc(GIT_CHANNELS.GET_TREE_STATUS)
     async getTreeStatus(cwd: string, targetPath?: string) {
         try {
             const rootResult = await this.executeRaw(cwd, 'rev-parse --show-toplevel');
@@ -745,7 +746,7 @@ export class GitService extends BaseService {
         }
     }
 
-    @ipc('git:getTreeStatusPreview')
+    @ipc(GIT_CHANNELS.GET_TREE_STATUS_PREVIEW)
     async getTreeStatusPreview(cwd: string, targetPath?: string, options?: { refresh?: boolean }) {
         try {
             const rootResult = await this.executeRaw(cwd, 'rev-parse --show-toplevel');
@@ -890,7 +891,7 @@ export class GitService extends BaseService {
         this.activeOperations.delete(normalizedOperationId);
         return true;
     }
-    @ipc('git:getStagedDiff')
+    @ipc(GIT_CHANNELS.GET_STAGED_DIFF)
     async getStagedDiff(cwd: string) {
         const { stdout, success, error } = await this.executeArgs(['diff', '--staged'], cwd);
         return { success, diff: stdout ?? '', error };
@@ -956,7 +957,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:getStatus',
+        channel: GIT_CHANNELS.GET_STATUS,
         isBatchable: true,
         argsSchema: z.tuple([PathSchema]),
         defaultValue: { success: false, isClean: false, changes: 0, files: [] }
@@ -986,28 +987,28 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:add')
+    @ipc(GIT_CHANNELS.ADD)
     async add(cwd: string, files: string = '.') {
         return await this.executeArgs(['add', '--', files], cwd);
     }
 
-    @ipc('git:commit')
+    @ipc(GIT_CHANNELS.COMMIT)
     async commit(cwd: string, message: string) {
         return await this.executeArgs(['commit', '-m', message], cwd);
     }
 
-    @ipc('git:push')
+    @ipc(GIT_CHANNELS.PUSH)
     async push(cwd: string, remote: string = 'origin', branch: string = 'main') {
         return await this.executeArgs(['push', remote, branch], cwd);
     }
 
-    @ipc('git:pull')
+    @ipc(GIT_CHANNELS.PULL)
     async pull(cwd: string) {
         return await this.execute('pull', cwd);
     }
 
     @ipc({
-        channel: 'git:getRecentCommits',
+        channel: GIT_CHANNELS.GET_RECENT_COMMITS,
         argsSchema: z.tuple([PathSchema, z.number().int().optional(), z.number().int().optional()]),
         defaultValue: { success: true, commits: [] }
     })
@@ -1039,7 +1040,7 @@ export class GitService extends BaseService {
         return { success: true, commits };
     }
 
-    @ipc('git:getCommitDiff')
+    @ipc(GIT_CHANNELS.GET_COMMIT_DIFF)
     async getCommitDiff(cwd: string, hash: string): Promise<{ diff: string; success: boolean; error?: string }> {
         try {
             const { stdout, stderr, success } = await this.execute(`show ${hash}`, cwd);
@@ -1053,7 +1054,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:getBranches',
+        channel: GIT_CHANNELS.GET_BRANCHES,
         isBatchable: true,
         argsSchema: z.tuple([PathSchema]),
         defaultValue: { success: true, branches: [] }
@@ -1074,7 +1075,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:getFileHistory',
+        channel: GIT_CHANNELS.GET_FILE_HISTORY,
         argsSchema: z.tuple([PathSchema, PathSchema, z.number().int().optional()]),
         defaultValue: { success: false, commits: [] }
     })
@@ -1106,7 +1107,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:compareRefs',
+        channel: GIT_CHANNELS.COMPARE_REFS,
         argsSchema: z.tuple([PathSchema, BranchSchema, BranchSchema]),
         defaultValue: { ahead: 0, behind: 0, files: [], success: false }
     })
@@ -1136,7 +1137,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:getHotspots',
+        channel: GIT_CHANNELS.GET_HOTSPOTS,
         argsSchema: z.tuple([PathSchema, z.number().int().optional(), z.number().int().optional()]),
         defaultValue: { success: false, hotspots: [] }
     })
@@ -1166,13 +1167,13 @@ export class GitService extends BaseService {
         return { success: true, hotspots };
     }
 
-    @ipc('git:checkout')
+    @ipc(GIT_CHANNELS.CHECKOUT)
     async checkout(cwd: string, branch: string) {
         return await this.executeArgs(['checkout', branch], cwd);
     }
 
     @ipc({
-        channel: 'git:createBranch',
+        channel: GIT_CHANNELS.CREATE_BRANCH,
         argsSchema: z.tuple([PathSchema, BranchSchema, z.string().optional()]),
         defaultValue: { success: false, error: 'Failed to create branch' }
     })
@@ -1185,7 +1186,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:deleteBranch',
+        channel: GIT_CHANNELS.DELETE_BRANCH,
         argsSchema: z.tuple([PathSchema, BranchSchema, z.boolean().optional()]),
         defaultValue: { success: false, error: 'Failed to delete branch' }
     })
@@ -1195,7 +1196,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:renameBranch',
+        channel: GIT_CHANNELS.RENAME_BRANCH,
         argsSchema: z.tuple([PathSchema, BranchSchema, BranchSchema]),
         defaultValue: { success: false, error: 'Failed to rename branch' }
     })
@@ -1204,7 +1205,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:setUpstream',
+        channel: GIT_CHANNELS.SET_UPSTREAM,
         argsSchema: z.tuple([PathSchema, BranchSchema, SimpleArgSchema, BranchSchema]),
         defaultValue: { success: false, error: 'Failed to set upstream' }
     })
@@ -1212,12 +1213,12 @@ export class GitService extends BaseService {
         return await this.executeArgs(['branch', '--set-upstream-to', `${remote}/${upstreamBranch}`, branch], cwd);
     }
 
-    @ipc('git:executeRaw')
+    @ipc(GIT_CHANNELS.EXECUTE_RAW)
     async executeRaw(cwd: string, command: string, options?: GitExecutionOptions) {
         return await this.execute(command, cwd, options);
     }
 
-    @ipc('git:getFileDiff')
+    @ipc(GIT_CHANNELS.GET_FILE_DIFF)
     async getFileDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ original: string; modified: string; success: boolean; error?: string }> {
         try {
             const command = staged ? `diff --cached -- "${filePath}"` : `diff -- "${filePath}"`;
@@ -1291,7 +1292,7 @@ export class GitService extends BaseService {
         return { o: '', m: '' };
     }
 
-    @ipc('git:getUnifiedDiff')
+    @ipc(GIT_CHANNELS.GET_UNIFIED_DIFF)
     async getUnifiedDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ diff: string; success: boolean; error?: string }> {
         try {
             const command = staged ? `diff --cached -- "${filePath}"` : `diff -- "${filePath}"`;
@@ -1310,7 +1311,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:stageFile',
+        channel: GIT_CHANNELS.STAGE_FILE,
         argsSchema: z.tuple([PathSchema, PathSchema]),
         defaultValue: { success: false, error: 'Failed to stage file' }
     })
@@ -1319,7 +1320,7 @@ export class GitService extends BaseService {
     }
 
     @ipc({
-        channel: 'git:unstageFile',
+        channel: GIT_CHANNELS.UNSTAGE_FILE,
         argsSchema: z.tuple([PathSchema, PathSchema]),
         defaultValue: { success: false, error: 'Failed to unstage file' }
     })
@@ -1327,7 +1328,7 @@ export class GitService extends BaseService {
         return await withOperationGuard('git', () => this.executeArgs(['reset', 'HEAD', '--', filePath], cwd));
     }
 
-    @ipc('git:getFlowStatus')
+    @ipc(GIT_CHANNELS.GET_FLOW_STATUS)
     async getFlowStatus(cwd: string) {
         const currentBranchResult = await this.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
         const branchListResult = await this.executeRaw(
@@ -1349,7 +1350,7 @@ export class GitService extends BaseService {
         return { success: true, currentBranch, byType, branches };
     }
 
-    @ipc('git:startFlowBranch')
+    @ipc(GIT_CHANNELS.START_FLOW_BRANCH)
     async startFlowBranch(cwd: string, type: 'feature' | 'release' | 'hotfix' | 'support', name: string, base: string = 'develop') {
         const branchName = `${type}/${name.replace(/\s+/g, '-')}`;
         const checkoutBase = await withOperationGuard('git', () =>
@@ -1368,7 +1369,7 @@ export class GitService extends BaseService {
         return { success: createBranchResult.success, branch: branchName, error: createBranchResult.error };
     }
 
-    @ipc('git:finishFlowBranch')
+    @ipc(GIT_CHANNELS.FINISH_FLOW_BRANCH)
     async finishFlowBranch(cwd: string, branch: string, target: string = 'develop', shouldDelete: boolean = true) {
         const checkoutTarget = await withOperationGuard('git', () =>
             this.executeRaw(cwd, `checkout ${target}`)
@@ -1394,7 +1395,7 @@ export class GitService extends BaseService {
         return { success: true };
     }
 
-    @ipc('git:getHooks')
+    @ipc(GIT_CHANNELS.GET_HOOKS)
     async getHooks(cwd: string) {
         const hooks = await this.listHooks(cwd);
         return {
@@ -1404,7 +1405,7 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:installHook')
+    @ipc(GIT_CHANNELS.INSTALL_HOOK)
     async installHook(cwd: string, hookName: typeof SUPPORTED_HOOKS[number], templateRaw?: string) {
         const gitDir = await this.getGitDirPath(cwd);
         if (!gitDir) {
@@ -1425,7 +1426,7 @@ export class GitService extends BaseService {
         return { success: true, hookPath };
     }
 
-    @ipc('git:validateHook')
+    @ipc(GIT_CHANNELS.VALIDATE_HOOK)
     async validateHook(cwd: string, hookName: typeof SUPPORTED_HOOKS[number]) {
         const gitDir = await this.getGitDirPath(cwd);
         if (!gitDir) {
@@ -1449,7 +1450,7 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:testHook')
+    @ipc(GIT_CHANNELS.TEST_HOOK)
     async testHook(cwd: string, hookName: typeof SUPPORTED_HOOKS[number]) {
         const gitDir = await this.getGitDirPath(cwd);
         if (!gitDir) {
@@ -1470,7 +1471,7 @@ export class GitService extends BaseService {
         }
     }
 
-    @ipc('git:getRepositoryStats')
+    @ipc(GIT_CHANNELS.GET_REPOSITORY_STATS)
     async getRepositoryStats(cwd: string, days?: number) {
         const safeDays =
             Number.isFinite(days) && days! > 0 ? Math.min(Math.trunc(days!), 3650) : 365;
@@ -1536,7 +1537,7 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:exportRepositoryStats')
+    @ipc(GIT_CHANNELS.EXPORT_REPOSITORY_STATS)
     async exportRepositoryStats(cwd: string, days?: number) {
         const safeDays =
             Number.isFinite(days) && days! > 0 ? Math.min(Math.trunc(days!), 3650) : 365;
@@ -1555,7 +1556,7 @@ export class GitService extends BaseService {
         };
     }
 
-    @ipc('git:generatePrSummary')
+    @ipc(GIT_CHANNELS.GENERATE_PR_SUMMARY)
     async generatePrSummary(cwd: string, base: string, head: string) {
         try {
             if (!this.llmService) {
@@ -1596,7 +1597,7 @@ ${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
     }
 
     @ipc({
-        channel: 'git:runControlledOperation',
+        channel: GIT_CHANNELS.RUN_CONTROLLED_OPERATION,
         argsSchema: z.tuple([PathSchema, ControlledCommandSchema, OperationIdSchema.optional(), z.number().int().min(1000).max(600000).optional()]),
         defaultValue: { success: false, error: 'Failed to run controlled operation' }
     })
@@ -1613,7 +1614,7 @@ ${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
         );
     }
 
-    @ipc('git:cancelOperation')
+    @ipc(GIT_CHANNELS.CANCEL_OPERATION)
     ipcCancelOperation(operationId: string) {
         const cancelled = this.cancelOperation(operationId);
         return {
@@ -1677,7 +1678,7 @@ ${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
     }
 
     @ipc({
-        channel: 'git:isRepository',
+        channel: GIT_CHANNELS.IS_REPOSITORY,
         argsSchema: z.tuple([PathSchema]),
         defaultValue: { success: true, isRepository: false }
     })
@@ -1709,7 +1710,7 @@ ${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
             });
     }
 
-    @ipc('git:getCommitStats')
+    @ipc(GIT_CHANNELS.GET_COMMIT_STATS)
     async getCommitStats(cwd: string, days: number = 30) {
         const result = await this.executeRaw(
             cwd,
@@ -1765,3 +1766,4 @@ ${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
         return remotes;
     }
 }
+

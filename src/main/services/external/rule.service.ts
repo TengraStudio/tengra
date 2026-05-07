@@ -67,3 +67,4 @@ export class RuleService {
         this.cache.delete(workspaceId);
     }
 }
+

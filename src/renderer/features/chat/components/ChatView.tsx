@@ -136,7 +136,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
             }));
         };
 
-        const openDiff = async (path: string) => {
+        const openDiff = async (path: string, diffId?: string) => {
             const tabId = `diff:${path}`;
             setPreviewTabs(prev => {
                 const existing = prev.find(t => t.id === tabId);
@@ -146,6 +146,26 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                 return [...prev, createLoadingDiffTab(path)];
             });
             setActivePreviewTabId(tabId);
+
+            if (typeof diffId === 'string' && diffId.trim().length > 0) {
+                const trackedDiff = await window.electron.files.getFileDiff(diffId);
+                setPreviewTabs(prev => prev.map(t => {
+                    if (t.id !== tabId || t.kind !== 'diff') {
+                        return t;
+                    }
+                    if (!trackedDiff.success || !trackedDiff.data) {
+                        return { ...t, loading: false, error: trackedDiff.error || 'Failed to load diff' };
+                    }
+                    return {
+                        ...t,
+                        loading: false,
+                        error: undefined,
+                        original: trackedDiff.data.oldValue,
+                        modified: trackedDiff.data.newValue,
+                    };
+                }));
+                return;
+            }
 
             const cwd = (() => {
                 const parts = (path ?? '').split(/[\\/]/).filter(Boolean);
@@ -182,7 +202,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
             if (action.type === 'open_file') {
                 void openFile(action.path, action.readOnly);
             } else if (action.type === 'open_diff') {
-                void openDiff(action.path);
+                void openDiff(action.path, action.diffId);
             }
         };
 
@@ -330,3 +350,4 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
 });
 
 ChatView.displayName = 'ChatView';
+

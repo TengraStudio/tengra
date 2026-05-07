@@ -38,3 +38,4 @@ export type {
     VoiceShortcut,
     VoiceSynthesisOptions,
 } from '@shared/types/voice';
+

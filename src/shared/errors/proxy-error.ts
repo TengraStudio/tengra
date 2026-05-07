@@ -35,3 +35,4 @@ export class ProxyError extends AppError {
     this.recoverable = recoverable;
   }
 }
+

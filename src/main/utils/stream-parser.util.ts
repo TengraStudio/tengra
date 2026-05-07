@@ -553,18 +553,17 @@ export class StreamParser {
         return [];
     }
 
-    private static extractOpenCodeImageUrl(value: unknown): string | null {
+    private static extractOpenCodeImageUrl(value: string | { url?: string } | undefined): string | null {
         if (typeof value === 'string' && value.trim().length > 0) {
             return value.trim();
         }
         if (
             value
             && typeof value === 'object'
-            && !Array.isArray(value)
-            && typeof (value as { url?: unknown }).url === 'string'
-            && (value as { url: string }).url.trim().length > 0
+            && typeof value.url === 'string'
+            && value.url.trim().length > 0
         ) {
-            return (value as { url: string }).url.trim();
+            return value.url.trim();
         }
         return null;
     }
@@ -818,3 +817,4 @@ type StreamPayload = OpenAIStreamPayload & {
         total_tokens: number;
     };
 };
+

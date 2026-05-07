@@ -191,3 +191,4 @@ export function buildGitRemoteLinks(remotes: Remote[], currentBranch: string | n
         }];
     });
 }
+

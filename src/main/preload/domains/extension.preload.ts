@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { EXTENSION_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface ExtensionBridge {
@@ -31,30 +32,37 @@ export interface ExtensionBridge {
     validate: (manifest: Record<string, RuntimeValue>) => Promise<{ valid: boolean; errors: string[] }>;
     getConfig: (extensionId: string) => Promise<{ success: boolean; config?: Record<string, RuntimeValue>; error?: string }>;
     updateConfig: (extensionId: string, config: Record<string, RuntimeValue>) => Promise<{ success: boolean; config?: Record<string, RuntimeValue>; error?: string }>;
+    onLogUpdate: (callback: (log: any) => void) => () => void;
 }
 
 export function createExtensionBridge(ipc: IpcRenderer): ExtensionBridge {
     return {
-        shouldShowWarning: () => ipc.invoke('extension:shouldShowWarning'),
-        dismissWarning: () => ipc.invoke('extension:dismissWarning'),
-        getStatus: () => ipc.invoke('extension:getStatus'),
+        shouldShowWarning: () => ipc.invoke(EXTENSION_CHANNELS.SHOULD_SHOW_WARNING),
+        dismissWarning: () => ipc.invoke(EXTENSION_CHANNELS.DISMISS_WARNING),
+        getStatus: () => ipc.invoke(EXTENSION_CHANNELS.GET_STATUS),
         setInstalled: installed =>
-            ipc.invoke('extension:setInstalled', installed),
-        getAll: () => ipc.invoke('extension:get-all'),
-        get: extensionId => ipc.invoke('extension:get', extensionId),
-        install: extensionPath => ipc.invoke('extension:install', extensionPath),
-        uninstall: extensionId => ipc.invoke('extension:uninstall', extensionId),
-        activate: extensionId => ipc.invoke('extension:activate', extensionId),
-        deactivate: extensionId => ipc.invoke('extension:deactivate', extensionId),
-        devStart: options => ipc.invoke('extension:dev-start', options),
-        devStop: extensionId => ipc.invoke('extension:dev-stop', extensionId),
-        devReload: extensionId => ipc.invoke('extension:dev-reload', extensionId),
-        test: options => ipc.invoke('extension:test', options),
-        publish: options => ipc.invoke('extension:publish', options),
-        getProfile: extensionId => ipc.invoke('extension:get-profile', extensionId),
-        getState: extensionId => ipc.invoke('extension:get-state', extensionId),
-        validate: manifest => ipc.invoke('extension:validate', manifest),
-        getConfig: extensionId => ipc.invoke('extension:get-config', extensionId),
-        updateConfig: (extensionId, config) => ipc.invoke('extension:update-config', extensionId, config),
+            ipc.invoke(EXTENSION_CHANNELS.SET_INSTALLED, installed),
+        getAll: () => ipc.invoke(EXTENSION_CHANNELS.GET_ALL),
+        get: extensionId => ipc.invoke(EXTENSION_CHANNELS.GET, extensionId),
+        install: extensionPath => ipc.invoke(EXTENSION_CHANNELS.INSTALL, extensionPath),
+        uninstall: extensionId => ipc.invoke(EXTENSION_CHANNELS.UNINSTALL, extensionId),
+        activate: extensionId => ipc.invoke(EXTENSION_CHANNELS.ACTIVATE, extensionId),
+        deactivate: extensionId => ipc.invoke(EXTENSION_CHANNELS.DEACTIVATE, extensionId),
+        devStart: options => ipc.invoke(EXTENSION_CHANNELS.DEV_START, options),
+        devStop: extensionId => ipc.invoke(EXTENSION_CHANNELS.DEV_STOP, extensionId),
+        devReload: extensionId => ipc.invoke(EXTENSION_CHANNELS.DEV_RELOAD, extensionId),
+        test: options => ipc.invoke(EXTENSION_CHANNELS.TEST, options),
+        publish: options => ipc.invoke(EXTENSION_CHANNELS.PUBLISH, options),
+        getProfile: extensionId => ipc.invoke(EXTENSION_CHANNELS.GET_PROFILE, extensionId),
+        getState: extensionId => ipc.invoke(EXTENSION_CHANNELS.GET_STATE, extensionId),
+        validate: manifest => ipc.invoke(EXTENSION_CHANNELS.VALIDATE, manifest),
+        getConfig: extensionId => ipc.invoke(EXTENSION_CHANNELS.GET_CONFIG, extensionId),
+        updateConfig: (extensionId, config) => ipc.invoke(EXTENSION_CHANNELS.UPDATE_CONFIG, extensionId, config),
+        onLogUpdate: callback => {
+            const listener = (_event: any, log: any) => callback(log);
+            ipc.on(EXTENSION_CHANNELS.LOG_UPDATE, listener);
+            return () => ipc.removeListener(EXTENSION_CHANNELS.LOG_UPDATE, listener);
+        },
     };
 }
+

@@ -148,3 +148,4 @@ function formatLabel(slug: string): string {
         })
         .join(' ');
 }
+

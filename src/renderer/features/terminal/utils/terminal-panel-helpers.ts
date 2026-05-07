@@ -166,3 +166,4 @@ export function resolveSecondarySplitTabId(
 ): string | undefined {
     return tabs.find(tab => tab.id !== activeId)?.id;
 }
+

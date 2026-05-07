@@ -107,3 +107,4 @@ export const SetupFooter: React.FC<SetupFooterProps> = ({
         </div>
     );
 };
+

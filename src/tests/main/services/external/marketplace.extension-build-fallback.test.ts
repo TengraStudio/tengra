@@ -137,3 +137,4 @@ describe('MarketplaceService extension build fallback helpers', () => {
         expect(converted).toBe(original);
     });
 });
+

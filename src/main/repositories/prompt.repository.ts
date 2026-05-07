@@ -42,3 +42,4 @@ export class PromptRepository implements IRepository<Prompt> {
         return true;
     }
 }
+

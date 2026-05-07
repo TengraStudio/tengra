@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { COLLABORATION_CHANNELS, COLLABORATION_SYNC_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     CollaborationResponseSchema,
     CollaborationSyncUpdateSchema,
@@ -29,31 +30,32 @@ export interface LiveCollaborationBridge {
 
 export function createLiveCollaborationBridge(ipc: IpcRenderer): LiveCollaborationBridge {
     return {
-        joinRoom: request => ipc.invoke('collaboration:sync:join', request),
-        sendUpdate: request => ipc.invoke('collaboration:sync:send', request),
-        leaveRoom: roomId => ipc.invoke('collaboration:sync:leave', roomId),
+        joinRoom: request => ipc.invoke(COLLABORATION_CHANNELS.SYNC_JOIN, request),
+        sendUpdate: request => ipc.invoke(COLLABORATION_CHANNELS.SYNC_SEND, request),
+        leaveRoom: roomId => ipc.invoke(COLLABORATION_CHANNELS.SYNC_LEAVE, roomId),
 
         onJoined: callback => {
             const listener = (_: RuntimeValue, payload: { roomId: string }) => callback(payload);
-            ipc.on('collaboration:sync:joined', listener);
-            return () => ipc.removeListener('collaboration:sync:joined', listener);
+            ipc.on(COLLABORATION_SYNC_CHANNELS.JOINED, listener);
+            return () => ipc.removeListener(COLLABORATION_SYNC_CHANNELS.JOINED, listener);
         },
         onLeft: callback => {
             const listener = (_: RuntimeValue, payload: { roomId: string }) => callback(payload);
-            ipc.on('collaboration:sync:left', listener);
-            return () => ipc.removeListener('collaboration:sync:left', listener);
+            ipc.on(COLLABORATION_SYNC_CHANNELS.LEFT, listener);
+            return () => ipc.removeListener(COLLABORATION_SYNC_CHANNELS.LEFT, listener);
         },
         onSyncUpdate: callback => {
             const listener = (_: IpcRendererEvent, payload: { roomId: string, data: string | Uint8Array }) => callback(payload);
-            ipc.on('collaboration:sync:update', listener);
-            return () => ipc.removeListener('collaboration:sync:update', listener);
+            ipc.on(COLLABORATION_SYNC_CHANNELS.UPDATE, listener);
+            return () => ipc.removeListener(COLLABORATION_SYNC_CHANNELS.UPDATE, listener);
         },
         onError: callback => {
             const listener = (_: RuntimeValue, payload: { roomId: string, error: string }) => callback(payload);
-            ipc.on('collaboration:sync:error', listener);
-            return () => ipc.removeListener('collaboration:sync:error', listener);
+            ipc.on(COLLABORATION_SYNC_CHANNELS.ERROR, listener);
+            return () => ipc.removeListener(COLLABORATION_SYNC_CHANNELS.ERROR, listener);
         }
     };
 }
 
 export const createUserCollaborationBridge = createLiveCollaborationBridge;
+

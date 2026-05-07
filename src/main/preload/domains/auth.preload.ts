@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
+import { AUTH_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface AuthBridge {
-    githubLogin: (appId?: 'profile' | 'copilot') => Promise<{
+    githubLogin: (appId?: 'copilot') => Promise<{
         device_code: string;
         user_code: string;
         verification_uri: string;
@@ -21,7 +22,7 @@ export interface AuthBridge {
     pollToken: (
         deviceCode: string,
         interval: number,
-        appId?: 'profile' | 'copilot'
+        appId?: 'copilot'
     ) => Promise<{
         success: boolean;
         account?: {
@@ -32,12 +33,23 @@ export interface AuthBridge {
         };
         error?: string;
     }>;
+    createAccount: (name: string) => Promise<{ success: boolean; error?: string }>;
+    switchAccount: (id: string) => Promise<{ success: boolean; error?: string }>;
+    onAccountChanged: (callback: () => void) => () => void;
 }
 
 export function createAuthBridge(ipc: IpcRenderer): AuthBridge {
     return {
-        githubLogin: (appId?: 'profile' | 'copilot') => ipc.invoke('auth:github-login', appId),
-        pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') =>
-            ipc.invoke('auth:poll-token', deviceCode, interval, appId),
+        githubLogin: (appId?: 'copilot') => ipc.invoke(AUTH_CHANNELS.GITHUB_LOGIN, appId),
+        pollToken: (deviceCode: string, interval: number, appId?: 'copilot') =>
+            ipc.invoke(AUTH_CHANNELS.POLL_TOKEN, deviceCode, interval, appId),
+        createAccount: (name: string) => ipc.invoke(AUTH_CHANNELS.CREATE_ACCOUNT, name),
+        switchAccount: (id: string) => ipc.invoke(AUTH_CHANNELS.SWITCH_ACCOUNT, id),
+        onAccountChanged: callback => {
+            const listener = () => callback();
+            ipc.on(AUTH_CHANNELS.ACCOUNT_CHANGED_EVENT, listener);
+            return () => ipc.removeListener(AUTH_CHANNELS.ACCOUNT_CHANGED_EVENT, listener);
+        },
     };
 }
+

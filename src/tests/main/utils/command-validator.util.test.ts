@@ -42,3 +42,4 @@ describe('command-validator.util', () => {
         expect(result.allowed).toBe(false);
     });
 });
+

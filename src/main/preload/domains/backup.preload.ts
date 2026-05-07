@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { BACKUP_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface BackupBridge {
@@ -99,20 +100,21 @@ export interface BackupBridge {
 
 export function createBackupBridge(ipc: IpcRenderer): BackupBridge {
     return {
-        create: options => ipc.invoke('backup:create', options),
-        restore: (backupPath, options) => ipc.invoke('backup:restore', backupPath, options),
-        list: () => ipc.invoke('backup:list'),
-        delete: backupPath => ipc.invoke('backup:delete', backupPath),
-        getDir: () => ipc.invoke('backup:getDir'),
-        getAutoBackupStatus: () => ipc.invoke('backup:getAutoBackupStatus'),
-        configureAutoBackup: config => ipc.invoke('backup:configureAutoBackup', config),
-        cleanup: () => ipc.invoke('backup:cleanup'),
-        verify: backupPath => ipc.invoke('backup:verify', backupPath),
+        create: options => ipc.invoke(BACKUP_CHANNELS.CREATE, options),
+        restore: (backupPath, options) => ipc.invoke(BACKUP_CHANNELS.RESTORE, backupPath, options),
+        list: () => ipc.invoke(BACKUP_CHANNELS.LIST),
+        delete: backupPath => ipc.invoke(BACKUP_CHANNELS.DELETE, backupPath),
+        getDir: () => ipc.invoke(BACKUP_CHANNELS.GET_DIR),
+        getAutoBackupStatus: () => ipc.invoke(BACKUP_CHANNELS.GET_AUTO_BACKUP_STATUS),
+        configureAutoBackup: config => ipc.invoke(BACKUP_CHANNELS.CONFIGURE_AUTO_BACKUP, config),
+        cleanup: () => ipc.invoke(BACKUP_CHANNELS.CLEANUP),
+        verify: backupPath => ipc.invoke(BACKUP_CHANNELS.VERIFY, backupPath),
         syncToCloudDir: (backupPath, targetDir) =>
-            ipc.invoke('backup:syncToCloudDir', backupPath, targetDir),
+            ipc.invoke(BACKUP_CHANNELS.SYNC_TO_CLOUD_DIR, backupPath, targetDir),
         createDisasterRecoveryBundle: targetDir =>
-            ipc.invoke('backup:createDisasterRecoveryBundle', targetDir),
+            ipc.invoke(BACKUP_CHANNELS.CREATE_DISASTER_RECOVERY_BUNDLE, targetDir),
         restoreDisasterRecoveryBundle: bundlePath =>
-            ipc.invoke('backup:restoreDisasterRecoveryBundle', bundlePath),
+            ipc.invoke(BACKUP_CHANNELS.RESTORE_DISASTER_RECOVERY_BUNDLE, bundlePath),
     };
 }
+

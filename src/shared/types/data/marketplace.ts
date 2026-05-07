@@ -256,3 +256,4 @@ export interface IndexedModel {
     item: MarketplaceModel;
     order: number;
 }
+

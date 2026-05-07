@@ -136,3 +136,4 @@ export const registerProtocols = (allowedFileRoots: Set<string>): void => {
 
     appLogger.info('Protocols', 'Custom protocols registered');
 };
+

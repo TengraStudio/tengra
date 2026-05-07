@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { AUDIT_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -31,6 +32,7 @@ export interface AuditBridge {
 export function createAuditBridge(ipc: IpcRenderer): AuditBridge {
     return {
         getLogs: (startDate, endDate, category) =>
-            ipc.invoke('audit:get-logs', { startDate, endDate, category }),
+            ipc.invoke(AUDIT_CHANNELS.GET_LOGS, { startDate, endDate, category }),
     };
 }
+

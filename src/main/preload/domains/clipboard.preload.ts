@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { CLIPBOARD_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface ClipboardBridge {
@@ -17,7 +18,8 @@ export interface ClipboardBridge {
 
 export function createClipboardBridge(ipc: IpcRenderer): ClipboardBridge {
     return {
-        writeText: text => ipc.invoke('clipboard:writeText', text),
-        readText: () => ipc.invoke('clipboard:readText'),
+        writeText: text => ipc.invoke(CLIPBOARD_CHANNELS.WRITE_TEXT, text),
+        readText: () => ipc.invoke(CLIPBOARD_CHANNELS.READ_TEXT),
     };
 }
+

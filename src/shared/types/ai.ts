@@ -52,3 +52,4 @@ export type AIProvider =
     | 'copilot'
     | 'cursor'
     | 'kimi'
+

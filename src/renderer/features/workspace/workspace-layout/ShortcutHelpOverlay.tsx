@@ -37,3 +37,4 @@ export const ShortcutHelpOverlay: React.FC<ShortcutHelpOverlayProps> = ({ visibl
         </div>
     );
 };
+

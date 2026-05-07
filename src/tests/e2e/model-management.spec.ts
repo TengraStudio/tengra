@@ -130,3 +130,4 @@ test.describe('Model Settings Tab E2E', () => {
         await expect(appWindow.locator('.settings-container')).not.toBeVisible();
     });
 });
+

@@ -16,6 +16,7 @@ import { McpDispatchResult } from '@main/mcp/types';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withOperationGuard } from '@main/utils/common/operation-wrapper.util';
+import { MCP_CHANNELS, MCP_PERMISSIONS_CHANNELS } from '@shared/constants/ipc-channels';
 import { ToolDefinition } from '@shared/types/ai/chat';
 import { JsonObject } from '@shared/types/common';
 import { AppSettings, McpPermission, MCPServerConfig } from '@shared/types/system/settings';
@@ -103,7 +104,7 @@ export class McpDispatcherService {
         private pluginService: McpPluginService
     ) { }
 
-    @ipc('mcp:list')
+    @ipc(MCP_CHANNELS.LIST)
     async listServices() {
         if (!this.pluginService) {
             return [];
@@ -183,7 +184,7 @@ export class McpDispatcherService {
         return tools;
     }
 
-    @ipc('mcp:dispatch')
+    @ipc(MCP_CHANNELS.DISPATCH)
     async handleDispatch(serviceName: string, actionName: string, args: JsonObject) {
         const result = await this.dispatch(serviceName, actionName, args);
         return result;
@@ -205,7 +206,7 @@ export class McpDispatcherService {
         return this.pluginService.dispatch(serviceName, actionName, args);
     }
 
-    @ipc('mcp:debug-metrics')
+    @ipc(MCP_CHANNELS.DEBUG_METRICS)
     async getDebugMetrics() {
         if (!this.pluginService) {
             return [];
@@ -213,12 +214,12 @@ export class McpDispatcherService {
         return this.pluginService.getDispatchMetrics();
     }
 
-    @ipc('mcp:permissions:list-requests')
+    @ipc(MCP_PERMISSIONS_CHANNELS.LIST_REQUESTS)
     async getPermissionRequests(): Promise<McpPermissionRequest[]> {
         return this.settingsService.getSettings().mcpPermissionRequests ?? [];
     }
 
-    @ipc('mcp:permissions:set')
+    @ipc(MCP_PERMISSIONS_CHANNELS.SET)
     async setActionPermission(service: string, action: string, policy: McpActionPolicy) {
         const settings = this.settingsService.getSettings();
         const requestStatus: McpPermissionRequest['status'] =
@@ -244,7 +245,7 @@ export class McpDispatcherService {
         return { success: true };
     }
 
-    @ipc('mcp:permissions:resolve-request')
+    @ipc(MCP_PERMISSIONS_CHANNELS.RESOLVE_REQUEST)
     async resolvePermissionRequest(requestId: string, decision: 'approved' | 'denied') {
         const settings = this.settingsService.getSettings();
         const requests = settings.mcpPermissionRequests ?? [];
@@ -363,7 +364,7 @@ export class McpDispatcherService {
         ];
     }
 
-    @ipc('mcp:install')
+    @ipc(MCP_CHANNELS.INSTALL)
     async installService(config: McpInstallConfig) {
         if (!this.pluginService) {
             return { success: false };
@@ -380,7 +381,7 @@ export class McpDispatcherService {
         }
     }
 
-    @ipc('mcp:uninstall')
+    @ipc(MCP_CHANNELS.UNINSTALL)
     async uninstallService(name: string) {
         if (!this.pluginService) {
             return { success: false };
@@ -389,7 +390,7 @@ export class McpDispatcherService {
         return { success: true };
     }
 
-    @ipc('mcp:toggle')
+    @ipc(MCP_CHANNELS.TOGGLE)
     async toggleService(name: string, enabled: boolean) {
         const settings = this.settingsService.getSettings();
         let disabled = [...(settings.mcpDisabledServers ?? [])];
@@ -406,3 +407,4 @@ export class McpDispatcherService {
         return { success: true, isEnabled: enabled };
     }
 }
+

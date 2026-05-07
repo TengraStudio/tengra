@@ -559,3 +559,4 @@ export const DEFAULT_MEMORY_CONFIG: AdvancedMemoryConfig = {
     minRecallConfidence: 0.3,
     includeRelatedDepth: 1
 };
+

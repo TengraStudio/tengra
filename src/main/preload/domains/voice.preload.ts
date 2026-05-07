@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { VOICE_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface VoiceBridge {
@@ -89,12 +90,13 @@ export interface VoiceBridge {
 
 export function createVoiceBridge(ipc: IpcRenderer): VoiceBridge {
     return {
-        detectWakeWord: payload => ipc.invoke('voice:detect-wake-word', payload),
-        startSession: payload => ipc.invoke('voice:start-session', payload),
-        submitUtterance: payload => ipc.invoke('voice:submit-utterance', payload),
-        endSession: sessionId => ipc.invoke('voice:end-session', sessionId),
-        createNote: payload => ipc.invoke('voice:create-note', payload),
-        listNotes: () => ipc.invoke('voice:list-notes'),
-        getNote: noteId => ipc.invoke('voice:get-note', noteId),
+        detectWakeWord: payload => ipc.invoke(VOICE_CHANNELS.DETECT_WAKE_WORD, payload),
+        startSession: payload => ipc.invoke(VOICE_CHANNELS.START_SESSION, payload),
+        submitUtterance: payload => ipc.invoke(VOICE_CHANNELS.SUBMIT_UTTERANCE, payload),
+        endSession: sessionId => ipc.invoke(VOICE_CHANNELS.END_SESSION, sessionId),
+        createNote: payload => ipc.invoke(VOICE_CHANNELS.CREATE_NOTE, payload),
+        listNotes: () => ipc.invoke(VOICE_CHANNELS.LIST_NOTES),
+        getNote: noteId => ipc.invoke(VOICE_CHANNELS.GET_NOTE, noteId),
     };
 }
+

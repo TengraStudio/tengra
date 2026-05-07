@@ -15,3 +15,4 @@ export const RUNTIME_COMPONENT_REQUIREMENT_VALUES = ['required', 'optional', 'us
 export const RUNTIME_COMPONENT_KIND_VALUES = ['service', 'runtime', 'tool'] as const;
 export const RUNTIME_ARCHIVE_FORMAT_VALUES = ['raw', 'zip', 'tar.gz'] as const;
 export const RUNTIME_INSTALL_SUBDIRECTORY_VALUES = ['bin', 'models', 'temp'] as const;
+

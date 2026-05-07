@@ -20,6 +20,11 @@ import { DetailedStats } from '../types';
 
 import { OverviewCards } from './statistics/OverviewCards';
 import { TokenUsageChart } from './statistics/TokenUsageChart';
+import {
+    SettingsPanel,
+    SettingsTabHeader,
+    SettingsTabLayout,
+} from './SettingsPrimitives';
 
 type StatisticsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -86,90 +91,64 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
         }
 
         return (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-16">
-                <div className="flex flex-col gap-6 px-1 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                        <div className="mb-3 flex items-center gap-4">
-                            <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
-                                <IconChartBar className="w-7 h-7" />
+            <SettingsTabLayout className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <SettingsTabHeader
+                    title={t('frontend.statistics.title')}
+                    description={t('frontend.statistics.visualizeTokenConsumption')}
+                    icon={IconChartBar}
+                    actions={(
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-2 px-1">
+                                <IconCalendar className="h-3 w-3 text-primary/60" />
+                                <span className="text-sm font-medium text-muted-foreground/65">{t('frontend.statistics.temporalFilter')}</span>
                             </div>
-                            <div>
-                                <h3 className="text-2xl font-semibold text-foreground leading-none">
-                                    {t('frontend.statistics.title')}
-                                </h3>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <div className="h-1 w-8 bg-primary rounded-full" />
-                                    <p className="typo-body font-medium text-muted-foreground opacity-60">
-                                        {t('frontend.statistics.telemetryAnalytics')}
-                                    </p>
-                                </div>
-                            </div>
+                            <PeriodSelector
+                                period={statsPeriod}
+                                onChange={setStatsPeriod}
+                                t={t}
+                            />
                         </div>
-                        <p className="max-w-lg text-sm leading-relaxed text-muted-foreground/70">
-                            {t('frontend.statistics.visualizeTokenConsumption')}
-                        </p>
-                    </div>
+                    )}
+                />
 
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center gap-2 px-1">
-                            <IconCalendar className="w-3 h-3 text-primary/60" />
-                            <span className="typo-body font-medium text-muted-foreground/60">{t('frontend.statistics.temporalFilter')}</span>
-                        </div>
-                        <PeriodSelector
-                            period={statsPeriod}
-                            onChange={setStatsPeriod}
-                            t={t}
-                        />
-                    </div>
-                </div>
+                <SettingsPanel
+                    title={t('frontend.statistics.consumptionMatrix')}
+                    icon={IconActivity}
+                    actions={<Badge variant="outline" className="h-5 border-primary/20 px-2 text-xs font-medium text-primary">{t('frontend.statistics.liveFeed')}</Badge>}
+                >
+                    <OverviewCards t={t} statsData={statsData} />
+                </SettingsPanel>
 
-                <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
-                    <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                            <IconActivity className="w-4 h-4 text-primary" />
-                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('frontend.statistics.consumptionMatrix')}</h4>
-                        </div>
-                        <Badge variant="outline" className="h-5 border-primary/20 px-2 typo-body font-medium text-primary">{t('frontend.statistics.liveFeed')}</Badge>
-                    </div>
-
-                    <div className="relative z-10 mt-6">
-                        <OverviewCards t={t} statsData={statsData} />
-                    </div>
-                </div>
-
-                <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
-                    <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                            <IconTrendingUp className="w-4 h-4 text-primary" />
-                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('frontend.statistics.propagationCurve')}</h4>
-                        </div>
-                        <div className="flex items-center gap-2 typo-body font-medium text-muted-foreground/60">
-                            <IconClock className="w-3 h-3" />
+                <SettingsPanel
+                    title={t('frontend.statistics.propagationCurve')}
+                    icon={IconTrendingUp}
+                    actions={(
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground/65">
+                            <IconClock className="h-3 w-3" />
                             <span>{t('frontend.statistics.realtimeTracking')}</span>
                         </div>
-                    </div>
-
-                    <div className="relative z-10 mt-6 min-h-80">
+                    )}
+                >
+                    <div className="min-h-80">
                         {statsLoading ? (
                             <div className="flex h-80 items-center justify-center">
                                 <IconLoader2 className="h-6 w-6 animate-spin text-primary/40" />
                             </div>
                         ) : (
-                            <div className="group/graph relative">
-                                <div className="relative rounded-3xl border border-border/20 bg-muted/5 p-4 sm:p-6">
-                                    <TokenUsageChart
-                                        tokenTimeline={statsData?.tokenTimeline ?? []}
-                                        t={t}
-                                        period={statsPeriod}
-                                    />
-                                </div>
+                            <div className="rounded-2xl border border-border/15 bg-muted/10 p-4 sm:p-6">
+                                <TokenUsageChart
+                                    tokenTimeline={statsData?.tokenTimeline ?? []}
+                                    t={t}
+                                    period={statsPeriod}
+                                />
                             </div>
                         )}
                     </div>
-                </div>
-            </div>
+                </SettingsPanel>
+            </SettingsTabLayout>
         );
     }
 );
 
 StatisticsTab.displayName = 'StatisticsTab';
+

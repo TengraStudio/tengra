@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { appLogger } from '@system/utils/renderer-logger';
 import { IconDatabase, IconRotate } from '@tabler/icons-react';
 import {
     Background,
@@ -25,8 +26,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { resolveCssColorVariable } from '@/lib/theme-css';
-
-import { appLogger } from '../../../utils/renderer-logger';
 
 /* Batch-02: Extracted Long Classes */
 const C_ENTITYRELATIONSHIPDIAGRAM_1 = "p-2.5 bg-background/80 backdrop-blur-xl hover:bg-muted/40 rounded-xl border border-border/50 transition-all text-muted-foreground hover:text-foreground shadow-lg";
@@ -194,3 +193,4 @@ export const EntityRelationshipDiagram: React.FC = () => {
         </div>
     );
 };
+

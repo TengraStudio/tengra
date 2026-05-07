@@ -3,29 +3,31 @@ import * as path from 'path';
 
 import { app } from 'electron';
 
-// Set app name early to ensure getPath('userData') is correct
-app.setName('Tengra');
+const isDev = process.env.NODE_ENV === 'development';
 
-const isDev = !app.isPackaged || process.env.NODE_ENV === 'development';
+let appRoot = '';
 
-// In Dev mode, we might still want to isolate data, 
-// but the user specifically requested Roaming/Tengra.
-// If we want to strictly follow the user's request for Roaming:
-const userDataPath = app.getPath('userData');
+export function initializeAppPaths(): string {
+    if (appRoot) {
+        return appRoot;
+    }
 
-// Ensure path exists
-if (!fs.existsSync(userDataPath)) {
-    fs.mkdirSync(userDataPath, { recursive: true });
+    app.setName('Tengra');
+    const userDataPath = app.getPath('userData');
+
+    if (!fs.existsSync(userDataPath)) {
+        fs.mkdirSync(userDataPath, { recursive: true });
+    }
+
+    app.setPath('sessionData', path.join(userDataPath, 'electron'));
+    process.env.TENGRA_USER_DATA_ROOT = userDataPath;
+    appRoot = userDataPath;
+
+    console.error(`[BOOT] Paths initialized: userData=${userDataPath}`);
+
+    return appRoot;
 }
 
-// Set session data relative to userData
-app.setPath('sessionData', path.join(userDataPath, 'electron'));
-
-// Sync environment variable for native services
-process.env.TENGRA_USER_DATA_ROOT = userDataPath;
-
-console.error(`[BOOT] Paths initialized: userData=${userDataPath}`);
-
-export const A_INIT = true;
-export const APP_ROOT = userDataPath;
+export const APP_ROOT = (): string => appRoot || initializeAppPaths();
 export { isDev };
+

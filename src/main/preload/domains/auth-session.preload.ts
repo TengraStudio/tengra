@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { AUTH_SESSION_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface AuthSessionBridge {
@@ -27,12 +28,13 @@ export interface AuthSessionBridge {
 export function createAuthSessionBridge(ipc: IpcRenderer): AuthSessionBridge {
     return {
         start: (provider, accountId, source) =>
-            ipc.invoke('auth:session:start', { provider, accountId, source }),
-        touch: sessionId => ipc.invoke('auth:session:touch', sessionId),
-        end: sessionId => ipc.invoke('auth:session:end', sessionId),
-        setLimit: (provider, limit) => ipc.invoke('auth:session:set-limit', { provider, limit }),
-        getAnalytics: provider => ipc.invoke('auth:session:analytics', provider),
-        setTimeout: timeoutMs => ipc.invoke('auth:session:set-timeout', timeoutMs),
-        getTimeout: () => ipc.invoke('auth:session:get-timeout'),
+            ipc.invoke(AUTH_SESSION_CHANNELS.START, { provider, accountId, source }),
+        touch: sessionId => ipc.invoke(AUTH_SESSION_CHANNELS.TOUCH, sessionId),
+        end: sessionId => ipc.invoke(AUTH_SESSION_CHANNELS.END, sessionId),
+        setLimit: (provider, limit) => ipc.invoke(AUTH_SESSION_CHANNELS.SET_LIMIT, { provider, limit }),
+        getAnalytics: provider => ipc.invoke(AUTH_SESSION_CHANNELS.ANALYTICS, provider),
+        setTimeout: timeoutMs => ipc.invoke(AUTH_SESSION_CHANNELS.SET_TIMEOUT, timeoutMs),
+        getTimeout: () => ipc.invoke(AUTH_SESSION_CHANNELS.GET_TIMEOUT),
     };
 }
+

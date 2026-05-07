@@ -5,8 +5,9 @@
  * This unifies all LLM providers into a single streaming event pipeline.
  */
 
-import { ToolCall } from './chat';
 import { JsonValue } from '../common';
+
+import { ToolCall } from './chat';
 
 export type AiRuntimeEventKind = 
     | 'session.started'
@@ -69,3 +70,4 @@ export interface ErrorPayload {
     code?: string;
     recoverable: boolean;
 }
+

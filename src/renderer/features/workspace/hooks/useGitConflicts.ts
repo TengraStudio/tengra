@@ -12,15 +12,13 @@ import { useCallback, useState } from 'react';
 
 import { GitConflict } from '../components/git/types';
 
-type InvokeGitFn = <T>(channel: string, ...args: (string | number | boolean)[]) => Promise<T>;
 
 /**
  * Hook for git conflict operations
  */
 export function useGitConflicts(
     canRun: boolean,
-    workspacePath: string | undefined,
-    invokeGit: InvokeGitFn
+    workspacePath: string | undefined
 ) {
     const [conflicts, setConflicts] = useState<GitConflict[]>([]);
     const [conflictAnalytics, setConflictAnalytics] = useState<Record<string, number>>({});
@@ -29,23 +27,19 @@ export function useGitConflicts(
         if (!canRun || !workspacePath) {
             return;
         }
-        const response = await invokeGit<{ success: boolean; conflicts?: GitConflict[]; analytics?: Record<string, number> }>(
-            'git:getConflicts',
-            workspacePath
-        );
+        const response = await window.electron.git.getConflicts(workspacePath);
         if (response.success) {
             setConflicts(response.conflicts ?? []);
             setConflictAnalytics(response.analytics ?? {});
         }
-    }, [canRun, workspacePath, invokeGit]);
+    }, [canRun, workspacePath]);
 
     const resolveConflict = useCallback(
         async (filePath: string, strategy: 'ours' | 'theirs' | 'manual') => {
             if (!canRun || !workspacePath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:resolveConflict',
+            const response = await window.electron.git.resolveConflict(
                 workspacePath,
                 filePath,
                 strategy
@@ -53,7 +47,7 @@ export function useGitConflicts(
             await fetchConflicts();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchConflicts]
+        [canRun, workspacePath, fetchConflicts]
     );
 
     const openMergeTool = useCallback(
@@ -61,15 +55,14 @@ export function useGitConflicts(
             if (!canRun || !workspacePath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:openMergeTool',
+            const response = await window.electron.git.openMergeTool(
                 workspacePath,
                 filePath ?? ''
             );
             await fetchConflicts();
             return response.success;
         },
-        [canRun, workspacePath, invokeGit, fetchConflicts]
+        [canRun, workspacePath, fetchConflicts]
     );
 
     return {
@@ -80,3 +73,4 @@ export function useGitConflicts(
         openMergeTool,
     };
 }
+

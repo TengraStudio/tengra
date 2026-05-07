@@ -14,18 +14,18 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const inputVariants = cva(
-  "flex w-full rounded-md border bg-background px-3 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+  "flex w-full rounded-2xl border bg-muted/15 px-4 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "border-border/50 focus-visible:border-primary/40",
+        default: "border-border/35 focus-visible:border-primary/35",
         error: "border-destructive/45 text-destructive placeholder:text-destructive/50 focus-visible:border-destructive/55 focus-visible:ring-destructive/25",
         success: "border-success/45 text-success placeholder:text-success/50 focus-visible:border-success/55 focus-visible:ring-success/25",
       },
       inputSize: {
-        default: "h-9",
-        sm: "h-8 px-2 typo-caption",
-        lg: "h-10 px-3.5 text-sm",
+        default: "h-11",
+        sm: "h-9 px-3 typo-caption rounded-xl",
+        lg: "h-12 px-4 text-sm",
       },
     },
     defaultVariants: {
@@ -63,3 +63,4 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 Input.displayName = "Input";
 
 export { Input, inputVariants };
+

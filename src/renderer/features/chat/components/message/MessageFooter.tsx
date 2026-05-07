@@ -141,3 +141,4 @@ export const MessageFooter = memo(
 );
 
 MessageFooter.displayName = 'MessageFooter';
+

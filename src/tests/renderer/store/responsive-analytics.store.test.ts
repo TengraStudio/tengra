@@ -8,13 +8,12 @@
  * (at your option) any later version.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
 import {
     __resetResponsiveAnalyticsForTests,
     getResponsiveAnalyticsSnapshot,
     trackResponsiveBreakpoint,
-} from '@/ui/store/responsive-analytics.store';
+} from '@ui/store/responsive-analytics.store';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('responsive analytics store', () => {
     let setItemSpy: ReturnType<typeof vi.spyOn>;
@@ -53,3 +52,4 @@ describe('responsive analytics store', () => {
         expect(setItemSpy).toHaveBeenCalled();
     });
 });
+

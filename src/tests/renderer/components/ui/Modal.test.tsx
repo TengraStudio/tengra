@@ -77,3 +77,4 @@ describe('Modal', () => {
         expect(onClose).not.toHaveBeenCalled();
     });
 });
+

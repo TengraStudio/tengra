@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { METRICS_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 /** Return shape for a single provider's metrics */
@@ -35,8 +36,9 @@ export interface MetricsBridge {
 export function createMetricsBridge(ipc: IpcRenderer): MetricsBridge {
     return {
         getProviderStats: (provider?: string) =>
-            ipc.invoke('metrics:get-provider-stats', provider),
-        getSummary: () => ipc.invoke('metrics:get-summary'),
-        reset: () => ipc.invoke('metrics:reset'),
+            ipc.invoke(METRICS_CHANNELS.GET_PROVIDER_STATS, provider),
+        getSummary: () => ipc.invoke(METRICS_CHANNELS.GET_SUMMARY),
+        reset: () => ipc.invoke(METRICS_CHANNELS.RESET),
     };
 }
+

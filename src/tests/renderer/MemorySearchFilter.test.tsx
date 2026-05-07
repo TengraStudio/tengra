@@ -44,3 +44,4 @@ describe('MemorySearchFilter', () => {
         expect(screen.queryByRole('button', { name: 'memory graph' })).not.toBeInTheDocument();
     });
 });
+

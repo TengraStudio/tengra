@@ -158,7 +158,7 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                     ))
                                 ) : (
                                     <div className="px-4 py-8 text-center">
-                                        <p className="text-sm text-muted-foreground/60">{t('statistics.noModelsAvailable')}</p>
+                                        <p className="text-sm text-muted-foreground/60">{t('frontend.statistics.noModelsAvailable')}</p>
                                     </div>
                                 )}
                             </div>
@@ -169,4 +169,5 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
         </div>
     );
 };
+
 

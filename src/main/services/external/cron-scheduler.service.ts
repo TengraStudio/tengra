@@ -26,7 +26,7 @@ interface CronSchedule {
 /** Active timer reference for a registered cron job */
 interface ActiveCronJob {
     entry: CronJobEntry;
-    timerId: ReturnType<typeof setInterval>;
+    timerId: ReturnType<typeof setInterval> | null;
 }
 
 /**
@@ -79,7 +79,7 @@ export class CronSchedulerService extends BaseService {
         this.activeJobs.set(entry.id, {
             entry,
             // Placeholder timer ID — we use the central tick loop, not per-job timers
-            timerId: 0 as unknown as ReturnType<typeof setInterval>,
+            timerId: null,
         });
     }
 
@@ -234,3 +234,4 @@ export class CronSchedulerService extends BaseService {
         appLogger.info('CronSchedulerService', 'Cleaned up');
     }
 }
+

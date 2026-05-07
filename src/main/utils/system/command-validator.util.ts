@@ -132,3 +132,4 @@ export function validateCommand(command: string): ValidationResult {
 
     return { allowed: true };
 }
+

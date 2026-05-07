@@ -40,7 +40,7 @@ const OLLAMA_SINGLE_ACCOUNT_ID: &str = "ollama_default";
 
 static OAUTH_SESSIONS: OnceLock<RwLock<HashMap<String, OAuthSession>>> = OnceLock::new();
 static CALLBACK_SERVERS: OnceLock<RwLock<HashSet<&'static str>>> = OnceLock::new();
-static CALLBACK_BRIDGE_TELEMETRY: OnceLock<RwLock<CallbackBridgeTelemetryState>> = OnceLock::new();
+static CALLBACK_BRIDGE_usageStats: OnceLock<RwLock<CallbackBridgeusageStatsState>> = OnceLock::new();
 
 #[derive(Clone, Serialize)]
 pub struct SessionStatus {
@@ -86,14 +86,14 @@ pub struct CallbackBridgeLatencySnapshot {
 }
 
 #[derive(Clone, Serialize, Default)]
-pub struct CallbackBridgeTelemetrySnapshot {
+pub struct CallbackBridgeusageStatsSnapshot {
     pub redirect_count: u64,
     pub error_count: u64,
     pub latency_ms: CallbackBridgeLatencySnapshot,
 }
 
 #[derive(Default)]
-struct CallbackBridgeTelemetryState {
+struct CallbackBridgeusageStatsState {
     redirect_count: u64,
     error_count: u64,
     latency_samples_ms: VecDeque<u64>,
@@ -133,8 +133,8 @@ fn callback_servers() -> &'static RwLock<HashSet<&'static str>> {
     CALLBACK_SERVERS.get_or_init(|| RwLock::new(HashSet::new()))
 }
 
-fn callback_bridge_telemetry() -> &'static RwLock<CallbackBridgeTelemetryState> {
-    CALLBACK_BRIDGE_TELEMETRY.get_or_init(|| RwLock::new(CallbackBridgeTelemetryState::default()))
+fn callback_bridge_usageStats() -> &'static RwLock<CallbackBridgeusageStatsState> {
+    CALLBACK_BRIDGE_usageStats.get_or_init(|| RwLock::new(CallbackBridgeusageStatsState::default()))
 }
 
 pub async fn create_session(
@@ -658,16 +658,16 @@ fn elapsed_ms(started_at: Instant) -> u64 {
 }
 
 async fn record_callback_bridge_event(was_redirect: bool, had_error: bool, latency_ms: u64) {
-    let mut telemetry = callback_bridge_telemetry().write().await;
+    let mut usageStats = callback_bridge_usageStats().write().await;
     if was_redirect {
-        telemetry.redirect_count = telemetry.redirect_count.saturating_add(1);
+        usageStats.redirect_count = usageStats.redirect_count.saturating_add(1);
     }
     if had_error {
-        telemetry.error_count = telemetry.error_count.saturating_add(1);
+        usageStats.error_count = usageStats.error_count.saturating_add(1);
     }
-    telemetry.latency_samples_ms.push_back(latency_ms);
-    while telemetry.latency_samples_ms.len() > CALLBACK_LATENCY_SAMPLE_LIMIT {
-        telemetry.latency_samples_ms.pop_front();
+    usageStats.latency_samples_ms.push_back(latency_ms);
+    while usageStats.latency_samples_ms.len() > CALLBACK_LATENCY_SAMPLE_LIMIT {
+        usageStats.latency_samples_ms.pop_front();
     }
 }
 
@@ -682,12 +682,12 @@ fn percentile(values: &[u64], percentile: u8) -> u64 {
     sorted[index]
 }
 
-pub async fn callback_bridge_telemetry_snapshot() -> CallbackBridgeTelemetrySnapshot {
-    let telemetry = callback_bridge_telemetry().read().await;
-    let samples: Vec<u64> = telemetry.latency_samples_ms.iter().copied().collect();
-    CallbackBridgeTelemetrySnapshot {
-        redirect_count: telemetry.redirect_count,
-        error_count: telemetry.error_count,
+pub async fn callback_bridge_usageStats_snapshot() -> CallbackBridgeusageStatsSnapshot {
+    let usageStats = callback_bridge_usageStats().read().await;
+    let samples: Vec<u64> = usageStats.latency_samples_ms.iter().copied().collect();
+    CallbackBridgeusageStatsSnapshot {
+        redirect_count: usageStats.redirect_count,
+        error_count: usageStats.error_count,
         latency_ms: CallbackBridgeLatencySnapshot {
             p50: percentile(&samples, 50),
             p95: percentile(&samples, 95),
@@ -697,20 +697,20 @@ pub async fn callback_bridge_telemetry_snapshot() -> CallbackBridgeTelemetrySnap
 }
 
 #[cfg(test)]
-async fn reset_callback_bridge_telemetry_for_tests() {
-    let mut telemetry = callback_bridge_telemetry().write().await;
-    telemetry.redirect_count = 0;
-    telemetry.error_count = 0;
-    telemetry.latency_samples_ms.clear();
+async fn reset_callback_bridge_usageStats_for_tests() {
+    let mut usageStats = callback_bridge_usageStats().write().await;
+    usageStats.redirect_count = 0;
+    usageStats.error_count = 0;
+    usageStats.latency_samples_ms.clear();
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        callback_bridge_telemetry_snapshot, callback_config, cancel_session,
+        callback_bridge_usageStats_snapshot, callback_config, cancel_session,
         complete_external_session, create_session, extract_codex_profile_claims,
         get_session_status_for, normalize_error, record_callback_bridge_event,
-        reset_callback_bridge_telemetry_for_tests, ManualOAuthCallback,
+        reset_callback_bridge_usageStats_for_tests, ManualOAuthCallback,
     };
     use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 
@@ -829,15 +829,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn tracks_callback_bridge_telemetry_percentiles() {
-        reset_callback_bridge_telemetry_for_tests().await;
+    async fn tracks_callback_bridge_usageStats_percentiles() {
+        reset_callback_bridge_usageStats_for_tests().await;
         record_callback_bridge_event(true, false, 10).await;
         record_callback_bridge_event(true, false, 20).await;
         record_callback_bridge_event(true, true, 30).await;
         record_callback_bridge_event(true, false, 40).await;
         record_callback_bridge_event(true, true, 100).await;
 
-        let snapshot = callback_bridge_telemetry_snapshot().await;
+        let snapshot = callback_bridge_usageStats_snapshot().await;
         assert_eq!(snapshot.redirect_count, 5);
         assert_eq!(snapshot.error_count, 2);
         assert_eq!(snapshot.latency_ms.sample_count, 5);

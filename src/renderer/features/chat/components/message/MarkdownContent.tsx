@@ -319,3 +319,4 @@ export const MessageBubbleContent = memo(
 );
 
 MessageBubbleContent.displayName = 'MessageBubbleContent';
+

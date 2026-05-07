@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { createComponentHealthStore } from '@/ui/store/component-health.store';
+import { createComponentHealthStore } from '@ui/store/component-health.store';
 
 const terminalToolbarHealthStore = createComponentHealthStore('terminal-toolbar', 250);
 
@@ -21,3 +21,4 @@ export const recordTerminalToolbarFailure = terminalToolbarHealthStore.recordFai
 export const recordTerminalToolbarRetry = terminalToolbarHealthStore.recordRetry;
 export const recordTerminalToolbarFallback = terminalToolbarHealthStore.recordFallback;
 export const __resetTerminalToolbarHealthForTests = terminalToolbarHealthStore.resetForTests;
+

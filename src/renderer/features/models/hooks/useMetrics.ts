@@ -97,3 +97,4 @@ export function useMetrics() {
 
     return { summary, providerStats, loading, error, fetchSummary, fetchProviderStats, reset };
 }
+

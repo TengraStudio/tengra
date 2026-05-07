@@ -32,3 +32,4 @@ export const RESPONSE_CONTRACT = `
 - Avoid generic disclaimers and meta intros.
 - Keep the visible behavior consistent across providers and models.
 `;
+

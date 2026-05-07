@@ -106,3 +106,4 @@ export const DEFAULT_MCP_CONFIG: McpConfig = {
         allowNetworkAccess: true
     }
 };
+

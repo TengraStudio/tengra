@@ -17,8 +17,7 @@
  */
 
 import type { Monaco } from '@monaco-editor/react';
-
-import { appLogger } from '@/system/utils/renderer-logger';
+import { appLogger } from '@system/utils/renderer-logger';
 
 // Initialization state
 let isInitialized = false;
@@ -224,3 +223,4 @@ export function isTextMateAvailable(): boolean {
 export function needsTextMateGrammar(language: string): boolean {
     return TEXTMATE_LANGUAGES.has(language.toLowerCase());
 }
+

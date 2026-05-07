@@ -356,3 +356,4 @@ interface SystemInfoResult {
     platform: NodeJS.Platform;
     arch: string;
 }
+

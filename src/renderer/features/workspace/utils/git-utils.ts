@@ -218,3 +218,4 @@ export async function fetchFullGitData(workspacePath: string): Promise<FullGitDa
         })
     };
 }
+

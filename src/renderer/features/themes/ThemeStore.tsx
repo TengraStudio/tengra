@@ -43,7 +43,7 @@ interface Theme {
 
 const BUILT_IN_THEMES: Theme[] = [
     {
-        id: 'black',
+        id: 'tengra-black',
         name: 'themeStore.themes.black.name',
         author: 'themeStore.authorTengraTeam',
         description: 'themeStore.themes.black.description',
@@ -54,7 +54,7 @@ const BUILT_IN_THEMES: Theme[] = [
         isInstalled: true
     },
     {
-        id: 'white',
+        id: 'tengra-white',
         name: 'themeStore.themes.white.name',
         author: 'themeStore.authorTengraTeam',
         description: 'themeStore.themes.white.description',
@@ -168,9 +168,9 @@ const useThemeStoreLogic = (language: Language) => {
         if (filter === 'installed') {
             themes = themes.filter(t => t.isInstalled);
         } else if (filter === 'dark') {
-            themes = themes.filter(t => t.id.includes('dark') || t.name.toLowerCase().includes('dark') || t.id === 'black');
+            themes = themes.filter(t => t.id.includes('dark') || t.name.toLowerCase().includes('dark') || t.id === 'tengra-black');
         } else if (filter === 'light') {
-            themes = themes.filter(t => t.id.includes('light') || t.name.toLowerCase().includes('light') || t.id === 'white');
+            themes = themes.filter(t => t.id.includes('light') || t.name.toLowerCase().includes('light') || t.id === 'tengra-white');
         }
         return themes;
     }, [searchQuery, filter, builtInThemes]);
@@ -195,7 +195,7 @@ interface ThemeStoreProps {
 
 export const ThemeStore: React.FC<ThemeStoreProps> = ({
     onApplyTheme,
-    currentThemeId = 'dark-default',
+    currentThemeId = 'tengra-black',
     language
 }) => {
     const {
@@ -287,5 +287,6 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
 };
 
 export default ThemeStore;
+
 
 

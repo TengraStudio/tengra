@@ -55,8 +55,11 @@ export default defineConfig(({ mode }) => {
                         alias: {
                             '@main': resolve(__dirname, 'src/main'),
                             '@shared': resolve(__dirname, 'src/shared'),
-                '@assets': resolve(__dirname, 'assets'),
+                            '@assets': resolve(__dirname, 'assets'),
                             '@renderer': resolve(__dirname, 'src/renderer'),
+                            '@common': resolve(__dirname, 'src/renderer/common'),
+                            '@ui': resolve(__dirname, 'src/renderer/ui'),
+                            '@system': resolve(__dirname, 'src/renderer/system'),
                         }
                     },
                     build: {
@@ -95,7 +98,10 @@ export default defineConfig(({ mode }) => {
                     alias: {
                         '@main': resolve(__dirname, 'src/main'),
                         '@shared': resolve(__dirname, 'src/shared'),
-                '@assets': resolve(__dirname, 'assets'),
+                        '@assets': resolve(__dirname, 'assets'),
+                        '@common': resolve(__dirname, 'src/renderer/common'),
+                        '@ui': resolve(__dirname, 'src/renderer/ui'),
+                        '@system': resolve(__dirname, 'src/renderer/system'),
                     }
                 },
                 build: {
@@ -151,8 +157,12 @@ export default defineConfig(({ mode }) => {
                 '@': resolve(__dirname, 'src/renderer'),
                 '@main': resolve(__dirname, 'src/main'),
                 '@renderer': resolve(__dirname, 'src/renderer'),
+                '@common': resolve(__dirname, 'src/renderer/common'),
+                '@ui': resolve(__dirname, 'src/renderer/ui'),
+                '@system': resolve(__dirname, 'src/renderer/system'),
                 '@shared': resolve(__dirname, 'src/shared'),
                 '@assets': resolve(__dirname, 'assets'),
+                '@tests': resolve(__dirname, 'src/tests'),
                 'path': 'path-browserify'
             },
             // Ensure ESM modules are resolved correctly

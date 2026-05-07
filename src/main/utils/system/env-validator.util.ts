@@ -190,3 +190,4 @@ export function getEnvironmentSummary(envExamplePath?: string): {
 
     return { total, configured, missing, percentage };
 }
+

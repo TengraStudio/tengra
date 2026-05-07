@@ -113,8 +113,7 @@ export interface ThemeManifest {
     vars?: ThemeVars;
     preview?: string; // Preview image URL or color
 
-    // Distribution metadata
-    category?: ThemeCategory;
+    // Distribution metadata 
     downloads?: number;
     rating?: number;
     isPremium?: boolean;
@@ -131,15 +130,12 @@ export interface ThemeManifest {
 export interface ThemeDefinition {
     id: string;
     name: string;
-    category: ThemeCategory;
     isDark: boolean;
     colors: ThemeColors;
     description?: string;
     author?: string;
     tags?: string[];
 }
-
-export type ThemeCategory = 'elite-dark' | 'vibrant-neon' | 'professional-light' | 'artisanal';
 
 export interface ThemePreset {
     id: string;
@@ -164,17 +160,9 @@ export interface ThemeStoreState {
     history: string[];
     preset: ThemePreset | null;
 }
-
-export const DEFAULT_THEME_PRESETS: ThemePreset[] = [
-    { id: 'default', name: 'Default', themeId: 'graphite', borderRadius: 'lg' },
-    { id: 'compact', name: 'Compact', themeId: 'graphite', borderRadius: 'none', fontScale: 0.9 },
-    { id: 'comfort', name: 'Comfort', themeId: 'snow', borderRadius: 'xl', fontScale: 1.1 },
-    { id: 'developer', name: 'Developer', themeId: 'obsidian', borderRadius: 'sm' },
-    { id: 'creative', name: 'Creative', themeId: 'cyberpunk', borderRadius: 'lg' },
-];
-
 /**
  * Theme Registry
  * Maps theme ID to manifest
  */
 export type ThemeRegistry = Record<string, ThemeManifest>;
+

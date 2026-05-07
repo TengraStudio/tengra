@@ -56,3 +56,4 @@ export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
 ));
 
 QuotaErrorCard.displayName = 'QuotaErrorCard';
+

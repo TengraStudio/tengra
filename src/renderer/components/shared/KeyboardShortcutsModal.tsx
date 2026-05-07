@@ -420,3 +420,4 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
 });
 
 KeyboardShortcutsModal.displayName = 'KeyboardShortcutsModal';
+

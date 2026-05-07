@@ -38,3 +38,4 @@ export const getPresetColor = (icon: ParameterPreset['icon'], isActive: boolean)
             return 'bg-accent/15 border-accent/30 text-accent';
     }
 };
+

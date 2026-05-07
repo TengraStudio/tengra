@@ -159,3 +159,4 @@ describe('useSettingsLogic', () => {
         expect(result.current.isLoading).toBe(true);
     });
 });
+

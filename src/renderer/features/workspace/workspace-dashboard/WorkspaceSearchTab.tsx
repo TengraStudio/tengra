@@ -271,3 +271,4 @@ function simpleGlobMatch(path: string, pattern: string): boolean {
     return false;
 }
 
+

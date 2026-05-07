@@ -24,6 +24,8 @@ import { validateCommand } from '@main/utils/command-validator.util';
 import { fileOpSchema,sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/utils/ipc-validation';
 import { isPathAllowed } from '@main/utils/path-security.util';
 import { withRetry } from '@main/utils/retry.util';
+import { SSH_CHANNELS } from '@shared/constants/ipc-channels';
+import { ServiceResponse } from '@shared/types';
 import { IpcValue, JsonValue, RuntimeValue } from '@shared/types/common';
 import { BrowserWindow, safeStorage } from 'electron';
 import { Client, ClientChannel } from 'ssh2';
@@ -452,7 +454,7 @@ export class SSHService extends EventEmitter {
         return this.keyManager.listKnownHosts();
     }
 
-    @ipc('ssh:addKnownHost')
+    @ipc(SSH_CHANNELS.ADD_KNOWN_HOST)
     async addKnownHost(entry: SSHKnownHostEntry): Promise<boolean> {
         return this.keyManager.addKnownHost(entry);
     }
@@ -811,7 +813,7 @@ export class SSHService extends EventEmitter {
         return false;
     }
 
-    @ipc('ssh:getConnections')
+    @ipc(SSH_CHANNELS.GET_CONNECTIONS)
     ipcGetConnections(): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'>[] {
         return Array.from(this.connectionDetails.values()).map(c => this.sanitizeConnectionForRenderer(c));
     }
@@ -1131,7 +1133,7 @@ export class SSHService extends EventEmitter {
         });
     }
 
-    @ipc('ssh:deleteDir')
+    @ipc(SSH_CHANNELS.DELETE_DIR)
     async ipcDeleteDir(connectionId: string, dirPath: string): Promise<{ success: boolean; error?: string }> {
         try {
             const success = await this.deleteDirectory(connectionId, dirPath);
@@ -1461,7 +1463,7 @@ export class SSHService extends EventEmitter {
         });
     }
 
-    @ipc('ssh:shellStart')
+    @ipc(SSH_CHANNELS.SHELL_START)
     async ipcShellStart(connectionId: string): Promise<{ success: boolean; error?: string }> {
         return this.startShell(
             connectionId,
@@ -1522,7 +1524,7 @@ export class SSHService extends EventEmitter {
     /**
      * Resize the shell terminal
      */
-    @ipc('ssh:shellResize')
+    @ipc(SSH_CHANNELS.SHELL_RESIZE)
     resizeShell(connectionId: string, cols: number, rows: number): boolean {
         const session = this.shellSessions.get(connectionId);
         if (!session) {
@@ -1536,7 +1538,7 @@ export class SSHService extends EventEmitter {
     /**
      * Write data to the shell session
      */
-    @ipc('ssh:shellWrite')
+    @ipc(SSH_CHANNELS.SHELL_WRITE)
     ipcShellWrite(connectionId: string, data: string): { success: boolean } {
         const success = this.writeToShell(connectionId, data);
         return { success };
@@ -1555,7 +1557,7 @@ export class SSHService extends EventEmitter {
     /**
      * Close the shell session
      */
-    @ipc('ssh:shellClose')
+    @ipc(SSH_CHANNELS.SHELL_CLOSE)
     closeShell(connectionId: string): boolean {
         const session = this.shellSessions.get(connectionId);
         if (!session) {
@@ -1567,7 +1569,7 @@ export class SSHService extends EventEmitter {
         return true;
     }
 
-    @ipc('ssh:getLogFiles')
+    @ipc(SSH_CHANNELS.GET_LOG_FILES)
     async getLogFiles(connectionId: string): Promise<string[]> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
@@ -1588,7 +1590,7 @@ export class SSHService extends EventEmitter {
         }
     }
 
-    @ipc('ssh:readLogFile')
+    @ipc(SSH_CHANNELS.READ_LOG_FILE)
     async readLogFile(connectionId: string, filePath: string, lines: number = 50): Promise<string> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
@@ -1633,7 +1635,7 @@ export class SSHService extends EventEmitter {
     /**
      * Create a local port forward (local -> remote)
      */
-    @ipc('ssh:createTunnel')
+    @ipc(SSH_CHANNELS.CREATE_TUNNEL)
     async createLocalForward(
         connectionId: string,
         localHost: string,
@@ -1721,17 +1723,17 @@ export class SSHService extends EventEmitter {
         return this._tunnelManager.createDynamicForward(connectionId, conn, localHost, localPort);
     }
 
-    @ipc('ssh:saveTunnelPreset')
+    @ipc(SSH_CHANNELS.SAVE_TUNNEL_PRESET)
     async saveTunnelPreset(preset: Omit<SSHTunnelPreset, 'id' | 'createdAt' | 'updatedAt'>): Promise<SSHTunnelPreset> {
         return this._tunnelManager.saveTunnelPreset(preset);
     }
 
-    @ipc('ssh:listTunnelPresets')
+    @ipc(SSH_CHANNELS.LIST_TUNNEL_PRESETS)
     async listTunnelPresets(): Promise<SSHTunnelPreset[]> {
         return this._tunnelManager.listTunnelPresets();
     }
 
-    @ipc('ssh:deleteTunnelPreset')
+    @ipc(SSH_CHANNELS.DELETE_TUNNEL_PRESET)
     async deleteTunnelPreset(id: string): Promise<boolean> {
         return this._tunnelManager.deleteTunnelPreset(id);
     }
@@ -1739,7 +1741,7 @@ export class SSHService extends EventEmitter {
     /**
      * Get all active port forwards
      */
-    @ipc('ssh:listTunnels')
+    @ipc(SSH_CHANNELS.LIST_TUNNELS)
     getPortForwards(connectionId?: string): SSHPortForward[] {
         const allForwards = this._tunnelManager.getAllPortForwards();
         if (connectionId) {
@@ -1751,7 +1753,7 @@ export class SSHService extends EventEmitter {
     /**
      * Close a port forward
      */
-    @ipc('ssh:closeTunnel')
+    @ipc(SSH_CHANNELS.CLOSE_TUNNEL)
     async closePortForward(forwardId: string): Promise<boolean> {
         return await this._tunnelManager.closePortForward(forwardId);
     }
@@ -2318,5 +2320,6 @@ export class SSHService extends EventEmitter {
         return targetPath.slice(0, separatorIndex);
     }
 }
+
 
 

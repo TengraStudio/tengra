@@ -277,3 +277,4 @@ export async function executeToolCall(
         generatedImages,
     };
 }
+

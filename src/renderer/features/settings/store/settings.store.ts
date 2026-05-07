@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
+import { unwrapSettingsResponse } from '@system/utils/app-settings.util';
+import { appLogger } from '@system/utils/renderer-logger';
 import { useSyncExternalStore } from 'react';
 
-import { unwrapSettingsResponse } from '@/system/utils/app-settings.util';
-import { appLogger } from '@/system/utils/renderer-logger';
 import { AppSettings, JsonValue } from '@/types';
 
 const SETTINGS_DRAFT_STORAGE_KEY = 'tengra.settings.draft.v1';
@@ -239,3 +239,4 @@ export function useSettingsStore<T>(selector: (snapshot: SettingsStoreState) => 
     const snapshot = useSyncExternalStore(subscribeSettings, getSettingsSnapshot);
     return selector(snapshot);
 }
+

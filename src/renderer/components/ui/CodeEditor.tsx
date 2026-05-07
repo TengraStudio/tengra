@@ -13,7 +13,7 @@ import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
     InlineSuggestionSource,
-    InlineSuggestionTelemetry,
+    InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 import { IconLoader2 } from '@tabler/icons-react';
 import type { editor } from 'monaco-editor';
@@ -649,8 +649,8 @@ const useInlineCompletions = (
             return;
         }
         const monaco = monacoRef.current;
-        const trackTelemetry = (event: InlineSuggestionTelemetry) => {
-            void window.electron.workspace.trackInlineSuggestionTelemetry(event).catch(() => {});
+        const trackUsageStats = (event: InlineSuggestionUsageStats) => {
+            void window.electron.workspace.trackInlineSuggestionUsageStats(event).catch(() => {});
         };
         const commandDisposable = monaco.editor.registerCommand(
             INLINE_SUGGESTION_ACCEPT_COMMAND,
@@ -662,7 +662,7 @@ const useInlineCompletions = (
                     ...payload,
                     accepted: true,
                 };
-                trackTelemetry({
+                trackUsageStats({
                     event: 'accept',
                     source: payload.source,
                     provider: payload.provider,
@@ -703,7 +703,7 @@ const useInlineCompletions = (
                 pruneInlineSuggestionCache(cacheRef.current, startedAt);
                 const cached = cacheRef.current.get(cacheKey);
                 if (cached && startedAt - cached.createdAt <= INLINE_SUGGESTION_CACHE_TTL_MS) {
-                    trackTelemetry({
+                    trackUsageStats({
                         event: 'cache_hit',
                         source: cached.response.source,
                         provider: cached.response.provider,
@@ -742,7 +742,7 @@ const useInlineCompletions = (
                     };
                 }
 
-                trackTelemetry({
+                trackUsageStats({
                     event: 'request',
                     source: request.source,
                     provider: request.provider,
@@ -792,7 +792,7 @@ const useInlineCompletions = (
                     };
                 } catch {
                     if (requestId === latestRequestIdRef.current) {
-                        trackTelemetry({
+                        trackUsageStats({
                             event: 'error',
                             source: request.source,
                             provider: request.provider,
@@ -812,7 +812,7 @@ const useInlineCompletions = (
                     activeSessionRef.current = null;
                     return;
                 }
-                trackTelemetry({
+                trackUsageStats({
                     event: 'reject',
                     source: activeSession.source,
                     provider: activeSession.provider,
@@ -834,7 +834,7 @@ const useInlineCompletions = (
                     return;
                 }
                 activeSessionRef.current = session;
-                trackTelemetry({
+                trackUsageStats({
                     event: 'show',
                     source: session.source,
                     provider: session.provider,
@@ -1226,3 +1226,4 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         />
     );
 };
+

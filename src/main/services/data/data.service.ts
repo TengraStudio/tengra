@@ -11,9 +11,8 @@
 import * as fsp from 'fs/promises';
 import * as path from 'path';
 
-import { appLogger } from '@main/logging/logger';
-import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { BaseService } from '@main/services/base.service';
+import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app } from 'electron';
 
@@ -40,20 +39,6 @@ export const DATA_SERVICE_PERFORMANCE_BUDGETS = {
     GET_PATH_MS: 10
 } as const;
 
-/**
- * Telemetry event names for DataService
- */
-export enum DataServiceTelemetryEvent {
-    INITIALIZE_START = 'data_service_initialize_start',
-    INITIALIZE_COMPLETE = 'data_service_initialize_complete',
-    INITIALIZE_ERROR = 'data_service_initialize_error',
-    MIGRATE_START = 'data_service_migrate_start',
-    MIGRATE_COMPLETE = 'data_service_migrate_complete',
-    MIGRATE_ERROR = 'data_service_migrate_error',
-    DIRECTORY_CREATED = 'data_service_directory_created',
-    PATH_ACCESSED = 'data_service_path_accessed'
-}
-
 export type DataType = 'db' | 'config' | 'logs' | 'models' | 'gallery' | 'galleryImages' | 'galleryVideos' | 'data'
 
 
@@ -74,7 +59,6 @@ interface MigrationEntry {
 export class DataService extends BaseService {
     private baseDir: string;
     private paths: Record<DataType, string>;
-    private telemetryService: TelemetryService | null = null;
     private initialized = false;
 
     constructor() {
@@ -98,22 +82,6 @@ export class DataService extends BaseService {
     }
 
     /**
-     * Set the telemetry service dependency
-     */
-    setTelemetryService(service: TelemetryService): void {
-        this.telemetryService = service;
-    }
-
-    /**
-     * Track telemetry event if service is available
-     */
-    private trackEvent(eventName: DataServiceTelemetryEvent, properties?: Record<string, RuntimeValue>): void {
-        if (this.telemetryService) {
-            this.telemetryService.track(eventName, properties);
-        }
-    }
-
-    /**
      * Validate that the provided DataType is valid
      */
     private validateDataType(type: RuntimeValue): type is DataType {
@@ -123,7 +91,6 @@ export class DataService extends BaseService {
     async initialize(): Promise<void> {
         const startTime = Date.now();
         this.logInfo('Initializing data service and ensuring directory structure...');
-        this.trackEvent(DataServiceTelemetryEvent.INITIALIZE_START);
 
         try {
             await this.ensureDirectories();
@@ -131,10 +98,6 @@ export class DataService extends BaseService {
             const duration = Date.now() - startTime;
 
             this.logInfo(`Data service initialized successfully in ${duration}ms`);
-            this.trackEvent(DataServiceTelemetryEvent.INITIALIZE_COMPLETE, {
-                durationMs: duration,
-                success: true
-            });
 
             // Warn if initialization exceeded budget
             if (duration > DATA_SERVICE_PERFORMANCE_BUDGETS.INITIALIZE_MS) {
@@ -143,10 +106,6 @@ export class DataService extends BaseService {
         } catch (error) {
             const duration = Date.now() - startTime;
             this.logError('Failed to initialize data service', error);
-            this.trackEvent(DataServiceTelemetryEvent.INITIALIZE_ERROR, {
-                durationMs: duration,
-                error: getErrorMessage(error as Error)
-            });
             throw error;
         }
     }
@@ -168,11 +127,9 @@ export class DataService extends BaseService {
 
         try {
             await fsp.mkdir(this.baseDir, { recursive: true, mode: 0o700 });
-            this.trackEvent(DataServiceTelemetryEvent.DIRECTORY_CREATED, { path: this.baseDir });
 
             for (const targetPath of Object.values(this.paths)) {
                 await fsp.mkdir(targetPath, { recursive: true, mode: 0o700 });
-                this.trackEvent(DataServiceTelemetryEvent.DIRECTORY_CREATED, { path: targetPath });
             }
 
             const duration = Date.now() - startTime;
@@ -204,8 +161,6 @@ export class DataService extends BaseService {
 
         const result = this.paths[type];
         const duration = Date.now() - startTime;
-
-        this.trackEvent(DataServiceTelemetryEvent.PATH_ACCESSED, { type, durationMs: duration });
 
         if (duration > DATA_SERVICE_PERFORMANCE_BUDGETS.GET_PATH_MS) {
             this.logWarn(`getPath exceeded budget for type ${type}: ${duration}ms`);
@@ -373,4 +328,5 @@ export class DataService extends BaseService {
         }
     }
 }
+
 

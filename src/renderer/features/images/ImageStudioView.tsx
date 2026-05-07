@@ -504,10 +504,10 @@ export function ImageStudioView(): JSX.Element {
         setLoadingModels(true);
         try {
             const allModels = await window.electron.modelRegistry.getAllModels();
-            const hasAntigravity = await window.electron.hasLinkedAccount('antigravity');
-            const hasOpenAI = await window.electron.hasLinkedAccount('openai');
-            const hasCodex = await window.electron.hasLinkedAccount('codex');
-            const hasNvidia = await window.electron.hasLinkedAccount('nvidia');
+            const hasAntigravity = await window.electron.auth.hasLinkedAccount('antigravity');
+            const hasOpenAI = await window.electron.auth.hasLinkedAccount('openai');
+            const hasCodex = await window.electron.auth.hasLinkedAccount('codex');
+            const hasNvidia = await window.electron.auth.hasLinkedAccount('nvidia');
 
             const providerAllowed = (providerRaw: string) => {
                 const provider = providerRaw.toLowerCase();
@@ -1329,3 +1329,4 @@ function FloatingControls({ t, isSelectingMask, setIsSelectingMask, setMaskRect,
         </div>
     );
 }
+

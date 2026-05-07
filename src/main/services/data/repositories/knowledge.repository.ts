@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import { CodeSymbolRecord, CodeSymbolSearchResult, EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service';
 import {
     AdvancedSemanticFragment,
     coerceMemoryCategory,
@@ -12,8 +13,6 @@ import {
 } from '@shared/types/advanced-memory';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter } from '@shared/types/database';
-
-import { CodeSymbolRecord, CodeSymbolSearchResult, EntityKnowledge, EpisodicMemory, SemanticFragment } from '../database.service';
 
 import { BaseRepository } from './base.repository';
 
@@ -862,3 +861,4 @@ export class KnowledgeRepository extends BaseRepository {
         }
     }
 }
+

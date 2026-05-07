@@ -34,3 +34,4 @@ export const SettingsSkeleton: React.FC = React.memo(() => (
 ));
 
 SettingsSkeleton.displayName = 'SettingsSkeleton';
+

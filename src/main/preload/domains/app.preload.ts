@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { SHELL_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface AppBridge {
@@ -20,6 +21,7 @@ export interface AppBridge {
 
 export function createAppBridge(ipc: IpcRenderer): AppBridge {
     return {
-        runCommand: (command, args, cwd) => ipc.invoke('shell:runCommand', command, args, cwd),
+        runCommand: (command, args, cwd) => ipc.invoke(SHELL_CHANNELS.RUN_COMMAND, command, args, cwd),
     };
 }
+

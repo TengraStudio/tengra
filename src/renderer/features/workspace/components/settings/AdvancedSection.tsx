@@ -146,3 +146,4 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
         </Card>
     </div>
 );
+

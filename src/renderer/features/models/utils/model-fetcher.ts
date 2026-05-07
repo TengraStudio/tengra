@@ -142,7 +142,7 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
         // 1. Primary source: The aggregated model registry which handles local (Ollama), 
         // remote (Proxy, NVIDIA, OpenCode, HuggingFace), and installed models.
         try {
-            const registryModels = await window.electron.invoke('model-registry:getAllModels') as ModelInfo[];
+            const registryModels = await window.electron.modelRegistry.getAllModels();
             if (Array.isArray(registryModels)) {
                 addModels(registryModels, 'registry');
             }
@@ -150,10 +150,21 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
             appLogger.warn('ModelFetcher', 'model-registry:getAllModels failed', { error: e });
         }
 
+        // 1b. Installed models are fetched separately so local providers still appear
+        // even when the aggregated catalog is on a stale or partial cache pass.
+        try {
+            const installedModels = await window.electron.modelRegistry.getInstalledModels();
+            if (Array.isArray(installedModels)) {
+                addModels(installedModels, 'installed');
+            }
+        } catch (e) {
+            appLogger.warn('ModelFetcher', 'model-registry:getInstalledModels failed', { error: e });
+        }
+
         // 2. Secondary/Legacy fallback: only hit proxy directly when the registry returned nothing.
         if (aggregatedModelsMap.size === 0) {
             try {
-                const proxyResponse = (await window.electron.getProxyModels()) as unknown as Record<string, unknown> | unknown[];
+                const proxyResponse = (await window.electron.auth.getProxyModels()) as unknown as Record<string, unknown> | unknown[];
                 if (proxyResponse && !Array.isArray(proxyResponse) && Array.isArray(proxyResponse.data)) {
                     addModels(proxyResponse.data as unknown[], 'proxy-data');
                 } else if (Array.isArray(proxyResponse)) {
@@ -195,3 +206,4 @@ export function groupModels(models: ModelInfo[]): GroupedModels {
 
     return grouped;
 }
+

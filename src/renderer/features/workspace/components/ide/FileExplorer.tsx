@@ -23,6 +23,50 @@ interface FileNode {
     children?: FileNode[];
 }
 
+interface FileListEnvelope {
+    success?: boolean;
+    files?: unknown;
+    data?: unknown;
+    result?: unknown;
+    content?: unknown;
+}
+
+function joinExplorerPath(basePath: string, name: string): string {
+    const separator = basePath.includes('\\') ? '\\' : '/';
+    const trimmedBasePath = basePath.replace(/[\\/]+$/, '');
+    return `${trimmedBasePath}${separator}${name}`;
+}
+
+function isFileListItem(item: unknown): item is { name: string; isDirectory: boolean } {
+    return (
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as { name?: unknown }).name === 'string' &&
+        typeof (item as { isDirectory?: unknown }).isDirectory === 'boolean'
+    );
+}
+
+function extractFileList(response: unknown): Array<{ name: string; isDirectory: boolean }> {
+    if (Array.isArray(response)) {
+        return response.filter(isFileListItem);
+    }
+
+    if (!response || typeof response !== 'object') {
+        return [];
+    }
+
+    const envelope = response as FileListEnvelope;
+    const nestedCandidates = [envelope.files, envelope.data, envelope.result, envelope.content];
+    for (const candidate of nestedCandidates) {
+        const fileList = extractFileList(candidate);
+        if (fileList.length > 0) {
+            return fileList;
+        }
+    }
+
+    return [];
+}
+
 // PERF-005-2: Directory listing cache with LRU eviction
 const CACHE_MAX_SIZE = 100;
 const CACHE_TTL_MS = 30000; // 30 seconds
@@ -133,9 +177,9 @@ const FileTreeItem = ({
                                     node.path
                                 )) as TypeAssertionValue as
                                     | {
-                                          success?: boolean;
-                                          data?: Array<{ name: string; isDirectory: boolean }>;
-                                      }
+                                        success?: boolean;
+                                        data?: Array<{ name: string; isDirectory: boolean }>;
+                                    }
                                     | Array<{ name: string; isDirectory: boolean }>;
 
                                 // CLEAN-002-1: Check if still mounted after async operation
@@ -144,16 +188,11 @@ const FileTreeItem = ({
                                 }
 
                                 // Handle ServiceResponse format: { success, data } or direct array
-                                const files =
-                                    'data' in response && Array.isArray(response.data)
-                                        ? response.data
-                                        : Array.isArray(response)
-                                          ? response
-                                          : [];
+                                const files = extractFileList(response);
                                 const nodes: FileNode[] = files
                                     .map((f: { name: string; isDirectory: boolean }) => ({
                                         name: f.name,
-                                        path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
+                                        path: joinExplorerPath(node.path, f.name),
                                         isDirectory: f.isDirectory,
                                     }))
                                     .sort((a: FileNode, b: FileNode) => {
@@ -186,11 +225,13 @@ const FileTreeItem = ({
                         } else {
                             setIsOpen(!isOpen);
                         }
+                    } else {
+                        onSelect(node.path);
                     }
                 })();
             }, 300); // 300ms debounce
         },
-        [node.path, node.isDirectory, isOpen, children.length, onFolderSelect]
+        [children.length, isOpen, node.isDirectory, node.path, onFolderSelect, onSelect]
     );
 
     // CLEAN-002-1: Cleanup timeout and track unmount
@@ -217,7 +258,7 @@ const FileTreeItem = ({
                 style={{ paddingLeft: `${depth * 12 + 8}px` }}
                 onClick={() => {
                     void (async () => {
-                        await handleToggle({ stopPropagation: () => {} } as React.MouseEvent);
+                        await handleToggle({ stopPropagation: () => { } } as React.MouseEvent);
                     })();
                 }}
             >
@@ -269,6 +310,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
             // PERF-005-2: Check cache first before fetching from filesystem
             const cachedNodes = directoryCache.get(rootPath);
             if (cachedNodes) {
+                appLogger.debug("FileExplorer.tsx", "Cached Nodes: " + cachedNodes);
                 setRootNodes(cachedNodes);
                 return;
             }
@@ -281,22 +323,20 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                     | { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> }
                     | Array<{ name: string; isDirectory: boolean }>;
 
+                appLogger.debug("FileExplorer.tsx", "Response: " + response)
+
+
                 // CLEAN-002-1: Check if still mounted after async operation
                 if (!isMountedRef.current) {
                     return;
                 }
 
                 // Handle ServiceResponse format: { success, data } or direct array
-                const files =
-                    'data' in response && Array.isArray(response.data)
-                        ? response.data
-                        : Array.isArray(response)
-                          ? response
-                          : [];
+                const files = extractFileList(response);
                 const nodes: FileNode[] = files
                     .map((f: { name: string; isDirectory: boolean }) => ({
                         name: f.name,
-                        path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
+                        path: joinExplorerPath(rootPath, f.name),
                         isDirectory: f.isDirectory,
                     }))
                     .sort((a: FileNode, b: FileNode) => {
@@ -348,7 +388,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                 <FileTreeItem
                     key={node.path}
                     node={node}
-                    onSelect={onFileSelect ?? (() => {})}
+                    onSelect={onFileSelect ?? (() => { })}
                     onFolderSelect={onFolderSelect}
                 />
             ))}

@@ -299,7 +299,7 @@ export function useChatInputController() {
         }
     }, [input, isEnhancing, isLoading, getEnhanceModel, callEnhanceLlm]);
 
-    const sendMessageWithTelemetry = useCallback(async () => {
+    const sendMessageWithusageStats = useCallback(async () => {
         const hasContent = input.trim() !== '' || attachments.length > 0;
         if (!hasContent || isLoading) {
             setLastError({
@@ -370,7 +370,7 @@ export function useChatInputController() {
 
     return {
         input, setInput: updateInput, attachments, removeAttachment, processFile,
-        isLoading, sendMessage, sendMessageWithTelemetry, stopGeneration, isListening, startListening, stopListening,
+        isLoading, sendMessage, sendMessageWithusageStats, stopGeneration, isListening, startListening, stopListening,
         contextTokens, selectedModel, selectedProvider, selectedModels,
         handleSelectModel, removeSelectedModel, groupedModels, setIsModelMenuOpen,
         toggleFavorite, isFavorite, appSettings, quotas, copilotQuota, codexUsage, claudeQuota,
@@ -389,3 +389,4 @@ export function useChatInputController() {
         ...cmd
     };
 }
+

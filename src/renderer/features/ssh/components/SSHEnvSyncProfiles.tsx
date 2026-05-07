@@ -199,3 +199,4 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
         </div>
     );
 };
+

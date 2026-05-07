@@ -284,3 +284,4 @@ describe('ChatRepository recovery', () => {
         expect(restored.reasonings).toEqual(reasonings);
     });
 });
+

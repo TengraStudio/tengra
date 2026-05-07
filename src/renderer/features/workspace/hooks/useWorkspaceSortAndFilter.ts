@@ -120,3 +120,4 @@ export function useWorkspaceSortAndFilter(workspaces: Workspace[]) {
         applyListPreset
     };
 }
+

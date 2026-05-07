@@ -129,6 +129,41 @@ function WorkspaceExplorerEmptyState({ label }: { label: string }): React.ReactE
     );
 }
 
+function WorkspaceExplorerBlankState({
+    label,
+    onResetFilter,
+    onReload,
+    t,
+}: {
+    label: string;
+    onResetFilter: () => void;
+    onReload: () => void;
+    t: (key: string) => string;
+}): React.ReactElement {
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4 text-center text-sm text-muted-foreground">
+            <IconFolder className="w-8 h-8 opacity-20" />
+            <span className="typo-caption font-medium">{label}</span>
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={onResetFilter}
+                    className="rounded-md border border-border/60 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
+                >
+                    {t('common.clear')}
+                </button>
+                <button
+                    type="button"
+                    onClick={onReload}
+                    className="rounded-md border border-border/60 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/40"
+                >
+                    {t('common.refresh')}
+                </button>
+            </div>
+        </div>
+    );
+}
+
 function useSyncedActiveFilePathReset(
     activeFilePath: string | undefined,
     syncedActiveFilePathRef: React.MutableRefObject<string | null>
@@ -171,6 +206,89 @@ function applyExplorerFilter(
         }
         return `${row.entry.name} ${row.entry.path}`.toLowerCase().includes(trimmedQuery);
     });
+}
+
+function shouldShowFallbackMountHeader(mounts: WorkspaceMount[], mount: WorkspaceMount): boolean {
+    return mounts.length > 1 || mount.type !== 'local';
+}
+
+function extractFallbackDirectoryEntries(
+    payload: unknown
+): Array<{ name: string; isDirectory: boolean }> {
+    if (Array.isArray(payload)) {
+        return payload.filter((item): item is { name: string; isDirectory: boolean } =>
+            typeof item === 'object' &&
+            item !== null &&
+            typeof (item as { name?: unknown }).name === 'string'
+        );
+    }
+
+    if (!payload || typeof payload !== 'object') {
+        return [];
+    }
+
+    const candidate = payload as {
+        files?: unknown;
+        data?: unknown;
+        result?: unknown;
+        content?: unknown;
+    };
+
+    for (const value of [candidate.files, candidate.data, candidate.result, candidate.content]) {
+        const entries = extractFallbackDirectoryEntries(value);
+        if (entries.length > 0) {
+            return entries;
+        }
+    }
+
+    return [];
+}
+
+function joinExplorerFallbackPath(base: string, name: string, mountType: WorkspaceMount['type']): string {
+    const separator = mountType === 'ssh' ? '/' : (base.includes('\\') ? '\\' : '/');
+    if (base.endsWith(separator)) {
+        return `${base}${name}`;
+    }
+    return `${base}${separator}${name}`;
+}
+
+function buildFallbackExplorerRows(mounts: WorkspaceMount[], mountEntries: Map<string, Array<{ name: string; isDirectory: boolean }>>): WorkspaceExplorerRow[] {
+    const rows: WorkspaceExplorerRow[] = [];
+
+    for (const mount of mounts) {
+        const showMountHeader = shouldShowFallbackMountHeader(mounts, mount);
+        if (showMountHeader) {
+            rows.push({
+                type: 'mount',
+                key: `mount:${mount.id}`,
+                mount,
+                expanded: true,
+                loading: false,
+            });
+        }
+
+        const entries = mountEntries.get(mount.id) ?? [];
+        for (const entry of entries) {
+            const entryPath = joinExplorerFallbackPath(mount.rootPath, entry.name, mount.type);
+            rows.push({
+                type: 'entry',
+                key: `${mount.id}:${entryPath}`,
+                mount,
+                entry: {
+                    mountId: mount.id,
+                    name: entry.name,
+                    path: entryPath,
+                    isDirectory: Boolean(entry.isDirectory),
+                    isGitIgnored: false,
+                },
+                depth: 0,
+                expanded: false,
+                loading: false,
+            });
+        }
+    }
+
+    return rows;
 }
 
 function buildInlineRow(
@@ -575,10 +693,12 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     const {
         contextMenu,
         visibleRows,
+        loadingMounts,
         toggleMount,
         toggleNode,
         revealPath,
         collapseAll,
+        reloadAll,
         handleContextMenu,
         handleMountContextMenu,
         handleContextAction,
@@ -618,6 +738,9 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     const listRef = React.useRef<ExplorerListRef | null>(null);
     const typeaheadStateRef = React.useRef({ query: '', timestamp: 0 });
     const syncedActiveFilePathRef = React.useRef<string | null>(null);
+    const [fallbackRows, setFallbackRows] = React.useState<WorkspaceExplorerRow[]>([]);
+    const [fallbackLoading, setFallbackLoading] = React.useState(false);
+    const fallbackRequestKeyRef = React.useRef<string | null>(null);
     const hasMounts = mounts.length > 0;
     const decoratedRows = React.useMemo(
         () => applyExplorerDiagnostics(visibleRows, diagnosticsSnapshot),
@@ -635,19 +758,25 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         () => insertInlineRow(filteredRows, inlineRow, inlineAction),
         [filteredRows, inlineAction, inlineRow]
     );
-    const entryRows = React.useMemo(
-        () => displayRows.filter((row): row is WorkspaceEntryRow => row.type === 'entry'),
-        [displayRows]
+    const effectiveDisplayRows = React.useMemo<ExplorerDisplayRow[]>(
+        () => (displayRows.length > 0 ? displayRows : fallbackRows),
+        [displayRows, fallbackRows]
     );
-    const shouldVirtualize = displayRows.length > EXPLORER_VIRTUALIZATION_THRESHOLD;
+    const entryRows = React.useMemo(
+        () => effectiveDisplayRows.filter((row): row is WorkspaceEntryRow => row.type === 'entry'),
+        [effectiveDisplayRows]
+    );
+    const shouldVirtualize = effectiveDisplayRows.length > EXPLORER_VIRTUALIZATION_THRESHOLD;
+    const isAnyMountLoading = mounts.some(mount => Boolean(loadingMounts[mount.id]));
+    const isExplorerBlank = hasMounts && effectiveDisplayRows.length === 0 && !isAnyMountLoading && !fallbackLoading;
     const listHeight = React.useMemo(() => {
-        const contentHeight = displayRows.length * EXPLORER_ROW_HEIGHT;
+        const contentHeight = effectiveDisplayRows.length * EXPLORER_ROW_HEIGHT;
         const maxHeight =
             mounts.length <= 1
                 ? Math.max(800, viewportHeight - 220)
                 : EXPLORER_MULTI_MOUNT_MAX_HEIGHT;
         return Math.min(contentHeight, maxHeight);
-    }, [displayRows.length, mounts.length, viewportHeight]);
+    }, [effectiveDisplayRows.length, mounts.length, viewportHeight]);
     React.useEffect(() => {
         const handleResize = () => setViewportHeight(window.innerHeight);
         window.addEventListener('resize', handleResize);
@@ -664,6 +793,81 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             rowRefs.current[nextFocusKey]?.focus();
         });
     }, [selectedEntries, workspaceId]);
+    React.useEffect(() => {
+        if (displayRows.length > 0) {
+            fallbackRequestKeyRef.current = null;
+            if (fallbackRows.length > 0) {
+                setFallbackRows([]);
+            }
+            if (fallbackLoading) {
+                setFallbackLoading(false);
+            }
+            return;
+        }
+
+        if (filterQuery.trim().length > 0 || !hasMounts || isAnyMountLoading) {
+            return;
+        }
+
+        const requestKey = mounts
+            .map(mount => `${mount.id}:${mount.type}:${mount.rootPath}`)
+            .join('|');
+
+        if (fallbackRequestKeyRef.current === requestKey) {
+            return;
+        }
+
+        fallbackRequestKeyRef.current = requestKey;
+        let cancelled = false;
+
+        const loadFallbackRows = async () => {
+            setFallbackLoading(true);
+            try {
+                const entriesByMount = new Map<string, Array<{ name: string; isDirectory: boolean }>>();
+
+                for (const mount of mounts) {
+                    const rootPath = typeof mount.rootPath === 'string' ? mount.rootPath.trim() : '';
+                    if (!rootPath) {
+                        continue;
+                    }
+
+                    const isReady = onEnsureMount ? await onEnsureMount(mount) : true;
+                    if (!isReady) {
+                        continue;
+                    }
+
+                    const result = mount.type === 'local'
+                        ? await window.electron.files.listDirectory(rootPath)
+                        : await window.electron.ssh.listDir(mount.id, rootPath);
+
+                    if (!result.success) {
+                        continue;
+                    }
+
+                    const entries = extractFallbackDirectoryEntries(result);
+                    if (entries.length > 0) {
+                        entriesByMount.set(mount.id, entries);
+                    }
+                }
+
+                if (cancelled) {
+                    return;
+                }
+
+                setFallbackRows(buildFallbackExplorerRows(mounts, entriesByMount));
+            } finally {
+                if (!cancelled) {
+                    setFallbackLoading(false);
+                }
+            }
+        };
+
+        void loadFallbackRows();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [displayRows.length, fallbackLoading, fallbackRows.length, filterQuery, hasMounts, isAnyMountLoading, mounts, onEnsureMount]);
     useSyncedActiveFilePathReset(activeFilePath, syncedActiveFilePathRef);
     const {
         canUsePathBulkAction,
@@ -693,7 +897,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     const focusRowKey = React.useCallback(
         (rowKey: string) => {
             setWorkspaceExplorerFocusedRowKey(workspaceId, rowKey);
-            const rowIndex = displayRows.findIndex(row => row.key === rowKey);
+            const rowIndex = effectiveDisplayRows.findIndex(row => row.key === rowKey);
             if (rowIndex >= 0) {
                 listRef.current?.scrollToRow({
                     index: rowIndex,
@@ -705,7 +909,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 rowRefs.current[rowKey]?.focus();
             });
         },
-        [displayRows, workspaceId]
+        [effectiveDisplayRows, workspaceId]
     );
 
     const findEntryRow = React.useCallback(
@@ -936,8 +1140,8 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 toggleNode(selectedRow);
                 return;
             }
-            const currentVisibleIndex = displayRows.findIndex(row => row.key === selectedRow.key);
-            const nextVisibleRow = displayRows[currentVisibleIndex + 1];
+            const currentVisibleIndex = effectiveDisplayRows.findIndex(row => row.key === selectedRow.key);
+            const nextVisibleRow = effectiveDisplayRows[currentVisibleIndex + 1];
             if (nextVisibleRow?.type === 'entry') {
                 updateSelection(nextVisibleRow, e.shiftKey ? 'range' : 'replace');
             }
@@ -950,7 +1154,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 toggleNode(selectedRow);
                 return;
             }
-            const parentRow = findParentEntryRow(displayRows.filter((row): row is WorkspaceExplorerRow => row.type !== 'inline'), selectedRow);
+            const parentRow = findParentEntryRow(effectiveDisplayRows.filter((row): row is WorkspaceExplorerRow => row.type !== 'inline'), selectedRow);
             if (parentRow) {
                 updateSelection(parentRow, e.shiftKey ? 'range' : 'replace');
             }
@@ -976,7 +1180,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
 
     const rowProps = React.useMemo<ExplorerRowProps>(
         () => ({
-            rows: displayRows,
+            rows: effectiveDisplayRows,
             selectedEntries,
             focusedRowKey,
             onOpenFile,
@@ -993,7 +1197,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             onInlineCancel: handleInlineCancel,
         }),
         [
-            displayRows,
+            effectiveDisplayRows,
             focusedRowKey,
             handleInlineCancel,
             handleInlineSubmit,
@@ -1109,18 +1313,32 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             />
 
             {!hasMounts && <WorkspaceExplorerEmptyState label={t('frontend.workspace.noMounts')} />}
+            {isExplorerBlank && (
+                <WorkspaceExplorerBlankState
+                    label={t('frontend.workspace.explorerBlank')}
+                    onResetFilter={() => setWorkspaceExplorerFilterQuery(workspaceId, '')}
+                    onReload={() => {
+                        clearWorkspaceInlineAction(workspaceId);
+                        setWorkspaceExplorerFilterQuery(workspaceId, '');
+                        collapseAll();
+                        reloadAll();
+                    }}
+                    t={t}
+                />
+            )}
 
             <div
                 className={cn(
                     'flex-1 space-y-0 scrollbar-thin scrollbar-thumb-muted-foreground/10 scrollbar-track-transparent',
-                    shouldVirtualize ? 'overflow-hidden' : 'overflow-y-auto'
+                    shouldVirtualize ? 'overflow-hidden' : 'overflow-y-auto',
+                    isExplorerBlank && 'hidden'
                 )}
             >
                 {shouldVirtualize ? (
                     <List
                         listRef={listRef}
                         style={{ height: listHeight }}
-                        rowCount={displayRows.length}
+                        rowCount={effectiveDisplayRows.length}
                         rowHeight={EXPLORER_ROW_HEIGHT}
                         rowComponent={VirtualizedExplorerRow}
                         rowProps={rowProps}
@@ -1128,7 +1346,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                     />
                 ) : (
                     <StaticExplorerRows
-                        displayRows={displayRows}
+                        displayRows={effectiveDisplayRows}
                         focusedRowKey={focusedRowKey}
                         handleContextMenu={handleContextMenu}
                         handleEntrySelect={handleEntrySelect}
@@ -1159,3 +1377,4 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         </div>
     );
 };
+

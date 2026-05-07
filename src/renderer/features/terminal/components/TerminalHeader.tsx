@@ -62,3 +62,4 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
         </div>
     );
 };
+

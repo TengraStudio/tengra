@@ -171,3 +171,4 @@ export const AssistantLogo = memo(({ displayModel, provider, backend, t }: Assis
 });
 
 AssistantLogo.displayName = 'AssistantLogo';
+

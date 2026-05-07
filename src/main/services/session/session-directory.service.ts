@@ -11,6 +11,7 @@
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { SESSION_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import {
     SessionRecoverySnapshot,
@@ -113,19 +114,19 @@ export class SessionDirectoryService extends BaseService {
 
     // --- IPC Decorated Methods ---
 
-    @ipc('session:get-state')
+    @ipc(SESSION_CHANNELS.GET_STATE)
     async getSnapshotIpc(sessionId: string): Promise<RuntimeValue> {
         const result = this.getSnapshot(sessionId);
-        return serializeToIpc(result as unknown);
+        return serializeToIpc(result);
     }
 
-    @ipc('session:list')
+    @ipc(SESSION_CHANNELS.LIST)
     async listSnapshotsIpc(): Promise<RuntimeValue> {
         const result = this.listRecoverySnapshots();
-        return serializeToIpc(result as unknown);
+        return serializeToIpc(result);
     }
 
-    @ipc('session:health')
+    @ipc(SESSION_CHANNELS.HEALTH)
     async getHealthIpc(): Promise<RuntimeValue> {
         const snapshots = this.listRecoverySnapshots();
         const result = {
@@ -135,3 +136,4 @@ export class SessionDirectoryService extends BaseService {
         return serializeToIpc(result);
     }
 }
+

@@ -105,3 +105,4 @@ export function renderViewSkeleton(view: ViewSkeletonId): React.ReactElement {
             return <GenericViewSkeleton />;
     }
 }
+

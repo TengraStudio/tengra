@@ -194,3 +194,4 @@ describe('TerminalToolbar integration flows', () => {
         });
     });
 });
+

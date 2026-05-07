@@ -88,11 +88,11 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                 if (!mounted) {
                     return;
                 }
-                const hasAntigravity = await window.electron.hasLinkedAccount('antigravity');
+                const hasAntigravity = await window.electron.auth.hasLinkedAccount('antigravity');
                 const hasOpenAI =
-                    (await window.electron.hasLinkedAccount('openai')) ||
-                    (await window.electron.hasLinkedAccount('codex'));
-                const hasNvidia = await window.electron.hasLinkedAccount('nvidia');
+                    (await window.electron.auth.hasLinkedAccount('openai')) ||
+                    (await window.electron.auth.hasLinkedAccount('codex'));
+                const hasNvidia = await window.electron.auth.hasLinkedAccount('nvidia');
 
                 const providerAllowed = (providerRaw: string) => {
                     const provider = providerRaw.toLowerCase();
@@ -487,3 +487,4 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
         </Modal>
     );
 };
+

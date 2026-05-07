@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { MODEL_REGISTRY_CHANNELS } from '@shared/constants/ipc-channels';
 import { ModelDefinition } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -19,8 +20,9 @@ export interface ModelRegistryBridge {
 
 export function createModelRegistryBridge(ipc: IpcRenderer): ModelRegistryBridge {
     return {
-        getAllModels: () => ipc.invoke('model-registry:getAllModels'),
-        getRemoteModels: () => ipc.invoke('model-registry:get-remote'),
-        getInstalledModels: () => ipc.invoke('model-registry:get-installed'),
+        getAllModels: () => ipc.invoke(MODEL_REGISTRY_CHANNELS.GET_ALL_MODELS),
+        getRemoteModels: () => ipc.invoke(MODEL_REGISTRY_CHANNELS.GET_REMOTE_MODELS),
+        getInstalledModels: () => ipc.invoke(MODEL_REGISTRY_CHANNELS.GET_INSTALLED_MODELS),
     };
 }
+

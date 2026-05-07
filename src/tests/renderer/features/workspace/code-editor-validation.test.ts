@@ -24,3 +24,4 @@ describe('code editor validation', () => {
         expect(sanitizeCodeEditorLanguage(undefined)).toBe('javascript');
     });
 });
+

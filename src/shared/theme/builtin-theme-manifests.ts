@@ -20,3 +20,4 @@ export const BUILTIN_THEME_MANIFESTS: ThemeManifest[] = [
 ];
 
 export const BUILTIN_THEME_IDS = new Set(BUILTIN_THEME_MANIFESTS.map(theme => theme.id));
+

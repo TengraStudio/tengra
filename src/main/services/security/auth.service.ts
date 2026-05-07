@@ -25,6 +25,7 @@ import { ProxyService } from '@main/services/proxy/proxy.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { AUTH_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage, TengraError, ValidationError } from '@shared/utils/error.util';
 import { BrowserWindow } from 'electron';
@@ -334,23 +335,23 @@ export class AuthService extends BaseService {
 
     // --- Provider Methods ---
 
-    @ipc('auth:github-login')
-    async githubLogin(appId: 'profile' | 'copilot' = 'copilot') {
+    @ipc(AUTH_CHANNELS.GITHUB_LOGIN)
+    async githubLogin(appId: 'copilot' = 'copilot') {
         if (!this.proxyService) {
             throw new Error('ProxyService not initialized in AuthService');
         }
         return await this.proxyService.initiateGitHubAuth(appId);
     }
 
-    @ipc('auth:poll-token')
-    async pollToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') {
+    @ipc(AUTH_CHANNELS.POLL_TOKEN)
+    async pollToken(deviceCode: string, interval: number, appId: 'copilot' = 'copilot') {
         try {
             if (!this.proxyService) {
                 throw new Error('ProxyService not initialized in AuthService');
             }
             const response = await this.proxyService.waitForGitHubToken(deviceCode, interval, appId);
             const token = response.access_token;
-            const provider = appId === 'copilot' ? 'copilot' : 'github';
+            const provider = 'copilot';
 
             const { email, displayName, avatarUrl } = await this.fetchGitHubIdentity(token);
 
@@ -359,7 +360,7 @@ export class AuthService extends BaseService {
                 refreshToken: response.refresh_token,
                 sessionToken: response.session_token,
                 expiresAt: this.resolveGitHubTokenExpiry(response),
-                scope: response.scope ?? (appId === 'copilot' ? 'read:user user:email' : 'read:user user:email repo'),
+                scope: response.scope ?? 'read:user user:email',
                 email,
                 displayName,
                 avatarUrl,
@@ -369,11 +370,9 @@ export class AuthService extends BaseService {
             appLogger.info('AuthService', `Linking ${provider} account for identity: ${email ?? 'UnsafeValue'}`);
             const linkedAccount = await this.linkAccount(provider, tokenData);
 
-            if (appId === 'copilot') {
-                this.copilotService.setGithubToken(token);
-                if (response.session_token) {
-                    this.copilotService.setCopilotToken(response.session_token);
-                }
+            this.copilotService.setGithubToken(token);
+            if (response.session_token) {
+                this.copilotService.setCopilotToken(response.session_token);
             }
 
             return { success: true, account: linkedAccount };
@@ -385,7 +384,7 @@ export class AuthService extends BaseService {
     /**
      * Get all linked accounts for a provider.
      */
-    @ipc('auth:get-accounts-by-provider')
+    @ipc(AUTH_CHANNELS.GET_ACCOUNTS_BY_PROVIDER)
     async getAccountsByProvider(provider: string): Promise<LinkedAccountInfo[]> {
         const normalized = this.normalizeProvider(provider);
         const accounts = await this.getLinkedAccountsFresh(normalized);
@@ -395,7 +394,7 @@ export class AuthService extends BaseService {
     /**
      * Get the active (selected) account for a provider.
      */
-    @ipc('auth:get-active-linked-account')
+    @ipc(AUTH_CHANNELS.GET_ACTIVE_LINKED_ACCOUNT)
     async getActiveAccount(provider: string): Promise<LinkedAccountInfo | null> {
         const normalized = this.normalizeProvider(provider);
         const account = await this.getActiveLinkedAccountFresh(normalized);
@@ -481,7 +480,7 @@ export class AuthService extends BaseService {
     /**
      * Set which account should be active for a provider.
      */
-    @ipc('auth:set-active-linked-account')
+    @ipc(AUTH_CHANNELS.SET_ACTIVE_LINKED_ACCOUNT)
     async setActiveAccount(provider: string, accountId: string): Promise<void> {
         const normalized = this.normalizeProvider(provider);
         await this.databaseService.setActiveLinkedAccount(normalized, accountId);
@@ -494,7 +493,7 @@ export class AuthService extends BaseService {
     /**
      * Link a new account for a provider.
      */
-    @ipc('auth:link-account')
+    @ipc(AUTH_CHANNELS.LINK_ACCOUNT)
     async linkAccount(provider: string, tokenData: TokenData): Promise<LinkedAccountInfo> {
         const detected = this.detectProvider(provider, tokenData);
         const normalized = this.normalizeProvider(detected);
@@ -866,7 +865,7 @@ export class AuthService extends BaseService {
     /**
      * Unlink (remove) a specific account.
      */
-    @ipc('auth:unlink-account')
+    @ipc(AUTH_CHANNELS.UNLINK_ACCOUNT)
     async unlinkAccount(accountId: string): Promise<void> {
         // Get the account first to check if it's active
         const accounts = await this.getAllLinkedAccountsCached();
@@ -898,7 +897,7 @@ export class AuthService extends BaseService {
     /**
      * Unlink all accounts for a provider.
      */
-    @ipc('auth:unlink-provider')
+    @ipc(AUTH_CHANNELS.UNLINK_PROVIDER)
     async unlinkAllForProvider(provider: string): Promise<void> {
         const normalized = this.normalizeProvider(provider);
         const accounts = await this.getLinkedAccountsCached(normalized);
@@ -961,7 +960,7 @@ export class AuthService extends BaseService {
     /**
      * Creates encrypted backup payload for master key recovery.
      */
-    @ipc('auth:create-master-key-backup')
+    @ipc(AUTH_CHANNELS.CREATE_MASTER_KEY_BACKUP)
     createMasterKeyBackup(passphrase: string): string {
         const result = this.securityService.createEncryptedMasterKeyBackup(passphrase);
         if (!result.success || !result.result?.backup) {
@@ -973,7 +972,7 @@ export class AuthService extends BaseService {
     /**
      * Restores master key from encrypted backup payload.
      */
-    @ipc('auth:restore-master-key-backup')
+    @ipc(AUTH_CHANNELS.RESTORE_MASTER_KEY_BACKUP)
     async restoreMasterKeyBackup(backupPayload: string, passphrase: string): Promise<void> {
         const result = await this.securityService.restoreMasterKeyBackup(backupPayload, passphrase);
         if (!result.success) {
@@ -988,7 +987,7 @@ export class AuthService extends BaseService {
     /**
      * Get all linked accounts across all providers.
      */
-    @ipc('auth:get-linked-accounts')
+    @ipc(AUTH_CHANNELS.GET_LINKED_ACCOUNTS)
     async getAllAccounts(): Promise<LinkedAccountInfo[]> {
         const accounts = await this.getAllLinkedAccountsFresh();
         return accounts.map(a => this.toPublicAccount(a));
@@ -997,7 +996,7 @@ export class AuthService extends BaseService {
     /**
      * Check if a provider has any linked accounts.
      */
-    @ipc('auth:has-linked-account')
+    @ipc(AUTH_CHANNELS.HAS_LINKED_ACCOUNT)
     async hasLinkedAccount(provider: string): Promise<boolean> {
         const normalized = this.normalizeProvider(provider);
         const accounts = await this.getLinkedAccountsFresh(normalized);
@@ -1292,7 +1291,7 @@ export class AuthService extends BaseService {
             ?? [...richAccounts].sort((left, right) => right.updatedAt - left.updatedAt)[0];
     }
 
-    @ipc('auth:detect-auth-provider')
+    @ipc(AUTH_CHANNELS.DETECT_PROVIDER)
     detectProvider(providerHint: string | undefined, tokenData?: Partial<TokenData>): string {
         const normalizedHint = (providerHint ?? '').trim().toLowerCase();
         if (normalizedHint && normalizedHint !== 'auto' && normalizedHint !== 'UnsafeValue') {
@@ -1343,7 +1342,7 @@ export class AuthService extends BaseService {
             || normalized.startsWith('xai-');
     }
 
-    @ipc('auth:get-provider-health')
+    @ipc(AUTH_CHANNELS.GET_PROVIDER_HEALTH)
     async getProviderHealth(provider?: string): Promise<ProviderHealthCheck[]> {
         const accounts = provider
             ? await this.databaseService.getLinkedAccounts(this.normalizeProvider(provider))
@@ -1377,7 +1376,7 @@ export class AuthService extends BaseService {
         }).sort((a, b) => a.provider.localeCompare(b.provider));
     }
 
-    @ipc('auth:get-provider-analytics')
+    @ipc(AUTH_CHANNELS.GET_PROVIDER_ANALYTICS)
     async getProviderAnalytics(): Promise<ProviderAnalytics[]> {
         const accounts = await this.databaseService.getLinkedAccounts();
         const byProvider = new Map<string, LinkedAccount[]>();
@@ -1398,7 +1397,7 @@ export class AuthService extends BaseService {
         })).sort((a, b) => a.provider.localeCompare(b.provider));
     }
 
-    @ipc('auth:rotate-token-encryption')
+    @ipc(AUTH_CHANNELS.ROTATE_TOKEN_ENCRYPTION)
     async rotateTokenEncryption(provider?: string): Promise<{ rotated: number; failed: number }> {
         const targetProvider = provider ? this.normalizeProvider(provider) : undefined;
         const accounts = targetProvider
@@ -1517,7 +1516,7 @@ export class AuthService extends BaseService {
         };
     }
 
-    @ipc('auth:revoke-account-token')
+    @ipc(AUTH_CHANNELS.REVOKE_ACCOUNT_TOKEN)
     async revokeAccountTokens(
         accountId: string,
         options: { revokeAccess?: boolean; revokeRefresh?: boolean; revokeSession?: boolean } = {}
@@ -1548,7 +1547,7 @@ export class AuthService extends BaseService {
         this.eventBus.emit('account:updated', { accountId: account.id, provider: account.provider });
     }
 
-    @ipc('auth:get-token-analytics')
+    @ipc(AUTH_CHANNELS.GET_TOKEN_ANALYTICS)
     async getTokenAnalytics(provider?: string): Promise<TokenAnalytics> {
         const accounts = provider
             ? await this.databaseService.getLinkedAccounts(this.normalizeProvider(provider))
@@ -1569,7 +1568,7 @@ export class AuthService extends BaseService {
     /**
      * Exports linked account credentials as an encrypted payload.
      */
-    @ipc('auth:export-credentials')
+    @ipc(AUTH_CHANNELS.EXPORT_CREDENTIALS)
     async exportCredentials(
         options: CredentialExportOptions
     ): Promise<{ payload: string; checksum: string; expiresAt: number }> {
@@ -1616,7 +1615,7 @@ export class AuthService extends BaseService {
     /**
      * Imports linked account credentials from an encrypted export payload.
      */
-    @ipc('auth:import-credentials')
+    @ipc(AUTH_CHANNELS.IMPORT_CREDENTIALS)
     async importCredentials(payloadText: string, password: string): Promise<CredentialImportResult> {
         this.validateExportPassword(password);
         const bundle = this.parseCredentialExportPackage(payloadText);
@@ -2033,8 +2032,6 @@ export class AuthService extends BaseService {
         const mappings: Record<string, string> = {
             'proxy': 'proxy_key',
             'proxy_key': 'proxy_key',
-            'github': 'github',
-            'github_token': 'github',
             'copilot': 'copilot',
             'copilot_token': 'copilot',
             'antigravity': 'antigravity',
@@ -2113,3 +2110,4 @@ export class AuthService extends BaseService {
         return Object.keys(metadata).length > 0 ? metadata : undefined;
     }
 }
+

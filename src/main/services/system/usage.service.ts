@@ -11,6 +11,7 @@
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { USAGE_CHANNELS } from '@shared/constants/ipc-channels';
 import { AppSettings } from '@shared/types/settings';
 import { IpcMainInvokeEvent } from 'electron';
 
@@ -30,18 +31,18 @@ export class UsageService extends BaseService {
         super('UsageService');
     }
 
-    @ipc('usage:checkLimit')
-    async checkLimitIpc(_event: IpcMainInvokeEvent, provider: string, model: string) {
+    @ipc(USAGE_CHANNELS.CHECK_LIMIT)
+    async checkLimitIpc(provider: string, model: string) {
         return this.checkUsageLimit(this.settingsService.getSettings(), provider, model);
     }
 
-    @ipc('usage:getUsageCount')
-    async getUsageCountIpc(_event: IpcMainInvokeEvent, period: UsagePeriod, provider?: string, model?: string) {
+    @ipc(USAGE_CHANNELS.GET_USAGE_COUNT)
+    async getUsageCountIpc(period: UsagePeriod, provider?: string, model?: string) {
         return this.getUsageCount(period, provider, model);
     }
 
-    @ipc('usage:recordUsage')
-    async recordUsageIpc(_event: IpcMainInvokeEvent, provider: string, model: string) {
+    @ipc(USAGE_CHANNELS.RECORD_USAGE)
+    async recordUsageIpc(provider: string, model: string) {
         this.usageRecords.push({
             provider: this.normalizeProvider(provider),
             model: this.normalizeModel(model),
@@ -153,3 +154,4 @@ export class UsageService extends BaseService {
         return { allowed: true };
     }
 }
+

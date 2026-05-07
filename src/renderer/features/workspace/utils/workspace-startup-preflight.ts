@@ -547,6 +547,9 @@ async function hasPythonWorkspaceFiles(workspacePath: string): Promise<boolean> 
 }
 
 async function canListWorkspaceRoot(workspacePath: string): Promise<boolean> {
+    if (!workspacePath) {
+        return false;
+    }
     try {
         const response = await window.electron.files.listDirectory(workspacePath);
         return response.success;
@@ -937,3 +940,4 @@ export async function executeWorkspaceRunbook(
         };
     });
 }
+

@@ -230,9 +230,10 @@ export interface AgentSystemEvents {
         description?: string;
     };
 
-    // Telemetry events (for real-time UI updates)
-    'agent:telemetry_update': {
+    // usageStats events (for real-time UI updates)
+    'agent:usageStats_update': {
         taskId: string;
         metrics: Partial<TaskMetrics>;
     };
 }
+

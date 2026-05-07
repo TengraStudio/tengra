@@ -121,3 +121,4 @@ export class ServiceRegistry extends EventEmitter {
         return this.find<T>(meta => meta.tags.includes(tag));
     }
 }
+

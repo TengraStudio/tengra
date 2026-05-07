@@ -162,3 +162,4 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
         </div>
     );
 };
+

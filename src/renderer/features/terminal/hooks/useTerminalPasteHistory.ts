@@ -50,3 +50,4 @@ export function useTerminalPasteHistory({ storageKey, historyLimit }: UseTermina
 
     return { pasteHistory, setPasteHistory };
 }
+

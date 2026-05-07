@@ -24,6 +24,7 @@ import { useChatGenerator } from '@/features/chat/hooks/useChatGenerator';
 import { useFolderManager } from '@/features/chat/hooks/useFolderManager';
 import { usePromptManager } from '@/features/chat/hooks/usePromptManager';
 import { useSpeechRecognition } from '@/features/chat/hooks/useSpeechRecognition';
+import { getSelectableProviderId } from '@/features/models/utils/model-fetcher';
 import { useSessionState } from '@/hooks/useSessionState';
 import { generateId } from '@/lib/utils';
 import { 
@@ -32,6 +33,7 @@ import {
     setCurrentChatId, 
     updateChatInStore, 
     useChatStore} from '@/store/chat.store';
+import { getSettingsSnapshot, updateSettings } from '@/store/settings.store';
 import { AppSettings, Chat, Message } from '@/types';
 import { CatchError } from '@/types/common';
 import { CachedDatabase } from '@/utils/cached-database.util';
@@ -216,6 +218,95 @@ function buildAttachmentPromptContext(
         .join('\n');
 }
 
+function resolveActiveModelSelection(options: {
+    selectedModel: string;
+    selectedProvider: string;
+    selectedModels?: SelectedModelInfo[];
+    appSettings?: AppSettings | undefined;
+    models?: import('@/types').ModelInfo[];
+}): { model: string; provider: string } {
+    const availableModels = options.models ?? [];
+    const hasExactModelProvider = (model: string, provider: string): boolean => {
+        if (!model || !provider) {
+            return false;
+        }
+        return availableModels.some(candidate =>
+            candidate.id === model && getSelectableProviderId(candidate) === provider
+        );
+    };
+
+    const firstSelected = options.selectedModels?.[0];
+    if (firstSelected?.model && firstSelected.provider) {
+        const model = firstSelected.model.trim();
+        const provider = firstSelected.provider.trim();
+        if (hasExactModelProvider(model, provider)) {
+            return { model, provider };
+        }
+    }
+
+    const selectedModel = options.selectedModel.trim();
+    const selectedProvider = options.selectedProvider.trim();
+    if (hasExactModelProvider(selectedModel, selectedProvider)) {
+        return { model: selectedModel, provider: selectedProvider };
+    }
+
+    const persistedModel = options.appSettings?.general.defaultModel?.trim() ?? '';
+    const persistedProvider = options.appSettings?.general.lastProvider?.trim() ?? '';
+    if (hasExactModelProvider(persistedModel, persistedProvider)) {
+        return { model: persistedModel, provider: persistedProvider };
+    }
+
+    if (availableModels.length > 0) {
+        const firstAvailable = availableModels.find(model => model.id && getSelectableProviderId(model) !== '');
+        if (firstAvailable?.id) {
+            return { model: firstAvailable.id, provider: getSelectableProviderId(firstAvailable) };
+        }
+    }
+
+    return { model: selectedModel, provider: selectedProvider };
+}
+
+function resolveSystemModeFromSettings(appSettings: AppSettings | undefined): 'thinking' | 'agent' | 'fast' {
+    const persistedMode = appSettings?.general.chatMode;
+    if (persistedMode === 'thinking' || persistedMode === 'agent') {
+        return persistedMode;
+    }
+    return 'fast';
+}
+
+function toPersistedChatMode(systemMode: 'thinking' | 'agent' | 'fast'): 'instant' | 'thinking' | 'agent' {
+    if (systemMode === 'thinking' || systemMode === 'agent') {
+        return systemMode;
+    }
+    return 'instant';
+}
+
+async function persistChatMessageRecord(message: {
+    id: string;
+    chatId: string;
+    role: string;
+    content: string | Message['content'];
+    timestamp: number;
+    provider?: string;
+    model?: string;
+    images?: string[];
+    metadata?: Message['metadata'];
+}): Promise<void> {
+    const attemptPersist = async () => {
+        const result = await window.electron.db.addMessage(message as unknown as Message & { chatId: string });
+        if (!result?.success) {
+            throw new Error('Failed to persist chat message');
+        }
+    };
+
+    try {
+        await attemptPersist();
+    } catch {
+        await new Promise(resolve => setTimeout(resolve, 80));
+        await attemptPersist();
+    }
+}
+
 function useChatInitialization(loadFolders: () => Promise<void>): void {
     useEffect(() => {
         const load = async () => {
@@ -224,13 +315,35 @@ function useChatInitialization(loadFolders: () => Promise<void>): void {
                 const visibleChats = (allChats as Chat[]).filter(
                     chat => !isWorkspaceAgentChat(chat)
                 );
-                const trimmedChats = trimChats(
+                const hydratedChats = trimChats(
                     visibleChats.map(chat => ({
                         ...chat,
                         messages: []
                     }))
                 );
-                setChats(trimmedChats);
+                setChats(previousChats => {
+                    if (previousChats.length === 0) {
+                        return hydratedChats;
+                    }
+
+                    const mergedById = new Map<string, Chat>();
+                    for (const chat of hydratedChats) {
+                        mergedById.set(chat.id, chat);
+                    }
+                    for (const chat of previousChats) {
+                        const existing = mergedById.get(chat.id);
+                        if (!existing) {
+                            continue;
+                        }
+                        mergedById.set(chat.id, {
+                            ...existing,
+                            messages: chat.messages.length > 0 ? chat.messages : existing.messages,
+                            isGenerating: chat.isGenerating ?? existing.isGenerating,
+                        });
+                    }
+
+                    return trimChats(Array.from(mergedById.values()));
+                });
                 await loadFolders();
             } catch (error) {
                 appLogger.error('ChatManager', 'Failed to initialize chats', error as Error);
@@ -257,15 +370,21 @@ function useLazyMessageLoader(currentChatId: string | null, chats: Chat[]): void
 
         const fetchMessages = async () => {
             try {
-                loadedChatIdsRef.current.add(currentChatId);
-                const messages = await window.electron.db.getMessages(currentChatId);
+                let messages = await window.electron.db.getMessages(currentChatId);
+                if (messages.length === 0 && (targetChat.messages?.length ?? 0) === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 120));
+                    messages = await window.electron.db.getMessages(currentChatId);
+                }
                 const trimmedMessages = trimMessages(messages as Message[]);
-                const currentChatsSnapshot = getChatSnapshot().chats;
-                const updatedChats = currentChatsSnapshot.map(c => {
+                setChats(previousChats => previousChats.map(c => {
                     if (c.id !== currentChatId) {return c;}
                     return { ...c, messages: deduplicateMessages([...c.messages, ...trimmedMessages]) };
-                });
-                setChats(updatedChats);
+                }));
+
+                const currentChat = getChatSnapshot().chats.find(c => c.id === currentChatId);
+                if (trimmedMessages.length > 0 || (currentChat?.messages.length ?? 0) > 0) {
+                    loadedChatIdsRef.current.add(currentChatId);
+                }
             } catch (e) {
                 appLogger.error('ChatManager', `Failed to load messages for ${currentChatId}`, e as Error);
             }
@@ -298,7 +417,9 @@ export function useChatManager(options: UseChatManagerOptions) {
     const [contextWindow, setContextWindow] = useState(128000);
     const isSendingRef = useRef(false);
 
-    const [systemMode, setSystemMode] = useState<'thinking' | 'agent' | 'fast'>('agent');
+    const [systemMode, setSystemModeState] = useState<'thinking' | 'agent' | 'fast'>(() =>
+        resolveSystemModeFromSettings(appSettings)
+    );
     const [imageRequestCount, setImageRequestCount] = useState(1);
     const [permissionPolicy, setPermissionPolicy] = useState<WorkspaceAgentPermissionPolicy>({
         commandPolicy: 'ask-every-time',
@@ -325,6 +446,33 @@ export function useChatManager(options: UseChatManagerOptions) {
             });
         });
         return () => cancelAnimationFrame(rafId);
+    }, [appSettings]);
+
+    useEffect(() => {
+        const nextSystemMode = resolveSystemModeFromSettings(appSettings);
+        setSystemModeState(previousMode => (previousMode === nextSystemMode ? previousMode : nextSystemMode));
+    }, [appSettings?.general.chatMode]);
+
+    const setSystemMode = useCallback((nextMode: 'thinking' | 'agent' | 'fast') => {
+        setSystemModeState(nextMode);
+
+        const currentSettings = getSettingsSnapshot().settings ?? appSettings;
+        if (!currentSettings) {
+            return;
+        }
+
+        const persistedMode = toPersistedChatMode(nextMode);
+        if (currentSettings.general.chatMode === persistedMode) {
+            return;
+        }
+
+        void updateSettings({
+            ...currentSettings,
+            general: {
+                ...currentSettings.general,
+                chatMode: persistedMode,
+            }
+        });
     }, [appSettings]);
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
@@ -515,53 +663,20 @@ export function useChatManager(options: UseChatManagerOptions) {
         const readyAttachments = attachments.filter(att => att.status === 'ready');
         const hasInputText = content.trim() !== '';
         const hasReadyAttachments = readyAttachments.length > 0;
+        const activeSelection = resolveActiveModelSelection({
+            selectedModel,
+            selectedProvider,
+            selectedModels: options.selectedModels,
+            appSettings,
+            models,
+        });
         
         if (isSendingRef.current) {return;}
-        if ((!hasInputText && !hasReadyAttachments) || !selectedModel || isLoading) {return;}
+        if ((!hasInputText && !hasReadyAttachments) || !activeSelection.model || !activeSelection.provider || isLoading) {return;}
 
         isSendingRef.current = true;
         try {
             setInput('');
-            let chatId = currentChatId;
-
-            if (!chatId) {
-                const newChatId = generateId();
-                const createdAtMs = Date.now();
-                const newChatDb = {
-                    id: newChatId,
-                    title: content.slice(0, 50),
-                    model: selectedModel,
-                    backend: selectedProvider as string,
-                    createdAt: createdAtMs,
-                    updatedAt: createdAtMs,
-                    isGenerating: true
-                };
-
-                const newChat: Chat = {
-                    ...newChatDb,
-                    messages: [],
-                    createdAt: new Date(createdAtMs),
-                    updatedAt: new Date(createdAtMs),
-                    isGenerating: true
-                };
-
-                setChats([newChat, ...getChatSnapshot().chats]);
-                setCurrentChatId(newChatId);
-                chatId = newChatId;
-
-                const createResult = await window.electron.db.createChat(newChatDb);
-                if (!createResult.success) {
-                    setChats(getChatSnapshot().chats.filter(chat => chat.id !== newChatId));
-                    setCurrentChatId(null);
-                    return;
-                }
-            } else {
-                updateChatInStore(chatId, { isGenerating: true });
-                void window.electron.db.updateChat?.(chatId, { isGenerating: true }).catch((error) => {
-                    appLogger.warn('ChatManager', `Failed to persist generation start for ${chatId}`, error as Error);
-                });
-            }
-
             const timestamp = Date.now();
             const imageInputs = readyAttachments.flatMap(att => {
                 if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) {return [att.content];}
@@ -577,32 +692,79 @@ export function useChatManager(options: UseChatManagerOptions) {
                 content: mergedContent,
                 timestamp: new Date(timestamp),
                 images: imageInputs.length > 0 ? imageInputs : undefined,
-                metadata: isImageOnlyModel(selectedModel) ? { imageRequestCount } : undefined
+                metadata: isImageOnlyModel(activeSelection.model) ? { imageRequestCount } : undefined
             };
 
+            let chatId = currentChatId;
+            let createdNewChat = false;
+
+            if (!chatId) {
+                const newChatId = generateId();
+                const createdAtMs = Date.now();
+                const chatTitle = mergedContent.slice(0, 50);
+                const newChatDb = {
+                    id: newChatId,
+                    title: chatTitle,
+                    model: activeSelection.model,
+                    backend: activeSelection.provider,
+                    createdAt: createdAtMs,
+                    updatedAt: createdAtMs,
+                    isGenerating: true
+                };
+
+                const newChat: Chat = {
+                    ...newChatDb,
+                    messages: [userMessage],
+                    createdAt: new Date(createdAtMs),
+                    updatedAt: new Date(createdAtMs),
+                    isGenerating: true
+                };
+
+                setChats(previousChats => [newChat, ...previousChats]);
+                setCurrentChatId(newChatId);
+                chatId = newChatId;
+                createdNewChat = true;
+
+                const createResult = await window.electron.db.createChat(newChatDb);
+                if (!createResult.success) {
+                    setChats(previousChats => previousChats.filter(chat => chat.id !== newChatId));
+                    setCurrentChatId(null);
+                    return;
+                }
+            } else {
+                updateChatInStore(chatId, { isGenerating: true });
+                void window.electron.db.updateChat?.(chatId, { isGenerating: true }).catch((error) => {
+                    appLogger.warn('ChatManager', `Failed to persist generation start for ${chatId}`, error as Error);
+                });
+            }
+
             const targetChat = getChatSnapshot().chats.find(c => c.id === chatId);
-            if (targetChat) {
+            if (targetChat && !createdNewChat) {
                 updateChatInStore(chatId, {
                     messages: deduplicateMessages([...targetChat.messages, userMessage]),
                     title: targetChat.messages.length === 0 ? mergedContent.slice(0, 50) : targetChat.title
                 });
             }
 
-            void window.electron.db.addMessage({
+            await persistChatMessageRecord({
                 ...userMessage,
                 chatId,
                 timestamp,
-                provider: selectedProvider,
-                model: selectedModel
-            }).catch((error) => {
-                appLogger.error('ChatManager', 'Failed to persist user message', error as Error);
+                provider: activeSelection.provider,
+                model: activeSelection.model
             });
             setAttachments([]);
-            void generateResponse(chatId, userMessage);
+            void generateResponse(chatId, userMessage, undefined, {
+                provider: activeSelection.provider,
+                model: activeSelection.model,
+                selectedModels: options.selectedModels && options.selectedModels.length > 1
+                    ? options.selectedModels
+                    : [{ provider: activeSelection.provider, model: activeSelection.model }],
+            });
         } finally {
             isSendingRef.current = false;
         }
-    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, imageRequestCount, t, setAttachments]);
+    }, [input, attachments, selectedModel, selectedProvider, options.selectedModels, appSettings, isLoading, currentChatId, generateResponse, imageRequestCount, t, setAttachments]);
 
     const regenerateMessage = useCallback(
         async (assistantMessageId: string) => {
@@ -635,3 +797,4 @@ export function useChatManager(options: UseChatManagerOptions) {
         attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, imageRequestCount, regenerateMessage, bulkDeleteChats,
         permissionPolicy, setPermissionPolicy, antigravityCreditConfirmation, confirmAntigravityCreditUsage, cancelAntigravityCreditUsage]);
 }
+

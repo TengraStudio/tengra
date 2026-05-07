@@ -41,3 +41,4 @@ export class NetworkError extends AppError {
     this.url = options?.url;
   }
 }
+

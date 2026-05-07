@@ -80,3 +80,4 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
         </div>
     );
 };
+

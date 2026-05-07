@@ -123,3 +123,4 @@ export const MemoryFilters = ({
         </div>
     );
 };
+

@@ -91,3 +91,4 @@ export class BatchedEventEmitter<T> extends EventEmitter {
         Object.assign(this.options, newOptions);
     }
 }
+

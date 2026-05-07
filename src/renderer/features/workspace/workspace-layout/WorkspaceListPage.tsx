@@ -15,11 +15,11 @@ import {
     saveWorkspaceListPreferences,
     useWorkspaceListStateMachine
 } from '@/features/workspace/hooks/useWorkspaceListStateMachine';
-import { WorkspaceSetupModal as WorkspaceSetupModal } from '@/features/workspace/workspace-setup/WorkspaceSetupModal';
 import { Language, useTranslation } from '@/i18n';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
+import { WorkspaceCreatePage } from './WorkspaceCreatePage';
 import { WorkspaceHeader } from './WorkspaceHeader';
 import { WorkspaceListContent } from './WorkspaceListContent';
 import { WorkspaceModals } from './WorkspaceModals';
@@ -38,7 +38,7 @@ export const WorkspaceListPage: React.FC<WorkspaceListPageProps> = ({
     
     // UI State
     const [searchQuery, setSearchQuery] = useState('');
-    const [showWizard, setShowWizard] = useState(false);
+    const [activePage, setActivePage] = useState<'list' | 'create'>('list');
     const [showWorkspaceMenu, setShowWorkspaceMenu] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [sortBy, setSortBy] = useState<'title' | 'updatedAt' | 'createdAt'>('updatedAt');
@@ -78,6 +78,22 @@ export const WorkspaceListPage: React.FC<WorkspaceListPageProps> = ({
         const anchor = document.createElement('a'); anchor.href = url; anchor.download = `workspaces.csv`; anchor.click(); URL.revokeObjectURL(url);
     };
 
+    if (activePage === 'create') {
+        return (
+            <WorkspaceCreatePage
+                language={language}
+                onBack={() => setActivePage('list')}
+                onWorkspaceCreated={async (...args) => {
+                    const success = await sm.executeCreate(...args);
+                    if (success) {
+                        setActivePage('list');
+                    }
+                    return success;
+                }}
+            />
+        );
+    }
+
     return (
         <div className="h-full flex flex-col bg-background p-8 overflow-y-auto">
             <div className="max-w-5xl mx-auto w-full space-y-8">
@@ -88,7 +104,7 @@ export const WorkspaceListPage: React.FC<WorkspaceListPageProps> = ({
                     searchPlaceholder={t('frontend.workspaces.searchPlaceholder')}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
-                    onNewWorkspace={() => setShowWizard(true)}
+                    onNewWorkspace={() => setActivePage('create')}
                     selectedCount={sm.state.selectedWorkspaceIds.size}
                     totalCount={filteredWorkspaces.length}
                     onToggleSelectAll={sm.toggleSelectAll}
@@ -136,18 +152,8 @@ export const WorkspaceListPage: React.FC<WorkspaceListPageProps> = ({
                     handleBulkArchive={sm.executeBulkArchive}
                     t={t}
                 />
-
-                <WorkspaceSetupModal
-                    isOpen={showWizard}
-                    onClose={() => setShowWizard(false)}
-                    onWorkspaceCreated={async (...a) => {
-                        const s = await sm.executeCreate(...a);
-                        if (s) {setShowWizard(false);}
-                        return s;
-                    }}
-                    language={language}
-                />
             </div>
         </div>
     );
 };
+

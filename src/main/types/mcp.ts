@@ -74,7 +74,7 @@ export interface MCPServerConfig {
         malwareFlags?: string[]
         lastScannedAt?: number
     }
-    telemetry?: {
+    usageStats?: {
         enabled?: boolean
         anonymize?: boolean
         crashReporting?: boolean
@@ -159,3 +159,4 @@ export type MCPMethod =
     | 'resources/read'
     | 'prompts/list'
     | 'prompts/get'
+

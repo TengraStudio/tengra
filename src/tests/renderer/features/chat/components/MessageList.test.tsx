@@ -237,3 +237,4 @@ describe('MessageList', () => {
         expect(screen.getByTestId('virtuoso')).toHaveAttribute('data-follow-output', 'auto');
     });
 });
+

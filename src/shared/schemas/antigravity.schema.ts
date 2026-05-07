@@ -47,3 +47,4 @@ export const AntigravityLoadCodeAssistSchema = z.object({
 export type AntigravityAiCredit = z.infer<typeof AntigravityAiCreditSchema>;
 export type AntigravityPaidTier = z.infer<typeof AntigravityPaidTierSchema>;
 export type AntigravityLoadCodeAssist = z.infer<typeof AntigravityLoadCodeAssistSchema>;
+

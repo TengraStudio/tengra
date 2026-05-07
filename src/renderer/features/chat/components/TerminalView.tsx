@@ -264,3 +264,4 @@ export const TerminalView = React.memo(({
 });
 
 TerminalView.displayName = 'TerminalView';
+

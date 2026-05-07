@@ -33,3 +33,4 @@ export class SecurityError extends AppError {
     this.operation = options?.operation;
   }
 }
+

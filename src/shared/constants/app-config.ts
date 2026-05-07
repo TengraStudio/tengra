@@ -72,8 +72,8 @@ export const OPENAI_RETRY_POLICY = {
   authRetryCount: 2,
 } as const;
 
-/** Telemetry service limits */
-export const TELEMETRY = {
+/** usageStats service limits */
+export const usageStats = {
   /** Maximum queued events before dropping */
   MAX_QUEUE_SIZE: 10000,
   /** Maximum event name length */
@@ -95,3 +95,4 @@ export const MONITORING = {
   /** Command execution timeout in ms */
   COMMAND_TIMEOUT_MS: 5000,
 } as const;
+

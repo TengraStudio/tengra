@@ -3,10 +3,9 @@
  * Copyright (c) 2026 TengraStudio
  */
 
+import { AntigravityStreamState, InterceptorState,IStreamParserStrategy, StreamChunk, StreamPayload } from '@main/utils/ai/stream/types';
 import { ToolCall } from '@shared/types/ai/chat';
 import { safeJsonParse } from '@shared/utils/system/sanitize.util';
-
-import { AntigravityStreamState, InterceptorState,IStreamParserStrategy, StreamChunk, StreamPayload } from '../types';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
@@ -144,3 +143,4 @@ export class AntigravityParserStrategy implements IStreamParserStrategy {
         }
     }
 }
+

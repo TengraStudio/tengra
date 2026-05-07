@@ -113,3 +113,4 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
 );
 
 WorkspaceSectionComponent.displayName = 'WorkspaceSection';
+

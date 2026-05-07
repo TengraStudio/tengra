@@ -598,3 +598,4 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
         </div>
     );
 };
+

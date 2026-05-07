@@ -81,7 +81,7 @@ function createSessionSummary(
         modes: overrides?.modes ?? createModes(),
         strategy: overrides?.strategy ?? 'reasoning-first',
         permissionPolicy: overrides?.permissionPolicy ?? createPermissionPolicy(),
-        contextTelemetry: overrides?.contextTelemetry,
+        usageStats: overrides?.usageStats,
         councilConfig: overrides?.councilConfig,
         background: overrides?.background ?? false,
         archived: overrides?.archived ?? false,
@@ -379,3 +379,4 @@ describe('WorkspaceAgentComposer', () => {
         );
     });
 });
+

@@ -79,3 +79,4 @@ function parseOpenCodeToolCall(call: JsonObject): ToolCall {
         }
     };
 }
+

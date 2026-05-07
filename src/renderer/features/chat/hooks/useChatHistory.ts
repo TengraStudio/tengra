@@ -153,3 +153,4 @@ export function useChatHistory(): ChatHistoryManager {
         clearHistory
     }), [historyIndex, history.length, undo, redo, saveState, clearHistory]);
 }
+

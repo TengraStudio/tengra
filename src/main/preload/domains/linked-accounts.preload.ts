@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { AUTH_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface LinkedAccountInfo {
@@ -101,30 +102,31 @@ export interface LinkedAccountsBridge {
 
 export function createLinkedAccountsBridge(ipc: IpcRenderer): LinkedAccountsBridge {
     return {
-        getLinkedAccounts: provider => ipc.invoke('auth:get-linked-accounts', provider),
-        getAllAccounts: () => ipc.invoke('auth:get-linked-accounts'),
-        getActiveLinkedAccount: provider => ipc.invoke('auth:get-active-linked-account', provider),
+        getLinkedAccounts: provider => ipc.invoke(AUTH_CHANNELS.GET_LINKED_ACCOUNTS, provider),
+        getAllAccounts: () => ipc.invoke(AUTH_CHANNELS.GET_LINKED_ACCOUNTS),
+        getActiveLinkedAccount: provider => ipc.invoke(AUTH_CHANNELS.GET_ACTIVE_LINKED_ACCOUNT, provider),
         setActiveLinkedAccount: (provider, accountId) =>
-            ipc.invoke('auth:set-active-linked-account', provider, accountId),
+            ipc.invoke(AUTH_CHANNELS.SET_ACTIVE_LINKED_ACCOUNT, provider, accountId),
         linkAccount: (provider, tokenData) =>
-            ipc.invoke('auth:link-account', provider, tokenData),
-        unlinkAccount: accountId => ipc.invoke('auth:unlink-account', accountId),
-        unlinkProvider: provider => ipc.invoke('auth:unlink-provider', provider),
-        hasLinkedAccount: provider => ipc.invoke('auth:has-linked-account', provider),
-        getAccountsByProvider: provider => ipc.invoke('auth:get-accounts-by-provider', provider),
+            ipc.invoke(AUTH_CHANNELS.LINK_ACCOUNT, provider, tokenData),
+        unlinkAccount: accountId => ipc.invoke(AUTH_CHANNELS.UNLINK_ACCOUNT, accountId),
+        unlinkProvider: provider => ipc.invoke(AUTH_CHANNELS.UNLINK_PROVIDER, provider),
+        hasLinkedAccount: provider => ipc.invoke(AUTH_CHANNELS.HAS_LINKED_ACCOUNT, provider),
+        getAccountsByProvider: provider => ipc.invoke(AUTH_CHANNELS.GET_ACCOUNTS_BY_PROVIDER, provider),
         detectAuthProvider: (providerHint, tokenData) =>
-            ipc.invoke('auth:detect-auth-provider', { providerHint, tokenData }),
-        getAuthProviderHealth: provider => ipc.invoke('auth:get-provider-health', provider),
-        getAuthProviderAnalytics: () => ipc.invoke('auth:get-provider-analytics'),
-        rotateTokenEncryption: provider => ipc.invoke('auth:rotate-token-encryption', provider),
+            ipc.invoke(AUTH_CHANNELS.DETECT_PROVIDER, { providerHint, tokenData }),
+        getAuthProviderHealth: provider => ipc.invoke(AUTH_CHANNELS.GET_PROVIDER_HEALTH, provider),
+        getAuthProviderAnalytics: () => ipc.invoke(AUTH_CHANNELS.GET_PROVIDER_ANALYTICS),
+        rotateTokenEncryption: provider => ipc.invoke(AUTH_CHANNELS.ROTATE_TOKEN_ENCRYPTION, provider),
         revokeAccountToken: (accountId, options) =>
-            ipc.invoke('auth:revoke-account-token', accountId, options),
-        getTokenAnalytics: provider => ipc.invoke('auth:get-token-analytics', provider),
-        exportCredentials: options => ipc.invoke('auth:export-credentials', options),
+            ipc.invoke(AUTH_CHANNELS.REVOKE_ACCOUNT_TOKEN, accountId, options),
+        getTokenAnalytics: provider => ipc.invoke(AUTH_CHANNELS.GET_TOKEN_ANALYTICS, provider),
+        exportCredentials: options => ipc.invoke(AUTH_CHANNELS.EXPORT_CREDENTIALS, options),
         importCredentials: (payload, password) =>
-            ipc.invoke('auth:import-credentials', { payload, password }),
-        createMasterKeyBackup: passphrase => ipc.invoke('auth:create-master-key-backup', passphrase),
+            ipc.invoke(AUTH_CHANNELS.IMPORT_CREDENTIALS, { payload, password }),
+        createMasterKeyBackup: passphrase => ipc.invoke(AUTH_CHANNELS.CREATE_MASTER_KEY_BACKUP, passphrase),
         restoreMasterKeyBackup: (backupPayload, passphrase) =>
-            ipc.invoke('auth:restore-master-key-backup', backupPayload, passphrase),
+            ipc.invoke(AUTH_CHANNELS.RESTORE_MASTER_KEY_BACKUP, backupPayload, passphrase),
     };
 }
+

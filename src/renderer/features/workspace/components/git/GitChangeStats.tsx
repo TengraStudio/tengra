@@ -205,3 +205,4 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
         </div>
     );
 };
+

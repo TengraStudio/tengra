@@ -19,6 +19,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { SHARED_PROMPTS_CHANNELS } from '@shared/constants/ipc-channels';
 import { v4 as uuidv4 } from 'uuid';
 
 /** A shared prompt stored in the library. */
@@ -107,7 +108,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Create a new shared prompt. */
-    @ipc('shared-prompts:create')
+    @ipc(SHARED_PROMPTS_CHANNELS.CREATE)
     async create(input: SharedPromptInput): Promise<SharedPrompt> {
         await this.ensureReady();
         const now = Date.now();
@@ -132,7 +133,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Get a shared prompt by ID. */
-    @ipc('shared-prompts:getById')
+    @ipc(SHARED_PROMPTS_CHANNELS.GET_BY_ID)
     async getById(id: string): Promise<SharedPrompt | undefined> {
         await this.ensureReady();
         const stmt = await this.db.prepare(
@@ -143,7 +144,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** List shared prompts with optional filtering. */
-    @ipc('shared-prompts:list')
+    @ipc(SHARED_PROMPTS_CHANNELS.LIST)
     async list(filter?: SharedPromptFilter): Promise<SharedPrompt[]> {
         await this.ensureReady();
         const conditions: string[] = [];
@@ -179,7 +180,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Update an existing shared prompt. */
-    @ipc('shared-prompts:update')
+    @ipc(SHARED_PROMPTS_CHANNELS.UPDATE)
     async update(payload: { id: string, input: Partial<SharedPromptInput> }): Promise<SharedPrompt | undefined> {
         const { id, input } = payload;
         await this.ensureReady();
@@ -205,7 +206,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Delete a shared prompt by ID. */
-    @ipc('shared-prompts:delete')
+    @ipc(SHARED_PROMPTS_CHANNELS.DELETE)
     async delete(id: string): Promise<boolean> {
         await this.ensureReady();
         const stmt = await this.db.prepare(`DELETE FROM shared_prompts WHERE id = $1`);
@@ -216,7 +217,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Export all shared prompts as a JSON string. */
-    @ipc('shared-prompts:exportToJson')
+    @ipc(SHARED_PROMPTS_CHANNELS.EXPORT_TO_JSON)
     async exportToJson(): Promise<string> {
         await this.ensureReady();
         const prompts = await this.list({ limit: MAX_SEARCH_LIMIT });
@@ -224,7 +225,7 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Import shared prompts from a JSON string. */
-    @ipc('shared-prompts:importFromJson')
+    @ipc(SHARED_PROMPTS_CHANNELS.IMPORT_FROM_JSON)
     async importFromJson(jsonString: string): Promise<number> {
         await this.ensureReady();
         let data: RuntimeValue;
@@ -255,14 +256,14 @@ export class SharedPromptsService extends BaseService {
     }
 
     /** Import shared prompts from a JSON file path. */
-    @ipc('shared-prompts:importFromFile')
+    @ipc(SHARED_PROMPTS_CHANNELS.IMPORT_FROM_FILE)
     async importFromFile(filePath: string): Promise<number> {
         const content = await fsPromises.readFile(filePath, 'utf-8');
         return this.importFromJson(content);
     }
 
     /** Export shared prompts to a JSON file. */
-    @ipc('shared-prompts:exportToFile')
+    @ipc(SHARED_PROMPTS_CHANNELS.EXPORT_TO_FILE)
     async exportToFile(filePath: string): Promise<void> {
         const json = await this.exportToJson();
         await fsPromises.writeFile(filePath, json, 'utf-8');
@@ -294,3 +295,4 @@ export class SharedPromptsService extends BaseService {
         this.logInfo('Cleaning up shared prompts service');
     }
 }
+

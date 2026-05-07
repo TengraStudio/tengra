@@ -269,3 +269,4 @@ export class CachedDatabase {
 
 // Export for easy migration from direct window.electron.db calls
 export default CachedDatabase;
+

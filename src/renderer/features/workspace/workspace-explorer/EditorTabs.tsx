@@ -182,12 +182,12 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         anchorY: number
     ): Promise<void> => {
         const resolvedPath = resolveBreadcrumbPath(rawPath);
+        if (!resolvedPath) {
+            appLogger.error('EditorTabs', 'openFolderDropdown called with missing resolvedPath', { rawPath });
+            return;
+        }
         const response = await window.electron.files.listDirectory(resolvedPath);
-        const data = Array.isArray((response as { data?: unknown }).data)
-            ? ((response as { data: Array<{ name: string; path?: string; isDirectory?: boolean }> }).data)
-            : Array.isArray(response)
-                ? (response as Array<{ name: string; path?: string; isDirectory?: boolean }>)
-                : [];
+        const data = extractDirectoryEntries(response);
         const items = data
             .map(item => ({
                 name: item.name,
@@ -396,3 +396,35 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         </div>
     );
 };
+
+function extractDirectoryEntries(
+    payload: unknown
+): Array<{ name: string; path?: string; isDirectory?: boolean }> {
+    if (Array.isArray(payload)) {
+        return payload.filter((item): item is { name: string; path?: string; isDirectory?: boolean } =>
+            typeof item === 'object' &&
+            item !== null &&
+            typeof (item as { name?: unknown }).name === 'string'
+        );
+    }
+
+    if (!payload || typeof payload !== 'object') {
+        return [];
+    }
+
+    const candidate = payload as {
+        files?: unknown;
+        data?: unknown;
+        result?: unknown;
+        content?: unknown;
+    };
+
+    for (const value of [candidate.files, candidate.data, candidate.result, candidate.content]) {
+        const entries = extractDirectoryEntries(value);
+        if (entries.length > 0) {
+            return entries;
+        }
+    }
+
+    return [];
+}

@@ -11,7 +11,7 @@
 import {
     PROXY_PERFORMANCE_BUDGETS,
     ProxyErrorCode,
-    ProxyTelemetryEvent} from '@main/services/proxy/proxy.service';
+    ProxyUsageStatsEvent} from '@main/services/proxy/proxy.service';
 import { AppErrorCode, ProxyServiceError } from '@shared/utils/error.util';
 import { describe, expect,it } from 'vitest';
 
@@ -83,9 +83,9 @@ describe('ProxyService Integration - Exports & Contracts', () => {
         });
     });
 
-    describe('ProxyTelemetryEvent enum completeness', () => {
-        it('should export all 8 telemetry events', () => {
-            const values = Object.values(ProxyTelemetryEvent);
+    describe('ProxyUsageStatsEvent enum completeness', () => {
+        it('should export all 8 Stats events', () => {
+            const values = Object.values(ProxyUsageStatsEvent);
             expect(values).toHaveLength(8);
             expect(values).toContain('proxy_started');
             expect(values).toContain('proxy_stopped');
@@ -98,7 +98,7 @@ describe('ProxyService Integration - Exports & Contracts', () => {
         });
 
         it('should have unique values with no duplicates', () => {
-            const values = Object.values(ProxyTelemetryEvent);
+            const values = Object.values(ProxyUsageStatsEvent);
             expect(new Set(values).size).toBe(values.length);
         });
     });
@@ -132,3 +132,4 @@ describe('ProxyService Integration - Exports & Contracts', () => {
         });
     });
 });
+

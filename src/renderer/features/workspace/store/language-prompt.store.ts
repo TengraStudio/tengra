@@ -9,12 +9,12 @@
  */
 
 import { MarketplaceLanguage } from '@shared/types/data/marketplace';
+import { appLogger } from '@system/utils/renderer-logger';
 import { useSyncExternalStore } from 'react';
 
 import { marketplaceStore } from '@/features/marketplace/store/marketplace.store';
 import { getSettingsSnapshot, updateSettings } from '@/features/settings/store/settings.store';
 import { localeRegistry as _localeRegistry } from '@/i18n/locale-registry.service';
-import { appLogger } from '@/system/utils/renderer-logger';
 
 interface LanguagePromptState {
     matchingPack: MarketplaceLanguage | null;
@@ -159,3 +159,4 @@ export function useLanguagePromptStore<T>(selector: (state: LanguagePromptState)
     const currentState = useSyncExternalStore(languagePromptStore.subscribe, languagePromptStore.getState, languagePromptStore.getState);
     return selector(currentState);
 }
+

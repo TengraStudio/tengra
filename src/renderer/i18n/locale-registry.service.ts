@@ -12,7 +12,6 @@ import { JsonValue } from '@shared/types/common';
 import type { LocalePack, LocalePackManifest } from '@shared/types/locale';
 
 import { enLocalePack } from '@/i18n/locales';
-import { localeIpc } from '@/utils/locale-ipc.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 export interface AvailableLocale extends LocalePackManifest {
@@ -34,8 +33,8 @@ export class LocaleRegistryService {
             this.builtIns.set(locale.locale, locale);
         }
 
-        if (window.electron?.ipcRenderer) {
-            window.electron.ipcRenderer.on('locale:runtime:updated', () => {
+        if (window.electron?.locale) {
+            window.electron.locale.onRuntimeUpdated(() => {
                 void this.reloadLocales();
             });
         }
@@ -43,7 +42,7 @@ export class LocaleRegistryService {
 
     async loadLocales(): Promise<void> {
         try {
-            const runtimeLocales = await localeIpc.getAllLocalePacks();
+            const runtimeLocales = await window.electron.locale.getAll();
             this.runtimeLocales.clear();
             for (const locale of runtimeLocales) {
                 this.runtimeLocales.set(locale.locale, locale);
@@ -165,3 +164,4 @@ export class LocaleRegistryService {
 }
 
 export const localeRegistry = new LocaleRegistryService();
+

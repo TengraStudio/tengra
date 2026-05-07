@@ -18,6 +18,7 @@ import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { ISecurityService } from '@main/types/services';
 import { t } from '@main/utils/i18n.util';
+import { SECURITY_CHANNELS } from '@shared/constants/ipc-channels';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeStorage } from 'electron';
@@ -488,7 +489,7 @@ export class SecurityService extends BaseService implements ISecurityService {
      * Resets the Master Key by deleting the key file and generating a new one.
      * WARNING: This will make all existing encrypted data unreadable.
      */
-    @ipc('security:reset-master-key')
+    @ipc(SECURITY_CHANNELS.RESET_MASTER_KEY)
     async resetMasterKey(): Promise<ServiceResponse> {
         try {
             this.logWarn('RESETTING MASTER KEY - All existing encrypted data will become unreadable!');
@@ -512,3 +513,4 @@ export class SecurityService extends BaseService implements ISecurityService {
         }
     }
 }
+

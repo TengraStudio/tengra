@@ -56,3 +56,4 @@ describe('tooltip analytics store', () => {
         expect(getTooltipAnalyticsSnapshot().totals.shown).toBe(0);
     });
 });
+

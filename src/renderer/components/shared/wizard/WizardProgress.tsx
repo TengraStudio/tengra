@@ -84,3 +84,4 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
         </div>
     );
 };
+

@@ -96,3 +96,4 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
         </div>
     );
 };
+

@@ -92,3 +92,4 @@ test.describe('Settings Panel Visual Regression', () => {
         });
     });
 });
+

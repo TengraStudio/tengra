@@ -90,7 +90,7 @@ describe('WorkspaceCard', () => {
         expect(setShowMenu).toHaveBeenCalledWith(null);
     });
 
-    it('logs telemetry for slow render duration', async () => {
+    it('logs Stats for slow render duration', async () => {
         const debugSpy = vi.spyOn(appLogger, 'debug').mockImplementation(() => {});
         let currentNow = 0;
         const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => {
@@ -132,13 +132,14 @@ describe('WorkspaceCard', () => {
                 })
             );
         });
-        const telemetryCall = debugSpy.mock.calls.find((call) => call[0] === 'WorkspaceCard');
-        expect(telemetryCall).toBeDefined();
-        const telemetryPayload = telemetryCall?.[2] as { renderDurationMs: number };
-        expect(telemetryPayload.renderDurationMs).toBeGreaterThanOrEqual(10);
+        const performanceCall = debugSpy.mock.calls.find((call) => call[0] === 'WorkspaceCard');
+        expect(performanceCall).toBeDefined();
+        const performancePayload = performanceCall?.[2] as { renderDurationMs: number };
+        expect(performancePayload.renderDurationMs).toBeGreaterThanOrEqual(10);
 
         nowSpy.mockRestore();
         requestAnimationFrameSpy.mockRestore();
         cancelAnimationFrameSpy.mockRestore();
     });
 });
+

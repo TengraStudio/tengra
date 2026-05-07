@@ -143,3 +143,4 @@ export const ThoughtSection = memo(
 );
 
 ThoughtSection.displayName = 'ThoughtSection';
+

@@ -256,3 +256,4 @@ export const CommonBatches = {
 function sanitizeChatUpdates(updates: Partial<Chat>): IpcValue {
     return sanitizeObject(updates as JsonObject) as IpcValue;
 }
+

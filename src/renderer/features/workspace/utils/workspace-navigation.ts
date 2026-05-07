@@ -30,3 +30,4 @@ export function navigateToWorkspace(action: WorkspaceNavigationAction): void {
  * Event name for workspace navigation
  */
 export const WORKSPACE_NAVIGATE_EVENT = 'tengra:workspace-navigate';
+

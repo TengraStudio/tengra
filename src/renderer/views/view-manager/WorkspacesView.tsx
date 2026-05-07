@@ -54,3 +54,4 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 };
 
 WorkspaceView.displayName = 'WorkspaceView';
+

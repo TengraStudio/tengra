@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { TOOLS_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue, ToolDefinition, ToolResult } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -25,13 +26,14 @@ export interface ToolsBridge {
 export function createToolsBridge(ipc: IpcRenderer): ToolsBridge {
     return {
         executeTools: (toolName, args, toolCallId, workspaceAgentSessionId) =>
-            ipc.invoke('tools:execute', {
+            ipc.invoke(TOOLS_CHANNELS.EXECUTE, {
                 toolName,
                 args,
                 toolCallId,
                 workspaceAgentSessionId,
             }),
-        killTool: toolCallId => ipc.invoke('tools:kill', toolCallId),
-        getToolDefinitions: () => ipc.invoke('tools:get-definitions'),
+        killTool: toolCallId => ipc.invoke(TOOLS_CHANNELS.KILL, toolCallId),
+        getToolDefinitions: () => ipc.invoke(TOOLS_CHANNELS.GET_DEFINITIONS),
     };
 }
+

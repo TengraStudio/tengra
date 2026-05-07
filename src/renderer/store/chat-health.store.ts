@@ -221,3 +221,4 @@ export function __resetChatHealthForTests(): void {
     };
     emit();
 }
+

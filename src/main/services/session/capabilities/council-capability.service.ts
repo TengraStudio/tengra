@@ -15,6 +15,7 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { SESSION_COUNCIL_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue,JsonObject, RuntimeValue } from '@shared/types/common';
 import {
     ModelRoutingRule,
@@ -93,12 +94,12 @@ function buildFallbackPlan(task: string): WorkspaceStep[] {
     ];
 }
 
-function normalizeWorkspaceSteps(rawSteps: unknown): WorkspaceStep[] {
+function normalizeWorkspaceSteps(rawSteps: RuntimeValue): WorkspaceStep[] {
     if (!Array.isArray(rawSteps)) {
         return [];
     }
 
-    const isTaskType = (value: unknown): value is TaskType =>
+    const isTaskType = (value: RuntimeValue): value is TaskType =>
         value === 'code_generation' ||
         value === 'code_review' ||
         value === 'research' ||
@@ -110,7 +111,7 @@ function normalizeWorkspaceSteps(rawSteps: unknown): WorkspaceStep[] {
         value === 'general';
 
     return rawSteps
-        .filter((step): step is Record<string, unknown> => Boolean(step) && typeof step === 'object' && !Array.isArray(step))
+        .filter((step): step is Record<string, RuntimeValue> => Boolean(step) && typeof step === 'object' && !Array.isArray(step))
         .map((step, index) => ({
             id: typeof step.id === 'string' && step.id.trim().length > 0 ? step.id : `step-${index + 1}`,
             text: typeof step.text === 'string' && step.text.trim().length > 0 ? step.text : `Step ${index + 1}`,
@@ -356,13 +357,13 @@ export class CouncilCapabilityService extends BaseService {
 
     // --- IPC Decorated Methods ---
 
-    @ipc('session:council:generate-plan')
+    @ipc(SESSION_COUNCIL_CHANNELS.GENERATE_PLAN)
     async generatePlanIpc(payload: { taskId: string; task: string }): Promise<RuntimeValue> {
         await this.ensureCouncilTask(payload.taskId, payload.task);
         return serializeToIpc({ success: true });
     }
 
-    @ipc('session:council:get-proposal')
+    @ipc(SESSION_COUNCIL_CHANNELS.GET_PROPOSAL)
     async getProposalIpc(payload: { taskId: string }): Promise<RuntimeValue> {
         const chat = await this.deps.databaseService.getChat(payload.taskId);
         const storedPlan = chat ? readStoredPlan(chat as StoredChat) : [];
@@ -388,7 +389,7 @@ export class CouncilCapabilityService extends BaseService {
         return serializeToIpc({ success: true, plan });
     }
 
-    @ipc('session:council:get-timeline')
+    @ipc(SESSION_COUNCIL_CHANNELS.GET_TIMELINE)
     async getTimelineIpc(payload: { taskId: string }): Promise<RuntimeValue> {
         const logs = await this.deps.databaseService.uac.getLogs(payload.taskId);
         return serializeToIpc({
@@ -397,38 +398,39 @@ export class CouncilCapabilityService extends BaseService {
         });
     }
 
-    @ipc('session:council:approve-proposal')
+    @ipc(SESSION_COUNCIL_CHANNELS.APPROVE_PROPOSAL)
     async approveProposalIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
         await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'waiting_for_approval');
         await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Proposal approved');
         return serializeToIpc({ success: true });
     }
 
-    @ipc('session:council:reject-proposal')
+    @ipc(SESSION_COUNCIL_CHANNELS.REJECT_PROPOSAL)
     async rejectProposalIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
         await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'failed');
         await this.deps.databaseService.uac.addLog(payload.taskId, 'system', `Proposal rejected${payload.reason ? `: ${payload.reason}` : ''}`);
         return serializeToIpc({ success: true });
     }
 
-    @ipc('session:council:start-execution')
+    @ipc(SESSION_COUNCIL_CHANNELS.START_EXECUTION)
     async startExecutionIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
         await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'running');
         await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Execution started');
         return serializeToIpc({ success: true });
     }
 
-    @ipc('session:council:pause-execution')
+    @ipc(SESSION_COUNCIL_CHANNELS.PAUSE_EXECUTION)
     async pauseExecutionIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
         await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'paused');
         await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Execution paused');
         return serializeToIpc({ success: true });
     }
 
-    @ipc('session:council:resume-execution')
+    @ipc(SESSION_COUNCIL_CHANNELS.RESUME_EXECUTION)
     async resumeExecutionIpc(payload: { taskId: string; reason?: string }): Promise<RuntimeValue> {
         await this.deps.databaseService.uac.updateTaskStatus(payload.taskId, 'running');
         await this.deps.databaseService.uac.addLog(payload.taskId, 'system', 'Execution resumed');
         return serializeToIpc({ success: true });
     }
 }
+

@@ -20,7 +20,7 @@ type TranslationTree = Record<string, JsonValue | undefined>;
 
 let translations: TranslationTree | null = null;
 
-function asTranslationTree(value: unknown): TranslationTree | null {
+function asTranslationTree(value: JsonValue | TranslationTree | null | undefined): TranslationTree | null {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
         return value as TranslationTree;
     }
@@ -64,7 +64,7 @@ function loadTranslations(): void {
             const data = fs.readFileSync(localePath, 'utf8');
             const localePack = JSON.parse(data) as LocalePack;
             const parsedTranslations = asTranslationTree(localePack.translations);
-            translations = parsedTranslations ?? asTranslationTree(localePack);
+            translations = parsedTranslations ?? asTranslationTree(localePack as any);
             appLogger.debug('BackendI18n', `Translations loaded from ${localePath}`);
         } else {
             appLogger.warn('BackendI18n', `Locale file not found. Checked ${possiblePaths.length} locations. Last attempted: ${possiblePaths[0]}`);
@@ -78,7 +78,7 @@ function loadTranslations(): void {
  * Simple t function for backend usage.
  * Resolves keys against the full en.locale.json structure.
  */
-export function t(path: string, options?: Record<string, unknown>): string {
+export function t(path: string, options?: Record<string, string | number>): string {
 
     if (!translations) {
         loadTranslations();
@@ -90,10 +90,10 @@ export function t(path: string, options?: Record<string, unknown>): string {
 
     const resolve = (p: string): string | null => {
         const parts = p.split('.');
-        let current: unknown = translations;
+        let current: JsonValue | TranslationTree | null | undefined = translations;
         for (const part of parts) {
-            if (current && typeof current === 'object' && part in (current as Record<string, unknown>)) {
-                current = (current as Record<string, unknown>)[part];
+            if (current && typeof current === 'object' && !Array.isArray(current) && part in current) {
+                current = current[part];
             } else {
                 return null;
             }
@@ -135,3 +135,4 @@ export function t(path: string, options?: Record<string, unknown>): string {
 
     return result;
 }
+

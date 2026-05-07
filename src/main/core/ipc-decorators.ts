@@ -21,10 +21,19 @@ type IpcService = {
 interface IpcChannelOptions {
     channel?: string;
     withEvent?: boolean;
-    type?: 'handle' | 'on';
+    type?: 'handle' | 'on' | 'both';
     isBatchable?: boolean;
     argsSchema?: ZodTypeAny;
     defaultValue?: RuntimeValue;
+}
+
+export function getIpcMethodsForService(service: object): IpcMethod[] {
+    if (!service) {
+        return [];
+    }
+    const serviceRecord = service as IpcService;
+    const constructor = serviceRecord.constructor;
+    return constructor?.[IPC_METADATA_KEY] || [];
 }
 
 /**
@@ -37,15 +46,13 @@ export function ipc(channelOrOptions?: string | IpcChannelOptions): MethodDecora
         const ipcMethods = constructor['_ipc_methods'] ?? [];
         constructor['_ipc_methods'] = ipcMethods;
 
-        const channelName = typeof channelOrOptions === 'string' 
-            ? channelOrOptions 
+        const channelName = typeof channelOrOptions === 'string'
+            ? channelOrOptions
             : (channelOrOptions?.channel || propertyKey.toString());
-            
-        appLogger.debug('IPC', `Decorating method ${constructor.name}.${propertyKey.toString()} with channel ${channelName}`);
 
         let channel: string;
         let withEvent = false;
-        let type: 'handle' | 'on' = 'handle';
+        let type: 'handle' | 'on' | 'both' = 'handle';
         let isBatchable = false;
         let argsSchema: ZodTypeAny | undefined;
         let defaultValue: RuntimeValue | undefined;
@@ -87,14 +94,18 @@ export function registerServiceIpc(service: object, validateSender?: SenderValid
     }
     const serviceRecord = service as IpcService;
     const constructor = serviceRecord.constructor;
-    const methods: IpcMethod[] = constructor[IPC_METADATA_KEY] || [];
-    if (methods.length > 0) {
-        appLogger.debug('IPC', `Registering ${methods.length} methods for ${serviceRecord.name || constructor.name}`);
+    
+    const serviceName = serviceRecord.name || constructor?.name || 'Unknown';
+
+    const methods: IpcMethod[] = getIpcMethodsForService(service);
+    
+    if (methods.length === 0) {
+        appLogger.warn('IPC', `No @ipc methods found for service: ${serviceName}`);
+        return;
     }
 
     for (const method of methods) {
-        const { propertyKey, channel, withEvent, type, isBatchable } = method;
-        appLogger.debug('IPC', `  -> ${channel} (${type})`);
+        const { propertyKey, channel, withEvent, type, isBatchable } = method; 
 
         // Bind the method to the service instance
         const handler = async (event: IpcMainInvokeEvent, ...args: RuntimeValue[]) => {
@@ -105,9 +116,9 @@ export function registerServiceIpc(service: object, validateSender?: SenderValid
 
             const callableMethod = serviceMethod as IpcMethodHandler;
             if (withEvent) {
-                return await callableMethod(event, ...args);
+                return await callableMethod.apply(serviceRecord, [event, ...args]);
             }
-            return await callableMethod(...args);
+            return await callableMethod.apply(serviceRecord, args);
         };
 
         const finalHandler = async (event: IpcMainInvokeEvent, ...args: RuntimeValue[]) => {
@@ -117,18 +128,20 @@ export function registerServiceIpc(service: object, validateSender?: SenderValid
             return await handler(event, ...args);
         };
 
-        if (type === 'on') {
+        if (type === 'on' || type === 'both') {
             safeOn(channel, (event, ...args) => {
                 void finalHandler(event, ...args).catch(err => {
                     appLogger.error('IPC', `Async error in 'on' handler for ${channel}:`, err);
                 });
             });
-        } else {
-            const wrappedHandler = method.argsSchema 
-                ? createValidatedIpcHandler(channel, finalHandler, { 
-                    argsSchema: method.argsSchema as ValidatedHandlerOptions['argsSchema'], 
-                    defaultValue: method.defaultValue 
-                  })
+        }
+        
+        if (type === 'handle' || type === 'both') {
+            const wrappedHandler = method.argsSchema
+                ? createValidatedIpcHandler(channel, finalHandler, {
+                    argsSchema: method.argsSchema as ValidatedHandlerOptions['argsSchema'],
+                    defaultValue: method.defaultValue
+                })
                 : createIpcHandler(channel, finalHandler);
 
             safeHandle(channel, wrappedHandler);
@@ -141,3 +154,4 @@ export function registerServiceIpc(service: object, validateSender?: SenderValid
         }
     }
 }
+

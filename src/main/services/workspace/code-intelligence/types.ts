@@ -96,3 +96,4 @@ export interface SecurityFinding {
     rule: string;
     snippet: string;
 }
+

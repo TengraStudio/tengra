@@ -38,3 +38,4 @@ describe('categorizeModel', () => {
         expect(categorized.provider).toBe('openai');
     });
 });
+

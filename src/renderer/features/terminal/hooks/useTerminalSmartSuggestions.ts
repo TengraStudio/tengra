@@ -11,14 +11,7 @@
 import { type IDecoration, type Terminal as XTerm } from '@xterm/xterm';
 import { useEffect, useRef, useState } from 'react';
 
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { appLogger } from '@/utils/renderer-logger';
-
-import {
-    terminalGetSuggestionsResponseSchema,
-    TerminalIpcContract,
-    terminalWriteResponseSchema
-} from '../utils/terminal-ipc';
 
 interface UseTerminalSmartSuggestionsOptions {
     xtermRef: React.RefObject<XTerm | null>;
@@ -89,12 +82,12 @@ export function useTerminalSmartSuggestions({
                             return;
                         }
 
-                        const suggestions = await invokeTypedIpc<TerminalIpcContract, 'terminal:getSuggestions'>('terminal:getSuggestions', [{
+                        const suggestions = await window.electron.terminal.getSuggestions({
                             command,
                             shell,
                             cwd: cwd || '',
                             historyLimit: 20
-                        }], { responseSchema: terminalGetSuggestionsResponseSchema });
+                        });
 
                         if (suggestions && suggestions.length > 0) {
                             const sugg = suggestions[0];
@@ -182,7 +175,7 @@ export function useTerminalSmartSuggestions({
                 if (suggestion) {
                     e.domEvent.preventDefault();
                     e.domEvent.stopPropagation();
-                    void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [tabId, suggestion], { responseSchema: terminalWriteResponseSchema });
+                    void window.electron.terminal.write(tabId, suggestion);
                     setSuggestion('');
                 }
             } else {
@@ -198,3 +191,4 @@ export function useTerminalSmartSuggestions({
 
     return { suggestion, setSuggestion };
 }
+

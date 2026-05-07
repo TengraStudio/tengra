@@ -396,3 +396,4 @@ export function destroyTray() {
         tray = null;
     }
 }
+

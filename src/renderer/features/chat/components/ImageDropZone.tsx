@@ -118,3 +118,4 @@ export const ImageDropZone: React.FC<ImageDropZoneProps> = ({
 };
 
 ImageDropZone.displayName = 'ImageDropZone';
+

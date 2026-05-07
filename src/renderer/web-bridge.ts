@@ -17,7 +17,8 @@ import type {
     InlineSuggestionResponse,
 } from '@shared/schemas/inline-suggestions.schema';
 import type { Workspace, WorkspaceAnalysis } from '@shared/types';
-import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
+import type { AdvancedSemanticFragment, MemoryStatistics, PendingMemory } from '@shared/types/advanced-memory';
+import { createEmptyMemoryCategoryCounts } from '@shared/types/advanced-memory';
 import type { Chat, Folder, Message, ToolResult } from '@shared/types/chat';
 import type { IpcValue } from '@shared/types/common';
 import type { InstallRequest, MarketplaceRegistry, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
@@ -46,6 +47,155 @@ import { appLogger } from '@/utils/renderer-logger';
 type MockSessionCouncilApi = NonNullable<ElectronAPI['session']>['council'];
 type CouncilQuotaInterruptCallback = Parameters<MockSessionCouncilApi['onQuotaInterrupt']>[0];
 
+const WEB_SETTINGS_STORAGE_KEY = 'tengra.web.settings.v1';
+const EMPTY_WEB_MEMORY_STATS: MemoryStatistics = {
+    total: 0,
+    byStatus: {
+        pending: 0,
+        confirmed: 0,
+        archived: 0,
+        contradicted: 0,
+        merged: 0,
+    },
+    byCategory: createEmptyMemoryCategoryCounts(),
+    bySource: {
+        user_explicit: 0,
+        user_implicit: 0,
+        system: 0,
+        conversation: 0,
+        tool_result: 0,
+    },
+    averageConfidence: 0,
+    averageImportance: 0,
+    pendingValidation: 0,
+    contradictions: 0,
+    recentlyAccessed: 0,
+    recentlyCreated: 0,
+    totalEmbeddingSize: 0,
+};
+
+const DEFAULT_WEB_SETTINGS: AppSettings = {
+    ollama: {
+        url: 'http://127.0.0.1:11434',
+        numCtx: 16384,
+        orchestrationPolicy: 'auto',
+    },
+    llama: {
+        host: '127.0.0.1',
+        port: 8080,
+        backend: 'auto',
+        gpuLayers: -1,
+        contextSize: 8192,
+        batchSize: 512,
+        flashAttn: true,
+        continuousBatching: true,
+        mlock: true,
+        mmap: true,
+        metrics: false,
+        extraArgs: '',
+    },
+    embeddings: {
+        provider: 'ollama',
+        model: 'all-minilm',
+    },
+    general: {
+        language: 'en',
+        theme: 'tengra-black',
+        resolution: '1280x800',
+        fontSize: 14,
+        fontFamily: 'system',
+        typographyScale: 'balanced',
+        defaultModel: '',
+        defaultTerminalBackend: 'node-pty',
+        lastModel: '',
+        lastProvider: '',
+        chatMode: 'instant',
+        responseStyle: 'balanced',
+        responseTone: 'neutral',
+        responseFormat: 'auto',
+        customInstructions: '',
+        contextMessageLimit: 50,
+        agentMode: 'adaptive',
+        agentSoftDeadlineMs: 4000,
+        agentHardDeadlineMs: 25000,
+        agentRequireLocalForActions: true,
+        agentAllowLateSuggestions: true,
+        inlineSuggestionsEnabled: true,
+        inlineSuggestionsSource: 'custom',
+        inlineSuggestionsProvider: 'openai',
+        inlineSuggestionsModel: 'gpt-4o-mini',
+        hiddenModels: [],
+        dismissedRuntimeInstallPrompts: [],
+        completedRuntimeInstalls: [],
+    },
+    openai: { model: 'gpt-4o' },
+    claude: { model: 'claude-3-opus-20240229' },
+    anthropic: { model: 'claude-3-opus-20240229' },
+    groq: { model: 'llama3-70b-8192' },
+    nvidia: { model: 'nvidia/llama3-chatqa-1.5-70b' },
+    huggingface: { model: 'Qwen/Qwen2.5-7B-Instruct' },
+    gemini: { model: 'gemini-2.5-flash' },
+    mistral: { model: 'mistral-large-latest' },
+    together: { model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo' },
+    perplexity: { model: 'sonar' },
+    cohere: { model: 'command-r-plus' },
+    xai: { model: 'grok-2-latest' },
+    deepseek: { model: 'deepseek-chat' },
+    openrouter: { model: 'openai/gpt-4o' },
+    opencode: { model: 'gpt-4o-mini' },
+    antigravity: {
+        connected: false,
+        creditUsageModeByAccount: {},
+    },
+    codex: { connected: false },
+    copilot: { connected: false },
+    proxy: {
+        enabled: false,
+        url: 'http://127.0.0.1:8317/v1',
+        key: 'proxypal-local',
+    },
+};
+
+function readWebSettings(): AppSettings {
+    if (typeof window === 'undefined') {
+        return structuredClone(DEFAULT_WEB_SETTINGS);
+    }
+
+    const raw = window.localStorage.getItem(WEB_SETTINGS_STORAGE_KEY);
+    if (!raw) {
+        return structuredClone(DEFAULT_WEB_SETTINGS);
+    }
+
+    try {
+        const parsed = JSON.parse(raw) as Partial<AppSettings>;
+        return {
+            ...DEFAULT_WEB_SETTINGS,
+            ...parsed,
+            general: {
+                ...DEFAULT_WEB_SETTINGS.general,
+                ...(parsed.general ?? {}),
+            },
+            ollama: {
+                ...DEFAULT_WEB_SETTINGS.ollama,
+                ...(parsed.ollama ?? {}),
+            },
+            llama: {
+                ...DEFAULT_WEB_SETTINGS.llama,
+                ...(parsed.llama ?? {}),
+            },
+        };
+    } catch {
+        return structuredClone(DEFAULT_WEB_SETTINGS);
+    }
+}
+
+function writeWebSettings(settings: AppSettings): AppSettings {
+    if (typeof window !== 'undefined') {
+        window.localStorage.setItem(WEB_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    }
+    return settings;
+}
+
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
     invoke: <T = IpcValue>(_channel: string, ..._args: IpcValue[]) => Promise.resolve({} as T),
@@ -61,84 +211,93 @@ export const webElectronMock: ElectronAPI = {
     stepZoomFactor: async (direction: -1 | 1) => ({ zoomFactor: direction > 0 ? 1.1 : 0.9 }),
     toggleCompact: (enabled: boolean) => appLogger.warn('WebBridge', `toggleCompact called in mock mode with: ${enabled}`),
 
-    githubLogin: async (_appId?: 'profile' | 'copilot') => ({
-        device_code: '123',
-        user_code: 'ABC',
-        verification_uri: 'http://localhost',
-        expires_in: 900,
-        interval: 5,
-    }),
-    pollToken: async (_deviceCode: string, _interval: number, _appId?: 'profile' | 'copilot') => ({
-        success: true,
-        account: {
-            id: 'mock-id',
-            provider: _appId === 'copilot' ? 'copilot' : 'github',
-            email: 'mock@example.com',
-            displayName: 'Mock Account',
-            avatarUrl: undefined,
-            isActive: true,
-            createdAt: Date.now(),
+    auth: {
+        githubLogin: async (_appId?: 'copilot') => ({
+            device_code: '123',
+            user_code: 'ABC',
+            verification_uri: 'http://localhost',
+            expires_in: 900,
+            interval: 5,
+        }),
+        pollToken: async (_deviceCode: string, _interval: number, _appId?: 'copilot') => ({
+            success: true,
+            account: {
+                id: 'mock-id',
+                provider: 'copilot',
+                email: 'mock@example.com',
+                displayName: 'Mock Account',
+                avatarUrl: undefined,
+                active: true,
+            },
+        }),
+        antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'antigravity_mock' }),
+        ollamaLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'ollama_mock' }),
+        ollamaSignout: async () => ({ success: true }),
+
+        claudeLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'claude_mock' }),
+        claudeBrowserLogin: async () => ({ sessionKey: 'mock-key', status: 'success' }),
+        anthropicLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'claude_mock' }),
+        codexLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'codex_mock' }),
+        cancelAuth: async () => true,
+        getBrowserAuthStatus: async (_provider: string, _state: string, _accountId: string) => ({ status: 'success' }),
+        verifyAuthBridge: async (_provider?: string) => ({ status: 'ok', provider: _provider || 'all' }),
+
+        saveClaudeSession: async () => ({ success: true }),
+        triggerClaudeSessionCapture: async () => ({ success: true }),
+
+        // Linked Accounts API (New Multi-Account System)
+        getLinkedAccounts: async (_provider?: string) => [],
+        getActiveLinkedAccount: async (_provider: string) => null,
+        setActiveLinkedAccount: async (_provider: string, _accountId: string) => ({ success: true }),
+        linkAccount: async (_provider: string, _tokenData: any) => ({ success: true }),
+        unlinkAccount: async (_accountId: string) => ({ success: true }),
+        unlinkProvider: async (_provider: string) => ({ success: true }),
+        hasLinkedAccount: async (_provider: string) => false,
+        getAccountsByProvider: async (_provider: string) => [],
+        getAuthProviderHealth: async (_provider?: string) => [],
+        getAuthProviderAnalytics: async () => [],
+        getTokenAnalytics: async (_provider?: string) => ({
+            totalAccounts: 0,
+            withAccessToken: 0,
+            withRefreshToken: 0,
+            withSessionToken: 0,
+            expiringWithin30m: 0,
+            expired: 0,
+            revoked: 0,
+        }),
+        exportCredentials: async () => ({ success: true }),
+        importCredentials: async () => ({ success: true, imported: 0 }),
+        createMasterKeyBackup: async () => ({ success: true, backup: 'mock-backup' }),
+        restoreMasterKeyBackup: async () => ({ success: true }),
+        startAuthSession: async () => ({ sessionId: 'mock-session' }),
+        touchAuthSession: async () => ({ success: true }),
+        endAuthSession: async () => ({ success: true }),
+        setAuthSessionLimit: async (_provider: string, limit: number) => ({ limit }),
+        getAuthSessionAnalytics: async () => ({ totalActiveSessions: 0, byProvider: {} }),
+        setAuthSessionTimeout: async (timeoutMs: number) => ({ timeoutMs }),
+        getAuthSessionTimeout: async () => ({ timeoutMs: 3600000 }),
+
+        // Legacy/Core Auth
+        createAccount: async () => ({ success: true }),
+        switchAccount: async () => ({ success: true }),
+        onAccountChanged: () => () => { },
+    },
+
+    dialog: {
+        showOpenDialog: async () => ({ canceled: false, filePaths: [] }),
+        showSaveDialog: async () => ({ canceled: false, filePath: undefined }),
+        showMessageBox: async () => ({ response: 0, checkboxChecked: false }),
+        showErrorBox: () => { },
+    },
+
+    power: {
+        getLowPowerStatus: async () => ({ lowPower: false }),
+        onLowPowerStatusChange: () => () => { },
+        onStateChanged: (callback: (state: { lowPowerMode: boolean }) => void) => {
+            callback({ lowPowerMode: false });
+            return () => { };
         },
-    }),
-    antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'antigravity_mock' }),
-    ollamaLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'ollama_mock' }),
-    ollamaSignout: async () => ({ success: true }),
-
-    claudeLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'claude_mock' }),
-    claudeBrowserLogin: async () => ({ sessionKey: 'mock-key', status: 'success' }),
-    anthropicLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'claude_mock' }),
-    codexLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'codex_mock' }),
-    cancelAuth: async () => true,
-
-    saveClaudeSession: async () => ({ success: true }),
-    triggerClaudeSessionCapture: async () => ({ success: true }),
-
-    // Linked Accounts API (New Multi-Account System)
-    getLinkedAccounts: async (_provider?: string) => [],
-    getActiveLinkedAccount: async (_provider: string) => null,
-    setActiveLinkedAccount: async (_provider: string, _accountId: string) => ({ success: true }),
-    linkAccount: async (_provider: string, _tokenData: RendererDataValue) => ({ success: true }),
-    unlinkAccount: async (_accountId: string) => ({ success: true }),
-    unlinkProvider: async (_provider: string) => ({ success: true }),
-    hasLinkedAccount: async (_provider: string) => false,
-    getAccountsByProvider: async (_provider: string) => [],
-    getAuthProviderHealth: async (_provider?: string) => [],
-    getAuthProviderAnalytics: async () => [],
-    getTokenAnalytics: async (_provider?: string) => ({
-        totalAccounts: 0,
-        withAccessToken: 0,
-        withRefreshToken: 0,
-        withSessionToken: 0,
-        expiringWithin30m: 0,
-        expired: 0,
-        revoked: 0,
-    }),
-    exportCredentials: async (_options: { provider?: string; password: string; expiresInHours?: number }) => ({
-        success: true,
-        payload: '',
-        checksum: '',
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-    }),
-    importCredentials: async (_payload: string, _password: string) => ({
-        success: true,
-        imported: 0,
-        skipped: 0,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-    }),
-    createMasterKeyBackup: async (_passphrase: string) => ({
-        success: true,
-        backup: '',
-    }),
-    restoreMasterKeyBackup: async (_backupPayload: string, _passphrase: string) => ({
-        success: true,
-    }),
-    startAuthSession: async (_provider: string, _accountId?: string, _source?: string) => ({ sessionId: '00000000-0000-0000-0000-000000000000' }),
-    touchAuthSession: async (_sessionId: string) => ({ success: true }),
-    endAuthSession: async (_sessionId: string) => ({ success: true }),
-    setAuthSessionLimit: async (_provider: string, _limit: number) => ({ limit: 5 }),
-    getAuthSessionAnalytics: async (_provider?: string) => ({ totalActiveSessions: 0, byProvider: {} }),
-    setAuthSessionTimeout: async (_timeoutMs: number) => ({ timeoutMs: _timeoutMs }),
-    getAuthSessionTimeout: async () => ({ timeoutMs: 30 * 60 * 1000 }),
+    },
 
     code: {
         scanTodos: async (_rootPath: string) => [],
@@ -296,7 +455,7 @@ export const webElectronMock: ElectronAPI = {
         applyLogo: async (_path: string, _tempPath: string) => '',
         getCompletion: async (_text: string) => '',
         getInlineSuggestion: async (_request: RendererDataValue) => ({}) as InlineSuggestionResponse,
-        trackInlineSuggestionTelemetry: async (_event: RendererDataValue) => ({ success: true }),
+        trackInlineSuggestionUsageStats: async (_event: RendererDataValue) => ({ success: true }),
         improveLogoPrompt: async (_prompt: string) => '',
         uploadLogo: async (_path: string) => null,
         analyzeDirectory: async (_dirPath: string) => ({
@@ -329,6 +488,7 @@ export const webElectronMock: ElectronAPI = {
         readFile: async (_path: string) => '',
         readImage: async (_path: string) => ({ success: true }),
         writeFile: async (_path: string, _content: string) => { },
+        selectFile: async (_options?: any) => ({ success: true, path: '' }),
         exists: async (_path: string) => true,
         revertFileChange: async (_diffId: string) => ({ success: false, error: 'Not supported in web bridge' }),
         copyPath: async (_sourcePath: string, _destinationPath: string) => ({
@@ -437,21 +597,6 @@ export const webElectronMock: ElectronAPI = {
         created_at: Date.now(),
         updated_at: Date.now(),
     }),
-    performance: {
-        getMemoryStats: async () => ({ success: true, data: { main: {}, timestamp: Date.now() } }),
-        getProcessMetrics: async () => ({ success: true, data: [] }),
-        getStartupMetrics: async () => ({ success: true, data: { startTime: Date.now() } }),
-        detectLeak: async () => ({ success: true, data: { isPossibleLeak: false, trend: [] } }),
-        triggerGC: async () => ({ success: true, data: { success: true } }),
-        getDashboard: async () => ({
-            success: true,
-            data: {
-                memory: { latestRss: 0, latestHeapUsed: 0, sampleCount: 0 },
-                alerts: []
-            }
-        }),
-    },
-
     getModels: async () => [],
 
 
@@ -900,8 +1045,9 @@ export const webElectronMock: ElectronAPI = {
         write: async (_sessionId: string, _data: string) => true,
         resize: async (_sessionId: string, _cols: number, _rows: number) => true,
         kill: async (_sessionId: string) => true,
-        onData: (_callback: (data: { id: string; data: string }) => void) => () => { },
-        onExit: (_callback: (data: { id: string; code: number }) => void) => () => { },
+        onData: (_callback: (payload: { id: string; data: string }) => void) => () => { },
+        onExit: (_callback: (payload: { id: string; code?: number; signal?: number }) => void) => () => { },
+        onStatusChange: (_callback: (payload: { id: string; online?: boolean }) => void) => () => { },
         removeAllListeners: () => { },
         getSessions: async () => [],
         restoreAllSnapshots: async () => ({ restored: 0, failed: 0, sessionIds: [] }),
@@ -1203,6 +1349,10 @@ export const webElectronMock: ElectronAPI = {
             date: new Date().toISOString(),
         }),
         getRecentCommits: async (_cwd: string, _count?: number) => ({ success: true, commits: [] }),
+        getFileHistory: async (_cwd: string, _filePath: string, _count?: number) => ({
+            success: true,
+            commits: [],
+        }),
         getBranches: async (_cwd: string) => ({ success: true, branches: ['main'] }),
         isRepository: async (_cwd: string) => ({ success: true, isRepository: true }),
         getFileDiff: async (_cwd: string, _filePath: string, _staged?: boolean) => ({
@@ -1218,9 +1368,8 @@ export const webElectronMock: ElectronAPI = {
         unstageFile: async (_cwd: string, _filePath: string) => ({ success: true }),
         getDetailedStatus: async (_cwd: string) => ({
             success: true,
-            stagedFiles: [],
-            unstagedFiles: [],
-            allFiles: [],
+            staged: [],
+            unstaged: [],
         }),
         checkout: async (_cwd: string, _branch: string) => ({ success: true }),
         commit: async (_cwd: string, _message: string) => ({ success: true }),
@@ -1248,6 +1397,54 @@ export const webElectronMock: ElectronAPI = {
             total: { added: 0, deleted: 0, files: 0 },
         }),
         getCommitDiff: async (_cwd: string, _hash: string) => ({ success: true, diff: '' }),
+        getStagedDiff: async (_cwd: string) => ({ success: true, diff: '' }),
+
+        getConflicts: async (_cwd: string) => ({
+            success: true,
+            conflicts: [],
+            analytics: {},
+        }),
+        resolveConflict: async (_cwd: string, _filePath: string, _strategy: 'ours' | 'theirs' | 'manual') => ({ success: true }),
+        openMergeTool: async (_cwd: string, _filePath?: string) => ({ success: true }),
+        getBlame: async (_cwd: string, _filePath: string) => ({ success: true, lines: [] }),
+        getCommitDetails: async (_cwd: string, _hash: string) => ({ success: true, details: undefined }),
+        getRebaseStatus: async (_cwd: string) => ({
+            success: true,
+            inRebase: false,
+        }),
+        getStashes: async (_cwd: string) => ({ success: true, stashes: [] }),
+        createStash: async (_cwd: string, _message: string, _includeUntracked?: boolean) => ({ success: true }),
+        applyStash: async (_cwd: string, _stashRef: string, _pop: boolean) => ({ success: true }),
+        dropStash: async (_cwd: string, _stashRef: string) => ({ success: true }),
+        exportStash: async (_cwd: string, _stashRef: string) => ({ success: true, patch: '' }),
+        runControlledOperation: async (_cwd: string, _command: string, _operationId: string, _timeoutMs: number) => ({
+            success: true,
+            stdout: '',
+            stderr: '',
+        }),
+        getRebasePlan: async (_cwd: string, _ontoBranch: string) => ({ success: true, plan: [] }),
+        getSubmodules: async (_cwd: string) => ({ success: true, submodules: [] }),
+        cancelOperation: async (_operationId: string) => ({ success: true }),
+        getFlowStatus: async (_cwd: string) => ({ success: true, flowStatus: undefined }),
+        startFlowBranch: async (_cwd: string, _branchType: string, _branchName: string, _baseBranch?: string) => ({ success: true }),
+        finishFlowBranch: async (_cwd: string, _branchName: string, _targetBranch?: string, _shouldDelete?: boolean) => ({ success: true }),
+        getHooks: async (_cwd: string) => ({ success: true, hooks: [], templates: [] }),
+        installHook: async (_cwd: string, _hookName: string, _templateName: string) => ({ success: true }),
+        validateHook: async (_cwd: string, _hookName: string) => ({
+            success: true,
+            validation: { hookName: _hookName, hasShebang: true, executable: true, valid: true },
+        }),
+        testHook: async (_cwd: string, _hookName: string) => ({ success: true, stdout: '', stderr: '' }),
+        getRepositoryStats: async (_cwd: string, _days?: number) => ({ success: true, stats: undefined }),
+        exportRepositoryStats: async (_cwd: string, _days?: number) => ({ success: true, export: { authorsCsv: '' } }),
+        createBranch: async (_cwd: string, _name: string, _startPoint?: string) => ({ success: true }),
+        deleteBranch: async (_cwd: string, _name: string, _force?: boolean) => ({ success: true }),
+        renameBranch: async (_cwd: string, _oldName: string, _newName: string) => ({ success: true }),
+        setUpstream: async (_cwd: string, _branch: string, _remote: string, _upstreamBranch: string) => ({ success: true }),
+        generatePrSummary: async (_cwd: string, _base: string, _head: string) => ({ success: true, summary: '' }),
+        compareRefs: async (_cwd: string, _base: string, _head: string) => ({ ahead: 0, behind: 0, files: [], success: true }),
+        getHotspots: async (_cwd: string, _limit?: number, _days?: number) => ({ success: true, hotspots: [] }),
+        getTreeStatusPreview: async (_cwd: string, _directoryPath: string) => ({}),
     },
 
     executeTools: async (
@@ -1299,6 +1496,36 @@ export const webElectronMock: ElectronAPI = {
         code: 0,
     }),
 
+
+    theme: {
+        getConfiguration: async () => ({
+            theme: 'system',
+            highContrast: false,
+            reducedMotion: false,
+            transparency: true,
+            fontSize: 14,
+            fontFamily: 'Inter',
+        }),
+        setConfiguration: async (_config: any) => ({ success: true }),
+        onRuntimeUpdated: (_callback: any) => () => { },
+    },
+
+    locale: {
+        getConfiguration: async () => ({
+            locale: 'en',
+            fallbackLocale: 'en',
+            availableLocales: ['en'],
+        }),
+        setConfiguration: async (_config: any) => ({ success: true }),
+        onRuntimeUpdated: (_callback: any) => () => { },
+    },
+
+    codeLanguages: {
+        getLanguages: async () => [],
+        getLanguage: async (_id: string) => null,
+        onRuntimeUpdated: (_callback: any) => () => { },
+    },
+
     readPdf: async (_path: string) => ({ success: true, text: '' }),
     selectDirectory: async () => ({ success: true, path: '' }),
     listDirectory: async (_path: string) => ({ success: true, files: [] }),
@@ -1316,8 +1543,8 @@ export const webElectronMock: ElectronAPI = {
     exportMarkdown: async (_content: string, _filePath: string) => ({ success: true }),
     exportPDF: async (_htmlContent: string, _filePath: string) => ({ success: true }),
 
-    getSettings: async () => ({}) as AppSettings,
-    saveSettings: async (_settings: AppSettings) => { },
+    getSettings: async () => readWebSettings(),
+    saveSettings: async (settings: AppSettings) => writeWebSettings(settings),
 
     huggingface: {
         searchModels: async (_query: string, _limit: number, _page: number, _sort: string) => ({
@@ -1426,6 +1653,7 @@ export const webElectronMock: ElectronAPI = {
         checkForUpdates: async () => { },
         downloadUpdate: async () => { },
         installUpdate: async () => { },
+        onStatus: (_callback: (status: { state: string }) => void) => () => { },
     },
 
     collaboration: {
@@ -1539,7 +1767,7 @@ export const webElectronMock: ElectronAPI = {
                 errors: []
             }
         }),
-        getStats: async () => ({ success: true, data: undefined }),
+        getStats: async () => ({ success: true, data: EMPTY_WEB_MEMORY_STATS }),
         runDecay: async () => ({ success: true }),
         extractFromMessage: async (_content: string, _sourceId: string, _workspaceId?: string) => ({
             success: true,
@@ -2005,5 +2233,6 @@ if (typeof window !== 'undefined' && !window.electron) {
 }
 
 export default webElectronMock;
+
 
 

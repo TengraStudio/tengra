@@ -285,3 +285,4 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
         pagedItems
     };
 }
+

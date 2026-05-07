@@ -473,3 +473,4 @@ export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) 
 
 
 
+

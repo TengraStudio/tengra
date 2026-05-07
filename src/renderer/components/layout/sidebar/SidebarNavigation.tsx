@@ -562,3 +562,4 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
 };
 
 SidebarNavigation.displayName = 'SidebarNavigation';
+

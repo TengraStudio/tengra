@@ -21,6 +21,13 @@ const RUNTIME_MODELS_FOLDER = 'models';
 const RUNTIME_TEMP_FOLDER = 'temp';
 const RUNTIME_DOWNLOADS_FOLDER = 'downloads';
 const RUNTIME_MANIFESTS_FOLDER = 'manifests';
+const ASSETS_BIN_FOLDER = path.join('assets', 'bin');
+const BUNDLED_BIN_FOLDERS = [
+    path.join(process.resourcesPath || '', ASSETS_BIN_FOLDER),
+    path.join(app.getAppPath(), ASSETS_BIN_FOLDER),
+    path.join(path.dirname(app.getPath('exe')), 'resources', ASSETS_BIN_FOLDER),
+    path.join(process.cwd(), ASSETS_BIN_FOLDER),
+];
 
 function getManagedAppRoot(): string {
     return app.getPath('userData');
@@ -39,6 +46,41 @@ function normalizeExecutableName(name: string): string {
     }
 
     return name.endsWith('.exe') ? name.slice(0, -4) : name;
+}
+
+export function getBundledRuntimeBinaryPath(executable: string): string | null {
+    const normalizedName = normalizeExecutableName(executable);
+    for (const root of BUNDLED_BIN_FOLDERS) {
+        const platformPath = path.join(root, process.platform, normalizedName);
+        if (fs.existsSync(platformPath)) {
+            return platformPath;
+        }
+
+        const flatPath = path.join(root, normalizedName);
+        if (fs.existsSync(flatPath)) {
+            return flatPath;
+        }
+    }
+
+    return null;
+}
+
+function copyBundledBinaryToManagedPath(executable: string): string | null {
+    const bundledPath = getBundledRuntimeBinaryPath(executable);
+    if (!bundledPath) {
+        return null;
+    }
+
+    const normalizedName = normalizeExecutableName(executable);
+    const managedPath = path.join(getManagedRuntimeBinDir(), normalizedName);
+
+    if (fs.existsSync(managedPath)) {
+        return managedPath;
+    }
+
+    fs.mkdirSync(path.dirname(managedPath), { recursive: true });
+    fs.copyFileSync(bundledPath, managedPath);
+    return managedPath;
 }
 
 export function getManagedRuntimeRoot(): string {
@@ -71,45 +113,17 @@ export function getManagedRuntimeManifestsDir(): string {
 
 export function getManagedRuntimeBinaryPath(executable: string): string {
     const normalizedName = normalizeExecutableName(executable);
-    
-    // 1. Check bundled resources/bin (Modern structured path)
-    // We use multiple ways to find the resources path to be safe
-    const possibleResourcePaths = [
-        process.resourcesPath,
-        path.join(app.getAppPath(), '..'),
-        path.join(path.dirname(app.getPath('exe')), 'resources')
-    ];
 
-    for (const resPath of possibleResourcePaths) {
-        if (!resPath) {continue;}
-        
-        // Try platform-specific path first (e.g., bin/win32/...)
-        const platformPath = path.join(resPath, 'bin', process.platform, normalizedName);
-        if (fs.existsSync(platformPath)) {
-            return platformPath;
-        }
-
-        // Fallback to flat path (e.g., bin/...)
-        const bundledPath = path.join(resPath, 'bin', normalizedName);
-        if (fs.existsSync(bundledPath)) {
-            return bundledPath;
-        }
+    const managedPath = path.join(getManagedRuntimeBinDir(), normalizedName);
+    if (fs.existsSync(managedPath)) {
+        return managedPath;
     }
 
-    // 2. Check in app root (Legacy/Portable fallback)
-    const appRootDirBin = path.join(path.dirname(app.getPath('exe')), 'bin', normalizedName);
-    if (fs.existsSync(appRootDirBin)) {
-        return appRootDirBin;
+    const stagedPath = copyBundledBinaryToManagedPath(normalizedName);
+    if (stagedPath) {
+        return stagedPath;
     }
 
-    // 3. In development, check project root bin
-    if (!app.isPackaged) {
-        const devBinPath = path.join(app.getAppPath(), 'bin', normalizedName);
-        if (fs.existsSync(devBinPath)) {
-            return devBinPath;
-        }
-    }
-
-    // 4. Final fallback to managed runtime directory in AppData
-    return path.join(getManagedRuntimeBinDir(), normalizedName);
+    return managedPath;
 }
+

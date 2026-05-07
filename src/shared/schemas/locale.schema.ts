@@ -54,3 +54,4 @@ export const localePackSchema = localePackManifestObjectSchema.extend({
 }) satisfies z.ZodType<LocalePack>;
 
 export const localePackArraySchema = z.array(localePackSchema);
+

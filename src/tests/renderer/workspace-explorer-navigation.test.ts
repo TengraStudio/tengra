@@ -80,3 +80,4 @@ describe('workspace explorer navigation helpers', () => {
         expect(range).toEqual([rows[0].entry]);
     });
 });
+

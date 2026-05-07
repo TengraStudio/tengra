@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { OLLAMA_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue, Message, ModelDefinition, OllamaLibraryModel, ToolCall } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
@@ -86,68 +87,69 @@ export interface OllamaBridge {
 
 export function createOllamaBridge(ipc: IpcRenderer): OllamaBridge {
     return {
-        getModels: () => ipc.invoke('ollama:get-models'),
-        chat: (messages, model) => ipc.invoke('ollama:chat', messages, model),
-        chatOpenAI: (request) => ipc.invoke('ollama:chat-openai', request),
-        chatStream: (request) => ipc.invoke('ollama:chat-stream', request),
-        abortChat: () => ipc.send('ollama:abort-chat'),
+        getModels: () => ipc.invoke(OLLAMA_CHANNELS.GET_MODELS),
+        chat: (messages, model) => ipc.invoke(OLLAMA_CHANNELS.CHAT, messages, model),
+        chatOpenAI: (request) => ipc.invoke(OLLAMA_CHANNELS.CHAT_OPENAI, request),
+        chatStream: (request) => ipc.invoke(OLLAMA_CHANNELS.CHAT_STREAM, request),
+        abortChat: () => ipc.send(OLLAMA_CHANNELS.ABORT),
         onStreamChunk: callback => {
             const listener = (_event: IpcRendererEvent, chunk: Record<string, RuntimeValue>) => callback(chunk as Parameters<Parameters<OllamaBridge['onStreamChunk']>[0]>[0]);
-            ipc.on('ollama:stream-chunk', listener);
-            return () => ipc.removeListener('ollama:stream-chunk', listener);
+            ipc.on(OLLAMA_CHANNELS.STREAM_CHUNK, listener);
+            return () => ipc.removeListener(OLLAMA_CHANNELS.STREAM_CHUNK, listener);
         },
-        removeStreamChunkListener: () => ipc.removeAllListeners('ollama:stream-chunk'),
+        removeStreamChunkListener: () => ipc.removeAllListeners(OLLAMA_CHANNELS.STREAM_CHUNK),
 
-        isOllamaRunning: () => ipc.invoke('ollama:is-running'),
-        startOllama: () => ipc.invoke('ollama:start'),
-        pullModel: modelName => ipc.invoke('ollama:pull-model', modelName),
-        deleteModel: modelName => ipc.invoke('ollama:delete-model', modelName),
-        getLibraryModels: () => ipc.invoke('ollama:get-library-models'),
+        isOllamaRunning: () => ipc.invoke(OLLAMA_CHANNELS.IS_RUNNING),
+        startOllama: () => ipc.invoke(OLLAMA_CHANNELS.START),
+        pullModel: modelName => ipc.invoke(OLLAMA_CHANNELS.PULL, modelName),
+        deleteModel: modelName => ipc.invoke(OLLAMA_CHANNELS.DELETE_MODEL, modelName),
+        getLibraryModels: () => ipc.invoke(OLLAMA_CHANNELS.GET_LIBRARY_MODELS),
         onPullProgress: callback => {
             const listener = (_event: IpcRendererEvent, progress: Record<string, RuntimeValue>) => callback(progress as Parameters<Parameters<OllamaBridge['onPullProgress']>[0]>[0]);
-            ipc.on('ollama:pull-progress', listener);
-            return () => ipc.removeListener('ollama:pull-progress', listener);
+            ipc.on(OLLAMA_CHANNELS.PULL_PROGRESS, listener);
+            return () => ipc.removeListener(OLLAMA_CHANNELS.PULL_PROGRESS, listener);
         },
-        removePullProgressListener: () => ipc.removeAllListeners('ollama:pull-progress'),
+        removePullProgressListener: () => ipc.removeAllListeners(OLLAMA_CHANNELS.PULL_PROGRESS),
 
-        getHealthStatus: () => ipc.invoke('ollama:get-health-status'),
-        forceHealthCheck: () => ipc.invoke('ollama:force-health-check'),
-        checkCuda: () => ipc.invoke('ollama:check-cuda'),
+        getHealthStatus: () => ipc.invoke(OLLAMA_CHANNELS.HEALTH_STATUS),
+        forceHealthCheck: () => ipc.invoke(OLLAMA_CHANNELS.FORCE_HEALTH_CHECK),
+        checkCuda: () => ipc.invoke(OLLAMA_CHANNELS.CHECK_CUDA),
         onStatusChange: callback => {
             const listener = (_event: IpcRendererEvent, status: 'ok' | 'error' | 'stopped') => callback(status);
-            ipc.on('ollama:status-change', listener);
-            return () => ipc.removeListener('ollama:status-change', listener);
+            ipc.on(OLLAMA_CHANNELS.STATUS_CHANGE, listener);
+            return () => ipc.removeListener(OLLAMA_CHANNELS.STATUS_CHANGE, listener);
         },
 
-        checkModelHealth: modelName => ipc.invoke('ollama:check-model-health', modelName),
-        checkAllModelsHealth: () => ipc.invoke('ollama:check-all-models-health'),
-        getRecommendations: category => ipc.invoke('ollama:get-model-recommendations', category),
-        getRecommendedModelForTask: task => ipc.invoke('ollama:get-recommended-model-for-task', task),
+        checkModelHealth: modelName => ipc.invoke(OLLAMA_CHANNELS.CHECK_MODEL_HEALTH, modelName),
+        checkAllModelsHealth: () => ipc.invoke(OLLAMA_CHANNELS.CHECK_ALL_MODELS_HEALTH),
+        getRecommendations: category => ipc.invoke(OLLAMA_CHANNELS.GET_MODEL_RECOMMENDATIONS, category),
+        getRecommendedModelForTask: task => ipc.invoke(OLLAMA_CHANNELS.GET_RECOMMENDED_MODEL_FOR_TASK, task),
 
-        getConnectionStatus: () => ipc.invoke('ollama:get-connection-status'),
-        testConnection: () => ipc.invoke('ollama:test-connection'),
-        reconnect: () => ipc.invoke('ollama:reconnect'),
+        getConnectionStatus: () => ipc.invoke(OLLAMA_CHANNELS.GET_CONNECTION_STATUS),
+        testConnection: () => ipc.invoke(OLLAMA_CHANNELS.TEST_CONNECTION),
+        reconnect: () => ipc.invoke(OLLAMA_CHANNELS.RECONNECT),
 
-        getGPUInfo: () => ipc.invoke('ollama:get-gpu-info'),
-        startGPUMonitoring: intervalMs => ipc.invoke('ollama:start-gpu-monitoring', intervalMs),
-        stopGPUMonitoring: () => ipc.invoke('ollama:stop-gpu-monitoring'),
-        setGPUAlertThresholds: thresholds => ipc.invoke('ollama:set-gpu-alert-thresholds', thresholds),
-        getGPUAlertThresholds: () => ipc.invoke('ollama:get-gpu-alert-thresholds'),
+        getGPUInfo: () => ipc.invoke(OLLAMA_CHANNELS.GET_GPU_INFO),
+        startGPUMonitoring: intervalMs => ipc.invoke(OLLAMA_CHANNELS.START_GPU_MONITORING, intervalMs),
+        stopGPUMonitoring: () => ipc.invoke(OLLAMA_CHANNELS.STOP_GPU_MONITORING),
+        setGPUAlertThresholds: thresholds => ipc.invoke(OLLAMA_CHANNELS.SET_GPU_ALERT_THRESHOLDS, thresholds),
+        getGPUAlertThresholds: () => ipc.invoke(OLLAMA_CHANNELS.GET_GPU_ALERT_THRESHOLDS),
         onGPUAlert: callback => {
             const listener = (_event: IpcRendererEvent, alert: IpcValue) => callback(alert);
-            ipc.on('ollama:gpu-alert', listener);
-            return () => ipc.removeListener('ollama:gpu-alert', listener);
+            ipc.on(OLLAMA_CHANNELS.GPU_ALERT, listener);
+            return () => ipc.removeListener(OLLAMA_CHANNELS.GPU_ALERT, listener);
         },
         onGPUStatus: callback => {
             const listener = (_event: IpcRendererEvent, status: IpcValue) => callback(status);
-            ipc.on('ollama:gpu-status', listener);
-            return () => ipc.removeListener('ollama:gpu-status', listener);
+            ipc.on(OLLAMA_CHANNELS.GPU_STATUS, listener);
+            return () => ipc.removeListener(OLLAMA_CHANNELS.GPU_STATUS, listener);
         },
 
         // Cloud Account Authentication
-        initiateConnect: () => ipc.invoke('ollama:initiate-connect'),
+        initiateConnect: () => ipc.invoke(OLLAMA_CHANNELS.INITIATE_CONNECT),
         pollConnectStatus: (code, privateKeyB64, publicKeyB64) =>
-            ipc.invoke('ollama:poll-connect-status', code, privateKeyB64, publicKeyB64),
-        getOllamaAccounts: () => ipc.invoke('ollama:get-ollama-accounts'),
+            ipc.invoke(OLLAMA_CHANNELS.POLL_CONNECT_STATUS, code, privateKeyB64, publicKeyB64),
+        getOllamaAccounts: () => ipc.invoke(OLLAMA_CHANNELS.GET_OLLAMA_ACCOUNTS),
     };
 }
+

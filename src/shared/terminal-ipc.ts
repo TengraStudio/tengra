@@ -114,3 +114,4 @@ export type TerminalIpcContract = IpcContractMap & {
         response: boolean;
     };
 };
+

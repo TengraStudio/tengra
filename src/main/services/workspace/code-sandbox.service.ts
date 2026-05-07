@@ -15,6 +15,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { withRetry } from '@main/utils/ipc-retry.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { CODE_SANDBOX_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -76,7 +77,7 @@ const SHELL_BLOCKED_PATTERNS = [
 ];
 
 export class CodeSandboxService {
-    private telemetry = {
+    private usageStats = {
         totalCalls: 0,
         totalFailures: 0,
         totalRetries: 0,
@@ -85,7 +86,7 @@ export class CodeSandboxService {
         lastErrorCode: null as string | null,
     };
 
-    @ipc('code-sandbox:languages')
+    @ipc(CODE_SANDBOX_CHANNELS.LANGUAGES)
     async getSupportedLanguages(): Promise<RuntimeValue> {
         return serializeToIpc({
             languages: ['javascript', 'typescript', 'python', 'shell'],
@@ -93,36 +94,36 @@ export class CodeSandboxService {
         });
     }
 
-    @ipc('code-sandbox:execute')
+    @ipc(CODE_SANDBOX_CHANNELS.EXECUTE)
     async executeCode(payload: { language: string; code: string; timeoutMs?: number; stdin?: string }): Promise<RuntimeValue> {
         const startedAt = Date.now();
         const result = await this.executeWithRetryPolicy(payload);
         const durationMs = Date.now() - startedAt;
 
         if (result.success) {
-            this.telemetry.totalCalls++;
+            this.usageStats.totalCalls++;
             return serializeToIpc(result);
         }
 
-        this.telemetry.totalCalls++;
-        this.telemetry.totalFailures++;
-        this.telemetry.lastErrorCode = result.errorCode ?? CODE_SANDBOX_ERROR_CODE.EXECUTION_FAILED;
+        this.usageStats.totalCalls++;
+        this.usageStats.totalFailures++;
+        this.usageStats.lastErrorCode = result.errorCode ?? CODE_SANDBOX_ERROR_CODE.EXECUTION_FAILED;
         
         return serializeToIpc(result);
     }
 
-    @ipc('code-sandbox:health')
+    @ipc(CODE_SANDBOX_CHANNELS.HEALTH)
     async getHealth(): Promise<RuntimeValue> {
-        const errorRate = this.telemetry.totalCalls === 0
+        const errorRate = this.usageStats.totalCalls === 0
             ? 0
-            : this.telemetry.totalFailures / this.telemetry.totalCalls;
+            : this.usageStats.totalFailures / this.usageStats.totalCalls;
         const status = errorRate > 0.05 ? 'degraded' : 'healthy';
 
         return serializeToIpc({
             status,
             uiState: status === 'healthy' ? 'ready' : 'failure',
             metrics: {
-                ...this.telemetry,
+                ...this.usageStats,
                 errorRate
             }
         });
@@ -357,3 +358,4 @@ export class CodeSandboxService {
         return CODE_SANDBOX_STDERR_FALLBACK.EXECUTION_FAILED;
     }
 }
+

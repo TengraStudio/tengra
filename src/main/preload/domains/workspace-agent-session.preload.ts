@@ -44,9 +44,9 @@ export function createWorkspaceAgentSessionBridge(
                 WORKSPACE_AGENT_SESSION_CHANNELS.UPDATE_STRATEGY,
                 payload
             ),
-        getContextTelemetry: payload =>
+        getContextStats: payload =>
             ipc.invoke(
-                WORKSPACE_AGENT_SESSION_CHANNELS.GET_CONTEXT_TELEMETRY,
+                WORKSPACE_AGENT_SESSION_CHANNELS.GET_CONTEXT_STATS,
                 payload
             ),
         archive: payload =>
@@ -60,3 +60,4 @@ export function createWorkspaceAgentSessionBridge(
             ),
     };
 }
+

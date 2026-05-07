@@ -186,3 +186,4 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
         </div>
     );
 };
+

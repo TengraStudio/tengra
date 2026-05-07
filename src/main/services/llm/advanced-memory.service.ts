@@ -38,6 +38,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage } from '@main/types/llm.types';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { withRetry } from '@main/utils/retry.util';
+import { ADVANCED_MEMORY_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     AdvancedMemoryImportPayloadSchema,
     AdvancedMemoryRecallContextSchema
@@ -142,6 +143,7 @@ export class AdvancedMemoryService {
     private memorySnapshotRefresh: Promise<void> | null = null;
     private cachedBackgroundModel: BackgroundModelSelection | null = null;
     private isInitialized = false;
+    private initializationPromise: Promise<void> | null = null;
     private searchAnalytics = {
         totalQueries: 0,
         semanticQueries: 0,
@@ -220,17 +222,28 @@ export class AdvancedMemoryService {
     }
 
     async initialize(): Promise<void> {
+        if (this.initializationPromise) {
+            await this.initializationPromise;
+            return;
+        }
         if (this.isInitialized) { return; }
 
-        // Load pending memories from database
-        await this.loadPendingMemories();
-
-        // Run decay maintenance
-        await this.runDecayMaintenance();
-        this.warmMemorySnapshot();
-
         this.isInitialized = true;
-        appLogger.info(SERVICE_NAME, 'Advanced memory service initialized');
+        this.initializationPromise = (async () => {
+            try {
+                void this.loadPendingMemories().then(() => {
+                    void this.runDecayMaintenance().catch(error => {
+                        appLogger.debug(SERVICE_NAME, `Background memory decay maintenance failed: ${String(error)}`);
+                    });
+                    this.warmMemorySnapshot();
+                }).catch(error => {
+                    appLogger.debug(SERVICE_NAME, `Background pending memory load failed: ${String(error)}`);
+                });
+            } finally {
+                appLogger.info(SERVICE_NAME, 'Advanced memory service initialized');
+            }
+        })();
+        await this.initializationPromise;
     }
 
     /** Clears staging buffers, shared namespaces, and analytics state. */
@@ -251,7 +264,7 @@ export class AdvancedMemoryService {
     // FACT EXTRACTION (Entry Point)
     // ========================================================================
 
-    @ipc('advancedMemory:extractAndStage')
+    @ipc(ADVANCED_MEMORY_CHANNELS.EXTRACT_AND_STAGE)
     async extractAndStageFromMessageIpc(payload: { content: string; sourceId: string; workspaceId?: string }): Promise<RuntimeValue> {
         const { content, sourceId, workspaceId } = payload;
         const result = await this.extractAndStageFromMessage(content, sourceId, workspaceId);
@@ -328,7 +341,7 @@ export class AdvancedMemoryService {
     /**
      * Explicitly remember a fact (user said "remember this")
      */
-    @ipc('advancedMemory:remember')
+    @ipc(ADVANCED_MEMORY_CHANNELS.REMEMBER)
     async rememberExplicitIpc(content: string, options?: { category?: MemoryCategory; tags?: string[]; workspaceId?: string }): Promise<RuntimeValue> {
         const memory = await this.rememberExplicit(
             content,
@@ -491,7 +504,7 @@ export class AdvancedMemoryService {
     /**
      * Get all pending memories awaiting validation
      */
-    @ipc('advancedMemory:getPending')
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_PENDING)
     async getPendingMemoriesIpc(): Promise<RuntimeValue> {
         const pending = this.getPendingMemories();
         return serializeToIpc(pending);
@@ -505,7 +518,7 @@ export class AdvancedMemoryService {
     /**
      * Confirm a pending memory (user validation)
      */
-    @ipc('advancedMemory:confirm')
+    @ipc(ADVANCED_MEMORY_CHANNELS.CONFIRM)
     async confirmPendingMemoryIpc(id: string, adjustments?: { content?: string; category?: MemoryCategory; tags?: string[]; importance?: number }): Promise<RuntimeValue> {
         const memory = await this.confirmPendingMemory(id, 'user', adjustments);
         return serializeToIpc(memory);
@@ -625,7 +638,7 @@ export class AdvancedMemoryService {
         await this.deletePendingMemory(id);
     }
 
-    @ipc('advancedMemory:confirmAll')
+    @ipc(ADVANCED_MEMORY_CHANNELS.CONFIRM_ALL)
     async confirmAllIpc(): Promise<RuntimeValue> {
         const pending = this.getPendingMemories();
         let confirmed = 0;
@@ -638,7 +651,7 @@ export class AdvancedMemoryService {
         return serializeToIpc({ confirmed });
     }
 
-    @ipc('advancedMemory:rejectAll')
+    @ipc(ADVANCED_MEMORY_CHANNELS.REJECT_ALL)
     async rejectAllIpc(): Promise<RuntimeValue> {
         const pending = this.getPendingMemories();
         for (const p of pending) {
@@ -654,7 +667,7 @@ export class AdvancedMemoryService {
     /**
      * Recall memories with full context awareness
      */
-    @ipc('advancedMemory:recall')
+    @ipc(ADVANCED_MEMORY_CHANNELS.RECALL)
     async recallIpc(context: RecallContext): Promise<RuntimeValue> {
         const result = await this.recall(context);
         return serializeToIpc(result);
@@ -708,7 +721,7 @@ export class AdvancedMemoryService {
         return this.retrievalService.recallRelevantFacts(query, limit);
     }
 
-    @ipc('advancedMemory:search')
+    @ipc(ADVANCED_MEMORY_CHANNELS.SEARCH)
     async searchMemoriesHybridIpc(query: string, limit: number = 10): Promise<RuntimeValue> {
         const result = await this.searchMemoriesHybrid(query, limit);
         return serializeToIpc(result);
@@ -772,7 +785,7 @@ export class AdvancedMemoryService {
         }
     }
 
-    @ipc('advancedMemory:searchResolutions')
+    @ipc(ADVANCED_MEMORY_CHANNELS.SEARCH_RESOLUTIONS)
     async findResolutionMemoriesIpc(errorQuery: string, limit: number = 5): Promise<RuntimeValue> {
         const result = await this.findResolutionMemories(errorQuery, limit);
         return serializeToIpc(result);
@@ -786,7 +799,7 @@ export class AdvancedMemoryService {
             .slice(0, normalizedLimit);
     }
 
-    @ipc('advancedMemory:export')
+    @ipc(ADVANCED_MEMORY_CHANNELS.EXPORT)
     async exportMemoriesIpc(query?: string, limit: number = 200): Promise<RuntimeValue> {
         const result = await this.exportMemories(query, limit);
         return serializeToIpc(result);
@@ -801,7 +814,7 @@ export class AdvancedMemoryService {
         return this.retrievalService.exportMemories(query, limit);
     }
 
-    @ipc('advancedMemory:import')
+    @ipc(ADVANCED_MEMORY_CHANNELS.IMPORT)
     async importMemoriesIpc(payload: { memories?: Array<Partial<AdvancedSemanticFragment>>; pendingMemories?: Array<Partial<PendingMemory>>; replaceExisting?: boolean }): Promise<RuntimeValue> {
         const result = await this.importMemories(payload);
         return serializeToIpc(result);
@@ -892,7 +905,13 @@ export class AdvancedMemoryService {
         return result;
     }
 
-    @ipc('advancedMemory:getSearchAnalytics')
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_STATS)
+    async getStatisticsIpc(): Promise<RuntimeValue> {
+        const result = await this.getStatistics();
+        return serializeToIpc(result);
+    }
+
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_SEARCH_ANALYTICS)
     async getSearchAnalyticsIpc(): Promise<RuntimeValue> {
         const result = this.getSearchAnalytics();
         return serializeToIpc(result);
@@ -920,7 +939,7 @@ export class AdvancedMemoryService {
         };
     }
 
-    @ipc('advancedMemory:health')
+    @ipc(ADVANCED_MEMORY_CHANNELS.HEALTH)
     async getHealthStatusIpc(): Promise<RuntimeValue> {
         const result = this.getHealthStatus();
         return serializeToIpc(result);
@@ -960,7 +979,7 @@ export class AdvancedMemoryService {
         };
     }
 
-    @ipc('advancedMemory:getSearchHistory')
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_SEARCH_HISTORY)
     async getSearchHistoryIpc(limit: number = 25): Promise<RuntimeValue> {
         const result = this.getSearchHistory(limit);
         return serializeToIpc(result);
@@ -972,7 +991,7 @@ export class AdvancedMemoryService {
         return this.searchAnalytics.history.slice(startIndex).reverse();
     }
 
-    @ipc('advancedMemory:getSearchSuggestions')
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_SEARCH_SUGGESTIONS)
     async getSearchSuggestionsIpc(prefix?: string, limit: number = 8): Promise<RuntimeValue> {
         const result = this.getSearchSuggestions(prefix, limit);
         return serializeToIpc(result);
@@ -993,7 +1012,7 @@ export class AdvancedMemoryService {
     // EPISODIC MEMORY (Conversations)
     // ========================================================================
 
-    @ipc('advancedMemory:summarizeChat')
+    @ipc(ADVANCED_MEMORY_CHANNELS.SUMMARIZE_CHAT)
     async summarizeChatIpc(payload: { chatId: string; provider?: string; model?: string }): Promise<RuntimeValue> {
         const { chatId, provider, model } = payload;
         const result = await this.summarizeChat(chatId, provider, model);
@@ -2161,3 +2180,4 @@ If no facts worth remembering, return [].`;
     }
 
 }
+

@@ -271,3 +271,4 @@ describe('SettingsService - Persistence', () => {
         expect(en.frontend.serviceHealth.settings.ready).toBe(readyMetrics.messageKey);
     });
 });
+

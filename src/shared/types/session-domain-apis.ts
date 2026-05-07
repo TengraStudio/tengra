@@ -18,7 +18,7 @@ import type {
     SessionCanvasNodeRecord,
 } from './session-workspace';
 import type {
-    WorkspaceAgentContextTelemetry,
+    WorkspaceAgentUsageStats,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSession,
     WorkspaceAgentSessionListResponse,
@@ -83,9 +83,9 @@ export interface SessionWorkspaceAgentApi {
         sessionId: string;
         strategy: WorkspaceAgentSession['strategy'];
     }) => Promise<WorkspaceAgentSession>;
-    getContextTelemetry: (payload: {
+    getContextStats: (payload: {
         sessionId: string;
-    }) => Promise<WorkspaceAgentContextTelemetry | null>;
+    }) => Promise<WorkspaceAgentUsageStats | null>;
     archive: (payload: {
         sessionId: string;
         archived: boolean;
@@ -98,3 +98,4 @@ export interface SessionWorkspaceAgentApi {
         activeSessionId: string | null;
     }) => Promise<WorkspaceAgentSessionPersistence>;
 }
+

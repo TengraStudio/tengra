@@ -58,3 +58,4 @@ describe('MarkdownContent', () => {
         expect(screen.queryByTestId('monaco-block')).not.toBeInTheDocument();
     });
 });
+

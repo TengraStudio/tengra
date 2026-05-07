@@ -27,3 +27,4 @@ export function localizeIpcValidationMessage(message: string, t: TranslatorFunct
         return currentMessage.split(key).join(t(key));
     }, message);
 }
+

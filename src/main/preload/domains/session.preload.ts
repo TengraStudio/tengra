@@ -142,3 +142,4 @@ export function createSessionBridge(ipc: IpcRenderer): SessionBridge {
         },
     };
 }
+

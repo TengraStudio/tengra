@@ -9,13 +9,13 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { LoadingState } from '@/components/ui/LoadingState';
 import {
     __resetLoadingAnalyticsForTests,
     getLoadingAnalyticsSnapshot,
-} from '@/ui/store/loading-analytics.store';
+} from '@ui/store/loading-analytics.store';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { LoadingState } from '@/components/ui/LoadingState';
 
 describe('LoadingState', () => {
     beforeEach(() => {
@@ -75,3 +75,4 @@ describe('LoadingState', () => {
         expect(snapshot.history[0]?.status).toBe('completed');
     });
 });
+

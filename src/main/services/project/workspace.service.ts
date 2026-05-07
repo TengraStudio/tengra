@@ -15,3 +15,4 @@ export type {
 } from '@main/services/workspace/workspace.service';
 export { WorkspaceService as WorkspaceService } from '@main/services/workspace/workspace.service';
 export * from '@main/services/workspace/workspace.service';
+

@@ -224,3 +224,4 @@ export function isTextMateAvailable(): boolean {
 export function needsTextMateGrammar(language: string): boolean {
     return TEXTMATE_LANGUAGES.has(language.toLowerCase());
 }
+

@@ -38,3 +38,4 @@ describe('TypingIndicator', () => {
         expect(dots).toHaveLength(3);
     });
 });
+

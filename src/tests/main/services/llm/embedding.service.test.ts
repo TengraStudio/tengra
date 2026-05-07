@@ -209,3 +209,4 @@ describe('EmbeddingService', () => {
         expect(mocks.llmGetEmbeddings).toHaveBeenCalledWith('defaults', 'text-embedding-3-small');
     });
 });
+

@@ -52,7 +52,7 @@ export type AgentState =
 export type ProviderStatus = 'active' | 'quota_exceeded' | 'error' | 'unavailable';
 
 /**
- * Tool execution status for telemetry
+ * Tool execution status for usageStats
  */
 export type ToolExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'cancelled';
 
@@ -351,3 +351,4 @@ export type StateTransitionGuard = (
     event: AgentEvent,
     context: AgentTaskState
 ) => boolean;
+

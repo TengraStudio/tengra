@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { EXPORT_CHANNELS } from '@shared/constants/ipc-channels';
 import { Chat } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
@@ -60,16 +61,17 @@ export interface ExportBridge {
 
 export function createExportBridge(ipc: IpcRenderer): ExportBridge {
     return {
-        chat: (chat, options) => ipc.invoke('export:chat', chat, options),
+        chat: (chat, options) => ipc.invoke(EXPORT_CHANNELS.CHAT, chat, options),
         chatToMarkdown: (chat, options) =>
-            ipc.invoke('export:chatToMarkdown', chat, options),
-        chatToHTML: (chat, options) => ipc.invoke('export:chatToHTML', chat, options),
-        chatToJSON: (chat, options) => ipc.invoke('export:chatToJSON', chat, options),
-        chatToText: (chat, options) => ipc.invoke('export:chatToText', chat, options),
-        chatToPDF: (chat, options) => ipc.invoke('export:chatToPDF', chat, options),
-        getContent: (chat, options) => ipc.invoke('export:getContent', chat, options),
+            ipc.invoke(EXPORT_CHANNELS.CHAT_TO_MARKDOWN, chat, options),
+        chatToHTML: (chat, options) => ipc.invoke(EXPORT_CHANNELS.CHAT_TO_HTML, chat, options),
+        chatToJSON: (chat, options) => ipc.invoke(EXPORT_CHANNELS.CHAT_TO_JSON, chat, options),
+        chatToText: (chat, options) => ipc.invoke(EXPORT_CHANNELS.CHAT_TO_TEXT, chat, options),
+        chatToPDF: (chat, options) => ipc.invoke(EXPORT_CHANNELS.CHAT_TO_PDF, chat, options),
+        getContent: (chat, options) => ipc.invoke(EXPORT_CHANNELS.GET_CONTENT, chat, options),
 
-        markdown: (content, filePath) => ipc.invoke('export:markdown', content, filePath),
-        pdf: (htmlContent, filePath) => ipc.invoke('export:pdf', htmlContent, filePath),
+        markdown: (content, filePath) => ipc.invoke(EXPORT_CHANNELS.MARKDOWN, content, filePath),
+        pdf: (htmlContent, filePath) => ipc.invoke(EXPORT_CHANNELS.PDF, htmlContent, filePath),
     };
 }
+

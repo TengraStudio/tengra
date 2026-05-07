@@ -26,3 +26,4 @@ describe('Input', () => {
         expect(input).toHaveAttribute('aria-describedby', 'email-error');
     });
 });
+

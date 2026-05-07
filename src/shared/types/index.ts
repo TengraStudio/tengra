@@ -51,3 +51,4 @@ export interface ServiceResponse<T = void> {
     error?: string;
     details?: string | Record<string, string | number | boolean>;
 }
+

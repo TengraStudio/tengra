@@ -29,3 +29,4 @@ export * from '@/features/workspace/workspace-layout/WorkspaceListPage';
 export * from '@/features/workspace/workspace-layout/WorkspaceListView';
 export * from '@/features/workspace/workspace-layout/WorkspaceModals';
 export * from '@/features/workspace/workspace-setup/WorkspaceSetupModal';
+

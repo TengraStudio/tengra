@@ -54,3 +54,4 @@ describe('WorkflowError', () => {
         expect(err.code).toBe(WorkflowErrorCode.HANDLER_NOT_FOUND);
     });
 });
+

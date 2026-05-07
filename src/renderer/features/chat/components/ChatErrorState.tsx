@@ -167,3 +167,4 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
 });
 
 ChatErrorState.displayName = 'ChatErrorState';
+

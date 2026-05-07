@@ -57,3 +57,4 @@ export const StatsSection = ({ stats }: { stats: MemoryStatistics | null }) => {
         </div>
     );
 };
+

@@ -126,3 +126,4 @@ describe('ChatQueueManager', () => {
         expect(execute).toHaveBeenCalled();
     });
 });
+

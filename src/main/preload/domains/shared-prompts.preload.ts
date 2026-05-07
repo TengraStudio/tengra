@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { SHARED_PROMPTS_CHANNELS } from '@shared/constants/ipc-channels';
 import type { IpcRenderer } from 'electron';
 
 export interface SharedPromptRecord {
@@ -49,12 +50,13 @@ export interface SharedPromptsBridge {
 export function createSharedPromptsBridge(ipc: IpcRenderer): { sharedPrompts: SharedPromptsBridge } {
     return {
         sharedPrompts: {
-            list: filter => ipc.invoke('prompts:shared-list', filter),
-            create: input => ipc.invoke('prompts:shared-create', input),
-            update: (id, input) => ipc.invoke('prompts:shared-update', id, input),
-            delete: id => ipc.invoke('prompts:shared-delete', id),
-            export: filePath => ipc.invoke('prompts:shared-export', filePath),
-            import: (filePathOrJson, isFilePath) => ipc.invoke('prompts:shared-import', filePathOrJson, isFilePath),
+            list: filter => ipc.invoke(SHARED_PROMPTS_CHANNELS.LIST, filter),
+            create: input => ipc.invoke(SHARED_PROMPTS_CHANNELS.CREATE, input),
+            update: (id, input) => ipc.invoke(SHARED_PROMPTS_CHANNELS.UPDATE, id, input),
+            delete: id => ipc.invoke(SHARED_PROMPTS_CHANNELS.DELETE, id),
+            export: filePath => ipc.invoke(SHARED_PROMPTS_CHANNELS.EXPORT_TO_FILE, filePath),
+            import: (filePathOrJson, isFilePath) => ipc.invoke(SHARED_PROMPTS_CHANNELS.IMPORT_FROM_FILE, filePathOrJson, isFilePath),
         },
     };
 }
+

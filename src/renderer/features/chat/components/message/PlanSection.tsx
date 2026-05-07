@@ -94,3 +94,4 @@ export const PlanSection = memo(
 );
 
 PlanSection.displayName = 'PlanSection';
+

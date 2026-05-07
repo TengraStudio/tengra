@@ -180,3 +180,4 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         bindings,
     ]);
 }
+

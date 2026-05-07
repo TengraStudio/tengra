@@ -72,3 +72,4 @@ export class StateMachine<S extends string, E extends string> {
         }
     }
 }
+

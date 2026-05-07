@@ -48,3 +48,4 @@ declare module 'y-protocols/awareness' {
     export function applyAwarenessUpdate(awareness: Awareness, update: Uint8Array, origin?: unknown): void;
     export function encodeAwarenessUpdate(awareness: Awareness, clients: number[]): Uint8Array;
 }
+

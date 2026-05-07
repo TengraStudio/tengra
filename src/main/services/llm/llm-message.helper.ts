@@ -128,3 +128,4 @@ export function prepareMessagesForContextWindow(messages: Message[], model: stri
 
     return compaction.messages;
 }
+

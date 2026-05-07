@@ -25,6 +25,7 @@ import { appLogger } from '@main/logging/logger';
 import { AuthService } from '@main/services/security/auth.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { AIProvider } from '@shared/types/ai';
+import type { RuntimeValue } from '@shared/types/common';
 import { CredentialMode } from '@shared/utils/provider-credentials.util';
 
 import { ProxyService } from './proxy.service';
@@ -40,7 +41,6 @@ const OAUTH_ONLY_PROVIDERS: ReadonlySet<string> = new Set<string>([
     'antigravity',
     'copilot',
     'codex',
-    'github',
 ]);
 
 /** Provider keys in AppSettings that carry an `apiKey` field. */
@@ -183,8 +183,7 @@ async function checkApiKeyConfigured(
         codex: ['codex', 'openai'],
         anthropic: ['anthropic'],
         claude: ['claude'],
-        github: ['github', 'copilot'],
-        copilot: ['copilot', 'github'],
+        copilot: ['copilot'],
         ollama: ['ollama'],
         huggingface: ['huggingface'],
         llama: ['llama'],
@@ -215,7 +214,7 @@ function accountHasApiKeyCredential(account: {
     accessToken?: string;
     refreshToken?: string;
     sessionToken?: string;
-    metadata?: unknown;
+    metadata?: RuntimeValue;
 }): boolean {
     const metadata = (account.metadata && typeof account.metadata === 'object' && !Array.isArray(account.metadata))
         ? (account.metadata as Record<string, unknown>)
@@ -273,3 +272,4 @@ function looksLikeApiKey(token: string | undefined): boolean {
         || normalized.startsWith('pplx-')
         || normalized.startsWith('xai-');
 }
+

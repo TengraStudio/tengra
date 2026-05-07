@@ -145,3 +145,4 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
 
 export const WorkspaceSettingsPanel = React.memo(WorkspaceSettingsPanelBase);
 WorkspaceSettingsPanel.displayName = 'WorkspaceSettingsPanel';
+

@@ -24,3 +24,4 @@ describe('Button', () => {
         expect(screen.getByRole('button', { name: 'Save settings' })).toBeInTheDocument();
     });
 });
+

@@ -35,3 +35,4 @@ export async function fetchWithLogging(input: RequestInfo | URL, init?: RequestI
         throw error;
     }
 }
+

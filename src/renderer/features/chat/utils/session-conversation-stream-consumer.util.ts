@@ -9,6 +9,7 @@
  */
 
 import { classifyAiIntent, getAiToolLoopBudget } from '@shared/utils/ai/ai-runtime.util';
+import { appLogger } from '@system/utils/renderer-logger';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
 import {
@@ -22,7 +23,6 @@ import { executeToolCall } from '@/features/chat/hooks/tool-call-execution.util'
 import { buildModelConversation } from '@/features/chat/hooks/tool-loop.util';
 import { mergeToolCalls as mergeChatToolCalls } from '@/features/chat/hooks/utils';
 import { chatStream } from '@/lib/chat-stream';
-import { appLogger } from '@/system/utils/renderer-logger';
 import { ChatError, Message } from '@/types';
 
 import {
@@ -501,3 +501,4 @@ export async function consumeConversationStream(
         );
     }
 }
+

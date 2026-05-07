@@ -396,3 +396,4 @@ export class ExternalMcpPlugin implements IMcpPlugin {
         }
     }
 }
+

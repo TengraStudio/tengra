@@ -17,6 +17,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { withRetry } from '@main/utils/retry.util';
+import { VOICE_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonValue } from '@shared/types/common';
 import { RuntimeValue } from '@shared/types/common';
 import {
@@ -63,7 +64,7 @@ const VOICE_PERFORMANCE_BUDGET_MS = {
     HEAVY: 220
 } as const;
 
-const MAX_VOICE_TELEMETRY_EVENTS = 200;
+const MAX_VOICE_usageStats_EVENTS = 200;
 
 type VoiceActionType = VoiceCommand['action']['type'];
 
@@ -154,7 +155,7 @@ const JsonSchema: z.ZodType<JsonValue> = z.lazy(() =>
     ])
 );
 
-interface VoiceTelemetryEvent {
+interface VoiceUsageStatsEvent {
     channel: string;
     event: 'success' | 'failure' | 'retry';
     timestamp: number;
@@ -201,7 +202,7 @@ export class VoiceService extends BaseService {
     };
     private readonly maxRetryAttempts = 2;
     private readonly retryDelayMs = 35;
-    private telemetry = {
+    private usageStats = {
         totalCalls: 0,
         totalFailures: 0,
         totalRetries: 0,
@@ -209,7 +210,7 @@ export class VoiceService extends BaseService {
         budgetExceededCount: 0,
         lastErrorCode: null as string | null,
         channels: {} as Record<string, VoiceChannelMetrics>,
-        events: [] as VoiceTelemetryEvent[],
+        events: [] as VoiceUsageStatsEvent[],
     };
 
     constructor() {
@@ -244,8 +245,8 @@ export class VoiceService extends BaseService {
     }
 
     private getChannelMetrics(channel: string): VoiceChannelMetrics {
-        if (!this.telemetry.channels[channel]) {
-            this.telemetry.channels[channel] = {
+        if (!this.usageStats.channels[channel]) {
+            this.usageStats.channels[channel] = {
                 calls: 0,
                 failures: 0,
                 retries: 0,
@@ -256,78 +257,78 @@ export class VoiceService extends BaseService {
                 lastUiState: null,
             };
         }
-        return this.telemetry.channels[channel];
+        return this.usageStats.channels[channel];
     }
 
     private getPerformanceBudget(channel: string): number {
         if (
-            channel === 'voice:get-settings'
-            || channel === 'voice:get-commands'
-            || channel === 'voice:get-voices'
-            || channel === 'voice:health'
+            channel === VOICE_CHANNELS.GET_SETTINGS
+            || channel === VOICE_CHANNELS.GET_COMMANDS
+            || channel === VOICE_CHANNELS.GET_VOICES
+            || channel === VOICE_CHANNELS.HEALTH
         ) {
             return VOICE_PERFORMANCE_BUDGET_MS.FAST;
         }
         if (
-            channel === 'voice:process-transcript'
-            || channel === 'voice:execute-command'
-            || channel === 'voice:synthesize'
+            channel === VOICE_CHANNELS.PROCESS_TRANSCRIPT
+            || channel === VOICE_CHANNELS.EXECUTE_COMMAND
+            || channel === VOICE_CHANNELS.SYNTHESIZE
         ) {
             return VOICE_PERFORMANCE_BUDGET_MS.STANDARD;
         }
         return VOICE_PERFORMANCE_BUDGET_MS.HEAVY;
     }
 
-    private trackTelemetryEvent(
+    private trackUsageStatsEvent(
         channel: string,
         event: 'success' | 'failure' | 'retry',
         details: { durationMs?: number; code?: string } = {}
     ): void {
-        this.telemetry.events = [...this.telemetry.events, {
+        this.usageStats.events = [...this.usageStats.events, {
             channel,
             event,
             timestamp: Date.now(),
             durationMs: details.durationMs,
             code: details.code
-        }].slice(-MAX_VOICE_TELEMETRY_EVENTS);
+        }].slice(-MAX_VOICE_usageStats_EVENTS);
     }
 
     private trackSuccess(channel: string, durationMs: number, uiState: VoiceUiState): void {
         const channelMetrics = this.getChannelMetrics(channel);
         const budget = this.getPerformanceBudget(channel);
-        this.telemetry.totalCalls += 1;
+        this.usageStats.totalCalls += 1;
         channelMetrics.calls += 1;
         channelMetrics.lastDurationMs = durationMs;
         channelMetrics.lastUiState = uiState;
         if (durationMs > budget) {
-            this.telemetry.budgetExceededCount += 1;
+            this.usageStats.budgetExceededCount += 1;
             channelMetrics.budgetExceededCount += 1;
         }
-        this.trackTelemetryEvent(channel, 'success', { durationMs });
+        this.trackUsageStatsEvent(channel, 'success', { durationMs });
     }
 
     private trackFailure(channel: string, durationMs: number, errorCode: string, validationFailure: boolean): void {
         const channelMetrics = this.getChannelMetrics(channel);
-        this.telemetry.totalCalls += 1;
-        this.telemetry.totalFailures += 1;
-        this.telemetry.lastErrorCode = errorCode;
+        this.usageStats.totalCalls += 1;
+        this.usageStats.totalFailures += 1;
+        this.usageStats.lastErrorCode = errorCode;
         channelMetrics.calls += 1;
         channelMetrics.failures += 1;
         channelMetrics.lastDurationMs = durationMs;
         channelMetrics.lastErrorCode = errorCode;
         channelMetrics.lastUiState = 'failure';
         if (validationFailure) {
-            this.telemetry.validationFailures += 1;
+            this.usageStats.validationFailures += 1;
             channelMetrics.validationFailures += 1;
         }
-        this.trackTelemetryEvent(channel, 'failure', { durationMs, code: errorCode });
+        this.trackUsageStatsEvent(channel, 'failure', { durationMs, code: errorCode });
     }
 
     private trackRetry(channel: string): void {
         const channelMetrics = this.getChannelMetrics(channel);
-        this.telemetry.totalRetries += 1;
+        this.usageStats.totalRetries += 1;
         channelMetrics.retries += 1;
-        this.trackTelemetryEvent(channel, 'retry', { code: VOICE_ERROR_CODE.TRANSIENT });
+        this.trackUsageStatsEvent(channel, 'retry', { code: VOICE_ERROR_CODE.TRANSIENT });
     }
 
     private isRetryableError(error: Error): boolean {
@@ -411,14 +412,14 @@ export class VoiceService extends BaseService {
             budgetExceededCount: number;
             lastErrorCode: string | null;
             channels: Record<string, VoiceChannelMetrics>;
-            events: VoiceTelemetryEvent[];
+            events: VoiceUsageStatsEvent[];
             errorRate: number;
         };
     } {
-        const errorRate = this.telemetry.totalCalls === 0
+        const errorRate = this.usageStats.totalCalls === 0
             ? 0
-            : this.telemetry.totalFailures / this.telemetry.totalCalls;
-        const status = errorRate > 0.05 || this.telemetry.budgetExceededCount > 0
+            : this.usageStats.totalFailures / this.usageStats.totalCalls;
+        const status = errorRate > 0.05 || this.usageStats.budgetExceededCount > 0
             ? 'degraded'
             : 'healthy';
         return {
@@ -430,7 +431,7 @@ export class VoiceService extends BaseService {
                 heavyMs: VOICE_PERFORMANCE_BUDGET_MS.HEAVY
             },
             metrics: {
-                ...this.telemetry,
+                ...this.usageStats,
                 errorRate
             }
         };
@@ -596,22 +597,22 @@ export class VoiceService extends BaseService {
         return await this.handleHealth();
     }
 
-    @ipc('voice:get-settings')
+    @ipc(VOICE_CHANNELS.GET_SETTINGS)
     public async handleGetSettings(): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:get-settings',
+            VOICE_CHANNELS.GET_SETTINGS,
             async () => ({ ...this.getSettings(), uiState: 'ready' }),
             { success: true, settings: this.state.settings, uiState: 'ready' }
         );
     }
 
-    @ipc('voice:update-settings')
+    @ipc(VOICE_CHANNELS.UPDATE_SETTINGS)
     public async handleUpdateSettings(
         _event: Electron.IpcMainInvokeEvent | object,
         settings: Partial<VoiceSettings>
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:update-settings',
+            VOICE_CHANNELS.UPDATE_SETTINGS,
             async () => {
                 const parsed = VoiceSettingsUpdateSchema.parse(settings);
                 return { ...this.updateSettings(parsed), uiState: 'ready' };
@@ -621,10 +622,10 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:get-commands')
+    @ipc(VOICE_CHANNELS.GET_COMMANDS)
     public async handleGetCommands(): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:get-commands',
+            VOICE_CHANNELS.GET_COMMANDS,
             async () => {
                 const response = this.getCommands();
                 return {
@@ -636,13 +637,13 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:add-command')
+    @ipc(VOICE_CHANNELS.ADD_COMMAND)
     public async handleAddCommand(
         _event: Electron.IpcMainInvokeEvent | object,
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:add-command',
+            VOICE_CHANNELS.ADD_COMMAND,
             async () => {
                 const parsed = VoiceCommandSchema.parse(command);
                 return { ...this.addCommand(parsed), uiState: 'ready' };
@@ -652,13 +653,13 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:remove-command')
+    @ipc(VOICE_CHANNELS.REMOVE_COMMAND)
     public async handleRemoveCommand(
         _event: Electron.IpcMainInvokeEvent | object,
         commandId: string
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:remove-command',
+            VOICE_CHANNELS.REMOVE_COMMAND,
             async () => {
                 const parsedId = VoiceCommandIdSchema.parse(commandId);
                 const result = this.removeCommand(parsedId);
@@ -672,13 +673,13 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:update-command')
+    @ipc(VOICE_CHANNELS.UPDATE_COMMAND)
     public async handleUpdateCommand(
         _event: Electron.IpcMainInvokeEvent | object,
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:update-command',
+            VOICE_CHANNELS.UPDATE_COMMAND,
             async () => {
                 const parsed = VoiceCommandSchema.parse(command);
                 const result = this.updateCommand(parsed);
@@ -692,13 +693,13 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:process-transcript')
+    @ipc(VOICE_CHANNELS.PROCESS_TRANSCRIPT)
     public async handleProcessTranscript(
         _event: Electron.IpcMainInvokeEvent | object,
         transcript: string
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:process-transcript',
+            VOICE_CHANNELS.PROCESS_TRANSCRIPT,
             async () => {
                 const parsedTranscript = TranscriptSchema.parse(transcript);
                 const result = this.processTranscript(parsedTranscript);
@@ -724,13 +725,13 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:execute-command')
+    @ipc(VOICE_CHANNELS.EXECUTE_COMMAND)
     public async handleExecuteCommand(
         _event: Electron.IpcMainInvokeEvent | object,
         command: VoiceCommand
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:execute-command',
+            VOICE_CHANNELS.EXECUTE_COMMAND,
             async () => {
                 const parsed = VoiceCommandSchema.parse(command);
                 const result = this.executeCommand(parsed);
@@ -745,10 +746,10 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:get-voices')
+    @ipc(VOICE_CHANNELS.GET_VOICES)
     public async handleGetVoices(): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:get-voices',
+            VOICE_CHANNELS.GET_VOICES,
             async () => {
                 const result = this.getVoices();
                 return {
@@ -760,13 +761,13 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:synthesize')
+    @ipc(VOICE_CHANNELS.SYNTHESIZE)
     public async handleSynthesize(
         _event: Electron.IpcMainInvokeEvent | object,
         options: VoiceSynthesisOptions
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:synthesize',
+            VOICE_CHANNELS.SYNTHESIZE,
             async () => {
                 const parsed = VoiceSynthesisSchema.parse(options);
                 const result = this.synthesize(parsed);
@@ -780,22 +781,22 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:stop-speaking')
+    @ipc(VOICE_CHANNELS.STOP_SPEAKING)
     public async handleStopSpeaking(): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:stop-speaking',
+            VOICE_CHANNELS.STOP_SPEAKING,
             async () => ({ ...this.stopSpeaking(), uiState: 'ready' }),
             { success: false, uiState: 'failure' }
         );
     }
 
-    @ipc('voice:set-listening')
+    @ipc(VOICE_CHANNELS.SET_LISTENING)
     public async handleSetListening(
         _event: Electron.IpcMainInvokeEvent | object,
         listening: boolean
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:set-listening',
+            VOICE_CHANNELS.SET_LISTENING,
             async () => {
                 const parsedListening = VoiceListeningSchema.parse(listening);
                 const result = this.setListening(parsedListening);
@@ -809,14 +810,14 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:send-event')
+    @ipc(VOICE_CHANNELS.SEND_EVENT)
     public async handleSendEvent(
         _event: Electron.IpcMainInvokeEvent | object,
         eventType: VoiceEventType,
         data: RuntimeValue
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:send-event',
+            VOICE_CHANNELS.SEND_EVENT,
             async () => {
                 const parsedType = VoiceEventTypeSchema.parse(eventType);
                 const parsedData = JsonSchema.parse(data);
@@ -828,10 +829,10 @@ export class VoiceService extends BaseService {
         );
     }
 
-    @ipc('voice:health')
+    @ipc(VOICE_CHANNELS.HEALTH)
     public async handleHealth(): Promise<VoiceResponse> {
         return await this.withPolicy(
-            'voice:health',
+            VOICE_CHANNELS.HEALTH,
             async () => ({
                 success: true,
                 data: this.getHealthSummary(),
@@ -848,14 +849,14 @@ export class VoiceService extends BaseService {
                         heavyMs: VOICE_PERFORMANCE_BUDGET_MS.HEAVY
                     },
                     metrics: {
-                        totalCalls: this.telemetry.totalCalls,
-                        totalFailures: this.telemetry.totalFailures,
-                        totalRetries: this.telemetry.totalRetries,
-                        validationFailures: this.telemetry.validationFailures,
-                        budgetExceededCount: this.telemetry.budgetExceededCount,
-                        lastErrorCode: this.telemetry.lastErrorCode,
-                        channels: this.telemetry.channels,
-                        events: this.telemetry.events,
+                        totalCalls: this.usageStats.totalCalls,
+                        totalFailures: this.usageStats.totalFailures,
+                        totalRetries: this.usageStats.totalRetries,
+                        validationFailures: this.usageStats.validationFailures,
+                        budgetExceededCount: this.usageStats.budgetExceededCount,
+                        lastErrorCode: this.usageStats.lastErrorCode,
+                        channels: this.usageStats.channels,
+                        events: this.usageStats.events,
                         errorRate: 1
                     }
                 },
@@ -936,3 +937,4 @@ export function getVoiceService(): VoiceService {
     }
     return voiceServiceInstance;
 }
+

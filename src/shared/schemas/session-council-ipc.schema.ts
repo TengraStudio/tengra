@@ -95,3 +95,4 @@ export const sessionCouncilTimelineResponseSchema = z.object({
     events: z.array(timelineEventSchema).optional(),
     error: z.string().optional(),
 });
+

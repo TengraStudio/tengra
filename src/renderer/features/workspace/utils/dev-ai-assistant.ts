@@ -220,7 +220,7 @@ export function runPerformanceSuggestionAnalysis(content: string): PerformanceSu
     const lazyLoadingNotes = ['Lazy-load heavy modules/components outside critical render path.'];
     const performanceBudgets = ['Target <200ms interaction latency for editor actions.'];
     const buildTimeNotes = ['Track build duration regressions and flag >10% deltas.'];
-    const runtimeMonitoringNotes = ['Capture runtime telemetry for errors and long tasks.'];
+    const runtimeMonitoringNotes = ['Capture runtime usageStats for errors and long tasks.'];
 
     return {
         profilingNotes,
@@ -233,3 +233,4 @@ export function runPerformanceSuggestionAnalysis(content: string): PerformanceSu
         runtimeMonitoringNotes,
     };
 }
+

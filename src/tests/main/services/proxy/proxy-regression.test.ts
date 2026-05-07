@@ -10,7 +10,7 @@
 
 /**
  * Regression & integration tests for ProxyService critical flows.
- * Validates startup→config→stop lifecycle, error propagation, and telemetry.
+ * Validates startup→config→stop lifecycle, error propagation, and Stats.
  */
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -18,7 +18,7 @@ import {
     PROXY_PERFORMANCE_BUDGETS,
     ProxyErrorCode,
     ProxyService,
-    ProxyTelemetryEvent
+    ProxyUsageStatsEvent
 } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -103,9 +103,9 @@ describe('ProxyService lifecycle regression', () => {
         await service.stopEmbeddedProxy();
 
         const emittedEvents = vi.mocked(eventBus.emitCustom).mock.calls.map(c => c[0]);
-        expect(emittedEvents).toContain(ProxyTelemetryEvent.PROXY_STARTED);
-        expect(emittedEvents).toContain(ProxyTelemetryEvent.HEALTH_CHECK);
-        expect(emittedEvents).toContain(ProxyTelemetryEvent.PROXY_STOPPED);
+        expect(emittedEvents).toContain(ProxyUsageStatsEvent.PROXY_STARTED);
+        expect(emittedEvents).toContain(ProxyUsageStatsEvent.HEALTH_CHECK);
+        expect(emittedEvents).toContain(ProxyUsageStatsEvent.PROXY_STOPPED);
     });
 
     it('should propagate error codes through start failure', async () => {
@@ -196,20 +196,21 @@ describe('ProxyService performance budget regression', () => {
     });
 });
 
-describe('ProxyService telemetry event regression', () => {
-    it('should have all 8 telemetry events defined', () => {
-        const events = Object.values(ProxyTelemetryEvent);
+describe('ProxyService Stats event regression', () => {
+    it('should have all 8 Stats events defined', () => {
+        const events = Object.values(ProxyUsageStatsEvent);
         expect(events).toHaveLength(8);
     });
 
-    it('telemetry event values should be stable strings', () => {
-        expect(ProxyTelemetryEvent.PROXY_STARTED).toBe('proxy_started');
-        expect(ProxyTelemetryEvent.PROXY_STOPPED).toBe('proxy_stopped');
-        expect(ProxyTelemetryEvent.REQUEST_SENT).toBe('proxy_request_sent');
-        expect(ProxyTelemetryEvent.REQUEST_FAILED).toBe('proxy_request_failed');
-        expect(ProxyTelemetryEvent.AUTH_INITIATED).toBe('proxy_auth_initiated');
-        expect(ProxyTelemetryEvent.AUTH_COMPLETED).toBe('proxy_auth_completed');
-        expect(ProxyTelemetryEvent.AUTH_FAILED).toBe('proxy_auth_failed');
-        expect(ProxyTelemetryEvent.HEALTH_CHECK).toBe('proxy_health_check');
+    it('Stats event values should be stable strings', () => {
+        expect(ProxyUsageStatsEvent.PROXY_STARTED).toBe('proxy_started');
+        expect(ProxyUsageStatsEvent.PROXY_STOPPED).toBe('proxy_stopped');
+        expect(ProxyUsageStatsEvent.REQUEST_SENT).toBe('proxy_request_sent');
+        expect(ProxyUsageStatsEvent.REQUEST_FAILED).toBe('proxy_request_failed');
+        expect(ProxyUsageStatsEvent.AUTH_INITIATED).toBe('proxy_auth_initiated');
+        expect(ProxyUsageStatsEvent.AUTH_COMPLETED).toBe('proxy_auth_completed');
+        expect(ProxyUsageStatsEvent.AUTH_FAILED).toBe('proxy_auth_failed');
+        expect(ProxyUsageStatsEvent.HEALTH_CHECK).toBe('proxy_health_check');
     });
 });
+

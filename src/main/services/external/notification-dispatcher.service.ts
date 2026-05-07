@@ -118,3 +118,4 @@ export class NotificationDispatcherService extends BaseService {
         appLogger.info('NotificationDispatcherService', 'Cleaned up');
     }
 }
+

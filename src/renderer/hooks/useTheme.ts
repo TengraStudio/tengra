@@ -75,3 +75,4 @@ export const useThemeDetection = () => {
 
 // Backward compatibility export
 export const useTheme = useThemeDetection;
+

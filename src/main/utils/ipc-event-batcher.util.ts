@@ -131,3 +131,4 @@ export function createThrottledEventEmitter<T>(options: ThrottledEventEmitterOpt
 
     return { emit, dispose };
 }
+

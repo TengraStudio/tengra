@@ -94,3 +94,4 @@ export const EditorTabContextMenu: React.FC<EditorTabContextMenuProps> = ({
         </div>,
         document.body
     );
+

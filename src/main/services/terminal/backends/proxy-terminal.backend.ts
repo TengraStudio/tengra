@@ -109,3 +109,4 @@ export class ProxyTerminalBackend implements ITerminalBackend {
         return token || 'proxypal-local'; // Fallback to default insecure key if not set
     }
 }
+

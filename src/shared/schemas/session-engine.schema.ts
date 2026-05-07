@@ -120,3 +120,4 @@ export const SessionRecoverySnapshotSchema = z.object({
     recovery: SessionRecoveryStateSchema,
     lastMessagePreview: z.string().max(280).optional(),
 });
+

@@ -37,8 +37,8 @@ export const ENTRY_LIMITS = {
     MAX_METRICS_POINTS: 1000,
     /** Maximum model fallback history */
     MAX_FALLBACK_HISTORY: 1000,
-    /** Maximum telemetry queue size */
-    MAX_TELEMETRY_QUEUE: 1000,
+    /** Maximum usageStats queue size */
+    MAX_usageStats_QUEUE: 1000,
     /** Maximum command length */
     MAX_COMMAND_LENGTH: 10000,
 } as const;
@@ -144,3 +144,4 @@ export const DEPTH_LIMITS = {
     /** Maximum recursion depth */
     MAX_DEPTH: 4,
 } as const;
+

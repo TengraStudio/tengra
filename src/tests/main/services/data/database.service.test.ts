@@ -512,10 +512,10 @@ describe('DatabaseService', () => {
         });
     });
 
-    // B-0495: Telemetry event enum completeness
-    describe('telemetry events', () => {
-        it('DatabaseServiceTelemetryEvent has all expected events', async () => {
-            const { DatabaseServiceTelemetryEvent: evt } = await import('@main/services/data/database.service');
+    // B-0495: Stats event enum completeness
+    describe('Stats events', () => {
+        it('DatabaseServiceUsageStatsEvent has all expected events', async () => {
+            const { DatabaseServiceUsageStatsEvent: evt } = await import('@main/services/data/database.service');
             expect(evt.QUERY_EXECUTED).toBe('db_query_executed');
             expect(evt.QUERY_FAILED).toBe('db_query_failed');
             expect(evt.BATCH_EXECUTED).toBe('db_batch_executed');
@@ -526,3 +526,4 @@ describe('DatabaseService', () => {
         });
     });
 });
+

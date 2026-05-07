@@ -42,7 +42,6 @@ interface ModelGovernancePanelProps {
     settings: AppSettings;
     allModelIds: string[];
     setSettings: (s: AppSettings) => void;
-    handleSave: (s?: AppSettings) => void;
     t: (key: string) => string;
 }
 
@@ -53,7 +52,6 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
     settings,
     allModelIds,
     setSettings,
-    handleSave,
     t,
 }) => {
     const [selectedModel, setSelectedModel] = useState('');
@@ -69,7 +67,6 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
         const next: ModelGovernanceSettings = { ...governance, ...patch };
         const updated: AppSettings = { ...settings, modelGovernance: next };
         setSettings(updated);
-        handleSave(updated);
     };
 
     const toggleMode = () => {
@@ -293,3 +290,4 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
         </div>
     );
 };
+

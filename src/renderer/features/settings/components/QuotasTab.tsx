@@ -21,6 +21,13 @@ import { AntigravityCard } from './statistics/AntigravityCard';
 import { ClaudeCard } from './statistics/ClaudeCard';
 import { CodexCard } from './statistics/CodexCard';
 import { CopilotCard } from './statistics/CopilotCard';
+import {
+    SettingsPanel,
+    SettingsStatCard,
+    SettingsStatGrid,
+    SettingsTabHeader,
+    SettingsTabLayout,
+} from './SettingsPrimitives';
 
 type QuotasTabProps = Pick<
     SettingsSharedProps,
@@ -45,12 +52,12 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
         const loadStatus = async () => {
             try {
                 // Check all accounts for decryption errors
-                const accounts = await window.electron.getLinkedAccounts();
+                const accounts = await window.electron.auth.getLinkedAccounts();
                 const anyError = accounts.some((acc: LinkedAccountInfo & { decryptionError?: boolean }) => acc.decryptionError);
                 setHasDecryptionError(anyError);
 
-                const account = await window.electron.getActiveLinkedAccount('antigravity')
-                    .catch(() => window.electron.getActiveLinkedAccount('google')); 
+                const account = await window.electron.auth.getActiveLinkedAccount('antigravity')
+                    .catch(() => window.electron.auth.getActiveLinkedAccount('google')); 
                 setActiveAntigravityAccount(account ? { id: account.id, email: account.email } : null);
                 setLastUpdated(new Date());
             } catch (error) {
@@ -64,7 +71,7 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
     const handleRefresh = async () => {
         setIsRefreshing(true);
         try {
-            await window.electron.forceRefreshQuota();
+            await window.electron.auth.forceRefreshQuota();
             // Trigger a reload of the stats data
             setReloadTrigger(prev => prev + 1);
             setLastUpdated(new Date());
@@ -80,59 +87,37 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
     const errorServices = [quotaData, claudeQuota, copilotQuota, codexUsage].filter(s => s?.accounts?.some((a: { error?: string, success?: boolean }) => a.error || a.success === false)).length;
 
     return (
-        <div className="mx-auto max-w-4xl space-y-8 pb-10">
-            <div className="flex items-end justify-between px-1">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
-                            <IconLayersLinked className="w-6 h-6" />
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            {t('frontend.statistics.connectedAppsUsage')}
-                        </h3>
+        <SettingsTabLayout>
+            <SettingsTabHeader
+                title={t('frontend.statistics.connectedAppsUsage')}
+                description={t('frontend.statistics.usageStatistics')}
+                icon={IconLayersLinked}
+                actions={(
+                    <div className="flex flex-col items-start gap-2 md:items-end">
+                        <button
+                            onClick={() => { void handleRefresh(); }}
+                            disabled={isRefreshing}
+                            className={cn(
+                                'flex items-center gap-2 rounded-xl border border-border/20 bg-muted/10 px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted/20',
+                                isRefreshing && 'opacity-50'
+                            )}
+                        >
+                            <IconRefresh className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
+                            {isRefreshing ? t('common.refreshing') : t('common.refresh')}
+                        </button>
+                        <span className="text-xs font-medium text-muted-foreground/55 tabular-nums">
+                            {t('frontend.statistics.lastUpdated')}: {lastUpdated.toLocaleTimeString(locale)}
+                        </span>
                     </div>
-                    <p className="text-sm text-muted-foreground/60 px-0.5">
-                        {t('frontend.statistics.usageStatistics')}
-                    </p>
-                </div>
+                )}
+            />
 
-                <div className="flex flex-col items-end gap-2">
-                    <button
-                        onClick={() => { void handleRefresh(); }}
-                        disabled={isRefreshing}
-                        className={cn(
-                            "flex items-center gap-2 rounded-lg bg-muted/20 px-3 py-1.5 text-sm font-bold text-foreground/80 hover:bg-muted/30 transition-all",
-                            isRefreshing && "opacity-50"
-                        )}
-                    >
-                        <IconRefresh className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
-                        {isRefreshing ? t('common.refreshing') : t('common.refresh')}
-                    </button>
-                    <span className="text-sm font-bold text-muted-foreground/40 tabular-nums">
-                        {t('frontend.statistics.lastUpdated')}: {lastUpdated.toLocaleTimeString(locale)}
-                    </span>
-                </div>
-            </div>
-
-            {/* Quick Summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-1">
-                <div className="rounded-xl border border-border/10 bg-muted/5 p-3 flex flex-col gap-1">
-                    <span className="text-sm font-bold text-muted-foreground/50 uppercase ">{t('frontend.statistics.services')}</span>
-                    <span className="text-lg font-bold text-foreground">{totalServices}</span>
-                </div>
-                <div className="rounded-xl border border-border/10 bg-muted/5 p-3 flex flex-col gap-1">
-                    <span className="text-sm font-bold text-muted-foreground/50 uppercase ">{t('frontend.statistics.active')}</span>
-                    <span className="text-lg font-bold text-success">{totalServices - errorServices}</span>
-                </div>
-                <div className="rounded-xl border border-border/10 bg-muted/5 p-3 flex flex-col gap-1">
-                    <span className="text-sm font-bold text-muted-foreground/50 uppercase ">{t('frontend.statistics.errors')}</span>
-                    <span className="text-lg font-bold text-destructive">{errorServices}</span>
-                </div>
-                <div className="rounded-xl border border-border/10 bg-muted/5 p-3 flex flex-col gap-1">
-                    <span className="text-sm font-bold text-muted-foreground/50 uppercase ">{t('frontend.statistics.health')}</span>
-                    <span className="text-lg font-bold text-primary">{Math.round(((totalServices - errorServices) / Math.max(1, totalServices)) * 100)}%</span>
-                </div>
-            </div>
+            <SettingsStatGrid>
+                <SettingsStatCard label={t('frontend.statistics.services')} value={totalServices} />
+                <SettingsStatCard label={t('frontend.statistics.active')} value={totalServices - errorServices} tone="success" />
+                <SettingsStatCard label={t('frontend.statistics.errors')} value={errorServices} tone="destructive" />
+                <SettingsStatCard label={t('frontend.statistics.health')} value={`${Math.round(((totalServices - errorServices) / Math.max(1, totalServices)) * 100)}%`} tone="primary" />
+            </SettingsStatGrid>
 
             {hasDecryptionError && (
                 <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-5 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -150,9 +135,8 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                 </div>
             )}
 
-            <div className="space-y-8">
-                {/* Aggregators Category */}
-                <div className="space-y-3">
+            <div className="space-y-6">
+                <SettingsPanel title={t('frontend.statistics.services')} icon={IconLayersLinked}>
                     <AntigravityCard
                         t={t}
                         quotaData={quotaData}
@@ -160,17 +144,17 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                         activeAccountId={activeAntigravityAccount?.id ?? null}
                         activeAccountEmail={activeAntigravityAccount?.email ?? null}
                     />
-                </div>
+                </SettingsPanel>
 
-                {/* Direct Services Category */}
-                <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SettingsPanel title={t('frontend.statistics.active')} icon={IconLayersLinked}>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <ClaudeCard claudeQuota={claudeQuota} locale={locale} />
                         <CopilotCard copilotQuota={copilotQuota} />
                         <CodexCard codexUsage={codexUsage} locale={locale} />
                     </div>
-                </div>
+                </SettingsPanel>
             </div>
-        </div>
+        </SettingsTabLayout>
     );
 };
+

@@ -118,3 +118,4 @@ describe('RuntimeManifestService', () => {
         expect(() => service.parseManifest(invalidManifest)).toThrow('safe relative path');
     });
 });
+

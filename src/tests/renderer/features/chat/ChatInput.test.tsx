@@ -26,7 +26,7 @@ type ChatInputControllerMock = {
     isLoading: boolean;
     attachments: Array<{ name: string; size: number; type: string; preview?: string }>;
     sendMessage: () => Promise<void>;
-    sendMessageWithTelemetry: () => Promise<void>;
+    sendMessageWithStats: () => Promise<void>;
     processFile: (file: File) => Promise<void>;
     removeAttachment: (index: number) => void;
     t: (key: string) => string;
@@ -85,7 +85,7 @@ describe('ChatInput', () => {
             isLoading: false,
             attachments: [],
             sendMessage: vi.fn(async () => { }),
-            sendMessageWithTelemetry: vi.fn(async () => { }),
+            sendMessageWithStats: vi.fn(async () => { }),
             processFile: vi.fn(async () => { }),
             removeAttachment: vi.fn(),
             t: (key: string) => key.replace(/^(frontend|backend|common)\./, ''),
@@ -141,7 +141,7 @@ describe('ChatInput', () => {
         render(<ChatInput />);
 
         fireEvent.click(screen.getByRole('button', { name: 'send' }));
-        expect(ctrl.sendMessageWithTelemetry).toHaveBeenCalledTimes(1);
+        expect(ctrl.sendMessageWithStats).toHaveBeenCalledTimes(1);
     });
 
     it('sends message on Enter key press when content exists', () => {
@@ -149,7 +149,7 @@ describe('ChatInput', () => {
         render(<ChatInput />);
 
         fireEvent.keyDown(screen.getByTestId('chat-textarea'), { key: 'Enter', shiftKey: false });
-        expect(ctrl.sendMessageWithTelemetry).toHaveBeenCalledTimes(1);
+        expect(ctrl.sendMessageWithStats).toHaveBeenCalledTimes(1);
     });
 
     it('renders and clears failure state banner', () => {
@@ -161,3 +161,4 @@ describe('ChatInput', () => {
         expect(ctrl.clearLastError).toHaveBeenCalledTimes(1);
     });
 });
+

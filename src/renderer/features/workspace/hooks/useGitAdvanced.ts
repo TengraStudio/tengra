@@ -64,17 +64,10 @@ export function useGitAdvanced(workspacePath?: string) {
 
     const canRun = useMemo(() => !!workspacePath && workspacePath.trim().length > 0, [workspacePath]);
 
-    const invokeGit = useCallback(
-        async <T>(channel: string, ...args: (string | number | boolean)[]) => {
-            return await window.electron.ipcRenderer.invoke(channel, ...args) as T;
-        },
-        []
-    );
-
     // Compose sub-hooks
-    const conflictsHook = useGitConflicts(canRun, workspacePath, invokeGit);
-    const stashesHook = useGitStashes(canRun, workspacePath, invokeGit);
-    const advancedOpsHook = useGitAdvancedOperations(canRun, workspacePath, invokeGit);
+    const conflictsHook = useGitConflicts(canRun, workspacePath);
+    const stashesHook = useGitStashes(canRun, workspacePath);
+    const advancedOpsHook = useGitAdvancedOperations(canRun, workspacePath);
 
     const exportConflictReport = useCallback(() => {
         const payload = {
@@ -90,8 +83,7 @@ export function useGitAdvanced(workspacePath?: string) {
             if (!canRun || !workspacePath || !filePath.trim()) {
                 return;
             }
-            const response = await invokeGit<{ success: boolean; lines?: GitBlameLine[] }>(
-                'git:getBlame',
+            const response = await window.electron.git.getBlame(
                 workspacePath,
                 filePath
             );
@@ -99,7 +91,7 @@ export function useGitAdvanced(workspacePath?: string) {
                 setBlameLines(response.lines ?? []);
             }
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const loadCommitDetails = useCallback(
@@ -107,8 +99,7 @@ export function useGitAdvanced(workspacePath?: string) {
             if (!canRun || !workspacePath || !commitHash.trim()) {
                 return;
             }
-            const response = await invokeGit<{ success: boolean; details?: GitCommitDetails }>(
-                'git:getCommitDetails',
+            const response = await window.electron.git.getCommitDetails(
                 workspacePath,
                 commitHash
             );
@@ -116,20 +107,14 @@ export function useGitAdvanced(workspacePath?: string) {
                 setCommitDetails(response.details);
             }
         },
-        [canRun, workspacePath, invokeGit]
+        [canRun, workspacePath]
     );
 
     const fetchRebaseStatus = useCallback(async () => {
         if (!canRun || !workspacePath) {
             return;
         }
-        const response = await invokeGit<{
-            success: boolean;
-            inRebase?: boolean;
-            currentBranch?: string;
-            conflictCount?: number;
-            conflicts?: GitConflict[];
-        }>('git:getRebaseStatus', workspacePath);
+        const response = await window.electron.git.getRebaseStatus(workspacePath);
         if (response.success) {
             setRebaseStatus({
                 inRebase: response.inRebase ?? false,
@@ -138,7 +123,7 @@ export function useGitAdvanced(workspacePath?: string) {
                 conflicts: response.conflicts ?? [],
             });
         }
-    }, [canRun, workspacePath, invokeGit]);
+    }, [canRun, workspacePath]);
 
     const fetchRemoteLinks = useCallback(async () => {
         if (!canRun || !workspacePath) {
@@ -287,3 +272,4 @@ export function useGitAdvanced(workspacePath?: string) {
         fetchHotspots,
     };
 }
+

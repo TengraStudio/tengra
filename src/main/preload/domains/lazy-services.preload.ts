@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { LAZY_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface LazyServicesBridge {
@@ -25,6 +26,7 @@ export interface LazyServicesBridge {
 
 export function createLazyServicesBridge(ipc: IpcRenderer): LazyServicesBridge {
     return {
-        getStatus: () => ipc.invoke('lazy:get-status'),
+        getStatus: () => ipc.invoke(LAZY_CHANNELS.GET_STATUS),
     };
 }
+

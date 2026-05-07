@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { FILES_CHANNELS, OLLAMA_CHANNELS, PROXY_CHANNELS, SHELL_CHANNELS } from '@shared/constants/ipc-channels';
 import { AppSettings } from '@shared/types';
 import { IpcValue } from '@shared/types/common';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
@@ -25,6 +26,7 @@ import { createCodeLanguageBridge } from './preload/domains/code-language.preloa
 import { createCodeSandboxBridge } from './preload/domains/code-sandbox.preload';
 import { createModelCollaborationBridge } from './preload/domains/collaboration.preload';
 import { createDbBridge } from './preload/domains/db.preload';
+import { createDialogBridge } from './preload/domains/dialog.preload';
 import { createExportBridge } from './preload/domains/export.preload';
 import { createExtensionBridge } from './preload/domains/extension.preload';
 import { createFilesBridge } from './preload/domains/files.preload';
@@ -45,7 +47,7 @@ import { createMetricsBridge } from './preload/domains/metrics.preload';
 import { createModelDownloaderBridge } from './preload/domains/model-downloader.preload';
 import { createModelRegistryBridge } from './preload/domains/model-registry.preload';
 import { createOllamaBridge } from './preload/domains/ollama.preload';
-import { createPerformanceBridge } from './preload/domains/performance.preload';
+import { createPowerBridge } from './preload/domains/power.preload';
 import { createProcessBridge } from './preload/domains/process.preload';
 import { createPromptTemplatesBridge } from './preload/domains/prompt-templates.preload';
 import { createProxyBridge } from './preload/domains/proxy.preload';
@@ -58,6 +60,7 @@ import { createSettingsBridge } from './preload/domains/settings.preload';
 import { createSharedPromptsBridge } from './preload/domains/shared-prompts.preload';
 import { createSSHBridge } from './preload/domains/ssh.preload';
 import { createTerminalBridge } from './preload/domains/terminal.preload';
+import { createThemeBridge } from './preload/domains/theme.preload';
 import { createToolsBridge } from './preload/domains/tools.preload';
 import { createUpdateBridge } from './preload/domains/update.preload';
 import { createUsageBridge } from './preload/domains/usage.preload';
@@ -98,6 +101,22 @@ function isNoHandlerRegisteredError(error: BootstrapInvokeError): boolean {
 }
 
 async function invokeWithBootstrapRetry(channel: string, ...args: IpcValue[]): Promise<IpcValue> {
+    if (
+        channel === FILES_CHANNELS.LIST_DIRECTORY &&
+        (typeof args[0] !== 'string' || args[0].trim().length === 0)
+    ) {
+        const stack = new Error('Invalid listDirectory invoke').stack ?? 'no stack';
+        console.error('[preload] blocked invalid files:listDirectory invoke', {
+            arg0: args[0],
+            stack,
+        });
+        return {
+            success: false,
+            data: [],
+            error: 'Invalid directory path',
+        } as IpcValue;
+    }
+
     let lastError: BootstrapInvokeError = null;
     for (let attempt = 0; attempt < BOOTSTRAP_IPC_MAX_ATTEMPTS; attempt += 1) {
         try {
@@ -119,11 +138,13 @@ ipcRenderer.invoke = ((channel: string, ...args: IpcValue[]) =>
 const settingsBridge = createSettingsBridge(ipcRenderer);
 
 const api = {
+    auth: {
+        ...createAuthBridge(ipcRenderer),
+        ...createLinkedAccountsBridge(ipcRenderer),
+        ...createAuthSessionBridge(ipcRenderer),
+        ...createProxyBridge(ipcRenderer),
+    },
     ...createWindowControlsBridge(ipcRenderer),
-    ...createAuthBridge(ipcRenderer),
-    ...createProxyBridge(ipcRenderer),
-    ...createAuthSessionBridge(ipcRenderer),
-    ...createLinkedAccountsBridge(ipcRenderer),
     ...createAppBridge(ipcRenderer),
     clipboard: createClipboardBridge(ipcRenderer),
     ...createSdCppBridge(ipcRenderer),
@@ -154,7 +175,7 @@ const api = {
     invoke: (channel: string, ...args: IpcValue[]) => ipcRenderer.invoke(channel, ...args),
 
     getModels: async () => {
-        const response = await ipcRenderer.invoke('proxy:getModels') as { data?: IpcValue; antigravityError?: string };
+        const response = await ipcRenderer.invoke(PROXY_CHANNELS.GET_MODELS) as { data?: IpcValue; antigravityError?: string };
         if (Array.isArray(response.data)) {
             return response.data;
         }
@@ -165,17 +186,17 @@ const api = {
     },
 
     openExternal: (url: string) => {
-        void ipcRenderer.invoke('shell:openExternal', url);
+        void ipcRenderer.invoke(SHELL_CHANNELS.OPEN_EXTERNAL, url);
     },
 
-    isOllamaRunning: () => ipcRenderer.invoke('ollama:isRunning'),
-    startOllama: () => ipcRenderer.invoke('ollama:start'),
+    isOllamaRunning: () => ipcRenderer.invoke(OLLAMA_CHANNELS.IS_RUNNING),
+    startOllama: () => ipcRenderer.invoke(OLLAMA_CHANNELS.START),
     getOllamaHealthStatus: async () => {
-        const status = await ipcRenderer.invoke('ollama:healthStatus') as { online?: boolean };
+        const status = await ipcRenderer.invoke(OLLAMA_CHANNELS.HEALTH_STATUS) as { online?: boolean };
         return { status: status.online ? 'ok' as const : 'error' as const };
     },
     forceOllamaHealthCheck: async () => {
-        const status = await ipcRenderer.invoke('ollama:forceHealthCheck') as { online?: boolean };
+        const status = await ipcRenderer.invoke(OLLAMA_CHANNELS.FORCE_HEALTH_CHECK) as { online?: boolean };
         return { status: status.online ? 'ok' as const : 'error' as const };
     },
     onOllamaStatusChange: (
@@ -184,8 +205,8 @@ const api = {
         const listener = (_event: IpcRendererEvent, status: { online?: boolean }) => {
             callback({ status: status.online ? 'ok' : 'error' });
         };
-        ipcRenderer.on('ollama:statusChange', listener);
-        return () => ipcRenderer.removeListener('ollama:statusChange', listener);
+        ipcRenderer.on(OLLAMA_CHANNELS.STATUS_CHANGE, listener);
+        return () => ipcRenderer.removeListener(OLLAMA_CHANNELS.STATUS_CHANGE, listener);
     },
 
     // Backward-compatible settings surface used across renderer code.
@@ -196,7 +217,7 @@ const api = {
     codeLanguages: createCodeLanguageBridge(ipcRenderer),
     git: createGitBridge(ipcRenderer),
     ollama: createOllamaBridge(ipcRenderer),
-    performance: createPerformanceBridge(ipcRenderer),
+    power: createPowerBridge(ipcRenderer),
     llama: createLlamaBridge(ipcRenderer),
     db: createDbBridge(ipcRenderer),
     memory: createMemoryBridge(ipcRenderer),
@@ -208,6 +229,7 @@ const api = {
     audit: createAuditBridge(ipcRenderer),
     agent: createAgentBridge(ipcRenderer),
     terminal: createTerminalBridge(ipcRenderer),
+    theme: createThemeBridge(ipcRenderer),
     ssh: createSSHBridge(ipcRenderer),
     mcp: createMcpBridge(ipcRenderer),
     marketplace: createMarketplaceBridge(ipcRenderer),
@@ -227,11 +249,9 @@ const api = {
     lazyServices: createLazyServicesBridge(ipcRenderer),
     ipcContract: createIpcContractBridge(ipcRenderer),
     files: createFilesBridge(ipcRenderer),
-    readPdf: (filePath: string) => ipcRenderer.invoke('files:readPdf', filePath),
-    selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
-    selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
-        ipcRenderer.invoke('files:selectFile', options),
+    readPdf: (filePath: string) => ipcRenderer.invoke(FILES_CHANNELS.READ_PDF, filePath),
     sharedPrompts: createSharedPromptsBridge(ipcRenderer),
+    dialog: createDialogBridge(ipcRenderer),
     promptTemplates: createPromptTemplatesBridge(ipcRenderer),
     liveCollaboration: createLiveCollaborationBridge(ipcRenderer),
     userCollaboration: createLiveCollaborationBridge(ipcRenderer),
@@ -244,3 +264,4 @@ const api = {
 };
 
 contextBridge.exposeInMainWorld('electron', api);
+

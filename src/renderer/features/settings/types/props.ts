@@ -40,7 +40,6 @@ export interface SettingsSharedProps {
     startOllama: () => Promise<void>
     checkOllama: () => Promise<void>
     refreshAuthStatus: () => Promise<void>
-    connectGitHubProfile: () => Promise<void>
     connectCopilot: () => Promise<void>
     connectBrowserProvider: (provider: 'codex' | 'claude' | 'antigravity' | 'ollama') => Promise<void>
     cancelAuthFlow: () => void
@@ -69,3 +68,4 @@ export interface SettingsSharedProps {
     setIsLoading: (v: boolean) => void
     onReset: () => void | Promise<void>
 }
+

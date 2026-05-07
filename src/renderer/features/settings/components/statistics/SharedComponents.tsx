@@ -63,3 +63,4 @@ export const getQuotaColor = (percentage: number): string => {
     }
     return 'var(--success)';
 };
+

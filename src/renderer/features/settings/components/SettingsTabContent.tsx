@@ -104,3 +104,4 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = (props) => 
         </ErrorBoundary>
     );
 };
+

@@ -13,6 +13,7 @@ import { EventEmitter } from 'events';
 import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
+import { OLLAMA_CHANNELS } from '@shared/constants/ipc-channels';
 import { REQUEST_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -62,12 +63,12 @@ export class OllamaHealthService extends BaseService {
         this.logInfo(`Base URL updated: ${url}`);
     }
 
-    @ipc('ollama:isRunning')
+    @ipc(OLLAMA_CHANNELS.IS_RUNNING)
     getIsRunning(): boolean {
         return this.status.online;
     }
 
-    @ipc('ollama:healthStatus')
+    @ipc(OLLAMA_CHANNELS.HEALTH_STATUS)
     getHealthStatus(): OllamaStatus {
         return { ...this.status };
     }
@@ -187,7 +188,7 @@ export class OllamaHealthService extends BaseService {
     }
 
     // Force an immediate check (bypasses debounce but not the lock)
-    @ipc('ollama:forceHealthCheck')
+    @ipc(OLLAMA_CHANNELS.FORCE_HEALTH_CHECK)
     async forceCheck(): Promise<OllamaStatus> {
         // Reset debounce timer for forced checks
         this.lastCheckTime = 0;
@@ -206,3 +207,4 @@ export function getOllamaHealthService(baseUrl?: string): OllamaHealthService {
     }
     return instance;
 }
+

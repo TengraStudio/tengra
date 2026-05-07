@@ -98,3 +98,4 @@ export const terminalResizeResponseSchema = z.boolean();
 export const terminalKillResponseSchema = z.boolean();
 export const terminalGetSuggestionsResponseSchema = z.array(z.string());
 export const terminalClearCommandHistoryResponseSchema = z.boolean();
+

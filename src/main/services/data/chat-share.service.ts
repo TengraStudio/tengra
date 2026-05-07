@@ -198,3 +198,4 @@ export class ChatShareService extends BaseService {
         this.logInfo('Cleaning up chat share service');
     }
 }
+

@@ -63,3 +63,4 @@ export interface WorkspaceCodeMap {
     files: WorkspaceCodeMapFile[];
     folders: WorkspaceCodeMapFolder[];
 }
+

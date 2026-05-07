@@ -46,3 +46,4 @@ describe('settings-page-validation', () => {
         expect(normalizeSettingsSearchQuery(query)).toBe('');
     });
 });
+

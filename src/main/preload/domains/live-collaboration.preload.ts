@@ -2,6 +2,7 @@
  * Tengra - Your Personal AI Assistant
  */
 
+import { LIVE_COLLABORATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface LiveCollaborationBridge {
@@ -12,14 +13,15 @@ export interface LiveCollaborationBridge {
 
 export function createLiveCollaborationBridge(ipc: IpcRenderer): LiveCollaborationBridge {
     return {
-        sendUpdate: request => ipc.invoke('live-collaboration:send-update', request),
-        joinRoom: request => ipc.invoke('live-collaboration:join-room', request),
+        sendUpdate: request => ipc.invoke(LIVE_COLLABORATION_CHANNELS.SEND_UPDATE, request),
+        joinRoom: request => ipc.invoke(LIVE_COLLABORATION_CHANNELS.JOIN_ROOM, request),
         onSyncUpdate: callback => {
             const listener = (_event: IpcRendererEvent, payload: { roomId: string; data: string }) => {
                 callback(payload);
             };
-            ipc.on('live-collaboration:sync-update', listener);
-            return () => ipc.removeListener('live-collaboration:sync-update', listener);
+            ipc.on(LIVE_COLLABORATION_CHANNELS.SYNC_UPDATE, listener);
+            return () => ipc.removeListener(LIVE_COLLABORATION_CHANNELS.SYNC_UPDATE, listener);
         },
     };
 }
+

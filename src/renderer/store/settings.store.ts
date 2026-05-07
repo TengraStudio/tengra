@@ -239,3 +239,4 @@ export function useSettingsStore<T>(selector: (snapshot: SettingsStoreState) => 
     const snapshot = useSyncExternalStore(subscribeSettings, getSettingsSnapshot);
     return selector(snapshot);
 }
+

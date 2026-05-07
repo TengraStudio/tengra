@@ -191,3 +191,4 @@ export const ConfirmedMemoryCard = memo(({
     );
 });
 ConfirmedMemoryCard.displayName = 'ConfirmedMemoryCard';
+

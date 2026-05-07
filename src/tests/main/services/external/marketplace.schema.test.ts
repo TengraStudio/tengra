@@ -94,3 +94,4 @@ describe('marketplaceRegistrySchema model size fields', () => {
         expect(parsed.mcp[0]?.tools?.[0]?.name).toBe('forecast');
     });
 });
+

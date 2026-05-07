@@ -13,15 +13,9 @@ import React, { useEffect, useState } from 'react';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { useTranslation } from '@/i18n';
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { cn } from '@/lib/utils';
 import { SSHConfig } from '@/types/ssh';
 import { appLogger } from '@/utils/renderer-logger';
-
-import {
-    terminalGetDockerContainersResponseSchema,
-    TerminalIpcContract
-} from '../utils/terminal-ipc';
 
 
 interface ConnectionOption {
@@ -71,7 +65,7 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                 );
 
                 // Fetch Docker containers
-                const dockerResult = await invokeTypedIpc<TerminalIpcContract, 'terminal:getDockerContainers'>('terminal:getDockerContainers', [], { responseSchema: terminalGetDockerContainersResponseSchema });
+                const dockerResult = await window.electron.terminal.getDockerContainers();
                 if (dockerResult.success && Array.isArray(dockerResult.containers)) {
                     // SAFETY: The docker result containers are evaluated and passed by the IPC boundary schema, but lose strict typing.
                     const mappedContainers: DockerContainerOption[] = (dockerResult.containers as TypeAssertionValue as RawDockerContainer[]).map(c => ({
@@ -192,3 +186,4 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
         </div>
     );
 };
+

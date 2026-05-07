@@ -10,7 +10,7 @@
 
 /**
  * Type-safe serialization helpers for IPC boundary conversions.
- * Replaces ad-hoc `as unknown as` double-casts with explicit, auditable functions.
+ * Replaces ad-hoc double-casts with explicit, auditable functions.
  */
 import { JsonObject, JsonValue } from '@shared/types/common';
 
@@ -43,3 +43,4 @@ export function validatedToJsonObject(value: Record<string, RuntimeValue>): Json
 export function validatedAs<T extends object>(value: Partial<T> | Record<string, RuntimeValue>): T {
     return { ...value } as T;
 }
+

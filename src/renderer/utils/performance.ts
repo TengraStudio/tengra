@@ -134,3 +134,4 @@ if (typeof window !== 'undefined') {
         getReport: () => performanceMonitor.getReport(),
     };
 }
+

@@ -9,15 +9,14 @@
  */
 
 import { RuntimeBootstrapExecutionResult } from '@shared/types/system/runtime-manifest';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import {
     __resetRuntimeBootstrapStoreForTests,
     getRuntimeBootstrapSnapshot,
     hasBlockingRuntimeIssue,
     loadRuntimeBootstrapStatus,
     repairManagedRuntime,
-} from '@/system/store/runtime-bootstrap.store';
+} from '@system/store/runtime-bootstrap.store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const READY_STATUS: RuntimeBootstrapExecutionResult = {
     manifestVersion: 'runtime-v1',
@@ -164,3 +163,4 @@ describe('runtime-bootstrap.store', () => {
         expect(hasBlockingRuntimeIssue(READY_STATUS)).toBe(false);
     });
 });
+

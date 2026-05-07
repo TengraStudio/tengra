@@ -20,7 +20,7 @@ const INITIAL_MODAL_STATE: DeviceCodeModalState = {
     isOpen: false,
     userCode: '',
     verificationUri: '',
-    provider: 'github',
+    provider: 'copilot',
     status: 'pending',
     errorMessage: undefined,
 };
@@ -56,86 +56,6 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
         }
     }, [setAuthBusy, setAuthNotice]);
 
-    const connectGitHubProfile = useCallback(async () => {
-        if (!settings) {
-            return;
-        }
-        const requestId = activeRequestRef.current + 1;
-        activeRequestRef.current = requestId;
-        setAuthBusy({ provider: 'github', startedAt: Date.now() });
-        setAuthNotice('');
-        try {
-            const data = await window.electron.githubLogin('profile');
-
-            // Open the modal with device code
-            if (data.user_code && data.verification_uri) {
-                // Automatically copy the code to clipboard
-                try {
-                    void window.electron.clipboard.writeText(data.user_code);
-                    appLogger.info('DeviceAuth', 'Automatically copied user code to clipboard');
-                } catch (err) {
-                    appLogger.warn('DeviceAuth', 'Failed to auto-copy code to clipboard', err as Error);
-                }
-
-                setDeviceCodeModal({
-                    isOpen: true,
-                    userCode: data.user_code,
-                    verificationUri: data.verification_uri,
-                    provider: 'github',
-                    status: 'pending',
-                    errorMessage: undefined,
-                });
-                window.electron.openExternal(data.verification_uri);
-            }
-
-            appLogger.debug('DeviceAuth', `Step 3: Initializing poll loop for ${data.user_code} (interval=${data.interval})`);
-            const pollResult = await window.electron.pollToken(
-                data.device_code,
-                data.interval,
-                'profile'
-            );
-            appLogger.debug('DeviceAuth', `Step 4: Poll result for profile: success=${pollResult.success}`);
-            if (requestId !== activeRequestRef.current) {
-                return;
-            }
-            if (pollResult.success) {
-                const updated: AppSettings = {
-                    ...settings,
-                    github: {
-                        username:
-                            (settings.github as { username?: string }).username ??
-                            pollResult.account?.displayName ??
-                            t('frontend.auth.githubUser'),
-                    },
-                };
-                await updateSettings(updated, true);
-                onRefreshModels?.(true);
-                setDeviceCodeModal(prev => ({ ...prev, status: 'success' }));
-                setTimeout(() => setDeviceCodeModal(INITIAL_MODAL_STATE), 2000);
-            } else {
-                setDeviceCodeModal(prev => ({
-                    ...prev,
-                    status: 'error',
-                    errorMessage: pollResult.error || t('frontend.auth.githubConnectionFailed'),
-                }));
-            }
-        } catch (error) {
-            appLogger.error('DeviceAuth', 'GitHub auth failed', error as Error);
-            if (requestId !== activeRequestRef.current) {
-                return;
-            }
-            setDeviceCodeModal(prev => ({
-                ...prev,
-                status: 'error',
-                errorMessage: t('frontend.auth.githubConnectionFailed'),
-            }));
-        } finally {
-            if (requestId === activeRequestRef.current) {
-                setAuthBusy(null);
-            }
-        }
-    }, [onRefreshModels, setAuthBusy, setAuthNotice, settings, t, updateSettings]);
-
     const connectCopilot = useCallback(async () => {
         if (!settings) {
             return;
@@ -145,7 +65,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
         setAuthBusy({ provider: 'copilot', startedAt: Date.now() });
         setAuthNotice('');
         try {
-            const data = await window.electron.githubLogin('copilot');
+            const data = await window.electron.auth.githubLogin('copilot');
 
             // Open the modal with device code
             if (data.user_code && data.verification_uri) {
@@ -169,7 +89,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
             }
 
             appLogger.debug('DeviceAuth', `Step 3: Initializing Copilot poll loop for ${data.user_code} (interval=${data.interval})`);
-            const pollResult = await window.electron.pollToken(
+            const pollResult = await window.electron.auth.pollToken(
                 data.device_code,
                 data.interval,
                 'copilot'
@@ -220,9 +140,9 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
 
     return {
         deviceCodeModal,
-        connectGitHubProfile,
         connectCopilot,
         closeDeviceCodeModal,
         cancelDeviceAuth: resetDeviceAuth,
     };
 }
+

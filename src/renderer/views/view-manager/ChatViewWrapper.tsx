@@ -56,3 +56,4 @@ export const ChatViewWrapper: React.FC<ChatViewWrapperProps> = memo(({
 });
 
 ChatViewWrapper.displayName = 'ChatViewWrapper';
+

@@ -10,14 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { invokeTypedIpc } from '@/lib/ipc-client';
 import { appLogger } from '@/utils/renderer-logger';
-
-import {
-    terminalGetDiscoverySnapshotResponseSchema,
-    terminalGetDockerContainersResponseSchema,
-    TerminalIpcContract,
-} from '../utils/terminal-ipc';
 
 /**
  * Terminal backend information
@@ -276,11 +269,7 @@ export function useTerminalBackendsAndRemote({
         setIsLoadingShells(true);
         setIsLoadingBackends(true);
 
-        const request = invokeTypedIpc<TerminalIpcContract, 'terminal:getDiscoverySnapshot'>(
-            'terminal:getDiscoverySnapshot',
-            [refresh ? { refresh: true } : undefined],
-            { responseSchema: terminalGetDiscoverySnapshotResponseSchema }
-        )
+        const request = window.electron.terminal.getDiscoverySnapshot(refresh ? { refresh: true } : undefined)
             .then(snapshot => {
                 setAvailableShells(snapshot.shells);
                 setAvailableBackends(snapshot.backends);
@@ -346,7 +335,7 @@ export function useTerminalBackendsAndRemote({
 
             const [profilesRaw, dockerResult] = await Promise.all([
                 window.electron.ssh.getProfiles().catch(() => []),
-                invokeTypedIpc<TerminalIpcContract, 'terminal:getDockerContainers'>('terminal:getDockerContainers', [], { responseSchema: terminalGetDockerContainersResponseSchema }).catch(() => ({ success: false })),
+                window.electron.terminal.getDockerContainers().catch(() => ({ success: false })),
             ]);
 
             setRemoteSshProfiles(normalizeSshProfiles(profilesRaw));
@@ -473,3 +462,4 @@ export function useTerminalBackendsAndRemote({
         persistPreferredBackendId,
     };
 }
+

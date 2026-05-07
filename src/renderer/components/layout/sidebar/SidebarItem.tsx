@@ -143,3 +143,4 @@ export const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>
 );
 
 SidebarItem.displayName = 'SidebarItem';
+

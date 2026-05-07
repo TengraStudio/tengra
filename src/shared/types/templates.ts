@@ -29,3 +29,4 @@ export interface PromptTemplate {
     createdAt: number
     updatedAt: number
 }
+

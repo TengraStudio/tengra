@@ -68,3 +68,4 @@ describe('runtime-path.service', () => {
         expect(executablePath).toBe(path.join(expectedBinDir, 'llama-server'));
     });
 });
+

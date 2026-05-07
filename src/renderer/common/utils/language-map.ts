@@ -371,3 +371,4 @@ export const clearRuntimeLanguageContributions = (): void => {
 export const registerRuntimeLanguageContributions = (_packs: unknown[]): void => {
     // Stub for now
 };
+

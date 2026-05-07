@@ -33,3 +33,4 @@ export const WorkspacesSkeleton: React.FC = React.memo(() => (
 ));
 
 WorkspacesSkeleton.displayName = 'WorkspacesSkeleton';
+

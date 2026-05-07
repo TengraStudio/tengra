@@ -132,7 +132,7 @@ export function SkillsMarketplace({
     const handleUninstall = useCallback(async (skillId: string) => {
         setUninstallingId(skillId);
         try {
-            await window.electron.deleteSkill(skillId);
+            await window.electron.auth.deleteSkill(skillId);
             await onRefreshSkills();
             pushNotification({
                 type: 'success',

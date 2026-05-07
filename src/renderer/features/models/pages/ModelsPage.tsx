@@ -65,7 +65,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
 
         const results = await Promise.all(
             providers.map(async (provider) => {
-                const providerAccounts = await window.electron.getLinkedAccounts(provider);
+                const providerAccounts = await window.electron.auth.getLinkedAccounts(provider);
                 return { provider, accounts: providerAccounts };
             })
         );
@@ -81,10 +81,10 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
 
     const loadQuotas = useCallback(async () => {
         const [copilotResult, claudeResult, codexResult, antigravityResult] = await Promise.all([
-            window.electron.getCopilotQuota().catch(() => ({ accounts: [] })),
-            window.electron.getClaudeQuota().catch(() => ({ accounts: [] })),
-            window.electron.getCodexUsage().catch(() => ({ accounts: [] })),
-            window.electron.getQuota().catch(() => null)
+            window.electron.auth.getCopilotQuota().catch(() => ({ accounts: [] })),
+            window.electron.auth.getClaudeQuota().catch(() => ({ accounts: [] })),
+            window.electron.auth.getCodexUsage().catch(() => ({ accounts: [] })),
+            window.electron.auth.getQuota().catch(() => null)
         ]);
 
         setQuotas({
@@ -103,7 +103,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
             try {
                 const [fetchedModels, , , settingsData] = await Promise.all([
                     fetchModels(),
-                    window.electron.getLinkedAccounts().then(allAccounts => {
+                    window.electron.auth.getLinkedAccounts().then(allAccounts => {
                         const accountsMap: ProviderAccounts = {};
                         const providers = ['copilot', 'openai', 'anthropic', 'codex', 'antigravity', 'nvidia', 'claude'];
                         providers.forEach(provider => {
@@ -115,10 +115,10 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
                         setAccounts(accountsMap);
                     }),
                     Promise.all([
-                        window.electron.getCopilotQuota().catch(() => ({ accounts: [] })),
-                        window.electron.getClaudeQuota().catch(() => ({ accounts: [] })),
-                        window.electron.getCodexUsage().catch(() => ({ accounts: [] })),
-                        window.electron.getQuota().catch(() => null)
+                        window.electron.auth.getCopilotQuota().catch(() => ({ accounts: [] })),
+                        window.electron.auth.getClaudeQuota().catch(() => ({ accounts: [] })),
+                        window.electron.auth.getCodexUsage().catch(() => ({ accounts: [] })),
+                        window.electron.auth.getQuota().catch(() => null)
                     ]).then(([copilotResult, claudeResult, codexResult, antigravityResult]) => {
                         setQuotas({
                             copilot: copilotResult.accounts,
@@ -192,7 +192,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
 
     const handleSetActiveAccount = useCallback((provider: string, accountId: string) => {
         const switchAccount = async (): Promise<void> => {
-            await window.electron.setActiveLinkedAccount(provider, accountId);
+            await window.electron.auth.setActiveLinkedAccount(provider, accountId);
             await loadAccounts();
             // Refresh models after account change
             void loadModels(true);
@@ -242,3 +242,4 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
         </div>
     );
 }
+

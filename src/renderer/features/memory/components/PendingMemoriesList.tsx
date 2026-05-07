@@ -275,3 +275,4 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
         </Card>
     );
 };
+

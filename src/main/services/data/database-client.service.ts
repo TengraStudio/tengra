@@ -29,6 +29,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
+import { RuntimeValue } from '@shared/types/common';
 import {
     DbApiResponse,
     DbChat,
@@ -434,7 +435,7 @@ export class DatabaseClientService extends BaseService {
     private async apiCall<T>(
         method: 'GET' | 'POST' | 'PUT' | 'DELETE',
         path: string,
-        data?: unknown,
+        data?: RuntimeValue | object,
         retryCount = 0
     ): Promise<DbApiResponse<T>> {
         const MAX_RETRIES = 5;
@@ -899,3 +900,4 @@ export class DatabaseClientService extends BaseService {
         // Note: We don't stop the service as it's persistent
     }
 }
+

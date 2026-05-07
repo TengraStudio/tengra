@@ -50,3 +50,4 @@ export { AppHeader } from '@/components/layout/AppHeader';
 export { LayoutManager } from '@/components/layout/LayoutManager';
 export { Sidebar } from '@/components/layout/Sidebar';
 export * from '@/components/layout/SimpleResizable';
+

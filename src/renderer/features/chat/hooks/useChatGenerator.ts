@@ -54,6 +54,12 @@ interface SelectedModelInfo {
     model: string;
 }
 
+interface GenerateResponseSelectionOverride {
+    provider: string;
+    model: string;
+    selectedModels?: SelectedModelInfo[];
+}
+
 interface UseChatGeneratorProps {
     chats: Chat[];
     appSettings?: AppSettings | undefined;
@@ -88,6 +94,25 @@ const logRendererError = (message: string, error: Error): void => {
     appLogger.error('useChatGenerator', message, error);
 };
 
+async function persistAssistantPlaceholderMessage(message: Message & { chatId: string }): Promise<void> {
+    const attemptPersist = async () => {
+        const result = await window.electron.db.addMessage({
+            ...message,
+            timestamp: Date.now(),
+        });
+        if (!result?.success) {
+            throw new Error('Failed to persist assistant placeholder');
+        }
+    };
+
+    try {
+        await attemptPersist();
+    } catch {
+        await new Promise(resolve => setTimeout(resolve, 80));
+        await attemptPersist();
+    }
+}
+
 export const useChatGenerator = (
     props: UseChatGeneratorProps & {
         systemMode: 'thinking' | 'agent' | 'fast';
@@ -96,7 +121,12 @@ export const useChatGenerator = (
     streamingStates: Record<string, StreamStreamingState>;
     lastChatError: ChatError | null;
     clearChatError: () => void;
-    generateResponse: (chatId: string, userMessage: Message, retryModel?: string) => Promise<void>;
+    generateResponse: (
+        chatId: string,
+        userMessage: Message,
+        retryModel?: string,
+        selectionOverride?: GenerateResponseSelectionOverride
+    ) => Promise<void>;
     stopGeneration: () => Promise<void>;
     antigravityCreditConfirmation: AntigravityCreditConfirmationState;
     confirmAntigravityCreditUsage: () => void;
@@ -238,27 +268,35 @@ export const useChatGenerator = (
             addMessageToStore(chatId, placeholder);
         }
         
-        void window.electron.db.addMessage({ ...placeholder, chatId, timestamp: Date.now() }).catch((error) => {
+        void persistAssistantPlaceholderMessage({ ...placeholder, chatId }).catch((error) => {
             logRendererError('[generateResponse] Failed to persist assistant placeholder', error as Error);
         });
     }, [language, props]);
 
-    const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string): Promise<void> => {
+    const generateResponse = async (
+        chatId: string,
+        userMessage: Message,
+        retryModel?: string,
+        selectionOverride?: GenerateResponseSelectionOverride
+    ): Promise<void> => {
         setLastChatError(null);
         setStreamingState(chatId, { content: '', reasoning: '', speed: null, error: null });
         const assistantId = generateId();
-        const initialModel = retryModel ?? selectedModel;
+        const effectiveProvider = selectionOverride?.provider ?? selectedProvider;
+        const initialModel = retryModel ?? selectionOverride?.model ?? selectedModel;
 
         const modelsToUse: SelectedModelInfo[] =
-            !retryModel && selectedModels && selectedModels.length > 1
-                ? selectedModels
-                : [{ provider: selectedProvider, model: initialModel }];
+            !retryModel && selectionOverride?.selectedModels && selectionOverride.selectedModels.length > 1
+                ? selectionOverride.selectedModels
+                : !retryModel && selectedModels && selectedModels.length > 1
+                    ? selectedModels
+                    : [{ provider: effectiveProvider, model: initialModel }];
 
         const isMultiModel = modelsToUse.length > 1;
         const shouldUseDirectImageFlow = isImageOnlyModel(initialModel) || isExplicitImageRequest(userMessage);
         const intentClassification = classifyAiIntent(userMessage, systemMode);
-        const shouldEnableTools = !shouldUseDirectImageFlow
-            && (systemMode === 'agent' || intentClassification.requiresTooling);
+        const shouldAttachTools = !shouldUseDirectImageFlow && (systemMode === 'agent' || intentClassification.requiresTooling);
+        const shouldUseAgentPrompting = systemMode === 'agent';
 
         try {
             for (const modelInfo of modelsToUse) {
@@ -288,7 +326,7 @@ export const useChatGenerator = (
                     prompt: getMessageTextContent(userMessage),
                     requestedCount: extractImageRequestCount(userMessage),
                     activeModel: initialModel,
-                    selectedProvider,
+                    selectedProvider: effectiveProvider,
                     t,
                     intentClassification,
                     language,
@@ -302,26 +340,26 @@ export const useChatGenerator = (
                     getReasoningEffort, createModelToolList, prepareMessages
                 });
             } else {
-                const allTools: ToolDefinition[] = shouldEnableTools
+                const allTools: ToolDefinition[] = shouldAttachTools
                     ? (await window.electron.getToolDefinitions()) ?? []
                     : [];
-                const tools = shouldEnableTools ? createModelToolList(allTools ?? []) : [];
+                const tools = shouldAttachTools ? createModelToolList(allTools ?? []) : [];
 
                 const { allMessages, presetOptions } = prepareMessages({
                     chatId, chats, userMessage, appSettings, selectedModel: initialModel,
-                    selectedProvider, language, activeWorkspacePath, systemMode, toolingEnabled: shouldEnableTools,
+                    selectedProvider: effectiveProvider, language, activeWorkspacePath, systemMode, toolingEnabled: shouldUseAgentPrompting,
                     workspaceTitle: props.workspaceTitle,
                     workspaceDescription: props.workspaceDescription
                 });
 
                 const reasoningEffort = getReasoningEffort(initialModel, appSettings);
-                const fullOptions = buildProviderOptions(selectedProvider, {
+                const fullOptions = buildProviderOptions(effectiveProvider, {
                     ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking',
-                    agentToolsEnabled: shouldEnableTools, reasoningEffort
+                    agentToolsEnabled: shouldUseAgentPrompting, reasoningEffort
                 });
                 await executeToolTurnLoop({
                     initialMessages: allMessages,
-                    chatId, assistantId, activeModel: initialModel, selectedProvider, tools, fullOptions, workspaceId,
+                    chatId, assistantId, activeModel: initialModel, selectedProvider: effectiveProvider, tools, fullOptions, workspaceId,
                     autoReadEnabled, handleSpeak, t, language, activeWorkspacePath, systemMode,
                     intentClassification,
                     confirmAntigravityCreditUsage: requestAntigravityCreditConfirmation,
@@ -400,3 +438,4 @@ export const useChatGenerator = (
         cancelAntigravityCreditUsage,
     };
 };
+

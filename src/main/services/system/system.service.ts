@@ -17,6 +17,7 @@ import { BaseService } from '@main/services/base.service';
 import { ISystemService } from '@main/types/services';
 import { t } from '@main/utils/i18n.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { CLIPBOARD_CHANNELS, CONTRACT_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     IPC_CONTRACT_MIN_MAIN_VERSION,
     IPC_CONTRACT_MIN_RENDERER_VERSION,
@@ -42,7 +43,7 @@ export class SystemService extends BaseService implements ISystemService {
         super('SystemService');
     }
 
-    @ipc('ipc:contract:get')
+    @ipc(CONTRACT_CHANNELS.GET)
     getContractIpc(): RuntimeValue {
         return serializeToIpc(CONTRACT_INFO);
     }
@@ -320,8 +321,8 @@ Add-Type -TypeDefinition $code
     }>> {
         try {
             const [gpuInfo, featureStatus] = await Promise.all([
-                app.getGPUInfo('complete'),
-                Promise.resolve(app.getGPUFeatureStatus()),
+                app.getGPUInfo('complete') as Promise<any>,
+                Promise.resolve(app.getGPUFeatureStatus()) as Promise<any>,
             ]);
             const parsed = this.parseGpuInfo(gpuInfo, featureStatus);
             return { success: true, data: parsed };
@@ -372,7 +373,7 @@ Add-Type -TypeDefinition $code
         }
     }
 
-    private parseGpuInfo(gpuInfo: unknown, featureStatus: unknown): {
+    private parseGpuInfo(gpuInfo: RuntimeValue, featureStatus: RuntimeValue): {
         available: boolean;
         source: 'electron' | 'none';
         name?: string;
@@ -396,20 +397,20 @@ Add-Type -TypeDefinition $code
         };
     }
 
-    private extractGpuDevices(gpuInfo: unknown): MarketplaceGpuDevice[] {
+    private extractGpuDevices(gpuInfo: RuntimeValue): MarketplaceGpuDevice[] {
         if (!gpuInfo || typeof gpuInfo !== 'object') {
             return [];
         }
-        const root = gpuInfo as Record<string, unknown>;
+        const root = gpuInfo as Record<string, RuntimeValue>;
         const gpuDevices = Array.isArray(root.gpuDevice) ? root.gpuDevice : Array.isArray(root.gpu_devices) ? root.gpu_devices : [];
         return gpuDevices.map((device, index) => this.mapGpuDevice(device, index)).filter((device): device is MarketplaceGpuDevice => Boolean(device));
     }
 
-    private mapGpuDevice(device: unknown, index: number): MarketplaceGpuDevice | null {
+    private mapGpuDevice(device: RuntimeValue, index: number): MarketplaceGpuDevice | null {
         if (!device || typeof device !== 'object') {
             return null;
         }
-        const record = device as Record<string, unknown>;
+        const record = device as Record<string, RuntimeValue>;
         const name = this.extractString(record.deviceString) || this.extractString(record.name) || this.extractString(record.vendorString) || `GPU ${index + 1}`;
         return {
             index,
@@ -450,7 +451,7 @@ Add-Type -TypeDefinition $code
         return value;
     }
 
-    private resolveGpuBackend(record: Record<string, unknown>): string | undefined {
+    private resolveGpuBackend(record: Record<string, RuntimeValue>): string | undefined {
         const backend = this.extractString(record.glRenderer) || this.extractString(record.backend);
         if (backend) {
             return backend;
@@ -462,11 +463,11 @@ Add-Type -TypeDefinition $code
         return undefined;
     }
 
-    private extractBackendsFromFeatureStatus(featureStatus: unknown): string[] {
+    private extractBackendsFromFeatureStatus(featureStatus: RuntimeValue): string[] {
         if (!featureStatus || typeof featureStatus !== 'object') {
             return [];
         }
-        return Object.entries(featureStatus as Record<string, unknown>)
+        return Object.entries(featureStatus as Record<string, RuntimeValue>)
             .filter(([, value]) => value === 'enabled')
             .map(([key]) => key)
             .slice(0, 8);
@@ -482,15 +483,15 @@ Add-Type -TypeDefinition $code
         return `${devices.length} GPUs`;
     }
 
-    private extractString(value: unknown): string {
+    private extractString(value: RuntimeValue): string {
         return typeof value === 'string' ? value.trim() : '';
     }
 
-    private extractNumber(value: unknown): number | null {
+    private extractNumber(value: RuntimeValue): number | null {
         return typeof value === 'number' && Number.isFinite(value) ? value : null;
     }
 
-    private extractBoolean(value: unknown): boolean | null {
+    private extractBoolean(value: RuntimeValue): boolean | null {
         return typeof value === 'boolean' ? value : null;
     }
 
@@ -526,13 +527,13 @@ Add-Type -TypeDefinition $code
         }
     }
 
-    @ipc('clipboard:read-text')
+    @ipc(CLIPBOARD_CHANNELS.READ_TEXT)
     async readClipboardText(): Promise<string> {
         const { clipboard } = await import('electron');
         return clipboard.readText();
     }
 
-    @ipc('clipboard:write-text')
+    @ipc(CLIPBOARD_CHANNELS.WRITE_TEXT)
     async writeClipboardText(text: string): Promise<boolean> {
         if (typeof text === 'string') {
             const { clipboard } = await import('electron');
@@ -542,3 +543,4 @@ Add-Type -TypeDefinition $code
         return false;
     }
 }
+

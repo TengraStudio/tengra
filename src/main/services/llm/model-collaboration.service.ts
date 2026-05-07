@@ -21,6 +21,7 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { COLLABORATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { Message } from '@shared/types/chat';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import { z } from 'zod';
@@ -91,7 +92,7 @@ export class ModelCollaborationService extends BaseService {
     /**
      * Run multiple models in collaboration
      */
-    @ipc('collaboration:run')
+    @ipc(COLLABORATION_CHANNELS.RUN)
     async collaborateIpc(requestRaw: RuntimeValue): Promise<RuntimeValue> {
         const validated = collaborationRequestSchema.safeParse(requestRaw);
         if (!validated.success) {
@@ -155,7 +156,7 @@ export class ModelCollaborationService extends BaseService {
     /**
      * Get provider statistics
      */
-    @ipc('collaboration:getProviderStats')
+    @ipc(COLLABORATION_CHANNELS.GET_PROVIDER_STATS)
     async getProviderStatsIpc(provider: RuntimeValue): Promise<RuntimeValue> {
         try {
             if (!provider || typeof provider !== 'string') {
@@ -172,7 +173,7 @@ export class ModelCollaborationService extends BaseService {
     /**
      * Get active task count for a provider
      */
-    @ipc('collaboration:getActiveTaskCount')
+    @ipc(COLLABORATION_CHANNELS.GET_ACTIVE_TASK_COUNT)
     async getActiveTaskCountIpc(provider: RuntimeValue): Promise<RuntimeValue> {
         try {
             if (typeof provider !== 'string') {
@@ -187,8 +188,8 @@ export class ModelCollaborationService extends BaseService {
     /**
      * Configure provider settings
      */
-    @ipc('collaboration:setProviderConfig')
-    async setProviderConfigIpc(provider: RuntimeValue, config: unknown): Promise<RuntimeValue> {
+    @ipc(COLLABORATION_CHANNELS.SET_PROVIDER_CONFIG)
+    async setProviderConfigIpc(provider: RuntimeValue, config: RuntimeValue): Promise<RuntimeValue> {
         if (typeof provider !== 'string') {
             throw new Error('Provider must be a string');
         }
@@ -402,3 +403,4 @@ export class ModelCollaborationService extends BaseService {
         });
     }
 }
+

@@ -240,3 +240,4 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
         </div>
     );
 };
+

@@ -34,3 +34,4 @@ describe('terminal module version utils', () => {
         expect(isTerminalModuleVersionCompatible('invalid')).toBe(false);
     });
 });
+

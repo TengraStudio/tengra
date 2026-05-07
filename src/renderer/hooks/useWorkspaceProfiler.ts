@@ -98,3 +98,4 @@ export function useWorkspaceProfiler() {
 
     return { onRender, getMetrics, getAllMetrics };
 }
+

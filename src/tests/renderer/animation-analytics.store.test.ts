@@ -60,3 +60,4 @@ describe('animation analytics store', () => {
         expect(getAnimationAnalyticsSnapshot().debugEnabled).toBe(true);
     });
 });
+

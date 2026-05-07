@@ -79,3 +79,4 @@ export interface IRepository<T> {
      */
     delete(id: string): Promise<boolean>;
 }
+

@@ -158,3 +158,4 @@ export function closeSplashWindow(): void {
     splashWindow.close();
     splashWindow = null;
 }
+

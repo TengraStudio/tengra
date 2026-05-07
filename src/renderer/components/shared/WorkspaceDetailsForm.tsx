@@ -142,9 +142,9 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                     <button
                         type="button"
                         onClick={() => {
-                            void window.electron.ipcRenderer.invoke('dialog:selectDirectory').then(result => {
-                                if (result.success && result.path) {
-                                    onFormChange(p => ({ ...p, customPath: result.path }));
+                            void window.electron.dialog.selectDirectory().then((result: { success: boolean; path?: string }) => {
+                                if (result.success && typeof result.path === 'string') {
+                                    onFormChange(p => ({ ...p, customPath: result.path! }));
                                 }
                             });
                         }}
@@ -191,3 +191,4 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
 };
 
 export type CategoryConfig = WorkspaceCategoryConfig;
+

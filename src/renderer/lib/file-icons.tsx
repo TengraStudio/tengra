@@ -296,3 +296,4 @@ export function renderIcon(name: string, isDirectory: boolean, isOpen: boolean =
     }
     return <FileIcon fileName={name} className={props.className} size={props.size} />;
 }
+

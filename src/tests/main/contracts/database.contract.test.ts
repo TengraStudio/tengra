@@ -29,3 +29,4 @@ describe('Database Contract', () => {
         expect(service).toContain('async clearAuditLogs');
     });
 });
+

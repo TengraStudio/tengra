@@ -100,3 +100,4 @@ async function setWindowSize(
         })
         .toBe(`${width}x${height}`);
 }
+

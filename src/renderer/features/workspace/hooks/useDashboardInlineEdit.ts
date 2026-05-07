@@ -75,3 +75,4 @@ export const useDashboardInlineEdit = ({ workspace, onUpdate }: UseDashboardInli
     };
 };
 
+

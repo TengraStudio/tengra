@@ -44,3 +44,4 @@ export const GitRemotes: React.FC<RemotesProps> = ({ remotes }) => {
         </div>
     );
 };
+

@@ -242,3 +242,4 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
 
     return <FolderContentView data={data} folderPath={folderPath} rootPath={rootPath} />;
 };
+

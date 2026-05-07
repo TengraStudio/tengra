@@ -68,3 +68,4 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
 });
 
 ScrollToBottomButton.displayName = 'ScrollToBottomButton';
+

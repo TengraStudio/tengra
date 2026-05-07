@@ -13,6 +13,7 @@ import * as crypto from 'crypto';
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger, LogLevel } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { LOG_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonValue } from '@shared/types/common';
 import { BrowserWindow, IpcMainEvent } from 'electron';
 
@@ -130,24 +131,24 @@ export class LoggingService extends BaseService {
         this.pushLogEntry(levelStr, context, message);
     }
 
-    @ipc('log:buffer:get')
+    @ipc(LOG_CHANNELS.BUFFER_GET)
     async getBufferIpc() {
         return this.logBuffer.slice(-500);
     }
 
-    @ipc('log:buffer:clear')
+    @ipc(LOG_CHANNELS.BUFFER_CLEAR)
     async clearBufferIpc() {
         this.logBuffer.length = 0;
         return { success: true };
     }
 
-    @ipc('log:stream:start')
+    @ipc(LOG_CHANNELS.STREAM_START)
     async startStreamIpc() {
         this.streamingEnabled = true;
         return { success: true };
     }
 
-    @ipc('log:stream:stop')
+    @ipc(LOG_CHANNELS.STREAM_STOP)
     async stopStreamIpc() {
         this.streamingEnabled = false;
         return { success: true };
@@ -182,3 +183,4 @@ export class LoggingService extends BaseService {
         }
     }
 }
+

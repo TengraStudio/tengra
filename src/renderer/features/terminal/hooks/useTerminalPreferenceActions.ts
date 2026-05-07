@@ -220,3 +220,4 @@ export function useTerminalPreferenceActions({
         importShortcutShareCode,
     };
 }
+

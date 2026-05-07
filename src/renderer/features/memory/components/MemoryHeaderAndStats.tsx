@@ -48,42 +48,47 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
     onRecategorize
 }) => {
     const { t } = useTranslation();
-    const runtimeTone = runtime.status === 'healthy'
-        ? 'text-success'
-        : runtime.status === 'degraded'
-            ? 'text-warning'
-            : 'text-muted-foreground';
+    const runtimeTone = runtime.status === 'healthy' ? 'text-success' : runtime.status === 'degraded' ? 'text-warning' : 'text-muted-foreground';
     const overallTone = healthStatus === 'healthy' ? 'text-success' : 'text-warning';
+    const statusLabel = healthStatus === 'healthy' ? 'Ready' : 'Needs attention';
     const runtimeLabel = runtime.status === 'healthy'
-        ? 'Lookup runtime healthy'
+        ? 'Fast lookups'
         : runtime.status === 'degraded'
-            ? 'Lookup runtime degraded'
-            : 'Lookup runtime unknown';
+            ? 'Slow or failed lookups'
+            : 'Lookup status unknown';
 
     return (
-        <div className="flex items-center justify-between gap-4">
-            <div>
-                <h1 className="text-3xl font-bold">{t('frontend.memory.title')}</h1>
-                <p className="text-muted-foreground mt-1">{t('frontend.memory.subtitle')}</p>
-                <div className="mt-2 flex items-center gap-4 text-sm font-semibold">
-                    <span className={overallTone}>
-                        Health: {healthStatus}
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-primary/10 via-background to-background p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em]', overallTone, healthStatus === 'healthy' ? 'border-success/30 bg-success/10' : 'border-warning/30 bg-warning/10')}>
+                        {statusLabel}
                     </span>
-                    <span className={runtimeTone}>
+                    <span className={cn('rounded-full border px-2.5 py-1 text-xs font-medium', runtimeTone, runtime.status === 'healthy' ? 'border-success/20 bg-success/5' : runtime.status === 'degraded' ? 'border-warning/20 bg-warning/5' : 'border-border/40 bg-muted/20')}>
                         {runtimeLabel}
                     </span>
-                    <span className="text-muted-foreground">
-                        Avg lookup: {runtime.averageLookupDurationMs}ms
-                    </span>
-                    <span className="text-muted-foreground">
-                        Hit rate: {runtime.cacheHitRate}%
-                    </span>
-                    <span className="text-muted-foreground">
-                        T/F: {runtime.lookupTimeoutCount}/{runtime.lookupFailureCount}
-                    </span>
+                </div>
+                <h1 className="mt-3 text-3xl font-bold">{t('frontend.memory.title')}</h1>
+                <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                    What Tengra saves about you, your work, and past conversations.
+                    Review new memories, search what is already stored, and check whether memory lookup is working.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-border/30 bg-background/70 p-3">
+                        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Average lookup</p>
+                        <p className="mt-1 text-2xl font-semibold">{runtime.averageLookupDurationMs}ms</p>
+                    </div>
+                    <div className="rounded-xl border border-border/30 bg-background/70 p-3">
+                        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Cache hit rate</p>
+                        <p className="mt-1 text-2xl font-semibold">{runtime.cacheHitRate}%</p>
+                    </div>
+                    <div className="rounded-xl border border-border/30 bg-background/70 p-3">
+                        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Timeouts / failures</p>
+                        <p className="mt-1 text-2xl font-semibold">{runtime.lookupTimeoutCount} / {runtime.lookupFailureCount}</p>
+                    </div>
                 </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-start gap-3 lg:max-w-[18rem] lg:justify-end">
                 <Button variant="outline" size="sm" onClick={onRefresh} className="gap-2">
                     <IconRefresh className={cn('w-4 h-4', isLoading && 'animate-spin')} />
                     {t('common.refresh')}
@@ -176,34 +181,34 @@ interface StatsOverviewProps {
 }
 
 export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
         <StatCard
-            label="memory.stats.pending"
+            label="frontend.memory.stats.pending"
             value={stats.pendingValidation}
             icon={IconCircleCheck}
             color="text-warning"
             highlight={stats.pendingValidation > 0}
         />
         <StatCard
-            label="memory.stats.confirmed"
+            label="frontend.memory.stats.confirmed"
             value={stats.byStatus.confirmed}
             icon={IconCircleCheck}
             color="text-success"
         />
         <StatCard
-            label="memory.stats.archived"
+            label="frontend.memory.stats.archived"
             value={stats.byStatus.archived}
             icon={IconArchive}
             color="text-muted-foreground"
         />
         <StatCard
-            label="memory.stats.avgConfidence"
+            label="frontend.memory.stats.avgConfidence"
             value={`${(stats.averageConfidence * 100).toFixed(0)}%`}
             icon={IconGauge}
             color="text-primary"
         />
         <StatCard
-            label="memory.stats.contradictions"
+            label="frontend.memory.stats.contradictions"
             value={stats.contradictions}
             icon={IconAlertTriangle}
             color="text-warning"
@@ -211,3 +216,4 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => (
         />
     </div>
 );
+

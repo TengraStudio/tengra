@@ -8,9 +8,8 @@
  * (at your option) any later version.
  */
 
+import { appLogger } from '@system/utils/renderer-logger';
 import { useCallback, useRef } from 'react';
-
-import { appLogger } from '@/system/utils/renderer-logger';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -98,3 +97,4 @@ export function useWorkspaceProfiler() {
 
     return { onRender, getMetrics, getAllMetrics };
 }
+

@@ -128,3 +128,4 @@ export class KittyBackend implements ITerminalBackend {
         return null;
     }
 }
+

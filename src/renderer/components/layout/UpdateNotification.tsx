@@ -137,30 +137,30 @@ export const UpdateNotification: React.FC = () => {
     const stateConfigs = useMemo(() => getStateConfigs(t), [t]);
 
     useEffect(() => {
-        const handleUpdateStatus = (_event: IpcRendererEvent, newStatus: UpdateStatus) => {
-            appLogger.info('UpdateNotification', 'Update status received', newStatus);
-            setStatus(newStatus);
+        const removeListener = window.electron.update.onStatus((newStatus: RendererDataValue) => {
+            const status = newStatus as UpdateStatus;
+            appLogger.info('UpdateNotification', 'Update status received', status);
+            setStatus(status);
 
-            if (AUTO_SHOW_STATES.includes(newStatus.state)) {
+            if (AUTO_SHOW_STATES.includes(status.state)) {
                 setIsVisible(true);
             }
 
-            if (newStatus.state === 'not-available') {
+            if (status.state === 'not-available') {
                 setTimeout(() => setIsVisible(false), 3000);
             }
-        };
+        });
 
-        window.electron.ipcRenderer.on('update:status', handleUpdateStatus);
         return () => {
-            window.electron.ipcRenderer.removeAllListeners('update:status');
+            removeListener();
         };
     }, []);
 
     const handleDownload = () => {
-        void window.electron.ipcRenderer.invoke('update:download');
+        void window.electron.update.downloadUpdate();
     };
     const handleInstall = () => {
-        void window.electron.ipcRenderer.invoke('update:install');
+        void window.electron.update.installUpdate();
     };
     const handleDismiss = () => {
         setIsVisible(false);
@@ -257,3 +257,4 @@ const UpdateActions: React.FC<UpdateActionsProps> = ({ state, onDownload, onInst
 );
 
 UpdateNotification.displayName = 'UpdateNotification';
+

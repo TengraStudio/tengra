@@ -79,3 +79,4 @@ describe('TerminalWorkspaceIssuesTab', () => {
         expect(screen.getByText('// TODO: tighten validation')).toBeInTheDocument();
     });
 });
+

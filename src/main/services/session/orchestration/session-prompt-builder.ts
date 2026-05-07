@@ -103,3 +103,4 @@ function getCustomPrompt(settings: JsonObject, provider: string): string | undef
     }
     return undefined;
 }
+

@@ -183,6 +183,12 @@ export const EditorTab: React.FC<EditorTabProps> = ({
         };
     }, [settings]);
 
+    const [additionalOptionsDraft, setAdditionalOptionsDraft] = useState('');
+
+    React.useEffect(() => {
+        setAdditionalOptionsDraft(editorSettings?.additionalOptionsString ?? '');
+    }, [editorSettings?.additionalOptionsString]);
+
     if (!settings || !editorSettings) {
         return null;
     }
@@ -580,12 +586,16 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 <div className="group relative">
                                     <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-transparent rounded-2xl blur opacity-0 transition group-hover:opacity-100" />
                                     <Textarea
-                                        key={editorSettings.additionalOptionsString}
-                                        defaultValue={editorSettings.additionalOptionsString}
-                                        onBlur={event => {
-                                            void updateEditor({
-                                                additionalOptions: parseAdditionalOptions(event.target.value),
-                                            });
+                                        value={additionalOptionsDraft}
+                                        onChange={event => {
+                                            const nextValue = event.target.value;
+                                            setAdditionalOptionsDraft(nextValue);
+                                            const parsed = parseAdditionalOptions(nextValue);
+                                            if (nextValue.trim().length === 0 || parsed !== undefined) {
+                                                void updateEditor({
+                                                    additionalOptions: parsed,
+                                                });
+                                            }
                                         }}
                                         rows={8}
                                         spellCheck={false}
@@ -667,3 +677,4 @@ export const EditorTab: React.FC<EditorTabProps> = ({
         </div>
     );
 };
+

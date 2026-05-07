@@ -79,3 +79,4 @@ describe('WorkspaceAgentConversation', () => {
         expect(screen.getByText('Here is the response')).toBeInTheDocument();
     });
 });
+

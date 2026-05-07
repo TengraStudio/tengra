@@ -42,3 +42,4 @@ describe('notification center health store', () => {
         expect(snapshot.pendingScheduledCount).toBe(1);
     });
 });
+

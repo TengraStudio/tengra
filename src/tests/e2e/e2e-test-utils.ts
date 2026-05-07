@@ -62,3 +62,4 @@ export async function settleVisualState(page: Page): Promise<void> {
         `
     });
 }
+

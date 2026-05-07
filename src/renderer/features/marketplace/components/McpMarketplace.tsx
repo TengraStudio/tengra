@@ -566,9 +566,10 @@ export function McpMarketplace({
         if (installingId) { return; }
         setInstallingId(item.id);
         try {
+            const inferredItemType = item.itemType ?? ('provider' in item ? 'model' : undefined);
             const result = item.itemType === 'extension'
                 ? await window.electron.extension.uninstall(item.id)
-                : await window.electron.marketplace.uninstall(item.id, item.itemType);
+                : await window.electron.marketplace.uninstall(item.id, inferredItemType as MarketplaceItem['itemType']);
             if (!result.success) {
                 throw new Error(result.error || t('frontend.marketplace.uninstallFailure'));
             }
@@ -716,14 +717,14 @@ function EmptyState({
     mode: MarketplaceMode
 }) {
     const modeKeyByMode: Record<MarketplaceMode, string> = {
-        mcp: 'marketplace.tabs.mcp',
-        extensions: 'marketplace.tabs.extensions',
-        skills: 'marketplace.tabs.skills',
-        themes: 'marketplace.tabs.themes',
-        models: 'marketplace.tabs.models',
-        prompts: 'marketplace.tabs.prompts',
-        languages: 'marketplace.tabs.languages',
-        iconPacks: 'marketplace.tabs.iconPacks',
+        mcp: 'frontend.marketplace.tabs.mcp',
+        extensions: 'frontend.marketplace.tabs.extensions',
+        skills: 'frontend.marketplace.tabs.skills',
+        themes: 'frontend.marketplace.tabs.themes',
+        models: 'frontend.marketplace.tabs.models',
+        prompts: 'frontend.marketplace.tabs.prompts',
+        languages: 'frontend.marketplace.tabs.languages',
+        iconPacks: 'frontend.marketplace.tabs.iconPacks',
     };
     return (
         <div className="py-32 flex flex-col items-center justify-center text-center">
@@ -788,3 +789,4 @@ function Pagination({
         </div>
     );
 }
+

@@ -246,3 +246,4 @@ export const ActivityBarLayout: React.FC<{
     };
 
 export default ActivityBar;
+

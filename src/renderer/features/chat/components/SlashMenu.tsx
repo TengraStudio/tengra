@@ -120,3 +120,4 @@ export const SlashMenu = React.memo(({ isOpen, onClose, query, onSelect, command
         </motion.div>
     );
 });
+

@@ -45,3 +45,4 @@ export function promptDialog(message: string, defaultValue?: string): string | n
     // This wrapper centralizes all prompt usage
     return window.prompt(message, defaultValue) || null;
 }
+

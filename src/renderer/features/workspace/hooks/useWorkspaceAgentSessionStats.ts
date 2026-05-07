@@ -12,34 +12,35 @@ import type { WorkspaceAgentSessionSummary } from '@shared/types/workspace-agent
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect } from 'react';
 
-import { refreshTelemetryForSession } from '../utils/workspace-agent-session-utils';
+import { refreshStatsForSession } from '../utils/workspace-agent-session-utils';
 
-interface UseWorkspaceAgentSessionTelemetryOptions {
+interface UseWorkspaceAgentSessionusageStatsOptions {
     currentSessionId: string | null;
     currentSession: WorkspaceAgentSessionSummary | null;
     setSessions: Dispatch<SetStateAction<WorkspaceAgentSessionSummary[]>>;
 }
 
-export function useWorkspaceAgentSessionTelemetry({
+export function useWorkspaceAgentSessionStats({
     currentSessionId,
     currentSession,
     setSessions,
-}: UseWorkspaceAgentSessionTelemetryOptions) {
-    const refreshTelemetry = useCallback(async (sessionId: string) => {
-        await refreshTelemetryForSession({
+}: UseWorkspaceAgentSessionusageStatsOptions) {
+    const refreshStats = useCallback(async (sessionId: string) => {
+        await refreshStatsForSession({
             sessionId,
             setSessions,
         });
     }, [setSessions]);
 
     useEffect(() => {
-        if (!currentSessionId || currentSession?.contextTelemetry) {
+        if (!currentSessionId || currentSession?.usageStats) {
             return;
         }
-        void Promise.resolve().then(() => refreshTelemetry(currentSessionId));
-    }, [currentSession?.contextTelemetry, currentSessionId, refreshTelemetry]);
+        void Promise.resolve().then(() => refreshStats(currentSessionId));
+    }, [currentSession?.usageStats, currentSessionId, refreshStats]);
 
     return {
-        refreshTelemetry,
+        refreshStats,
     };
 }
+

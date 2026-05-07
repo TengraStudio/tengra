@@ -3,12 +3,11 @@
  * Copyright (c) 2026 TengraStudio
  */
 
+import { appLogger } from '@main/logging/logger';
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { RuntimeValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
-
-import { appLogger } from '../logging/logger';
 
 /**
  * Early Boot IPC State Manager
@@ -110,6 +109,8 @@ class EarlyIpcManager {
             'ipc:contract:get': { version: 'boot', channels: [] },
             'extension:get-all': [],
             'model-registry:getAllModels': [],
+            'model-registry:get-installed': [],
+            'model-registry:get-remote': [],
             'model-downloader:history': { success: true, items: [] },
             'marketplace:check-live-updates': { success: true, data: [], installed: [], enabled: [], domains: {} },
             'db:getPrompts': [],
@@ -238,3 +239,4 @@ class EarlyIpcManager {
 }
 
 export const EarlyIpc = new EarlyIpcManager();
+

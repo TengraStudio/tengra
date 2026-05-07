@@ -46,9 +46,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     // Apply global appearances settings
     useEffect(() => {
         if (!settings?.general) { return; }
-        if (settings.general.theme) {
-            document.documentElement.setAttribute('data-theme', settings.general.theme);
-        }
         const fontPreset = resolveAppFontPreset();
         const typographyScale = resolveTypographyScale(settings.general.typographyScale);
         document.documentElement.style.setProperty('--font-sans', fontPreset.sans);
@@ -82,3 +79,4 @@ export function useSettings() {
     }
     return context;
 }
+

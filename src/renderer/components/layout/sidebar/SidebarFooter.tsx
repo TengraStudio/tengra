@@ -43,3 +43,4 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
 };
 
 SidebarFooter.displayName = 'SidebarFooter';
+

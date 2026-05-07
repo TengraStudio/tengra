@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { RUNTIME_CHANNELS } from '@shared/constants/ipc-channels';
 import type { RuntimeBootstrapExecutionResult } from '@shared/types/runtime-manifest';
 import { IpcRenderer } from 'electron';
 
@@ -20,9 +21,10 @@ export interface RuntimeBridge {
 
 export function createRuntimeBridge(ipc: IpcRenderer): RuntimeBridge {
     return {
-        getStatus: () => ipc.invoke('runtime:get-status'),
-        refreshStatus: () => ipc.invoke('runtime:refresh-status'),
-        repair: manifestUrl => ipc.invoke('runtime:repair', manifestUrl),
-        runComponentAction: componentId => ipc.invoke('runtime:run-component-action', componentId),
+        getStatus: () => ipc.invoke(RUNTIME_CHANNELS.GET_STATUS),
+        refreshStatus: () => ipc.invoke(RUNTIME_CHANNELS.REFRESH_STATUS),
+        repair: manifestUrl => ipc.invoke(RUNTIME_CHANNELS.REPAIR, manifestUrl),
+        runComponentAction: componentId => ipc.invoke(RUNTIME_CHANNELS.RUN_COMPONENT_ACTION, componentId),
     };
 }
+

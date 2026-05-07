@@ -30,3 +30,4 @@ describe('animation system', () => {
         expect(getAnimationDurationMs('emphasized', true)).toBe(0);
     });
 });
+

@@ -99,3 +99,4 @@ export function preloadViewResources(view: AppView): Promise<void> {
     preloadedViews.set(view, task);
     return task;
 }
+

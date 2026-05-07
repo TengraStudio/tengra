@@ -93,3 +93,4 @@ describe('BaseService', () => {
         expect(appLogger.error).toHaveBeenCalledWith('TestService', 'no error obj', undefined);
     });
 });
+
