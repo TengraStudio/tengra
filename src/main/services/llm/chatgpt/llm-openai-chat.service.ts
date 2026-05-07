@@ -49,6 +49,7 @@ export interface OpenAIBodyOptions {
     reasoningEffort?: string;
     workspaceRoot?: string;
     accountId?: string;
+    numCtx?: number;
     metadata?: Record<string, RuntimeValue>;
 }
 
@@ -56,6 +57,7 @@ export interface OpenAIBodyOptions {
 export interface OpenAIRequestContext {
     endpoint: string;
     apiKey: string;
+    numCtx?: number;
     signal?: AbortSignal;
     provider?: string;
     includeProviderHint?: boolean;
@@ -134,8 +136,8 @@ export class LLMOpenAIChatService {
         options: OpenAIBodyOptions,
         requestContext: OpenAIRequestContext
     ): Promise<OpenAIResponse> {
-        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
-        const body = this.buildOpenAIBody(messages, options);
+        const { endpoint, apiKey, numCtx, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
+        const body = this.buildOpenAIBody(messages, { ...options, numCtx });
         if (includeProviderHint && provider) {
             body.provider = provider;
         }
@@ -189,8 +191,8 @@ export class LLMOpenAIChatService {
         options: OpenAIBodyOptions,
         requestContext: OpenAIRequestContext
     ): AsyncGenerator<OpenAIStreamYield> {
-        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
-        const body = this.buildOpenAIBody(messages, options);
+        const { endpoint, apiKey, numCtx, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
+        const body = this.buildOpenAIBody(messages, { ...options, numCtx });
         if (includeProviderHint && provider) {
             body.provider = provider;
         }
@@ -247,6 +249,10 @@ export class LLMOpenAIChatService {
             messages: normalizedMessages,
             stream
         };
+
+        if (options.numCtx) {
+            body.num_ctx = options.numCtx;
+        }
 
         applyReasoningEffort(body, finalModel, systemMode, reasoningEffort);
         this.applyStreamOptions(body, stream, provider);

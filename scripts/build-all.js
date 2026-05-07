@@ -73,9 +73,50 @@ function parseArgs(argv) {
     };
 }
 
+function loadDotEnv() {
+    const envPath = path.join(PROJECT_ROOT, '.env');
+    if (!fs.existsSync(envPath)) {
+        return;
+    }
+
+    try {
+        const content = fs.readFileSync(envPath, 'utf8');
+        const lines = content.split('\n');
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) {
+                continue;
+            }
+
+            const equalsIndex = trimmed.indexOf('=');
+            if (equalsIndex > 0) {
+                const key = trimmed.slice(0, equalsIndex).trim();
+                let value = trimmed.slice(equalsIndex + 1).trim();
+
+                // Remove quotes if present
+                if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.slice(1, -1);
+                }
+
+                if (!process.env[key]) {
+                    process.env[key] = value;
+                }
+            }
+        }
+    } catch (error) {
+        stderr(`[DotEnv] Warning: Failed to load .env file: ${error.message}`);
+    }
+}
+
 function assertPublishCredentialsAvailable(options) {
     if (!options.isPublish) {
         return;
+    }
+
+    // Try loading from .env if not already in process.env
+    if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+        loadDotEnv();
     }
 
     if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN) {
@@ -83,8 +124,7 @@ function assertPublishCredentialsAvailable(options) {
     }
 
     throw new Error(
-        'Publish requested, but GH_TOKEN/GITHUB_TOKEN is not available in the process environment. ' +
-        'This script does not read .env files; provide the GitHub release token to the process that launches build:publish.'
+        'Publish requested, but GH_TOKEN/GITHUB_TOKEN is not available in the process environment or .env file.'
     );
 }
 

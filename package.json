@@ -1,6 +1,6 @@
 {
     "name": "tengra",
-    "version": "1.0.57",
+    "version": "1.0.58",
     "description": "Tengra - Your Personal AI Assistant",
     "main": "dist/main/main.js",
     "type": "commonjs",

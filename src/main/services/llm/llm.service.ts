@@ -59,6 +59,7 @@ export interface LLMChatOptions {
     reasoningEffort?: string;
     workspaceRoot?: string;
     accountId?: string;
+    numCtx?: number;
     metadata?: JsonObject;
     signal?: AbortSignal;
 }
@@ -345,6 +346,7 @@ export class LLMService {
                 {
                     endpoint,
                     apiKey: config.apiKey,
+                    numCtx: options.numCtx,
                     signal,
                     provider,
                     includeProviderHint: this.shouldIncludeProviderHint(config.baseUrl, provider),
@@ -399,6 +401,7 @@ export class LLMService {
             {
                 endpoint,
                 apiKey: config.apiKey,
+                numCtx: options.numCtx,
                 signal,
                 provider,
                 includeProviderHint: this.shouldIncludeProviderHint(config.baseUrl, provider),
@@ -467,7 +470,8 @@ export class LLMService {
                 persistImages: options?.persistImages,
                 signal: options?.signal,
                 workspaceRoot: options?.workspaceRoot,
-                accountId: options?.accountId
+                accountId: options?.accountId,
+                numCtx: (config as any).numCtx
             });
         }
     }
@@ -537,6 +541,7 @@ export class LLMService {
             n: options?.n,
             metadata: options?.metadata,
             accountId: options?.accountId,
+            numCtx: (config as any).numCtx,
         });
     }
 
@@ -770,10 +775,11 @@ export class LLMService {
         return compaction.messages;
     }
 
-    private async getRouteConfig(provider: string, model: string, tools?: ToolDefinition[], options?: { temperature?: number; workspaceRoot?: string; n?: number; metadata?: JsonObject; accountId?: string }) {
+    private async getRouteConfig(provider: string, model: string, tools?: ToolDefinition[], options?: { temperature?: number; workspaceRoot?: string; n?: number; metadata?: JsonObject; accountId?: string; numCtx?: number }) {
         const p = provider.toLowerCase();
         const temp = options?.temperature;
         const workspaceRoot = options?.workspaceRoot;
+        const numCtx = options?.numCtx;
 
         const buildProxyBaseUrl = () => {
             const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
@@ -801,7 +807,8 @@ export class LLMService {
             const settings = this.deps.settingsService.getSettings();
             const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://127.0.0.1:11434';
             const ollamaBaseUrl = `${(ollamaUrl as string).replace(/\/$/, '')}/v1`;
-            return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, workspaceRoot };
+            const resolvedNumCtx = numCtx ?? (settings['ollama'] as JsonObject | undefined)?.numCtx ?? 8192;
+            return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, workspaceRoot, numCtx: resolvedNumCtx };
         }
 
         if (p.includes('huggingface')) {

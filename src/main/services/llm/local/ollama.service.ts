@@ -344,13 +344,13 @@ export class OllamaService {
             provider: 'ollama'
         });
 
-        // If the model is a known large-context model, use that instead of the 16k/32k default
-        // We consider 16384 as the "legacy" default that we want to override if known better
-        if (resolved && (settings.ollama.numCtx === undefined || settings.ollama.numCtx <= 16384)) {
-            return Math.max(resolved, 32768); // Minimum 32k for agentic models
+        // If the model is a known large-context model, use that instead of the 8k default
+        // We consider 8192 as the "standard" default that we want to override if known better
+        if (resolved && (settings.ollama.numCtx === undefined || settings.ollama.numCtx <= 8192)) {
+            return Math.max(resolved, 8192); // Minimum 8k for agentic models
         }
 
-        return settings.ollama.numCtx || 32768; // Default to 32k instead of 16k
+        return settings.ollama.numCtx || 8192; // Default to 8k instead of 32k
     }
 
     @ipc(OLLAMA_CHANNELS.CHAT)

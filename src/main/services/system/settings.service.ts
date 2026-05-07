@@ -91,7 +91,7 @@ const AppSettingsSchema = z.object({
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
         url: 'http://127.0.0.1:11434',
-        numCtx: 16384,
+        numCtx: 8192,
         orchestrationPolicy: 'auto',
     },
     llama: {
