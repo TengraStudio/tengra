@@ -153,7 +153,7 @@ describe('ProxyService', () => {
                 return mockReq;
             });
 
-            const res = (await proxyService.initiateCopilotAuth('copilot')) as DeviceCodeResponse;
+            const res = (await proxyService.initiateCopilotAuth()) as DeviceCodeResponse;
             expect(res.device_code).toBe('123');
         });
 
@@ -193,7 +193,7 @@ describe('ProxyService', () => {
                 return mockReq;
             });
 
-            const result = await proxyService.waitForCopilotToken('device-code', 5, 'copilot');
+            const result = await proxyService.waitForCopilotToken('device-code', 5);
 
             expect(result.refresh_token).toBe('ghr_token');
             expect(result.session_token).toBe('ghs_token');

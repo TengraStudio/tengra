@@ -47,8 +47,8 @@ describe('Preload contract regression', () => {
         const ipc = createIpcRendererMock();
         const bridge = createAuthBridge(ipc as never);
 
-        await bridge.copilotLogin('copilot');
-        await bridge.pollToken('device', 5, 'copilot');
+        await bridge.copilotLogin();
+        await bridge.pollToken('device', 5);
 
         expect(ipc.invoke).toHaveBeenCalledWith('auth:copilot-login', 'profile');
         expect(ipc.invoke).toHaveBeenCalledWith('auth:poll-token', 'device', 5, 'copilot');

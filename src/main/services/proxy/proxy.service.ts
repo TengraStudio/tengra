@@ -807,12 +807,11 @@ export class ProxyService extends BaseService {
   }
 
   /**
-   * Initiates Copilot device code OAuth flow.
-   * @param appId - OAuth app to use
+   * Initiates Copilot device code OAuth flow. 
    * @returns Device code response for user authorization
    */
-  async initiateCopilotAuth(appId: 'copilot' = 'copilot'): Promise<DeviceCodeResponse> {
-    this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_INITIATED, { provider: 'copilot', appId });
+  async initiateCopilotAuth(): Promise<DeviceCodeResponse> {
+    this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_INITIATED, { provider: 'copilot' });
     
     const response = await this.makeRequest<{
       device_code: string;
@@ -828,7 +827,7 @@ export class ProxyService extends BaseService {
     );
 
     if (typeof response === 'object' && response !== null && 'error' in response && response.error) {
-      this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_FAILED, { provider: 'copilot', appId, error: response.error as string });
+      this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_FAILED, { provider: 'copilot', error: response.error as string });
       throw new Error(`Copilot auth initiation failed: ${response.error}`);
     }
 
@@ -853,11 +852,10 @@ export class ProxyService extends BaseService {
    * Polls for Copilot OAuth token after device code authorization.
    * @param deviceCode - Device code from initiateCopilotAuth
    * @param interval - Poll interval in seconds
-   * @param appId - OAuth app identifier
    * @returns Token response
    * @throws ValidationError if inputs invalid
    */
-  async waitForCopilotToken(deviceCode: string, interval: number, appId: 'copilot' = 'copilot'): Promise<TokenResponse> {
+  async waitForCopilotToken(deviceCode: string, interval: number): Promise<TokenResponse> {
     const codeError = validateToken(deviceCode, 'Device code');
     if (codeError) {
       throw new ValidationError(`waitForCopilotToken: ${codeError}`);
@@ -880,7 +878,7 @@ export class ProxyService extends BaseService {
         copilot_plan?: string;
         error?: string;
       }>(
-        `/v0/auth/copilot/poll?device_code=${encodeURIComponent(deviceCode)}&provider=${encodeURIComponent(appId)}`,
+        `/v0/auth/copilot/poll?device_code=${encodeURIComponent(deviceCode)}&provider=copilot`,
         await this.getRuntimeProxyApiKey(),
         'GET',
         undefined
@@ -905,16 +903,16 @@ export class ProxyService extends BaseService {
       const errorMsg = (typeof response === 'object' && response !== null && 'error' in response) ? response.error as string : undefined;
       const lowerError = errorMsg?.toLowerCase() || '';
 
-      appLogger.debug('ProxyService', `waitForCopilotToken [${appId}]: checkToken received errorMsg="${errorMsg}"`);
+      appLogger.debug('ProxyService', `waitForCopilotToken: checkToken received errorMsg="${errorMsg}"`);
 
       if (lowerError.includes('authorization_pending') || lowerError.includes('slow_down')) {
-        appLogger.info('ProxyService', `waitForCopilotToken [${appId}]: ${lowerError}, retrying in ${interval + 1}s...`);
+        appLogger.info('ProxyService', `waitForCopilotToken: ${lowerError}, retrying in ${interval + 1}s...`);
         // Wait and try again
         await new Promise(r => setTimeout(r, (interval + 1) * 1000));
         return checkToken();
       }
 
-      appLogger.error('ProxyService', `waitForCopilotToken [${appId}]: Failed with error: ${errorMsg || 'Unknown error'}`);
+      appLogger.error('ProxyService', `waitForCopilotToken: Failed with error: ${errorMsg || 'Unknown error'}`);
       throw new Error(errorMsg || 'Authentication failed');
     };
 

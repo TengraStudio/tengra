@@ -212,14 +212,14 @@ export const webElectronMock: ElectronAPI = {
     toggleCompact: (enabled: boolean) => appLogger.warn('WebBridge', `toggleCompact called in mock mode with: ${enabled}`),
 
     auth: {
-        copilotLogin: async (_appId?: 'copilot') => ({
+        copilotLogin: async () => ({
             device_code: '123',
             user_code: 'ABC',
             verification_uri: 'http://localhost',
             expires_in: 900,
             interval: 5,
         }),
-        pollToken: async (_deviceCode: string, _interval: number, _appId?: 'copilot') => ({
+        pollToken: async (_deviceCode: string, _interval: number) => ({
             success: true,
             account: {
                 id: 'mock-id',

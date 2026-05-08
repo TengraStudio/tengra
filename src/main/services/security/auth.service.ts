@@ -336,20 +336,20 @@ export class AuthService extends BaseService {
     // --- Provider Methods ---
 
     @ipc(AUTH_CHANNELS.COPILOT_LOGIN)
-    async copilotLogin(appId: 'copilot' = 'copilot') {
+    async copilotLogin() {
         if (!this.proxyService) {
             throw new Error('ProxyService not initialized in AuthService');
         }
-        return await this.proxyService.initiateCopilotAuth(appId);
+        return await this.proxyService.initiateCopilotAuth();
     }
 
     @ipc(AUTH_CHANNELS.POLL_TOKEN)
-    async pollToken(deviceCode: string, interval: number, appId: 'copilot' = 'copilot') {
+    async pollToken(deviceCode: string, interval: number) {
         try {
             if (!this.proxyService) {
                 throw new Error('ProxyService not initialized in AuthService');
             }
-            const response = await this.proxyService.waitForCopilotToken(deviceCode, interval, appId);
+            const response = await this.proxyService.waitForCopilotToken(deviceCode, interval);
             const token = response.access_token;
             const provider = 'copilot';
 
