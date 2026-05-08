@@ -24,8 +24,8 @@ const RUNTIME_MANIFESTS_FOLDER = 'manifests';
 const ASSETS_BIN_FOLDER = path.join('assets', 'bin');
 const BUNDLED_BIN_FOLDERS = [
     path.join(process.resourcesPath || '', ASSETS_BIN_FOLDER),
-    path.join(app.getAppPath(), ASSETS_BIN_FOLDER),
-    path.join(path.dirname(app.getPath('exe')), 'resources', ASSETS_BIN_FOLDER),
+    path.join(app?.getAppPath?.() || process.cwd(), ASSETS_BIN_FOLDER),
+    path.join(path.dirname(app?.getPath?.('exe') || process.cwd()), 'resources', ASSETS_BIN_FOLDER),
     path.join(process.cwd(), ASSETS_BIN_FOLDER),
 ];
 

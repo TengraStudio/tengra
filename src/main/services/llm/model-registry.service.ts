@@ -782,7 +782,7 @@ export class ModelRegistryService extends BaseService {
             requestedProvider = 'codex';
         } else if (normalizedRawProvider === 'claude' || normalizedRawProvider === 'anthropic') {
             requestedProvider = 'claude';
-        } else if (normalizedRawProvider === 'copilot') {
+        } else if (normalizedRawProvider === 'copilot' || normalizedRawProvider === 'github') {
             requestedProvider = 'copilot';
         } else if (normalizedRawProvider === 'cursor') {
             requestedProvider = 'cursor';
@@ -927,6 +927,9 @@ export class ModelRegistryService extends BaseService {
         }
         if (raw === 'nvidia_key' || raw === 'nim' || raw === 'nim_openai') {
             return 'nvidia';
+        }
+        if (raw === 'github') {
+            return 'copilot';
         }
 
         if (raw === '' || !ModelRegistryService.KNOWN_PROVIDER_IDS.has(raw)) {

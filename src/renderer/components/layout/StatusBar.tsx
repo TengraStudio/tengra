@@ -18,6 +18,7 @@ import React, { createContext, useCallback, useContext, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useAnalyzing, useWorkspaceDiagnosticCounts } from '@/store/diagnostics.store';
 
 export interface StatusBarItem {
     id: string;
@@ -116,8 +117,9 @@ const StatusBarItemView: React.FC<{
 // Main Status Bar Component
 export const StatusBar: React.FC<{
     className?: string;
+    workspaceId?: string;
     variant?: 'default' | 'primary' | 'warning' | 'error';
-}> = ({ className, variant = 'default' }) => {
+}> = ({ className, workspaceId, variant = 'default' }) => {
     const { leftItems, rightItems } = useStatusBar();
     const variantClass = {
         default: 'bg-primary/90',
@@ -136,6 +138,8 @@ export const StatusBar: React.FC<{
         >
             {/* Left section */}
             <div className="flex items-center">
+                <AnalysisStatus workspaceId={workspaceId} />
+                <GlobalDiagnosticCounts workspaceId={workspaceId} />
                 {leftItems.map(item => (
                     <StatusBarItemView key={item.id} item={item} />
                 ))}
@@ -227,6 +231,27 @@ export const LoadingStatus: React.FC<{
     );
 };
 
+export const AnalysisStatus: React.FC<{
+    workspaceId: string | undefined;
+}> = ({ workspaceId }) => {
+    const { t } = useTranslation();
+    const analyzing = useAnalyzing(workspaceId);
+
+    if (!analyzing) {
+        return null;
+    }
+
+    return (
+        <div className="flex items-center gap-1.5 px-2 py-0.5 typo-overline text-foreground/80">
+            <div className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground/40 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-foreground/60"></span>
+            </div>
+            <span>{t('frontend.statusBar.analyzing')}</span>
+        </div>
+    );
+};
+
 export const ErrorStatus: React.FC<{
     count: number;
     onClick?: () => void;
@@ -294,6 +319,16 @@ export const ModelStatus: React.FC<{
         <span>{model}</span>
     </div>
 );
+
+const GlobalDiagnosticCounts: React.FC<{ workspaceId: string | undefined }> = ({ workspaceId }) => {
+    const { errors, warnings } = useWorkspaceDiagnosticCounts(workspaceId);
+    return (
+        <div className="flex items-center">
+            <ErrorStatus count={errors} />
+            <WarningStatus count={warnings} />
+        </div>
+    );
+};
 
 export default StatusBar;
 

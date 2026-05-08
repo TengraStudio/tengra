@@ -73,7 +73,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
                 detected: false,
                 running: false,
                 action: 'install',
-                message: t('auto.ollamaIsNotInstalled'),
+                message: t('backend.ollamaIsNotInstalled'),
                 messageKey: ExternalRuntimeDependencyService.MESSAGE_KEY.OLLAMA_NOT_INSTALLED,
             };
         }
@@ -83,7 +83,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
                 detected: true,
                 running: false,
                 action: 'start',
-                message: t('auto.ollamaIsInstalledButNotRunning'),
+                message: t('backend.ollamaIsInstalledButNotRunning'),
                 messageKey: ExternalRuntimeDependencyService.MESSAGE_KEY.OLLAMA_NOT_RUNNING,
             };
         }
@@ -92,7 +92,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
             detected: true,
             running: true,
             action: 'none',
-            message: t('auto.ollamaIsInstalledAndRunning'),
+            message: t('backend.ollamaIsInstalledAndRunning'),
             messageKey: ExternalRuntimeDependencyService.MESSAGE_KEY.OLLAMA_RUNNING,
         };
     }
@@ -118,7 +118,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
                     detected: true,
                     running: false,
                     action: 'none',
-                    message: t('auto.stableDiffusionCppRuntimeIsInstalled'),
+                    message: t('backend.stableDiffusionCppRuntimeIsInstalled'),
                 };
             }
         }
@@ -127,7 +127,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
             detected: false,
             running: false,
             action: 'install',
-            message: t('auto.stableDiffusionCppRuntimeIsNotInstalled'),
+            message: t('backend.stableDiffusionCppRuntimeIsNotInstalled'),
         };
     }
 

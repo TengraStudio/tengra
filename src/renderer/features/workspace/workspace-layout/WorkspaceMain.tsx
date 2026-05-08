@@ -14,7 +14,10 @@ import {
     Suspense,
     useEffect,
     useRef,
+    useState,
 } from 'react';
+
+import { MarkdownPreview } from '@/features/workspace/workspace-explorer/MarkdownPreview';
 
 import { LazyWorkspaceEditor, LoadingSpinner } from '@/components/lazy';
 import { EditorTabs } from '@/features/workspace/workspace-explorer/EditorTabs';
@@ -88,6 +91,7 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
     onOpenFile,
     editorBottomInsetPx = 0,
 }) => {
+    const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
     useEffect(() => {
@@ -123,6 +127,13 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
         setDashboardTab('files');
     };
 
+    // Close preview if tab changes to a non-markdown file
+    useEffect(() => {
+        if (showMarkdownPreview && (!activeTab || !activeTab.name.toLowerCase().endsWith('.md'))) {
+            setShowMarkdownPreview(false);
+        }
+    }, [activeTab, showMarkdownPreview]);
+
     return (
         <div
             className="flex-1 flex flex-col min-w-0 bg-background relative"
@@ -132,6 +143,7 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
             {openTabs.length > 0 && dashboardTab === 'editor' && (
                 <div className="z-20 relative">
                     <EditorTabs
+                        workspaceId={workspace.id}
                         openTabs={openTabs}
                         activeTabId={activeTabId}
                         setActiveTabId={setActiveEditorTabId}
@@ -146,6 +158,8 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
                         revealTabInExplorer={revealTabInExplorer}
                         workspacePath={workspace.path}
                         onOpenFile={onOpenFile}
+                        showMarkdownPreview={showMarkdownPreview}
+                        onToggleMarkdownPreview={() => setShowMarkdownPreview(!showMarkdownPreview)}
                         t={t}
                     />
                 </div>
@@ -154,22 +168,32 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
             <div className="flex-1 relative overflow-hidden">
                 <div
                     className={cn(
-                        'absolute inset-0 z-0',
+                        'absolute inset-0 z-0 flex',
                         dashboardTab !== 'editor' && 'pointer-events-none opacity-0'
                     )}
                 >
-                    <LazyWorkspaceEditor
-                        activeTab={activeTab}
-                        updateTabContent={(content) => activeTab && updateTabContent(activeTab.id, content)}
-                        saveActiveTab={saveActiveTab}
-                        autoSaveEnabled={Boolean(workspace.advancedOptions?.autoSave)}
-                        workspaceKey={workspace.id}
-                        workspacePath={workspace.path}
-                        workspaceEditorSettings={workspace.editor}
-                        editorBottomInsetPx={editorBottomInsetPx}
-                        onOpenFile={onOpenFile}
-                        emptyState={null}
-                    />
+                    <div className={cn("relative transition-all duration-300 ease-in-out", showMarkdownPreview ? "w-1/2 border-r border-border/40" : "w-full")}>
+                        <LazyWorkspaceEditor
+                            activeTab={activeTab}
+                            updateTabContent={(content) => activeTab && updateTabContent(activeTab.id, content)}
+                            saveActiveTab={saveActiveTab}
+                            autoSaveEnabled={Boolean(workspace.advancedOptions?.autoSave)}
+                            workspaceKey={workspace.id}
+                            workspacePath={workspace.path}
+                            workspaceEditorSettings={workspace.editor}
+                            editorBottomInsetPx={editorBottomInsetPx}
+                            onOpenFile={onOpenFile}
+                            emptyState={null}
+                        />
+                    </div>
+                    {showMarkdownPreview && activeTab && (
+                        <div className="w-1/2 animate-in slide-in-from-right-4 duration-300 ease-in-out">
+                            <MarkdownPreview 
+                                content={activeTab.content} 
+                                t={t} 
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {dashboardTab !== 'editor' && (

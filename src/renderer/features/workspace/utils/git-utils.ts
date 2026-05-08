@@ -9,6 +9,7 @@
  */
 
 import { CommonBatches } from '@/utils/ipc-batch.util';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { DiffStats, GitData, Remote, TrackingInfo } from '../components/git/types';
 
@@ -28,6 +29,8 @@ export interface GitSectionErrors {
     remotes: string | null;
     commits: string | null;
     changes: string | null;
+    pullRequests: string | null;
+    issues: string | null;
 }
 
 export const emptyGitData: GitData = {
@@ -184,6 +187,8 @@ const extractSectionErrors = ({
             })
             .filter((value): value is string => value !== null)
             .join(', '),
+    pullRequests: null,
+    issues: null,
 });
 
 export async function fetchFullGitData(workspacePath: string): Promise<FullGitData | null> {
@@ -217,5 +222,65 @@ export async function fetchFullGitData(workspacePath: string): Promise<FullGitDa
             diffStatsResult
         })
     };
+}
+
+export async function fetchGitHubData(workspacePath: string, remotes: Remote[], type: 'pulls' | 'issues') {
+    const origin = remotes.find(r => r.name === 'origin') || remotes[0];
+    if (!origin || !origin.url.includes('github.com')) {
+        return { success: false, error: 'No GitHub remote found' };
+    }
+
+    try {
+        return await window.electron.git.getGitHubData(origin.url, type);
+    } catch (error) {
+        appLogger.error('git-utils', `Failed to fetch GitHub ${type}`, error as Error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+export async function fetchGitHubPrDetails(workspacePath: string, remotes: Remote[], prNumber: number) {
+    const origin = remotes.find(r => r.name === 'origin') || remotes[0];
+    if (!origin || !origin.url.includes('github.com')) {
+        return { success: false, error: 'No GitHub remote found' };
+    }
+
+    try {
+        return await window.electron.git.getGitHubPrDetails(origin.url, prNumber);
+    } catch (error) {
+        appLogger.error('git-utils', `Failed to fetch GitHub PR details #${prNumber}`, error as Error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+export async function updateGitHubPrState(workspacePath: string, remotes: Remote[], prNumber: number, state: 'open' | 'closed') {
+    const origin = remotes.find(r => r.name === 'origin') || remotes[0];
+    if (!origin || !origin.url.includes('github.com')) {
+        return { success: false, error: 'No GitHub remote found' };
+    }
+
+    try {
+        return await window.electron.git.updateGitHubPrState(origin.url, prNumber, state);
+    } catch (error) {
+        appLogger.error('git-utils', `Failed to update GitHub PR state #${prNumber}`, error as Error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+export async function mergeGitHubPr(repoUrl: string, prNumber: number) {
+    try {
+        return await window.electron.git.mergeGitHubPr(repoUrl, prNumber);
+    } catch (error) {
+        appLogger.error('git-utils', `Failed to merge GitHub PR #${prNumber}`, error as Error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+export async function approveGitHubPr(repoUrl: string, prNumber: number) {
+    try {
+        return await window.electron.git.approveGitHubPr(repoUrl, prNumber);
+    } catch (error) {
+        appLogger.error('git-utils', `Failed to approve GitHub PR #${prNumber}`, error as Error);
+        return { success: false, error: (error as Error).message };
+    }
 }
 

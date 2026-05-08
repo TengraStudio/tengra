@@ -245,8 +245,8 @@ export const BUILTIN_TEMPLATES: PromptTemplate[] = [
 Provide detailed feedback with specific line references where applicable.`,
         variables: [
             { name: 'language', type: 'string', defaultValue: 'typescript', placeholder: 'programming language' },
-            { name: 'code', type: 'textarea', required: true, placeholder: t('auto.pasteYourCodeHere') },
-            { name: 'focus', type: 'textarea', placeholder: t('auto.anySpecificAreasToFocusOn') }
+            { name: 'code', type: 'textarea', required: true, placeholder: t('backend.pasteYourCodeHere') },
+            { name: 'focus', type: 'textarea', placeholder: t('backend.anySpecificAreasToFocusOn') }
         ],
         category: 'development',
         tags: ['code', 'review', 'quality'],
@@ -256,7 +256,7 @@ Provide detailed feedback with specific line references where applicable.`,
     {
         id: 'explain-code',
         name: 'Explain Code',
-        description: t('auto.getADetailedExplanationOfCode'),
+        description: t('backend.getADetailedExplanationOfCode'),
         template: `Explain the following {{language}} code in detail:
 
 \`\`\`{{language}}
@@ -283,7 +283,7 @@ Target explanation level: {{level|intermediate}}`,
     {
         id: 'write-tests',
         name: 'Write Unit Tests',
-        description: t('auto.generateUnitTestsForCode'),
+        description: t('backend.generateUnitTestsForCode'),
         template: `Write comprehensive unit tests for the following {{language}} code using {{framework}}:
 
 \`\`\`{{language}}
@@ -339,7 +339,7 @@ Provide the refactored code with explanations for each change.`,
     {
         id: 'summarize',
         name: 'Summarize Text',
-        description: t('auto.createAConciseSummary'),
+        description: t('backend.createAConciseSummary'),
         template: `Summarize the following text in {{length}} format:
 
 {{text}}
@@ -358,7 +358,7 @@ Output format: {{format|bullet points}}`,
     {
         id: 'translate',
         name: 'Translate Text',
-        description: t('auto.translateTextBetweenLanguages'),
+        description: t('backend.translateTextBetweenLanguages'),
         template: `Translate the following text from {{source}} to {{target}}:
 
 {{text}}

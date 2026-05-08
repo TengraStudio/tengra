@@ -473,6 +473,10 @@ async function main() {
             results.push(...await runPackaging(options));
         }
 
+        if (options.isPublish) {
+            results.push(await runCommand('node', ['scripts/publish-manifest.js'], 'PublishManifest'));
+        }
+
         printTimings(results);
 
         const duration = ((Date.now() - startedAt) / 1000).toFixed(2);

@@ -202,7 +202,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'constraint',
                 severity: 'improvement',
-                message: t('auto.addConstraintsLikeLengthLimitsScopeOrWha'),
+                message: t('backend.addConstraintsLikeLengthLimitsScopeOrWha'),
                 suggestedText: 'Constraints: Keep the response under [N] words. Do not include [IconX].',
             });
         }
@@ -218,7 +218,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'format',
                 severity: 'info',
-                message: t('auto.specifyTheDesiredOutputFormatEgJsonBulle'),
+                message: t('backend.specifyTheDesiredOutputFormatEgJsonBulle'),
                 suggestedText: 'Output format: Respond as a numbered list.',
             });
         }
@@ -234,7 +234,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'specificity',
                 severity: 'warning',
-                message: t('auto.promptIsQuiteShortAddingMoreDetailTypica'),
+                message: t('backend.promptIsQuiteShortAddingMoreDetailTypica'),
             });
         }
     }
@@ -258,7 +258,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'structure',
                 severity: 'warning',
-                message: t('auto.longPromptWithoutClearStructureAddHeadin'),
+                message: t('backend.longPromptWithoutClearStructureAddHeadin'),
             });
         }
     }
@@ -273,7 +273,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'specificity',
                 severity: 'info',
-                message: t('auto.considerAddingExamplesToClarifyTheExpect'),
+                message: t('backend.considerAddingExamplesToClarifyTheExpect'),
                 suggestedText: 'Example: Input: [sample] → Output: [expected]',
             });
         }
@@ -359,11 +359,11 @@ export class PromptOptimizerService extends BaseService {
     private calculateScore(stats: PromptStats, suggestions: PromptSuggestion[]): number {
         let score = 50;
 
-        if (stats.hasContext) {score += 15;}
-        if (stats.hasConstraints) {score += 10;}
-        if (stats.hasExamples) {score += 10;}
-        if (stats.hasOutputFormat) {score += 10;}
-        if (stats.wordCount >= 20 && stats.wordCount <= 500) {score += 5;}
+        if (stats.hasContext) { score += 15; }
+        if (stats.hasConstraints) { score += 10; }
+        if (stats.hasExamples) { score += 10; }
+        if (stats.hasOutputFormat) { score += 10; }
+        if (stats.wordCount >= 20 && stats.wordCount <= 500) { score += 5; }
 
         const warningCount = suggestions.filter(s => s.severity === 'warning').length;
         const improvementCount = suggestions.filter(s => s.severity === 'improvement').length;

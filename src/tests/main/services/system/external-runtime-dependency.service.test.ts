@@ -47,7 +47,7 @@ describe('ExternalRuntimeDependencyService', () => {
             detected: true,
             running: true,
             action: 'none',
-            message: 'auto.ollamaIsInstalledAndRunning',
+            message: 'ollamaIsInstalledAndRunning',
             messageKey: 'runtime.health.ollama.running',
         });
     });
@@ -74,7 +74,7 @@ describe('ExternalRuntimeDependencyService', () => {
             detected: false,
             running: false,
             action: 'install',
-            message: 'auto.ollamaIsNotInstalled',
+            message: 'ollamaIsNotInstalled',
             messageKey: 'runtime.health.ollama.notInstalled',
         });
     });
@@ -90,7 +90,7 @@ describe('ExternalRuntimeDependencyService', () => {
             detected: true,
             running: false,
             action: 'start',
-            message: 'auto.ollamaIsInstalledButNotRunning',
+            message: 'ollamaIsInstalledButNotRunning',
             messageKey: 'runtime.health.ollama.notRunning',
         });
     });

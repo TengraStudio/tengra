@@ -96,10 +96,10 @@ export class FeatureFlagService extends BaseService {
 
     /** Default feature flags for council modules */
     private defaults: FeatureFlag[] = [
-        { id: 'council.planning', enabled: true, description: t('auto.enableCouncilPlanGeneration') },
-        { id: 'council.routing', enabled: true, description: t('auto.enableQuotaawareRouting') },
-        { id: 'council.teamwork', enabled: true, description: t('auto.enableMultiagentTeamworkreassignment') },
-        { id: 'council.recovery', enabled: true, description: t('auto.enableCrashsafeRecovery') },
+        { id: 'council.planning', enabled: true, description: t('backend.enableCouncilPlanGeneration') },
+        { id: 'council.routing', enabled: true, description: t('backend.enableQuotaawareRouting') },
+        { id: 'council.teamwork', enabled: true, description: t('backend.enableMultiagentTeamworkreassignment') },
+        { id: 'council.recovery', enabled: true, description: t('backend.enableCrashsafeRecovery') },
         { id: 'council.governance', enabled: true, description: 'Enable model governance enforcement' }
     ];
 

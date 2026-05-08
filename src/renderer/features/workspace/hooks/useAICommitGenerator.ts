@@ -29,21 +29,46 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
         setIsGenerating(true);
 
         try {
-            // 1. Get Staged Diff
+            // 1. Get Workspace Status
+            const statusResult = await window.electron.git.getDetailedStatus(workspacePath);
+            const changedFiles = statusResult.success ? [
+                ...(statusResult.staged || []),
+                ...(statusResult.unstaged || []),
+                ...(statusResult.untracked || [])
+            ] : [];
+
+            if (changedFiles.length === 0) {
+                setIsGenerating(false);
+                return "No changes found to generate a commit message.";
+            }
+
+            // 2. Get Staged Diff
             let diffResult = await window.electron.git.getStagedDiff(workspacePath);
             let diffText = diffResult.success ? diffResult.diff.trim() : '';
 
             if (!diffText) {
-                // Fallback to unstaged changes (git diff HEAD) if nothing is staged
-                const headDiff = await window.electron.git.runControlledOperation(workspacePath, 'git diff HEAD', 'diff-head-' + Date.now(), 5000);
-                if (headDiff.success && headDiff.stdout) {
-                    diffText = headDiff.stdout.trim();
+                // Fallback to all changes (unstaged + staged)
+                const fullDiff = await window.electron.git.runControlledOperation(
+                    workspacePath, 
+                    'git diff HEAD', 
+                    'diff-full-' + Date.now(), 
+                    10000
+                );
+                if (fullDiff.success && fullDiff.stdout) {
+                    diffText = fullDiff.stdout.trim();
                 }
             }
 
-            if (!diffText) {
+            // Include untracked files in the context if they exist
+            const untrackedFiles = statusResult.untracked || [];
+            let untrackedContext = '';
+            if (untrackedFiles.length > 0) {
+                untrackedContext = `\nUntracked files (new):\n${untrackedFiles.map(f => `- ${f.path}`).join('\n')}`;
+            }
+
+            if (!diffText && untrackedFiles.length === 0) {
                 setIsGenerating(false);
-                return "No changes found to generate a commit message.";
+                return "No content changes found to generate a commit message.";
             }
 
             // 2. Fetch Models and Quotas
@@ -137,21 +162,28 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
             }
 
             // 5. Generate
-            const prompt = `You are an expert developer. Analyze the following git diff and generate a precise, descriptive commit message.
+            const fileList = changedFiles.map(f => `- ${f.path} (${f.status})`).join('\n');
+            const prompt = `You are an expert developer. Analyze the following changes in the workspace and generate a precise, descriptive commit message.
+
+Workspace Changes:
+${fileList}
+${untrackedContext}
+
+Diff Analysis:
+${diffText || 'No diff available (only untracked files).'}
 
 Requirements:
 1. Use the conventional commit format: <type>(<optional-scope>): <subject>
 2. The subject should be a concise summary (max 50 chars) in the imperative mood.
-3. If the changes are complex, add a blank line and provide a brief bulleted list explaining the *why* and *what* of the changes.
-4. Output ONLY the commit message. No markdown blocks, no greetings.
-
-Diff to analyze:
-${diffText}`;
+3. Be specific. Instead of "update files", say "refactor user authentication logic" or "add validation to registration form".
+4. If the changes are complex or cover multiple areas, add a blank line and provide a brief bulleted list explaining the *why* and *what* of the changes.
+5. Output ONLY the commit message. No markdown blocks, no greetings.`;
 
             const response = await window.electron.session.conversation.complete({
                 messages: [{ role: 'user', content: prompt, id: 'commit-gen-' + Date.now(), timestamp: new Date() }],
                 model: targetModel.id || '',
                 provider: selectedProvider.provider,
+                accountId: selectedProvider.accountId,
             });
 
             if (!response.content) {

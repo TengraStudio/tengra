@@ -166,7 +166,8 @@ export class CommandService {
                 cwd: options.cwd ?? process.cwd(),
                 timeout: options.timeout ?? this.maxTimeout,
                 shell: executionContext.shell,
-                maxBuffer: 10 * 1024 * 1024
+                maxBuffer: 10 * 1024 * 1024,
+                windowsHide: true
             }, (error, stdout, stderr) => {
                 this.activeProcesses.delete(options.id);
 
@@ -220,7 +221,8 @@ export class CommandService {
                 cwd: options?.cwd ?? process.cwd(),
                 timeout: options?.timeout ?? this.maxTimeout,
                 shell: executionContext.shell,
-                maxBuffer: 10 * 1024 * 1024
+                maxBuffer: 10 * 1024 * 1024,
+                windowsHide: true
             });
             return { success: true, stdout: stdout.trim(), stderr: stderr.trim(), exitCode: 0 };
         } catch (error) {
@@ -260,10 +262,21 @@ export class CommandService {
                 return;
             }
 
-            const child = spawn(parsed.executable, parsed.args, {
+            let spawnCommand = parsed.executable;
+            let spawnArgs = parsed.args;
+            let useShell = false;
+
+            if (process.platform === 'win32' && (parsed.executable.toLowerCase().endsWith('.cmd') || parsed.executable.toLowerCase().endsWith('.bat'))) {
+                spawnCommand = process.env.ComSpec || 'cmd.exe';
+                spawnArgs = ['/d', '/s', '/c', parsed.executable, ...parsed.args];
+                useShell = false;
+            }
+
+            const child = spawn(spawnCommand, spawnArgs, {
                 cwd: options?.cwd ?? process.cwd(),
-                shell: false,
-                stdio: ['ignore', 'pipe', 'pipe']
+                shell: useShell,
+                stdio: ['ignore', 'pipe', 'pipe'],
+                windowsHide: true
             });
 
             if (options?.id) {

@@ -89,7 +89,7 @@ export function createTerminalBridge(ipc: IpcRenderer): TerminalBridge {
         getBackends: () => ipc.invoke(TERMINAL_CHANNELS.GET_BACKENDS),
         getDiscoverySnapshot: options => ipc.invoke(TERMINAL_CHANNELS.GET_DISCOVERY_SNAPSHOT, options),
         getDockerContainers: () => ipc.invoke(TERMINAL_CHANNELS.GET_DOCKER_CONTAINERS),
-        readBuffer: id => ipc.invoke(TERMINAL_CHANNELS.READ_BUFFER),
+        readBuffer: id => ipc.invoke(TERMINAL_CHANNELS.READ_BUFFER, id),
         getSuggestions: options => ipc.invoke(TERMINAL_CHANNELS.GET_SUGGESTIONS, options),
         clearCommandHistory: () => ipc.invoke(TERMINAL_CHANNELS.CLEAR_COMMAND_HISTORY),
         explainCommand: options => ipc.invoke(TERMINAL_CHANNELS.EXPLAIN_COMMAND, options),

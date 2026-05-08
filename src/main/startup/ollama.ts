@@ -115,7 +115,7 @@ export async function startOllama(
         if (await isOllamaRunning()) {
             return {
                 success: true,
-                message: t('auto.ollamaIsAlreadyRunning'),
+                message: t('backend.ollamaIsAlreadyRunning'),
                 messageKey: OLLAMA_START_MESSAGE_KEY.ALREADY_RUNNING
             };
         }
@@ -124,7 +124,7 @@ export async function startOllama(
         if (!installed) {
             return {
                 success: false,
-                message: t('auto.ollamaIsNotInstalledPleaseDownloadItFrom'),
+                message: t('backend.ollamaIsNotInstalledPleaseDownloadItFrom'),
                 messageKey: OLLAMA_START_MESSAGE_KEY.NOT_INSTALLED
             };
         }
@@ -134,7 +134,7 @@ export async function startOllama(
             if (!allowed) {
                 return {
                     success: false,
-                    message: t('auto.userRefusedToStartOllama'),
+                    message: t('backend.userRefusedToStartOllama'),
                     messageKey: OLLAMA_START_MESSAGE_KEY.USER_DECLINED
                 };
             }
@@ -145,7 +145,7 @@ export async function startOllama(
         if (!commandSuccess) {
             return {
                 success: false,
-                message: t('auto.failedToStartOllama'),
+                message: t('backend.failedToStartOllama'),
                 messageKey: OLLAMA_START_MESSAGE_KEY.START_FAILED
             };
         }
@@ -155,14 +155,14 @@ export async function startOllama(
             appLogger.info('Ollama', 'Ollama started successfully');
             return {
                 success: true,
-                message: t('auto.ollamaStarted'),
+                message: t('backend.ollamaStarted'),
                 messageKey: OLLAMA_START_MESSAGE_KEY.STARTED
             };
         }
 
         return {
             success: false,
-            message: t('auto.failedToStartOllamaPleaseStartItManually'),
+            message: t('backend.failedToStartOllamaPleaseStartItManually'),
             messageKey: OLLAMA_START_MESSAGE_KEY.MANUAL_START_REQUIRED
         };
     } catch (error) {
@@ -185,8 +185,8 @@ async function askUserPermission(getMainWindow: () => BrowserWindow | null): Pro
         type: 'question',
         buttons: ['Yes', 'No'],
         defaultId: 0,
-        title: t('auto.startOllama'),
-        message: t('auto.shouldOllamaBeStarted'),
+        title: t('backend.startOllama'),
+        message: t('backend.shouldOllamaBeStarted'),
         detail: 'Ollama must be running to use local AI models.'
     });
 

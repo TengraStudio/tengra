@@ -400,13 +400,13 @@ export async function refreshCouncilStateForSession(options: {
         window.electron.session.council.getTimeline(options.sessionId),
     ]);
 
-    const normalizedTimeline = (timelineResult.events ?? []).map(
+    const normalizedTimeline = (timelineResult?.events ?? []).map(
         (event, index) => normalizeTimelineEvent(event, index)
     );
     options.setCouncilStateBySession(previousState => ({
         ...previousState,
         [options.sessionId]: {
-            proposal: proposalResult.plan ?? [],
+            proposal: proposalResult?.plan ?? [],
             timeline: normalizedTimeline,
         },
     }));

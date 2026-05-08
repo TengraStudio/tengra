@@ -32,7 +32,7 @@ interface SSHProfileManagerDependencies {
 }
 
 export class SSHProfileManager {
-    constructor(private readonly deps: SSHProfileManagerDependencies) {}
+    constructor(private readonly deps: SSHProfileManagerDependencies) { }
 
     private get profilesPath(): string {
         return path.join(this.deps.storagePath, 'ssh-profiles.json');
@@ -346,7 +346,7 @@ export class SSHProfileManager {
                 success: false,
                 latencyMs: 0,
                 authMethod: profile.privateKey ? 'key' : 'password',
-                message: t('auto.profileValidationFailed'),
+                message: t('backend.profileValidationFailed'),
                 error: validation.errors.join('; '),
             };
         }
@@ -365,7 +365,7 @@ export class SSHProfileManager {
                         success: false,
                         latencyMs: Date.now() - startedAt,
                         authMethod: 'key',
-                        message: t('auto.privateKeyCouldNotBeLoaded'),
+                        message: t('backend.privateKeyCouldNotBeLoaded'),
                         error: getErrorMessage(error as Error),
                     };
                 }
@@ -400,7 +400,7 @@ export class SSHProfileManager {
                     success: false,
                     latencyMs: Date.now() - startedAt,
                     authMethod,
-                    message: t('auto.sshProfileTestTimedOut'),
+                    message: t('backend.sshProfileTestTimedOut'),
                     error: 'Connection timed out',
                 });
             }, 10000);
@@ -413,7 +413,7 @@ export class SSHProfileManager {
                                 success: false,
                                 latencyMs: Date.now() - startedAt,
                                 authMethod,
-                                message: t('auto.connectedButCommandTestFailed'),
+                                message: t('backend.connectedButCommandTestFailed'),
                                 error: error.message,
                             });
                             return;
@@ -424,7 +424,7 @@ export class SSHProfileManager {
                                 success: true,
                                 latencyMs: Date.now() - startedAt,
                                 authMethod,
-                                message: t('auto.sshProfileTestPassed'),
+                                message: t('backend.sshProfileTestPassed'),
                             });
                         });
                     });
@@ -434,7 +434,7 @@ export class SSHProfileManager {
                         success: false,
                         latencyMs: Date.now() - startedAt,
                         authMethod,
-                        message: t('auto.sshProfileTestFailed'),
+                        message: t('backend.sshProfileTestFailed'),
                         error: error.message,
                     });
                 });
@@ -454,7 +454,7 @@ export class SSHProfileManager {
                     success: false,
                     latencyMs: Date.now() - startedAt,
                     authMethod,
-                    message: t('auto.sshProfileTestFailed'),
+                    message: t('backend.sshProfileTestFailed'),
                     error: getErrorMessage(error as Error),
                 });
             }

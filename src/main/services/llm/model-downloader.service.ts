@@ -239,7 +239,7 @@ export class ModelDownloaderService extends BaseService {
             provider: task.provider,
             status: 'queued',
             modelRef: task.modelRef,
-            message: t('auto.downloadQueued'),
+            message: t('backend.downloadQueued'),
         });
         void this.persistQueue();
         this.scheduleDownloads();
@@ -273,7 +273,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'paused',
                 modelRef: task.modelRef,
                 outputPath: task.outputPath,
-                message: t('auto.queuedDownloadPaused'),
+                message: t('backend.queuedDownloadPaused'),
             });
             void this.persistQueue();
             return true;
@@ -296,7 +296,7 @@ export class ModelDownloaderService extends BaseService {
             status: 'paused',
             modelRef: task.modelRef,
             outputPath: task.outputPath,
-            message: t('auto.downloadPaused'),
+            message: t('backend.downloadPaused'),
         });
         void this.persistQueue();
         return true;
@@ -325,7 +325,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'cancelled',
                 modelRef: task.modelRef,
                 outputPath: task.outputPath,
-                message: t('auto.downloadCancelled'),
+                message: t('backend.downloadCancelled'),
             });
             this.cleanupTask(task);
             void this.persistQueue();
@@ -344,7 +344,7 @@ export class ModelDownloaderService extends BaseService {
             status: 'cancelled',
             modelRef: task.modelRef,
             outputPath: task.outputPath,
-            message: t('auto.downloadCancelled'),
+            message: t('backend.downloadCancelled'),
         });
         void this.persistQueue();
         return true;
@@ -374,7 +374,7 @@ export class ModelDownloaderService extends BaseService {
             status: 'queued',
             modelRef: task.modelRef,
             outputPath: task.outputPath,
-            message: t('auto.downloadResumedAndQueued'),
+            message: t('backend.downloadResumedAndQueued'),
         });
         void this.persistQueue();
         this.scheduleDownloads();
@@ -851,7 +851,7 @@ export class ModelDownloaderService extends BaseService {
                 provider: 'ollama',
                 status: 'starting',
                 modelRef,
-                message: t('auto.startingOllamaPull'),
+                message: t('backend.startingOllamaPull'),
             });
 
             const result = await this.deps.ollamaService.pullModel(modelRef, (progress) => {
@@ -914,7 +914,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'starting',
                 modelRef,
                 outputPath,
-                message: t('auto.startingHuggingfaceDownload'),
+                message: t('backend.startingHuggingfaceDownload'),
             });
 
             // AUD-SEC-038: Enforce mandatory checksum verification
@@ -969,7 +969,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'installing',
                 modelRef,
                 outputPath,
-                message: t('auto.registeringInstalledModel'),
+                message: t('backend.registeringInstalledModel'),
             });
 
             await this.deps.huggingFaceService.registerModelVersion(

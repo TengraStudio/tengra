@@ -237,7 +237,7 @@ export class ApiServerService extends BaseService {
             this.sendJson(res, 400, {
                 success: false,
                 error: 'Bad Request',
-                message: t('auto.tokenViaQueryStringIsNotAllowedUseAuthor')
+                message: t('backend.tokenViaQueryStringIsNotAllowedUseAuthor')
             });
             return;
         }
@@ -258,7 +258,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 403, {
                     success: false,
                     error: 'Forbidden',
-                    message: t('auto.invalidOrMissingCsrfToken')
+                    message: t('backend.invalidOrMissingCsrfToken')
                 });
                 return;
             }
@@ -311,7 +311,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 403, {
                     success: false,
                     error: 'Forbidden',
-                    message: t('auto.localAccessRequired')
+                    message: t('backend.localAccessRequired')
                 });
                 return true;
             }
@@ -329,7 +329,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 403, {
                     success: false,
                     error: 'Forbidden',
-                    message: t('auto.localAccessRequired')
+                    message: t('backend.localAccessRequired')
                 });
                 return true;
             }
@@ -339,7 +339,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 401, {
                     success: false,
                     error: 'Unauthorized',
-                    message: t('auto.missingOrInvalidTokenChallenge')
+                    message: t('backend.missingOrInvalidTokenChallenge')
                 });
                 return true;
             }
@@ -366,7 +366,7 @@ export class ApiServerService extends BaseService {
             this.sendJson(res, 401, {
                 success: false,
                 error: 'Unauthorized',
-                message: t('auto.invalidOrMissingApiToken')
+                message: t('backend.invalidOrMissingApiToken')
             });
             return false;
         }
@@ -890,7 +890,7 @@ export class ApiServerService extends BaseService {
                 JSON.stringify({
                     type: 'connected',
                     clientId,
-                    message: t('auto.connectedToTengraApiServer')
+                    message: t('backend.connectedToTengraApiServer')
                 })
             );
         });
@@ -995,7 +995,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 503, {
                     success: false,
                     error: 'Service Unavailable',
-                    message: t('auto.modelRegistryServiceIsNotAvailable')
+                    message: t('backend.modelRegistryServiceIsNotAvailable')
                 });
                 return;
             }
@@ -1009,7 +1009,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 200, {
                     success: false,
                     models: [],
-                    message: t('auto.noModelsAvailableMakeSureTengraRuntimeSe')
+                    message: t('backend.noModelsAvailableMakeSureTengraRuntimeSe')
                 });
                 return;
             }

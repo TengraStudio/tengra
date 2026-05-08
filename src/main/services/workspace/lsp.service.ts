@@ -17,6 +17,8 @@ import { BaseService } from '@main/services/base.service';
 import * as rpc from 'vscode-jsonrpc/node';
 import * as protocol from 'vscode-languageserver-protocol';
 
+import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
+
 type WorkspaceServerLanguageId =
     | 'typescript'
     | 'javascript'
@@ -33,7 +35,8 @@ type WorkspaceServerLanguageId =
     | 'html'
     | 'css'
     | 'yaml'
-    | 'docker';
+    | 'docker'
+    | 'eslint';
 
 interface LspCommandCandidate {
     command: string;
@@ -65,6 +68,8 @@ export interface LspServerInstance {
     serverId: string;
     shuttingDown: boolean;
     exited: boolean;
+    diagnosticProvider?: protocol.DiagnosticOptions;
+    codeActionProvider?: boolean | protocol.CodeActionOptions;
 }
 
 interface OpenDocumentState {
@@ -89,6 +94,22 @@ export interface LspServerSupportStatus {
 
 const LSP_SERVER_DEFINITIONS: LspServerDefinition[] = [
     {
+        id: 'biome',
+        languageId: 'typescript',
+        extensions: ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.json', '.jsonc'],
+        candidates: [
+            {
+                command: process.platform === 'win32' ? 'biome.cmd' : 'biome',
+                localBinary: true,
+                args: ['lsp-proxy'],
+            },
+            {
+                command: process.platform === 'win32' ? 'biome.exe' : 'biome',
+                args: ['lsp-proxy'],
+            },
+        ],
+    },
+    {
         id: 'typescript-language-server',
         languageId: 'typescript',
         extensions: ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'],
@@ -99,6 +120,18 @@ const LSP_SERVER_DEFINITIONS: LspServerDefinition[] = [
                     : 'typescript-language-server',
                 localBinary: true,
                 args: ['--stdio'],
+            },
+        ],
+    },
+    {
+        id: 'ruff',
+        languageId: 'python',
+        extensions: ['.py', '.pyi', '.pyx'],
+        fileNames: ['pyproject.toml', 'ruff.toml', '.ruff.toml'],
+        candidates: [
+            {
+                command: 'ruff',
+                args: ['server'],
             },
         ],
     },
@@ -136,8 +169,16 @@ const LSP_SERVER_DEFINITIONS: LspServerDefinition[] = [
         extensions: ['.rs'],
         candidates: [
             {
-                command: process.platform === 'win32' ? 'rust-analyzer.exe' : 'rust-analyzer',
+                command: 'rust-analyzer',
                 args: [],
+            },
+            {
+                command: 'rust-analyzer.exe',
+                args: [],
+            },
+            {
+                command: 'rustup',
+                args: ['run', 'stable', 'rust-analyzer'],
             },
         ],
     },
@@ -320,6 +361,21 @@ const LSP_SERVER_DEFINITIONS: LspServerDefinition[] = [
             },
         ],
     },
+    {
+        id: 'vscode-eslint-language-server',
+        languageId: 'eslint',
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'],
+        fileNames: ['.eslintrc', '.eslintrc.js', '.eslintrc.cjs', '.eslintrc.yaml', '.eslintrc.yml', '.eslintrc.json', 'eslint.config.js', 'eslint.config.mjs', 'eslint.config.cjs'],
+        candidates: [
+            {
+                command: process.platform === 'win32'
+                    ? 'vscode-eslint-language-server.cmd'
+                    : 'vscode-eslint-language-server',
+                localBinary: true,
+                args: ['--stdio'],
+            },
+        ],
+    },
 ];
 
 export class LspService extends BaseService {
@@ -329,7 +385,10 @@ export class LspService extends BaseService {
     private startPromises: Map<string, Promise<void>> = new Map();
     private workspaceServers: Map<string, Set<string>> = new Map();
 
-    constructor() {
+    constructor(
+        private mainWindowProvider?: () => import('electron').BrowserWindow | null,
+        private runtimeBootstrapService?: import('@main/services/system/runtime-bootstrap.service').RuntimeBootstrapService
+    ) {
         super('LspService');
     }
 
@@ -503,7 +562,7 @@ export class LspService extends BaseService {
         _rootPath: string,
         files: string[]
     ): Promise<void> {
-        const candidateFiles = files.filter(file => this.resolveDefinitionForFile(file) !== null).slice(0, 80);
+        const candidateFiles = files.filter(file => this.resolveDefinitionForFile(file) !== null).slice(0, 200);
         for (const file of candidateFiles) {
             const definition = this.resolveDefinitionForFile(file);
             if (!definition) {
@@ -525,17 +584,106 @@ export class LspService extends BaseService {
     }
 
     getDiagnostics(workspaceId: string): protocol.PublishDiagnosticsParams[] {
-        const serverIds = this.workspaceServers.get(workspaceId);
+        const normalizedWorkspaceId = workspaceId.toLowerCase();
+        // Try exact match first, then fallback to case-insensitive search
+        let serverIds = this.workspaceServers.get(workspaceId);
+        if (!serverIds) {
+            for (const [id, ids] of this.workspaceServers.entries()) {
+                if (id.toLowerCase() === normalizedWorkspaceId) {
+                    serverIds = ids;
+                    break;
+                }
+            }
+        }
+
         if (!serverIds) {
             return [];
         }
 
         const diagnostics: protocol.PublishDiagnosticsParams[] = [];
         for (const serverId of serverIds) {
-            const instanceKey = this.toInstanceKey(workspaceId, serverId);
+            // Find the instance key that matches workspaceId and serverId
+            let instanceKey = this.toInstanceKey(workspaceId, serverId);
+            if (!this.diagnostics.has(instanceKey)) {
+                // Try case-insensitive instance key match
+                for (const [key, _] of this.diagnostics.entries()) {
+                    if (key.toLowerCase() === instanceKey.toLowerCase()) {
+                        instanceKey = key;
+                        break;
+                    }
+                }
+            }
             diagnostics.push(...(this.diagnostics.get(instanceKey) ?? []));
         }
         return diagnostics;
+    }
+    
+    async pullDiagnostics(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId
+    ): Promise<protocol.Diagnostic[] | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) return null;
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance || !instance.diagnosticProvider) return null;
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        try {
+            const result = await instance.connection.sendRequest(protocol.DocumentDiagnosticRequest.type.method, {
+                textDocument: { uri }
+            }) as protocol.DocumentDiagnosticReport;
+
+            if (result && typeof result === 'object' && 'items' in (result as any)) {
+                const diagnostics = (result as any).items as protocol.Diagnostic[];
+                // Update local cache
+                this.handleDiagnostics(this.toInstanceKey(workspaceId, definition.id), {
+                    uri,
+                    diagnostics
+                });
+                return diagnostics;
+            }
+            return null;
+        } catch (error) {
+            this.logWarn(`Failed to pull diagnostics for ${uri}: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+        }
+    }
+
+    async getCodeActions(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId,
+        range: protocol.Range,
+        diagnostics: protocol.Diagnostic[]
+    ): Promise<(protocol.Command | protocol.CodeAction)[] | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) return null;
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance || !instance.codeActionProvider) return null;
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        try {
+            const result = await instance.connection.sendRequest(protocol.CodeActionRequest.type.method, {
+                textDocument: { uri },
+                range,
+                context: { diagnostics }
+            });
+            return result as (protocol.Command | protocol.CodeAction)[] | null;
+        } catch (error) {
+            this.logWarn(`Failed to get code actions for ${uri}: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+        }
     }
 
     async getDefinition(
@@ -687,6 +835,26 @@ export class LspService extends BaseService {
                         willSave: false,
                         willSaveWaitUntil: false,
                     },
+                    diagnostic: {
+                        dynamicRegistration: false,
+                    },
+                    codeAction: {
+                        dynamicRegistration: false,
+                        codeActionLiteralSupport: {
+                            codeActionKind: {
+                                valueSet: [
+                                    protocol.CodeActionKind.Empty,
+                                    protocol.CodeActionKind.QuickFix,
+                                    protocol.CodeActionKind.Refactor,
+                                    protocol.CodeActionKind.RefactorExtract,
+                                    protocol.CodeActionKind.RefactorInline,
+                                    protocol.CodeActionKind.RefactorRewrite,
+                                    protocol.CodeActionKind.Source,
+                                    protocol.CodeActionKind.SourceOrganizeImports,
+                                ],
+                            },
+                        },
+                    },
                 },
                 workspace: {
                     configuration: false,
@@ -702,23 +870,23 @@ export class LspService extends BaseService {
         };
 
         try {
-            const result = await connection.sendRequest(
-                protocol.InitializeRequest.type.method,
-                initParams
-            ) as protocol.InitializeResult;
-            await connection.sendNotification(protocol.InitializedNotification.type.method, {});
-
-            this.instances.set(instanceKey, {
+            const initResult = await connection.sendRequest(protocol.InitializeRequest.type.method, initParams) as protocol.InitializeResult;
+            
+            const instance: LspServerInstance = {
                 process: serverProcess,
                 connection,
-                capabilities: result.capabilities,
+                capabilities: initResult.capabilities,
+                diagnosticProvider: initResult.capabilities.diagnosticProvider as protocol.DiagnosticOptions,
+                codeActionProvider: initResult.capabilities.codeActionProvider,
                 workspaceId,
                 rootPath,
                 languageId: definition.languageId,
                 serverId: definition.id,
                 shuttingDown: false,
                 exited: false,
-            });
+            };
+            this.instances.set(instanceKey, instance);
+
             this.openDocuments.set(instanceKey, new Map<string, OpenDocumentState>());
 
             const workspaceServerIds = this.workspaceServers.get(workspaceId) ?? new Set<string>();
@@ -766,9 +934,19 @@ export class LspService extends BaseService {
     }
 
     private spawnServerProcess(rootPath: string, command: ResolvedLspCommand): ChildProcess {
-        return spawn(command.command, command.args, {
+        let spawnCommand = command.command;
+        let spawnArgs = command.args;
+        let useShell = command.shell;
+
+        if (process.platform === 'win32' && useShell) {
+            spawnCommand = process.env.ComSpec || 'cmd.exe';
+            spawnArgs = ['/d', '/s', '/c', command.command, ...command.args];
+            useShell = false;
+        }
+
+        return spawn(spawnCommand, spawnArgs, {
             cwd: rootPath,
-            shell: command.shell,
+            shell: useShell,
             stdio: ['pipe', 'pipe', 'pipe'],
             windowsHide: true,
         });
@@ -785,6 +963,17 @@ export class LspService extends BaseService {
                 };
             }
             return null;
+        }
+
+        // Check managed runtime bin directory first
+        const managedBinDir = getManagedRuntimeBinDir();
+        const managedPath = path.join(managedBinDir, process.platform === 'win32' ? `${candidate.command}.exe` : candidate.command);
+        if (existsSync(managedPath)) {
+            return {
+                command: managedPath,
+                args: candidate.args,
+                shell: false,
+            };
         }
 
         return this.resolvePathCommand(candidate.command);
@@ -842,7 +1031,7 @@ export class LspService extends BaseService {
 
             if (existsSync(baseCandidate)) {
                 return {
-                    command: baseCandidate,
+                    command,
                     args: [],
                     shell: this.requiresShell(baseCandidate),
                 };
@@ -854,7 +1043,15 @@ export class LspService extends BaseService {
 
     private requiresShell(commandPath: string): boolean {
         const normalizedCommandPath = commandPath.toLowerCase();
-        return normalizedCommandPath.endsWith('.cmd') || normalizedCommandPath.endsWith('.bat');
+        if (normalizedCommandPath.endsWith('.cmd') || normalizedCommandPath.endsWith('.bat')) {
+            return true;
+        }
+        // rust-analyzer on Windows often fails when called directly if it's a rustup shim.
+        // Using a shell helps resolve the shim correctly.
+        if (process.platform === 'win32' && normalizedCommandPath.includes('rust-analyzer')) {
+            return true;
+        }
+        return false;
     }
 
     private async sendNotificationSafely(
@@ -935,6 +1132,31 @@ export class LspService extends BaseService {
         workspaceDiagnostics.push(params);
         this.diagnostics.set(instanceKey, workspaceDiagnostics);
         this.logDebug(`Received diagnostics for ${params.uri}: ${params.diagnostics.length} issues`);
+
+        // Emit real-time event to renderer
+        const mainWindow = this.mainWindowProvider?.();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            const lastColonIndex = instanceKey.lastIndexOf(':');
+            const workspaceId = lastColonIndex !== -1 ? instanceKey.substring(0, lastColonIndex) : instanceKey;
+            mainWindow.webContents.send('lsp:diagnostics-updated', {
+                workspaceId,
+                uri: params.uri,
+                diagnostics: params.diagnostics,
+                instanceKey
+            });
+        }
+    }
+
+    private triggeredInstalls = new Set<string>();
+
+    private triggerManagedInstall(componentId: string) {
+        if (!this.runtimeBootstrapService || this.triggeredInstalls.has(componentId)) return;
+        this.triggeredInstalls.add(componentId);
+        this.logInfo(`Triggering background installation for missing managed dependency: ${componentId}`);
+        this.runtimeBootstrapService.runComponentAction(componentId).catch(err => {
+            this.logError(`Failed to trigger installation for ${componentId}`, err);
+            this.triggeredInstalls.delete(componentId);
+        });
     }
 
     private detectWorkspaceServers(files: string[]): LspServerDefinition[] {
@@ -949,7 +1171,16 @@ export class LspService extends BaseService {
     }
 
     private resolveDefinition(languageId: WorkspaceServerLanguageId): LspServerDefinition | null {
-        return LSP_SERVER_DEFINITIONS.find(definition => definition.languageId === languageId) ?? null;
+        const matches = LSP_SERVER_DEFINITIONS.filter(definition => definition.languageId === languageId);
+        if (matches.length === 0) return null;
+        
+        const preferred = matches[0];
+        if ((preferred.id === 'biome' || preferred.id === 'ruff') && !this.hasRunnableCandidate(preferred)) {
+            this.triggerManagedInstall(preferred.id);
+        }
+
+        const runnable = matches.find(def => this.hasRunnableCandidate(def));
+        return runnable ?? preferred;
     }
 
     getLanguageIdForFile(filePath: string): WorkspaceServerLanguageId | null {
@@ -963,7 +1194,16 @@ export class LspService extends BaseService {
         if (fallbackLanguageId) {
             return this.resolveDefinition(fallbackLanguageId);
         }
-        return LSP_SERVER_DEFINITIONS.find(definition => this.matchesDefinition(definition, filePath)) ?? null;
+        const matches = LSP_SERVER_DEFINITIONS.filter(definition => this.matchesDefinition(definition, filePath));
+        if (matches.length === 0) return null;
+        
+        const preferred = matches[0];
+        if ((preferred.id === 'biome' || preferred.id === 'ruff') && !this.hasRunnableCandidate(preferred)) {
+            this.triggerManagedInstall(preferred.id);
+        }
+
+        const runnable = matches.find(def => this.hasRunnableCandidate(def));
+        return runnable ?? preferred;
     }
 
     private matchesDefinition(definition: LspServerDefinition, filePath: string): boolean {

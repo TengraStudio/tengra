@@ -11,6 +11,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 
 import { RuntimeBootstrapBoundary } from '@/components/runtime/RuntimeBootstrapBoundary';
+import { DiagnosticsListener } from '@/components/system/DiagnosticsListener';
 import { AuthProvider } from '@/context/AuthContext';
 import { ChatProvider } from '@/context/ChatContext';
 import { LowPowerProvider } from '@/context/low-power.context';
@@ -116,6 +117,7 @@ function LocalizedRuntimeProviders({ children }: { children: ReactNode }) {
                                                 providerFailedPrefix={providerFailedPrefix}
                                             >
                                                 <ChatProvider>
+                                                    <DiagnosticsListener />
                                                     <RuntimeThemeManager />
                                                     <RuntimeIconPackManager />
                                                     {children}

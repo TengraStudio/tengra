@@ -74,11 +74,14 @@ export interface GitBridge {
         staged?: boolean
     ) => Promise<{ diff: string; success: boolean; error?: string }>;
     stageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>;
+    stageAll: (cwd: string) => Promise<{ success: boolean; error?: string }>;
     unstageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>;
+    unstageAll: (cwd: string) => Promise<{ success: boolean; error?: string }>;
     getDetailedStatus: (cwd: string) => Promise<{
         success: boolean;
         staged?: Array<{ path: string; status: string }>;
         unstaged?: Array<{ path: string; status: string }>;
+        untracked?: Array<{ path: string; status: string }>;
         error?: string;
     }>;
     checkout: (cwd: string, branch: string) => Promise<{ success: boolean; error?: string }>;
@@ -185,6 +188,11 @@ export interface GitBridge {
     generatePrSummary: (cwd: string, base: string, head: string) => Promise<{ success: boolean; summary?: string; error?: string }>;
     compareRefs: (cwd: string, base: string, head: string) => Promise<GitRefComparison>;
     getHotspots: (cwd: string, limit?: number, days?: number) => Promise<{ success: boolean; hotspots: GitHotspot[]; error?: string }>;
+    getGitHubData: (repoUrl: string, type: 'pulls' | 'issues') => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    getGitHubPrDetails: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: { pr: any; files: any[]; comments: any[]; reviews: any[]; checks: any[] }; error?: string }>;
+    updateGitHubPrState: (repoUrl: string, prNumber: number, state: 'open' | 'closed') => Promise<{ success: boolean; data?: any; error?: string }>;
+    mergeGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: any; error?: string }>;
+    approveGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: any; error?: string }>;
     getTreeStatusPreview: (cwd: string, directoryPath: string) => Promise<any>;
 }
 
@@ -201,7 +209,9 @@ export function createGitBridge(ipc: IpcRenderer): GitBridge {
         getFileDiff: (cwd, filePath, staged) => ipc.invoke(GIT_CHANNELS.GET_FILE_DIFF, cwd, filePath, staged),
         getUnifiedDiff: (cwd, filePath, staged) => ipc.invoke(GIT_CHANNELS.GET_UNIFIED_DIFF, cwd, filePath, staged),
         stageFile: (cwd, filePath) => ipc.invoke(GIT_CHANNELS.STAGE_FILE, cwd, filePath),
+        stageAll: cwd => ipc.invoke(GIT_CHANNELS.STAGE_ALL, cwd),
         unstageFile: (cwd, filePath) => ipc.invoke(GIT_CHANNELS.UNSTAGE_FILE, cwd, filePath),
+        unstageAll: cwd => ipc.invoke(GIT_CHANNELS.UNSTAGE_ALL, cwd),
         getDetailedStatus: cwd => ipc.invoke(GIT_CHANNELS.GET_DETAILED_STATUS, cwd),
         checkout: (cwd, branch) => ipc.invoke(GIT_CHANNELS.CHECKOUT, cwd, branch),
         commit: (cwd, message) => ipc.invoke(GIT_CHANNELS.COMMIT, cwd, message),
@@ -255,6 +265,11 @@ export function createGitBridge(ipc: IpcRenderer): GitBridge {
             ipc.invoke(GIT_CHANNELS.GENERATE_PR_SUMMARY, cwd, base, head),
         compareRefs: (cwd, base, head) => ipc.invoke(GIT_CHANNELS.COMPARE_REFS, cwd, base, head),
         getHotspots: (cwd, limit, days) => ipc.invoke(GIT_CHANNELS.GET_HOTSPOTS, cwd, limit, days),
+        getGitHubData: (repoUrl, type) => ipc.invoke(GIT_CHANNELS.GET_GITHUB_DATA, repoUrl, type),
+        getGitHubPrDetails: (repoUrl, prNumber) => ipc.invoke(GIT_CHANNELS.GET_GITHUB_PR_DETAILS, repoUrl, prNumber),
+        updateGitHubPrState: (repoUrl, prNumber, state) => ipc.invoke(GIT_CHANNELS.UPDATE_GITHUB_PR_STATE, repoUrl, prNumber, state),
+        mergeGitHubPr: (repoUrl, prNumber) => ipc.invoke(GIT_CHANNELS.MERGE_GITHUB_PR, repoUrl, prNumber),
+        approveGitHubPr: (repoUrl, prNumber) => ipc.invoke(GIT_CHANNELS.APPROVE_GITHUB_PR, repoUrl, prNumber),
         getTreeStatusPreview: (cwd, directoryPath) => ipc.invoke(GIT_CHANNELS.GET_TREE_STATUS_PREVIEW, cwd, directoryPath),
     };
 }

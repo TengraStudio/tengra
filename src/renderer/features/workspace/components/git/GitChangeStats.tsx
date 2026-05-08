@@ -23,6 +23,8 @@ interface ChangeStatsProps {
     gitData: GitData;
     handleStageFile: (path: string) => Promise<void>;
     handleUnstageFile: (path: string) => Promise<void>;
+    handleStageAll: () => Promise<void>;
+    handleUnstageAll: () => Promise<void>;
     getStatusIcon: (status: string) => React.ReactNode;
     handleGitFileSelect?: (file: GitFile | null) => void;
     selectedFile?: GitFile | null;
@@ -136,6 +138,8 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
     gitData,
     handleStageFile,
     handleUnstageFile,
+    handleStageAll,
+    handleUnstageAll,
     handleGitFileSelect,
     selectedFile,
     fileDiff,
@@ -153,7 +157,7 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-5 px-2 text-[10px] uppercase font-bold text-muted-foreground hover:text-primary"
-                                onClick={() => void handleUnstageFile('.')}
+                                onClick={() => void handleUnstageAll()}
                             >
                                 Unstage All
                             </Button>
@@ -189,7 +193,7 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-5 px-2 text-[10px] uppercase font-bold text-muted-foreground hover:text-primary"
-                                onClick={() => void handleStageFile('.')}
+                                onClick={() => void handleStageAll()}
                             >
                                 Stage All
                             </Button>

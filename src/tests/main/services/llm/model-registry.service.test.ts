@@ -88,6 +88,7 @@ describe('ModelRegistryService', () => {
             }),
             getEmbeddedProxyStatus: vi.fn().mockReturnValue({ port: 8317 }),
             getProxyKey: vi.fn().mockResolvedValue('proxy-key'),
+            getCopilotQuota: vi.fn().mockResolvedValue({ accounts: [] }),
         };
         mockEventBus = { emit: vi.fn(), on: vi.fn(), onCustom: vi.fn() };
         mockAuthService = {
@@ -192,7 +193,7 @@ describe('ModelRegistryService', () => {
             expect(mockHuggingFaceService.searchModels).not.toHaveBeenCalled();
             expect(service.getHealthMetrics().cacheUpdates).toBe(1);
             expect(mockEventBus.emit).toHaveBeenCalledWith(
-                'Stats:model-registry',
+                'usageStats:model-registry',
                 expect.objectContaining({ name: 'model-registry.cache.update.completed' })
             );
         });
@@ -332,18 +333,18 @@ describe('ModelRegistryService', () => {
                 status: 200,
                 json: vi.fn().mockResolvedValue({
                     data: [
-                        { id: 'minimax-m2.5-free', name: 'MiniMax M2.5 Free' },
-                        { id: 'minimax-m2.5', name: 'MiniMax M2.5' }
+                        { id: 'big-pickle', name: 'Big Pickle' },
+                        { id: 'glm-4.7', name: 'GLM 4.7' }
                     ]
                 }),
             } as never);
 
             const models = await service.getRemoteModels();
             const opencodeModels = models.filter(model => model.provider === 'opencode');
-            expect(opencodeModels.map(model => model.id)).toEqual(['minimax-m2.5-free', 'minimax-m2.5']);
-            expect(opencodeModels.find(model => model.id === 'minimax-m2.5')?.pricing).toEqual({
-                input: 0.3,
-                output: 1.2,
+            expect(opencodeModels.map(model => model.id)).toEqual(['big-pickle', 'glm-4.7']);
+            expect(opencodeModels.find(model => model.id === 'glm-4.7')?.pricing).toEqual({
+                input: 0.6,
+                output: 2.2,
             });
         });
 
@@ -415,7 +416,7 @@ describe('ModelRegistryService', () => {
             }
         });
 
-        it('should retry proxy fetch when copilot is connected but no copilot models are returned initially', async () => {
+        it('should not retry proxy fetch when copilot is connected since hardcoded models are returned', async () => {
             vi.useFakeTimers();
             try {
                 vi.mocked(mockSettings.getSettings!).mockReturnValue({
@@ -432,6 +433,7 @@ describe('ModelRegistryService', () => {
                 // Bypass cold-start skip
                 Object.assign(service, { lastUpdate: Date.now() });
                 vi.mocked(mockAuthService.getAccountsByProvider!).mockResolvedValue([{ id: 'copilot-acc', isActive: true }] as any);
+                vi.mocked(mockAuthService.getAccountsByProviderFull!).mockResolvedValue([{ id: 'copilot-acc', isActive: true }] as any);
 
                 vi.mocked(mockProxyService.getRawModelCatalog!)
                     .mockResolvedValueOnce({
@@ -445,11 +447,11 @@ describe('ModelRegistryService', () => {
                     });
 
                 const modelsPromise = service.getRemoteModels();
-                await vi.advanceTimersByTimeAsync(10000);
+                await vi.advanceTimersByTimeAsync(15000);
                 await modelsPromise;
                 const models = await service.getRemoteModels();
 
-                expect(mockProxyService.getRawModelCatalog).toHaveBeenCalledTimes(2);
+                expect(mockProxyService.getRawModelCatalog).toHaveBeenCalledTimes(1);
                 expect(models.some(model => model.providerCategory === 'copilot')).toBe(true);
             } finally {
                 vi.useRealTimers();
@@ -469,6 +471,7 @@ describe('ModelRegistryService', () => {
                 copilot: { connected: true }
             } as AppSettings);
             vi.mocked(mockAuthService.getAccountsByProvider!).mockResolvedValue([{ id: 'copilot-acc', isActive: true }] as any);
+            vi.mocked(mockAuthService.getAccountsByProviderFull!).mockResolvedValue([{ id: 'copilot-acc', isActive: true }] as any);
             vi.mocked(mockProxyService.getRawModelCatalog!)
                 .mockResolvedValueOnce({
                     data: [
@@ -619,7 +622,7 @@ describe('ModelRegistryService', () => {
 
             expect(service.getHealthMetrics().providerFetchFailures).toBe(1);
             expect(mockEventBus.emit).toHaveBeenCalledWith(
-                'Stats:model-registry',
+                'usageStats:model-registry',
                 expect.objectContaining({ name: 'model-registry.provider.fetch.failed', provider: 'ollama' })
             );
         });

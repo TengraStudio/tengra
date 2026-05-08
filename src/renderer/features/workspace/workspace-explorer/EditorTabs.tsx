@@ -8,16 +8,18 @@
  * (at your option) any later version.
  */
 
-import { IconChevronRight, IconPin, IconX } from '@tabler/icons-react';
+import { IconChevronRight, IconMarkdown, IconPin, IconX } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { EditorTab } from '@/types';
+import { useWorkspaceDiagnostics } from '@/store/diagnostics.store';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { EditorTabContextMenu } from './EditorTabContextMenu';
 
 interface EditorTabsProps {
+    workspaceId?: string;
     openTabs: EditorTab[];
     activeTabId: string | null;
     setActiveTabId: (id: string | null) => void;
@@ -32,6 +34,8 @@ interface EditorTabsProps {
     revealTabInExplorer: (id: string) => Promise<void>;
     workspacePath?: string;
     onOpenFile?: (path: string, line?: number) => void;
+    showMarkdownPreview?: boolean;
+    onToggleMarkdownPreview?: () => void;
     t: (key: string) => string;
 }
 
@@ -73,8 +77,12 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     revealTabInExplorer,
     workspacePath,
     onOpenFile,
+    showMarkdownPreview = false,
+    onToggleMarkdownPreview,
     t,
+    workspaceId,
 }) => {
+    const workspaceDiagnostics = useWorkspaceDiagnostics(workspaceId);
     const [contextMenu, setContextMenu] = useState<TabContextMenuState | null>(null);
     const [deletedTabIds, setDeletedTabIds] = useState<Set<string>>(new Set());
     const [breadcrumbDropdown, setBreadcrumbDropdown] = useState<BreadcrumbDropdownState | null>(null);
@@ -238,6 +246,11 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                     const isActive = tab.id === activeTabId;
                     const isDirty = tab.content !== tab.savedContent;
                     const isDeleted = deletedTabIds.has(tab.id);
+                    const uri = tab.path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^[A-Za-z]:\//, 'file:///').replace(/^\//, 'file:///');
+                    const diag = workspaceDiagnostics?.get(uri.startsWith('file://') ? uri : `file://${uri}`);
+                    const hasErrors = (diag?.errorCount ?? 0) > 0;
+                    const hasWarnings = (diag?.warningCount ?? 0) > 0;
+
                     return (
                         <button
                             key={tab.id}
@@ -250,7 +263,9 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all min-w-120 max-w-200',
                                 isActive
                                     ? 'bg-muted/70 text-foreground border-t-2 border-t-primary'
-                                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-t-2 border-t-transparent'
+                                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-t-2 border-t-transparent',
+                                hasErrors && !isActive && 'text-destructive hover:text-destructive',
+                                hasWarnings && !hasErrors && !isActive && 'text-warning hover:text-warning'
                             )}
                         >
                             <span
@@ -263,7 +278,14 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 {tab.name}
                             </span>
                             {tab.isPinned && <IconPin className="w-3 h-3 text-primary shrink-0" />}
-                            {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
+                            {(isDirty || hasErrors || hasWarnings) && (
+                                <span 
+                                    className={cn(
+                                        "w-1.5 h-1.5 rounded-full shrink-0",
+                                        hasErrors ? "bg-destructive" : hasWarnings ? "bg-warning" : "bg-warning"
+                                    )} 
+                                />
+                            )}
                             <span
                                 onClick={event => {
                                     event.stopPropagation();
@@ -282,30 +304,50 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
             </div>
             {activeTab && (
                 <div className="flex items-center gap-1 px-3 py-1.5 typo-overline text-muted-foreground/85 border-t border-border/20">
-                    {buildBreadcrumbSegments(activeTab.path).map((segment, index) => (
-                        <React.Fragment key={`${segment.path}:${index}`}>
-                            {index > 0 && <IconChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" />}
+                    <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
+                        {buildBreadcrumbSegments(activeTab.path).map((segment, index) => (
+                            <React.Fragment key={`${segment.path}:${index}`}>
+                                {index > 0 && <IconChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" />}
+                                <button
+                                    type="button"
+                                    onClick={event => {
+                                        if (!segment.isFile) {
+                                            event.stopPropagation();
+                                            const rect = event.currentTarget.getBoundingClientRect();
+                                            void openFolderDropdown(segment.path, rect.left, rect.bottom + 6);
+                                            return;
+                                        }
+                                        openBreadcrumbPath(segment.path);
+                                    }}
+                                    className={cn(
+                                        'max-w-220 truncate transition-colors hover:text-foreground',
+                                        segment.isFile ? 'text-foreground/90' : 'text-muted-foreground/85 hover:underline'
+                                    )}
+                                    title={segment.path}
+                                >
+                                    {segment.label}
+                                </button>
+                            </React.Fragment>
+                        ))}
+                    </div>
+
+                    {activeTab.name.toLowerCase().endsWith('.md') && (
+                        <div className="flex items-center ml-auto pl-2">
                             <button
                                 type="button"
-                                onClick={event => {
-                                    if (!segment.isFile) {
-                                        event.stopPropagation();
-                                        const rect = event.currentTarget.getBoundingClientRect();
-                                        void openFolderDropdown(segment.path, rect.left, rect.bottom + 6);
-                                        return;
-                                    }
-                                    openBreadcrumbPath(segment.path);
-                                }}
+                                onClick={onToggleMarkdownPreview}
                                 className={cn(
-                                    'max-w-220 truncate transition-colors hover:text-foreground',
-                                    segment.isFile ? 'text-foreground/90' : 'text-muted-foreground/85 hover:underline'
+                                    "p-1.5 rounded-md transition-all duration-200",
+                                    showMarkdownPreview 
+                                        ? "bg-primary/10 text-primary hover:bg-primary/20 shadow-sm shadow-primary/5" 
+                                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                                 )}
-                                title={segment.path}
+                                title={showMarkdownPreview ? t('frontend.workspaceDashboard.editor.editorOnly') : t('frontend.workspaceDashboard.editor.showPreview')}
                             >
-                                {segment.label}
+                                <IconMarkdown className={cn("h-4 w-4 transition-transform duration-200", showMarkdownPreview && "scale-110")} />
                             </button>
-                        </React.Fragment>
-                    ))}
+                        </div>
+                    )}
                 </div>
             )}
             {breadcrumbDropdown && (

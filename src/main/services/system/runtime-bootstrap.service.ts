@@ -113,9 +113,9 @@ export class RuntimeBootstrapService extends BaseService {
             return { success: result.success, message: result.message };
         }
 
-        if (componentId === 'sd-cpp') {
+        if (componentId === 'sd-cpp' || componentId === 'biome' || componentId === 'ruff' || componentId === 'golangci-lint') {
             await this.ensureManagedRuntime();
-            return { success: true, message: t('auto.stableDiffusionCppRuntimeInstallTriggere') };
+            return { success: true, message: t('backend.runtimeInstallTriggered') };
         }
 
         return { success: false, message: `No runtime action is registered for ${componentId}` };
@@ -254,7 +254,7 @@ export class RuntimeBootstrapService extends BaseService {
 
         // PRE-LAUNCH BYPASS: Disable manifest network fetch while repo is private
         // TODO: Remove this once the repository is public
-        const isPreLaunch = true;
+        const isPreLaunch = false;
         if (isPreLaunch && usesDefaultManifestUrl) {
             this.logInfo('Runtime manifest fetch skipped (pre-launch phase)');
             if (fs.existsSync(cachedManifestPath)) {
@@ -418,6 +418,11 @@ export class RuntimeBootstrapService extends BaseService {
             this.logInfo(
                 `Managed runtime scan finished: ready=${result.summary.ready}, installRequired=${result.summary.installRequired}, failed=${result.summary.failed}`
             );
+            if (result.summary.installRequired > 0) {
+                this.logInfo(`Found ${result.summary.installRequired} missing managed dependencies. Starting background installation...`);
+                const installResult = await this.ensureManagedRuntime();
+                this.logInfo(`Background installation complete. Installed: ${installResult.summary.installed}, Failed: ${installResult.summary.failed}`);
+            }
         } catch (error) {
             this.logError('Managed runtime scan failed', error);
         }
@@ -536,6 +541,7 @@ export class RuntimeBootstrapService extends BaseService {
             await this.installTarget(downloadedAssetPath, entry.target, entry.installPath);
             return this.createExecutionEntry(entry, 'installed', downloadedAssetPath);
         } catch (error) {
+            this.logError(`Installation failed for ${entry.componentId}:`, error);
             return {
                 ...this.createExecutionEntry(entry, 'failed'),
                 error: error instanceof Error ? error.message : 'Unknown runtime bootstrap failure',
@@ -568,16 +574,78 @@ export class RuntimeBootstrapService extends BaseService {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout for large binary downloads
         try {
+            this.logInfo(`Starting download for ${target.assetName}...`);
             const response = await fetch(target.downloadUrl, {
                 redirect: 'follow',
                 signal: controller.signal,
             });
             if (!response.ok) {
-                throw new Error('error.llm.download_failed');
+                this.logError(`Download rejected by server: HTTP ${response.status} ${response.statusText} for ${target.downloadUrl}`);
+                throw new Error(`error.llm.download_failed: HTTP ${response.status}`);
             }
+            
+            const totalBytes = Number(response.headers.get('content-length')) || 0;
+            let downloadedBytes = 0;
+            const chunks: Uint8Array[] = [];
+            
+            if (response.body) {
+                let lastLogTime = Date.now();
+                const bodyAny = response.body as any;
+
+                if (typeof bodyAny.getReader === 'function') {
+                    const reader = bodyAny.getReader();
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        if (value) {
+                            chunks.push(value);
+                            downloadedBytes += value.length;
+                            
+                            const now = Date.now();
+                            if (now - lastLogTime > 2000) {
+                                if (totalBytes > 0) {
+                                    const percent = Math.round((downloadedBytes / totalBytes) * 100);
+                                    this.logInfo(`Downloading ${target.assetName}: ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(2)} MB / ${(totalBytes / 1024 / 1024).toFixed(2)} MB)`);
+                                } else {
+                                    this.logInfo(`Downloading ${target.assetName}: ${(downloadedBytes / 1024 / 1024).toFixed(2)} MB`);
+                                }
+                                lastLogTime = now;
+                            }
+                        }
+                    }
+                } else if (typeof bodyAny[Symbol.asyncIterator] === 'function') {
+                    for await (const chunk of bodyAny) {
+                        if (chunk) {
+                            const chunkBuf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+                            chunks.push(chunkBuf);
+                            downloadedBytes += chunkBuf.length;
+                            
+                            const now = Date.now();
+                            if (now - lastLogTime > 2000) {
+                                if (totalBytes > 0) {
+                                    const percent = Math.round((downloadedBytes / totalBytes) * 100);
+                                    this.logInfo(`Downloading ${target.assetName}: ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(2)} MB / ${(totalBytes / 1024 / 1024).toFixed(2)} MB)`);
+                                } else {
+                                    this.logInfo(`Downloading ${target.assetName}: ${(downloadedBytes / 1024 / 1024).toFixed(2)} MB`);
+                                }
+                                lastLogTime = now;
+                            }
+                        }
+                    }
+                } else {
+                    const arrayBuffer = await response.arrayBuffer();
+                    chunks.push(new Uint8Array(arrayBuffer));
+                }
+            } else {
+                const arrayBuffer = await response.arrayBuffer();
+                chunks.push(new Uint8Array(arrayBuffer));
+            }
+            
+            this.logInfo(`Download complete for ${target.assetName}`);
+            const buffer = Buffer.concat(chunks);
+
             const downloadPath = path.join(getManagedRuntimeDownloadsDir(), target.assetName);
-            const buffer = Buffer.from(await response.arrayBuffer());
-            this._performChecksumVerification(buffer, target.sha256);
+            this._performChecksumVerification(buffer, target.sha256, target.assetName);
             await fsPromises.mkdir(path.dirname(downloadPath), { recursive: true });
             await fsPromises.writeFile(downloadPath, buffer);
             return downloadPath;
@@ -586,11 +654,16 @@ export class RuntimeBootstrapService extends BaseService {
         }
     }
 
-    private _performChecksumVerification(data: Buffer, expectedSha256: string): void {
+    private _performChecksumVerification(data: Buffer, expectedSha256: string, assetName: string): void {
+        if (!expectedSha256) {
+            this.logInfo(`Skipping checksum verification for ${assetName} (no hash provided)`);
+            return;
+        }
         const hash = crypto.createHash('sha256');
         hash.update(data);
         const digest = hash.digest('hex');
         if (digest !== expectedSha256.toLowerCase()) {
+            this.logError(`Checksum mismatch for ${assetName}. Expected: ${expectedSha256}, Got: ${digest}. Downloaded file size: ${data.length} bytes.`);
             throw new Error('error.terminal.hash_verification_failed');
         }
     }

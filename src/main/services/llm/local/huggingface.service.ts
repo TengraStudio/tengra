@@ -244,7 +244,7 @@ export class HuggingFaceService extends BaseService {
     ) {
         super('HuggingFaceService');
     }
-    
+
     private validateQuery(value: UnsafeValue): string {
         if (typeof value !== 'string') { return ''; }
         return value.trim().slice(0, 256);
@@ -711,9 +711,9 @@ export class HuggingFaceService extends BaseService {
     @ipc(HF_CHANNELS.GET_CONVERSION_PRESETS)
     getConversionPresets(): HFConversionPreset[] {
         return [
-            { id: 'balanced', quantization: 'Q4_K_M', description: t('auto.bestDefaultForQualityperformanceBalance') },
+            { id: 'balanced', quantization: 'Q4_K_M', description: t('backend.bestDefaultForQualityperformanceBalance') },
             { id: 'quality', quantization: 'Q6_K', description: 'Higher quality, larger memory usage' },
-            { id: 'speed', quantization: 'Q5_K_M', description: t('auto.fasterInferenceWithStrongQuality') },
+            { id: 'speed', quantization: 'Q5_K_M', description: t('backend.fasterInferenceWithStrongQuality') },
             { id: 'tiny', quantization: 'Q8_0', description: 'Smallest footprint for constrained systems' }
         ];
     }
@@ -783,18 +783,18 @@ export class HuggingFaceService extends BaseService {
                 this.mainWindowProvider()?.webContents.send('hf:conversion-progress', progress);
             };
 
-            onProgress({ stage: 'validate', percent: 10, message: t('auto.validatingConversionEnvironment') });
+            onProgress({ stage: 'validate', percent: 10, message: t('backend.validatingConversionEnvironment') });
 
             appLogger.info('HuggingFaceService', `Starting conversion: ${validatedOptions.sourcePath} -> ${validatedOptions.outputPath} (${validatedOptions.quantization})`);
 
             // Mocking the process for now to satisfy the IPC contract
-            onProgress({ stage: 'convert', percent: 30, message: t('auto.preparingConversionPipeline') });
+            onProgress({ stage: 'convert', percent: 30, message: t('backend.preparingConversionPipeline') });
             await new Promise(r => setTimeout(r, 800));
 
             onProgress({ stage: 'quantize', percent: 60, message: `Setting up quantization for ${validatedOptions.quantization}...` });
             await new Promise(r => setTimeout(r, 800));
 
-            onProgress({ stage: 'finalize', percent: 90, message: t('auto.finalizingModelFile') });
+            onProgress({ stage: 'finalize', percent: 90, message: t('backend.finalizingModelFile') });
             await new Promise(r => setTimeout(r, 400));
 
             return {

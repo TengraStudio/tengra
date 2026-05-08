@@ -9,9 +9,10 @@
  */
 
 import { spawn } from 'child_process';
-import { promises as fs } from 'fs';
+import { existsSync, promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import * as protocol from 'vscode-languageserver-protocol';
 
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
@@ -23,12 +24,15 @@ import { JobSchedulerService } from '@main/services/system/job-scheduler.service
 import { UtilityProcessService } from '@main/services/system/utility-process.service';
 import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
+import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
 import { LspService } from '@main/services/workspace/lsp.service';
 import {
     DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
     getWorkspaceIgnoreMatcher,
     type WorkspaceIgnoreMatcher
 } from '@main/services/workspace/workspace-ignore.util';
+import { scanDirForTodos } from '@main/services/workspace/code-intelligence/file-scanner.util';
+import { FileSearchResult } from '@shared/types/common';
 import { t } from '@main/utils/i18n.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
@@ -52,8 +56,7 @@ import type {
 } from '@shared/types/workspace';
 import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { BrowserWindow, IpcMainInvokeEvent } from 'electron';
-import { z } from 'zod';
+import { BrowserWindow } from 'electron';
 
 export type {
     CodeAnnotation,
@@ -331,7 +334,7 @@ export class WorkspaceService extends BaseService {
     private readonly WORKSPACE_FILES_PAGE_SIZE = 1000;
     private readonly INITIAL_STATS_SAMPLE_LIMIT = 400;
     private readonly LSP_PRIME_WAIT_MS = 400;
-    private readonly STATIC_DIAGNOSTICS_TIMEOUT_MS = 12_000;
+    private readonly STATIC_DIAGNOSTICS_TIMEOUT_MS = 90_000;
     private readonly MAX_STATIC_ISSUES = 1000;
 
     private workerProcessId: string | null = null;
@@ -439,11 +442,9 @@ export class WorkspaceService extends BaseService {
     }
 
     async setActiveWorkspace(rootPath: string | null): Promise<void> {
-        appLogger.debug(LOG_CONTEXT, 'Setting active workspace', { rootPath });
         const nextRootPath = rootPath ? this.resolveAndValidateRootPath(rootPath) : null;
 
         if (nextRootPath === this.activeWorkspaceRootPath && this.activeWorkspaceRootPath !== null) {
-            appLogger.debug(LOG_CONTEXT, 'Workspace already active', { rootPath: nextRootPath });
             return;
         }
 
@@ -451,27 +452,33 @@ export class WorkspaceService extends BaseService {
         this.activeWorkspaceRootPath = nextRootPath;
         if (this.allowedFileRoots) {
             if (nextRootPath) {
-                appLogger.info('Workspace', `Registering active workspace root as allowed`, { path: nextRootPath });
                 this.allowedFileRoots.add(nextRootPath);
 
                 // Also register all mount roots
                 if (this.databaseService) {
                     const workspaces = await this.databaseService.workspaces.getWorkspaces();
-                    const activeWorkspace = workspaces.find(w => 
-                        w.path === rootPath || 
+                    const activeWorkspace = workspaces.find(w =>
+                        w.path === rootPath ||
                         this.resolveAndValidateRootPath(w.path) === nextRootPath
                     );
-                    
+
                     if (activeWorkspace?.mounts) {
-                        activeWorkspace.mounts.forEach((mount: any) => {
+                        activeWorkspace.mounts.forEach((mount: { rootPath?: string }) => {
                             if (mount.rootPath) {
                                 const resolvedMountPath = path.resolve(mount.rootPath);
-                                appLogger.info('Workspace', `Registering mount root as allowed`, { path: resolvedMountPath });
-                                this.allowedFileRoots!.add(resolvedMountPath);
+                                this.allowedFileRoots?.add(resolvedMountPath);
                             }
                         });
                     }
                 }
+            }
+
+            if (nextRootPath) {
+                // Automatically trigger workspace analysis in the background.
+                // This ensures LSP servers are started and diagnostics are gathered as soon as the workspace is opened.
+                this.analyzeWorkspace(nextRootPath).catch(err => {
+                    appLogger.error(LOG_CONTEXT, 'Background workspace analysis failed', { path: nextRootPath, error: err });
+                });
             }
         }
 
@@ -575,6 +582,40 @@ export class WorkspaceService extends BaseService {
     async saveEnvVarsIpc(rootPath: string, vars: Record<string, string>): Promise<RuntimeValue> {
         await this.saveEnvVars(rootPath, vars);
         return serializeToIpc(void 0);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.PULL_DIAGNOSTICS)
+    async pullDiagnosticsIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: string;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) return serializeToIpc(null);
+        const result = await this.lspService.pullDiagnostics(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId as any
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.GET_CODE_ACTIONS)
+    async getCodeActionsIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: string;
+        range: protocol.Range;
+        diagnostics: protocol.Diagnostic[];
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) return serializeToIpc(null);
+        const result = await this.lspService.getCodeActions(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId as any,
+            payload.range,
+            payload.diagnostics
+        );
+        return serializeToIpc(result);
     }
 
     private trackChangedPath(rootPath: string, changedPath: string): void {
@@ -704,7 +745,6 @@ export class WorkspaceService extends BaseService {
 
         const scanResult = await this.scanFiles(rootPath);
         const files = scanResult.files;
-        this.logDebug(`Found ${files.length} files`);
         const type = await this.detectType(files);
         const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(
             rootPath,
@@ -716,13 +756,6 @@ export class WorkspaceService extends BaseService {
             files,
             scanResult.complete ? files.length : this.INITIAL_STATS_SAMPLE_LIMIT
         );
-        this.logDebug('Stats calculated', {
-            fileCount: stats.fileCount,
-            totalSize: stats.totalSize,
-            loc: stats.loc,
-            lastModified: stats.lastModified,
-            partialScan: !scanResult.complete,
-        });
         const languages = await this.calculateLanguages(files);
         const monorepo = await this.detectMonorepo(rootPath, files);
         const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
@@ -1158,7 +1191,6 @@ export class WorkspaceService extends BaseService {
 
     private paginateFiles(files: string[], offset: number, limit: number): WorkspaceFilesPageResult {
         if (!Array.isArray(files)) {
-            appLogger.debug(LOG_CONTEXT, 'paginateFiles called with non-array', { type: typeof files });
             return { files: [], offset: 0, limit, total: 0, hasMore: false };
         }
         const safeOffset = Math.max(0, Math.floor(offset));
@@ -1233,17 +1265,114 @@ export class WorkspaceService extends BaseService {
     }
 
     private async findAnnotations(rootPath: string, files: string[]): Promise<CodeAnnotation[]> {
-        void rootPath;
-        void files;
-        return [];
+        const results: FileSearchResult[] = [];
+        const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
+        await scanDirForTodos(rootPath, results, ignoreMatcher);
+
+        return results.map(res => ({
+            file: res.file,
+            line: res.line,
+            message: res.text,
+            type: (res.type?.toLowerCase() as any) || 'todo'
+        }));
     }
 
-    private async findStaticIssues(rootPath: string, files: string[]): Promise<StaticIssuesScanResult> {
+    private async findStaticIssues(rootPath: string, files: string[]): Promise<{ issues: WorkspaceIssue[]; diagnosticsStatus: WorkspaceDiagnosticsStatus }> {
         const issueBuckets: WorkspaceIssue[] = [];
         const sources: WorkspaceDiagnosticsSourceResult[] = [];
         const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
-
+        const t = (key: string) => key; // Fallback for i18n
         const hasJsOrTsSources = files.some(file => /\.(?:[cm]?js|jsx|[cm]?ts|tsx)$/i.test(file));
+
+        // 1. Biome (Native-First)
+        if (hasJsOrTsSources) {
+            const biomeResult = await this.runStaticDiagnosticsCommand(
+                rootPath,
+                ['--no-install', 'biome', 'check', '--format=json', '--no-errors-on-unmatched'],
+                this.STATIC_DIAGNOSTICS_TIMEOUT_MS
+            );
+
+            if (!biomeResult.commandNotFound && !biomeResult.timedOut) {
+                const parsed = this.parseBiomeIssues(rootPath, biomeResult.stdout);
+                const filtered = parsed.filter(issue => !ignoreMatcher.ignoresAbsolute(path.resolve(rootPath, issue.file)));
+                issueBuckets.push(...filtered);
+                sources.push({
+                    source: 'biome',
+                    status: biomeResult.exitCode === 0 || biomeResult.exitCode === 1 ? 'ok' : 'failed',
+                    issueCount: parsed.length,
+                    message: biomeResult.exitCode === 0 || biomeResult.exitCode === 1
+                        ? undefined
+                        : `Exited with code ${biomeResult.exitCode ?? 'unknown'}.`,
+                });
+            } else if (biomeResult.commandNotFound) {
+                sources.push({
+                    source: 'biome',
+                    status: 'skipped',
+                    message: 'Biome binary not found.',
+                });
+            }
+        }
+
+        // 2. Ruff (Native Python Analysis)
+        const hasPythonSources = files.some(file => /\.pyi?$/i.test(file));
+        if (hasPythonSources) {
+            const ruffResult = await this.runStaticDiagnosticsCommand(
+                rootPath,
+                ['--no-install', 'ruff', 'check', '--format', 'json'],
+                this.STATIC_DIAGNOSTICS_TIMEOUT_MS
+            );
+
+            if (!ruffResult.commandNotFound && !ruffResult.timedOut) {
+                const parsed = this.parseRuffIssues(rootPath, ruffResult.stdout);
+                const filtered = parsed.filter(issue => !ignoreMatcher.ignoresAbsolute(path.resolve(rootPath, issue.file)));
+                issueBuckets.push(...filtered);
+                sources.push({
+                    source: 'ruff',
+                    status: ruffResult.exitCode === 0 || ruffResult.exitCode === 1 ? 'ok' : 'failed',
+                    issueCount: parsed.length,
+                    message: ruffResult.exitCode === 0 || ruffResult.exitCode === 1
+                        ? undefined
+                        : `Exited with code ${ruffResult.exitCode ?? 'unknown'}.`,
+                });
+            } else if (ruffResult.commandNotFound) {
+                sources.push({
+                    source: 'ruff',
+                    status: 'skipped',
+                    message: 'Ruff binary not found.',
+                });
+            }
+        }
+
+        // 3. golangci-lint (Native Go Analysis)
+        const hasGoSources = files.some(file => /\.go$/i.test(file));
+        if (hasGoSources) {
+            const goResult = await this.runStaticDiagnosticsCommand(
+                rootPath,
+                ['--no-install', 'golangci-lint', 'run', '--out-format', 'json', '--timeout', '5m'],
+                Math.max(this.STATIC_DIAGNOSTICS_TIMEOUT_MS, 300000) // Go linting can be slow on first run
+            );
+
+            if (!goResult.commandNotFound && !goResult.timedOut) {
+                const parsed = this.parseGoIssues(rootPath, goResult.stdout);
+                const filtered = parsed.filter(issue => !ignoreMatcher.ignoresAbsolute(path.resolve(rootPath, issue.file)));
+                issueBuckets.push(...filtered);
+                sources.push({
+                    source: 'golangci-lint',
+                    status: goResult.exitCode === 0 || goResult.exitCode === 1 ? 'ok' : 'failed',
+                    issueCount: parsed.length,
+                    message: goResult.exitCode === 0 || goResult.exitCode === 1
+                        ? undefined
+                        : `Exited with code ${goResult.exitCode ?? 'unknown'}.`,
+                });
+            } else if (goResult.commandNotFound) {
+                sources.push({
+                    source: 'golangci-lint',
+                    status: 'skipped',
+                    message: 'golangci-lint binary not found.',
+                });
+            }
+        }
+
         const hasTypeScriptConfig = await this.workspaceHasAnyFile(rootPath, ['tsconfig.json', 'jsconfig.json']);
         if (hasJsOrTsSources && hasTypeScriptConfig) {
             const tscResult = await this.runStaticDiagnosticsCommand(
@@ -1265,7 +1394,8 @@ export class WorkspaceService extends BaseService {
                 });
             } else {
                 const parsed = this.parseTypeScriptIssues(rootPath, tscResult.stdout, tscResult.stderr);
-                issueBuckets.push(...parsed);
+                const filtered = parsed.filter(issue => !ignoreMatcher.ignoresAbsolute(path.resolve(rootPath, issue.file)));
+                issueBuckets.push(...filtered);
                 sources.push({
                     source: 'tsc',
                     status: tscResult.exitCode === 0 || tscResult.exitCode === 1 || tscResult.exitCode === 2 ? 'ok' : 'failed',
@@ -1279,7 +1409,7 @@ export class WorkspaceService extends BaseService {
             sources.push({
                 source: 'tsc',
                 status: 'skipped',
-                message: t('auto.noTypescriptjavascriptProjectConfigDetec'),
+                message: t('backend.noTypescriptjavascriptProjectConfigDetec'),
             });
         }
 
@@ -1304,7 +1434,8 @@ export class WorkspaceService extends BaseService {
                 });
             } else {
                 const parsed = this.parseEslintIssues(rootPath, eslintResult.stdout, eslintResult.stderr);
-                issueBuckets.push(...parsed);
+                const filtered = parsed.filter(issue => !ignoreMatcher.ignoresAbsolute(path.resolve(rootPath, issue.file)));
+                issueBuckets.push(...filtered);
                 sources.push({
                     source: 'eslint',
                     status: eslintResult.exitCode === 0 || eslintResult.exitCode === 1 ? 'ok' : 'failed',
@@ -1393,9 +1524,19 @@ export class WorkspaceService extends BaseService {
         return await new Promise(resolve => {
             let child: import('child_process').ChildProcess;
             try {
-                child = spawn(command, args, {
+                let spawnCommand = command;
+                let spawnArgs = args;
+                let useShell = shell;
+
+                if (process.platform === 'win32' && (command.toLowerCase().endsWith('.cmd') || command.toLowerCase().endsWith('.bat'))) {
+                    spawnCommand = process.env.ComSpec || 'cmd.exe';
+                    spawnArgs = ['/d', '/s', '/c', command, ...args];
+                    useShell = false;
+                }
+
+                child = spawn(spawnCommand, spawnArgs, {
                     cwd: rootPath,
-                    shell,
+                    shell: useShell,
                     windowsHide: true,
                 });
             } catch (error) {
@@ -1431,6 +1572,10 @@ export class WorkspaceService extends BaseService {
                 stderr += message;
             });
             child.on('close', code => {
+                this.logInfo(`Diagnostic command "${command}" finished with exit code ${code}. Stdout length: ${stdout.length}, Stderr length: ${stderr.length}`);
+                if (stderr.length > 0 && stdout.length === 0) {
+                    this.logWarn(`Diagnostic command "${command}" stderr: ${stderr.split('\n')[0]}`);
+                }
                 clearTimeout(timeoutHandle);
                 resolve({
                     exitCode: code,
@@ -1444,43 +1589,14 @@ export class WorkspaceService extends BaseService {
     }
 
     private async executeStaticDiagnosticsViaProxy(
-        rootPath: string,
-        command: string,
-        args: string[],
-        timeoutMs: number
+        _rootPath: string,
+        _command: string,
+        _args: string[],
+        _timeoutMs: number
     ): Promise<StaticDiagnosticsCommandResult | null> {
-        if (!this.proxyService) {
-            return null;
-        }
-
-        try {
-            const response = await this.proxyService.dispatchTool('system', 'exec', {
-                command,
-                args,
-                cwd: rootPath,
-                timeoutMs,
-            });
-            if (!response.success) {
-                return null;
-            }
-
-            const result = (response.result && typeof response.result === 'object' && !Array.isArray(response.result))
-                ? response.result as Record<string, unknown>
-                : undefined;
-            if (!result) {
-                return null;
-            }
-
-            return {
-                exitCode: typeof result.exitCode === 'number' ? result.exitCode : null,
-                stdout: typeof result.stdout === 'string' ? result.stdout : '',
-                stderr: typeof result.stderr === 'string' ? result.stderr : '',
-                timedOut: result.timedOut === true,
-                commandNotFound: result.commandNotFound === true,
-            };
-        } catch {
-            return null;
-        }
+        // Disable proxy execution for diagnostics as it may trigger visible terminal windows.
+        // Local execution is preferred and guaranteed to be hidden.
+        return null;
     }
 
     private async resolveLocalDiagnosticBinary(
@@ -1490,17 +1606,35 @@ export class WorkspaceService extends BaseService {
         if (!toolName) {
             return null;
         }
-        const binaryName =
-            process.platform === 'win32'
-                ? `${toolName}.cmd`
-                : toolName;
-        const binaryPath = path.join(rootPath, 'node_modules', '.bin', binaryName);
-        try {
-            await fs.access(binaryPath);
-            return binaryPath;
-        } catch {
-            return null;
+
+        // 1. Check managed runtime bin directory (Native-First priority)
+        const managedBinDir = getManagedRuntimeBinDir();
+        const managedName = process.platform === 'win32' ? `${toolName}.exe` : toolName;
+        const managedPath = path.join(managedBinDir, managedName);
+        if (existsSync(managedPath)) {
+            return managedPath;
         }
+
+        // 2. Check local node_modules by walking up directory tree
+        const binaryName = process.platform === 'win32' ? `${toolName}.cmd` : toolName;
+        let currentDir = rootPath;
+        while (true) {
+            const binaryPath = path.join(currentDir, 'node_modules', '.bin', binaryName);
+            try {
+                await fs.access(binaryPath);
+                return binaryPath;
+            } catch {
+                // Not found in this directory
+            }
+
+            const parentDir = path.dirname(currentDir);
+            if (parentDir === currentDir) {
+                break; // Reached root
+            }
+            currentDir = parentDir;
+        }
+        
+        return null;
     }
 
     private parseTypeScriptIssues(rootPath: string, stdout: string, stderr: string): WorkspaceIssue[] {
@@ -1512,9 +1646,9 @@ export class WorkspaceService extends BaseService {
             if (!compactLine) {
                 continue;
             }
-            let match = compactLine.match(/^(.*)\((\d+),(\d+)\):\s*error\s+(TS\d+):\s*(.+)$/i);
+            let match = compactLine.match(/^(.*)\((\d+),(\d+)\):\s*(error|warning)\s+(TS\d+):\s*(.+)$/i);
             if (!match) {
-                match = compactLine.match(/^(.*):(\d+):(\d+)\s*-\s*error\s+(TS\d+):\s*(.+)$/i);
+                match = compactLine.match(/^(.*):(\d+):(\d+)\s*-\s*(error|warning)\s+(TS\d+):\s*(.+)$/i);
             }
             if (!match) {
                 continue;
@@ -1527,23 +1661,134 @@ export class WorkspaceService extends BaseService {
                 file,
                 line: Number(match[2]),
                 column: Number(match[3]),
-                severity: 'error',
+                severity: (match[4] || '').toLowerCase().includes('warn') ? 'warning' : 'error',
                 source: 'tsc',
-                code: match[4],
-                message: match[5],
+                code: match[5],
+                message: match[6],
             });
         }
         return diagnostics;
     }
 
+    private parseBiomeIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
+        const issues: WorkspaceIssue[] = [];
+        if (!stdout || stdout.trim() === '') return issues;
+        try {
+            const data = JSON.parse(stdout) as {
+                diagnostics?: Array<{
+                    location?: { path?: { file?: string }; span?: [number, number] };
+                    severity?: string;
+                    message?: string;
+                    category?: string;
+                }>
+            };
+
+            if (!data.diagnostics) {
+                return issues;
+            }
+
+            for (const diag of data.diagnostics) {
+                if (!diag.location?.path?.file || !diag.message) {
+                    continue;
+                }
+
+                const filePath = diag.location.path.file;
+
+                issues.push({
+                    file: filePath,
+                    line: 1,
+                    column: 1,
+                    severity: diag.severity === 'error' ? 'error' : 'warning',
+                    message: diag.message,
+                    code: diag.category,
+                    source: 'biome',
+                });
+            }
+        } catch (e) {
+            this.logWarn(`Failed to parse Biome issues: ${getErrorMessage(e as Error)}`);
+        }
+        return issues;
+    }
+
+    private parseRuffIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
+        const issues: WorkspaceIssue[] = [];
+        if (!stdout || stdout.trim() === '') return issues;
+        try {
+            const data = JSON.parse(stdout) as Array<{
+                code?: string;
+                message?: string;
+                location?: { row?: number; column?: number };
+                filename?: string;
+            }>;
+
+            for (const item of data) {
+                if (!item.filename || !item.message) {
+                    continue;
+                }
+
+                issues.push({
+                    file: item.filename,
+                    line: item.location?.row ?? 1,
+                    column: item.location?.column ?? 1,
+                    severity: 'warning', // Ruff doesn't always specify severity in basic json, default to warning
+                    message: item.message,
+                    code: item.code,
+                    source: 'ruff',
+                });
+            }
+        } catch (e) {
+            this.logWarn(`Failed to parse Ruff issues: ${getErrorMessage(e as Error)}`);
+        }
+        return issues;
+    }
+
+    private parseGoIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
+        const issues: WorkspaceIssue[] = [];
+        if (!stdout || stdout.trim() === '') return issues;
+        try {
+            const data = JSON.parse(stdout) as {
+                Issues?: Array<{
+                    FromLinter?: string;
+                    Text?: string;
+                    Pos?: { Filename?: string; Line?: number; Column?: number };
+                }>
+            };
+
+            if (!data.Issues) {
+                return issues;
+            }
+
+            for (const item of data.Issues) {
+                if (!item.Pos?.Filename || !item.Text) {
+                    continue;
+                }
+
+                issues.push({
+                    file: item.Pos.Filename,
+                    line: item.Pos.Line ?? 1,
+                    column: item.Pos.Column ?? 1,
+                    severity: 'warning',
+                    message: item.Text,
+                    code: item.FromLinter,
+                    source: 'golangci-lint',
+                });
+            }
+        } catch (e) {
+            this.logWarn(`Failed to parse Go issues: ${getErrorMessage(e as Error)}`);
+        }
+        return issues;
+    }
+
     private parseEslintIssues(rootPath: string, stdout: string, stderr: string): WorkspaceIssue[] {
         const output = stdout.trim();
-        if (!output.startsWith('[')) {
+        const jsonStartIndex = output.indexOf('[');
+        if (jsonStartIndex === -1) {
             if (stderr.trim().length > 0) {
-                this.logWarn(`ESLint output parse skipped: ${stderr.split(/\r?\n/)[0]}`);
+                this.logWarn(`ESLint output parse skipped (no JSON array found): ${stderr.split(/\r?\n/)[0]}`);
             }
             return [];
         }
+        const jsonContent = output.substring(jsonStartIndex);
         const report = safeJsonParse<Array<{
             filePath?: string;
             messages?: Array<{
@@ -1949,7 +2194,7 @@ export class WorkspaceService extends BaseService {
             const content = await fs.readFile(filePath, 'utf-8');
             return Math.max(1, content.split(/\r?\n/).length);
         } catch (error) {
-            appLogger.debug(LOG_CONTEXT, `Failed to read language file ${filePath}:`, getErrorMessage(error as Error));
+            appLogger.error(LOG_CONTEXT, `Failed to read language file ${filePath}:`, getErrorMessage(error as Error));
             return 1;
         }
     }
@@ -2507,7 +2752,7 @@ export class WorkspaceService extends BaseService {
                 this.parseGradleDeps(content, result.dependencies);
                 this.detectGradleFrameworks(content, result.frameworks);
             } catch (error) {
-                appLogger.debug(LOG_CONTEXT, `Failed to read gradle file ${file}:`, getErrorMessage(error as Error));
+                appLogger.error(LOG_CONTEXT, `Failed to read gradle file ${file}:`, getErrorMessage(error as Error));
             }
         }
     }
@@ -2549,7 +2794,7 @@ export class WorkspaceService extends BaseService {
                 }
                 if (content.includes('spring-boot')) { result.frameworks.push('Spring Boot'); }
             } catch (error) {
-                appLogger.debug(LOG_CONTEXT, `Failed to read pom file ${file}:`, getErrorMessage(error as Error));
+                appLogger.error(LOG_CONTEXT, `Failed to read pom file ${file}:`, getErrorMessage(error as Error));
             }
         }
     }
@@ -2590,7 +2835,7 @@ export class WorkspaceService extends BaseService {
                     lastModified = modifiedAt;
                 }
                 this.trackDirectorySize(directorySizes, rootPath, file, stat.size);
-                
+
                 // Track top 20 files by size to find top LOC candidates
                 if (stat.isFile()) {
                     topFilesBySize.push({ path: file, size: stat.size });
@@ -2601,7 +2846,7 @@ export class WorkspaceService extends BaseService {
                 }
             } catch (error) {
                 // Ignore missing file errors during scan
-                appLogger.debug(LOG_CONTEXT, `Failed to stat file ${file}:`, getErrorMessage(error as Error));
+                appLogger.error(LOG_CONTEXT, `Failed to stat file ${file}:`, getErrorMessage(error as Error));
             }
         }
 
@@ -2615,9 +2860,9 @@ export class WorkspaceService extends BaseService {
             try {
                 const content = await fs.readFile(file.path, 'utf-8');
                 const lines = content.split('\n').length;
-                topFilesByLoc.push({ 
-                    path: path.relative(rootPath, file.path), 
-                    loc: lines 
+                topFilesByLoc.push({
+                    path: path.relative(rootPath, file.path),
+                    loc: lines
                 });
             } catch {
                 // Ignore read errors
@@ -2632,7 +2877,7 @@ export class WorkspaceService extends BaseService {
                 const stat = await fs.stat(file);
                 totalBytes += stat.size;
             } catch (error) {
-                appLogger.debug(LOG_CONTEXT, `Failed to stat sampled file ${file}:`, getErrorMessage(error as Error));
+                appLogger.error(LOG_CONTEXT, `Failed to stat sampled file ${file}:`, getErrorMessage(error as Error));
             }
         }
 
@@ -2754,7 +2999,7 @@ export class WorkspaceService extends BaseService {
             }
             return result;
         } catch (error) {
-            appLogger.debug(LOG_CONTEXT, `Failed to read .env file at ${envPath}: ${getErrorMessage(error as Error)}`);
+            appLogger.error(LOG_CONTEXT, `Failed to read .env file at ${envPath}: ${getErrorMessage(error as Error)}`);
             return {};
         }
     }
@@ -2785,15 +3030,13 @@ export class WorkspaceService extends BaseService {
     }
 
     private resolveAndValidateRootPath(inputPath: string): string {
-        if (typeof inputPath !== 'string' || !inputPath) {
-            appLogger.debug(LOG_CONTEXT, 'Invalid input path type or empty', { type: typeof inputPath, value: inputPath });
+        if (typeof inputPath !== 'string' || !inputPath) { 
             throw new ValidationError('Workspace root path must be a non-empty string');
         }
         const sanitizedInput = process.platform === 'win32' && inputPath.startsWith('/') && inputPath.charAt(2) === ':'
             ? inputPath.slice(1)
             : inputPath;
 
-        appLogger.debug(LOG_CONTEXT, 'Validating sanitized path', { sanitizedInput });
         const parsedPath = WorkspaceRootPathSchema.safeParse(sanitizedInput);
         if (!parsedPath.success) {
             throw new ValidationError(`Invalid workspace root path: ${parsedPath.error.issues[0]?.message ?? 'unknown validation issue'}`);

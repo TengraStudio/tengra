@@ -66,7 +66,7 @@ export function useWorkspaceAgentSessions({
     language,
 }: UseWorkspaceAgentSessionsOptions) {
     const { t } = useTranslation(language);
-    const { appSettings, quotas, codexUsage, claudeQuota } = useAuth();
+    const { appSettings, quotas, codexUsage, claudeQuota, updateGeneral } = useAuth();
     const {
         selectedModel,
         selectedProvider,
@@ -98,10 +98,42 @@ export function useWorkspaceAgentSessions({
     const [deliveryMode, setDeliveryMode] = useState<WorkspaceMessageDeliveryMode>('send');
     const [pendingMessagesBySession, setPendingMessagesBySession] = useState<Record<string, PendingWorkspaceMessage[]>>({});
     const [draftPermissionPolicy, setDraftPermissionPolicy] =
-        useState<WorkspaceAgentPermissionPolicy>({
+        useState<WorkspaceAgentPermissionPolicy>(() => ({
             ...DEFAULT_PERMISSION_POLICY,
-            allowedPaths: [workspace.path],
-        });
+            commandPolicy: appSettings?.general?.agentCommandPolicy ?? DEFAULT_PERMISSION_POLICY.commandPolicy,
+            pathPolicy: appSettings?.general?.agentPathPolicy ?? DEFAULT_PERMISSION_POLICY.pathPolicy,
+            allowedCommands: appSettings?.general?.agentAllowedCommands ?? [],
+            disallowedCommands: appSettings?.general?.agentDisallowedCommands ?? [],
+            allowedPaths: appSettings?.general?.agentAllowedPaths?.length 
+                ? appSettings.general.agentAllowedPaths 
+                : [workspace.path],
+        }));
+
+    // Computed safe policy that uses latest settings
+    const currentSafePermissionPolicy = useMemo<WorkspaceAgentPermissionPolicy>(() => ({
+        ...DEFAULT_PERMISSION_POLICY,
+        commandPolicy: appSettings?.general?.agentCommandPolicy ?? DEFAULT_PERMISSION_POLICY.commandPolicy,
+        pathPolicy: appSettings?.general?.agentPathPolicy ?? DEFAULT_PERMISSION_POLICY.pathPolicy,
+        allowedCommands: appSettings?.general?.agentAllowedCommands ?? [],
+        disallowedCommands: appSettings?.general?.agentDisallowedCommands ?? [],
+        allowedPaths: appSettings?.general?.agentAllowedPaths?.length 
+            ? appSettings.general.agentAllowedPaths 
+            : [workspace.path],
+    }), [appSettings?.general, workspace.path]);
+
+    // Sync draft policy with settings if they change and no session is active
+    useEffect(() => {
+        if (!currentSessionId && appSettings?.general) {
+            setDraftPermissionPolicy(prev => ({
+                ...prev,
+                commandPolicy: appSettings.general.agentCommandPolicy ?? prev.commandPolicy,
+                pathPolicy: appSettings.general.agentPathPolicy ?? prev.pathPolicy,
+                allowedCommands: appSettings.general.agentAllowedCommands ?? prev.allowedCommands,
+                disallowedCommands: appSettings.general.agentDisallowedCommands ?? prev.disallowedCommands,
+                allowedPaths: appSettings.general.agentAllowedPaths ?? prev.allowedPaths,
+            }));
+        }
+    }, [appSettings?.general, currentSessionId]);
 
     const updateChatCollection = useCallback((sessionId: string, updater: (chat: Chat) => Chat) => {
         setChats(previousChats => {
@@ -152,7 +184,7 @@ export function useWorkspaceAgentSessions({
         loadWorkspaceSessions,
     });
 
-    const activeChatModes = useMemo(
+    const currentModes = useMemo(
         () => toSessionModes(chats.find(chat => chat.id === currentSessionId) ?? null),
         [chats, currentSessionId]
     );
@@ -227,12 +259,6 @@ export function useWorkspaceAgentSessions({
         return councilStateBySession[currentSessionId] ?? EMPTY_COUNCIL_STATE;
     }, [councilStateBySession, currentSessionId]);
 
-    const safePermissionPolicy = useMemo<WorkspaceAgentPermissionPolicy>(() => ({
-        ...DEFAULT_PERMISSION_POLICY,
-        allowedPaths: [workspace.path],
-    }), [workspace.path]);
-
-    const currentModes = currentSession?.modes ?? draftModes;
     const currentPermissionPolicy =
         currentSession?.permissionPolicy ?? draftPermissionPolicy;
     const currentStreamingState = useMemo(() => {
@@ -489,6 +515,15 @@ export function useWorkspaceAgentSessions({
 
     const updateEffectivePermissions = useCallback(
         async (permissionPolicy: WorkspaceAgentPermissionPolicy) => {
+            // Persist to global settings so it becomes the default for future sessions
+            await updateGeneral({
+                agentCommandPolicy: permissionPolicy.commandPolicy,
+                agentPathPolicy: permissionPolicy.pathPolicy,
+                agentAllowedCommands: permissionPolicy.allowedCommands,
+                agentDisallowedCommands: permissionPolicy.disallowedCommands,
+                agentAllowedPaths: permissionPolicy.allowedPaths,
+            });
+
             if (!currentSession) {
                 setDraftPermissionPolicy(permissionPolicy);
                 return;
@@ -496,7 +531,7 @@ export function useWorkspaceAgentSessions({
 
             await updatePermissions(currentSession.id, permissionPolicy);
         },
-        [currentSession, updatePermissions]
+        [currentSession, updatePermissions, updateGeneral]
     );
 
     const openEmptySession = useCallback(async () => {
@@ -504,8 +539,8 @@ export function useWorkspaceAgentSessions({
         setShowCouncilSetup(false);
         setPendingCouncilSetup(null);
         setDraftModes(DEFAULT_MODES);
-        setDraftPermissionPolicy(safePermissionPolicy);
-    }, [safePermissionPolicy, selectSession]);
+        setDraftPermissionPolicy(currentSafePermissionPolicy);
+    }, [currentSafePermissionPolicy, selectSession]);
 
     // Cleanup and background sync
     useEffect(() => {

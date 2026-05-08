@@ -426,8 +426,15 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         },
         ['chatSessionRegistryService']
     );
-    container.register('gitService', () => new GitService());
-    container.register('lspService', () => new LspService());
+    container.register(
+        'gitService',
+        (ls, as) => new GitService(ls as LLMService, as as AuthService),
+        ['llmService', 'authService']
+    );
+    container.register('lspService', (mwp, rbs) => new LspService(mwp as () => BrowserWindow | null, rbs as RuntimeBootstrapService), [
+        'mainWindowProvider',
+        'runtimeBootstrapService'
+    ]);
     container.register('processService', mwp => new ProcessService(mwp as () => BrowserWindow | null), [
         'mainWindowProvider',
     ]);
@@ -1015,7 +1022,11 @@ function registerWorkspaceServices() {
         ),
         ['llmService', 'terminalService', 'advancedMemoryService']
     );
-    container.register('gitService', () => new GitService());
+    container.register(
+        'gitService',
+        (ls, as) => new GitService(ls as LLMService, as as AuthService),
+        ['llmService', 'authService']
+    );
     // SSH and Docker services are now lazy-loaded
     container.register(
         'inlineSuggestionService',

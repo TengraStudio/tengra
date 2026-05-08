@@ -12,6 +12,7 @@ import React, { isValidElement, lazy, memo, Suspense, useMemo } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
 
 import { useThrottle } from '@/hooks/useThrottle';
 import { cn } from '@/lib/utils';
@@ -125,7 +126,7 @@ export const MarkdownContent = memo(
                 <Suspense fallback={<div className="text-sm text-muted-foreground">{t('common.loading')}</div>}>
                     <LazyReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
+                        rehypePlugins={[rehypeRaw, rehypeKatex]}
                         components={{
                             pre: ({ children }) => <>{children}</>,
                             code: props => {

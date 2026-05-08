@@ -35,7 +35,8 @@
         "themes:sync": "node scripts/sync-theme-manifests.js",
         "postinstall": "electron-builder install-app-deps --arch=x64 || node -e \"process.exit(0)\"",
         "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\"",
-        "version": "node scripts/sync-versions.js && git add src/native/Cargo.toml"
+        "version": "node scripts/sync-versions.js && git add src/native/Cargo.toml",
+        "manifest:dump": "node scripts/dump-manifest.js"
     },
     "keywords": [
         "ai",
@@ -91,7 +92,7 @@
         "terser": "^5.46.1",
         "typescript": "^5.3.0",
         "typescript-eslint": "^8.58.2",
-        "vite": "^8.0.10",
+        "vite": "^7.3.3",
         "vite-plugin-electron": "^0.29.1",
         "vite-plugin-electron-renderer": "^0.14.0",
         "vitest": "^4.1.4"

@@ -21,6 +21,28 @@ export interface GitCommitInfo {
     date: string;
 }
 
+export interface PullRequest {
+    id: number;
+    number: number;
+    title: string;
+    user: { login: string; avatar_url: string };
+    state: string;
+    created_at: string;
+    updated_at: string;
+    html_url: string;
+}
+
+export interface Issue {
+    id: number;
+    number: number;
+    title: string;
+    user: { login: string; avatar_url: string };
+    state: string;
+    created_at: string;
+    updated_at: string;
+    html_url: string;
+}
+
 export interface GitData {
     branch: string | null;
     isClean: boolean | null;
@@ -31,6 +53,8 @@ export interface GitData {
     changedFiles: GitFile[];
     stagedFiles: GitFile[];
     unstagedFiles: GitFile[];
+    pullRequests?: PullRequest[];
+    issues?: Issue[];
 }
 
 export interface TrackingInfo {
