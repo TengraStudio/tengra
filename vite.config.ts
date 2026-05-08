@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { resolve } from 'path';
 
-import react from '@vitejs/plugin-react-oxc';
+import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
 import electron from 'vite-plugin-electron';
@@ -72,7 +72,7 @@ export default defineConfig(({ mode }) => {
                         },
                         minify: isDev ? false : 'oxc',
                         sourcemap: isDev,
-                        rolldownOptions: {
+                        rollupOptions: {
                             external,
                             treeshake: isDev ? false : {
                                 moduleSideEffects: false
@@ -114,7 +114,7 @@ export default defineConfig(({ mode }) => {
                     },
                     minify: isDev ? false : 'oxc',
                     sourcemap: isDev,
-                    rolldownOptions: {
+                    rollupOptions: {
                         external: ['electron'],
                         treeshake: !isDev,
                         output: {
@@ -205,7 +205,7 @@ export default defineConfig(({ mode }) => {
                 formats: ['cjs'],
                 fileName: 'main'
             },
-            rolldownOptions: { 
+            rollupOptions: { 
                 external,
                 output: {
                     codeSplitting: false,
@@ -215,7 +215,7 @@ export default defineConfig(({ mode }) => {
         } : {
             outDir: 'dist/renderer',
             emptyOutDir: true,
-            rolldownOptions: {
+            rollupOptions: {
                 treeshake: {
                     moduleSideEffects: 'no-external',
                     propertyReadSideEffects: false,
@@ -327,7 +327,7 @@ export default defineConfig(({ mode }) => {
             ],
             // Exclude large deps that don't need pre-bundling
             exclude: ['@lancedb/lancedb', 'apache-arrow'],
-            rolldownOptions: {
+            rollupOptions: {
                 jsx: 'automatic',
                 jsxImportSource: 'react'
             }
