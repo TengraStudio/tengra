@@ -49,6 +49,8 @@
     "author": "TengraStudio",
     "license": "GPL-3.0",
     "devDependencies": {
+        "@emnapi/core": "^1.10.0",
+        "@emnapi/runtime": "^1.10.0",
         "@eslint/js": "^9.39.4",
         "@playwright/test": "^1.59.1",
         "@testing-library/dom": "^10.4.1",
