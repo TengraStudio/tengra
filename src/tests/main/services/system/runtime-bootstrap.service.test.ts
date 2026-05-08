@@ -77,13 +77,13 @@ const RUNTIME_MANIFEST = {
             requirement: 'required',
             targets: [
                 {
-                    platform: 'win32',
-                    arch: 'x64',
-                    assetName: 'tengra-proxy-win32-x64.zip',
-                    downloadUrl: 'https://example.com/tengra-proxy-win32-x64.zip',
-                    archiveFormat: 'zip',
+                    platform: process.platform,
+                    arch: process.arch,
+                    assetName: `tengra-proxy-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    downloadUrl: `https://example.com/tengra-proxy-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    archiveFormat: process.platform === 'win32' ? 'zip' : 'tar.gz',
                     sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                    executableRelativePath: 'tengra-proxy.exe',
+                    executableRelativePath: process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy',
                     installSubdirectory: 'bin',
                 },
             ],
@@ -97,13 +97,13 @@ const RUNTIME_MANIFEST = {
             requirement: 'required',
             targets: [
                 {
-                    platform: 'win32',
-                    arch: 'x64',
-                    assetName: 'llama-server-win32-x64.zip',
-                    downloadUrl: 'https://example.com/llama-server-win32-x64.zip',
-                    archiveFormat: 'zip',
+                    platform: process.platform,
+                    arch: process.arch,
+                    assetName: `llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    downloadUrl: `https://example.com/llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    archiveFormat: process.platform === 'win32' ? 'zip' : 'tar.gz',
                     sha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-                    executableRelativePath: 'llama-server.exe',
+                    executableRelativePath: process.platform === 'win32' ? 'llama-server.exe' : 'llama-server',
                     installSubdirectory: 'bin',
                 },
             ],
@@ -145,7 +145,7 @@ describe('RuntimeBootstrapService', () => {
     beforeEach(() => {
         vi.resetModules();
         vi.clearAllMocks();
-        runtimeMocks.existsSync.mockImplementation((targetPath: string) => targetPath.endsWith('tengra-proxy.exe'));
+        runtimeMocks.existsSync.mockImplementation((targetPath: string) => targetPath.endsWith(process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy'));
         runtimeMocks.getPath.mockReturnValue('/mock/appData');
         runtimeMocks.access.mockImplementation(async (targetPath: string) => {
             if (targetPath.includes('llama-server')) {
@@ -237,7 +237,7 @@ describe('RuntimeBootstrapService', () => {
             componentId: 'llama-server',
             status: 'install',
             reason: 'missing-file',
-            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', 'llama-server.exe'),
+            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', process.platform === 'win32' ? 'llama-server.exe' : 'llama-server'),
         });
         expect(ollamaEntry).toMatchObject({
             componentId: 'ollama',
@@ -327,7 +327,7 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary.installed).toBe(1);
         expect(result.summary.installRequired).toBe(0);
         expect(result.summary.blockingFailures).toBe(0);
-        const downloadedPath = path.join('/mock/appData', 'runtime', 'cache', 'downloads', 'llama-server-win32-x64.exe');
+        const downloadedPath = path.join('/mock/appData', 'runtime', 'cache', 'downloads', `llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.exe' : ''}`);
         const targetPath = path.join('/mock/appData', 'runtime', 'managed', 'bin', 'llama-server.exe');
         expect(runtimeMocks.writeFile).toHaveBeenCalledWith(downloadedPath, expect.any(Buffer));
         expect(runtimeMocks.copyFile).toHaveBeenCalledWith(downloadedPath, targetPath);

@@ -288,7 +288,7 @@ describe('ToolExecutor', () => {
     it('searches files through FileSystemService with result limiting', async () => {
         fileSystem.searchFiles.mockResolvedValueOnce({
             success: true,
-            data: [path.normalize('C:/repo/a.test.ts'), path.normalize('C:/repo/b.test.ts'), 'C:/repo/c.test.ts']
+            data: [path.resolve('/repo/a.test.ts'), path.resolve('/repo/b.test.ts'), path.resolve('/repo/c.test.ts')]
         });
 
         const executor = createExecutor();
@@ -318,7 +318,7 @@ describe('ToolExecutor', () => {
     it('routes get_file_info to fileSystem.getFileInfo', async () => {
         fileSystem.getFileInfo.mockResolvedValueOnce({
             success: true,
-            data: { path: path.normalize('C:/repo/package.json'), size: 123, isFile: true, isDirectory: false }
+            data: { path: path.resolve('/repo/package.json'), size: 123, isFile: true, isDirectory: false }
         });
 
         const executor = createExecutor();
