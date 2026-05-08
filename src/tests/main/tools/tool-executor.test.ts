@@ -537,7 +537,7 @@ describe('ToolExecutor', () => {
                 waitedForCompletion: true,
             },
         });
-        expect(result.result?.elapsedMs).toEqual(expect.any(Number));
+        expect((result.result as any).elapsedMs).toEqual(expect.any(Number));
         expect(terminal.write).toHaveBeenCalledWith('agent-term-1', "npm test\r");
     });
 

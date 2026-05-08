@@ -545,7 +545,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             ]),
             getDiagnostics: vi.fn().mockReturnValue([
                 {
-                    uri: 'file:///C:/mock/workspace/src/index.ts',
+                    uri: `file:///${path.resolve('/mock/workspace/src/index.ts').replace(/\\/g, '/')}`,
                     diagnostics: [
                         {
                             severity: 1,
