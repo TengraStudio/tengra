@@ -141,7 +141,7 @@ export const AUTH_CHANNELS = {
   GET_SESSION_ANALYTICS: 'auth:get-session-analytics',
   GET_SESSION_TIMEOUT: 'auth:get-session-timeout',
   GET_TOKEN_ANALYTICS: 'auth:get-token-analytics',
-  GITHUB_LOGIN: 'auth:github-login',
+  COPILOT_LOGIN: 'auth:copilot-login',
   IMPORT_CREDENTIALS: 'auth:import-credentials',
   HAS_LINKED_ACCOUNT: 'auth:has-linked-account',
   LINK_ACCOUNT: 'auth:link-account',

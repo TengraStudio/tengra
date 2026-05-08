@@ -555,7 +555,7 @@ export class ProxyService extends BaseService {
 
     if (provider === 'antigravity' || provider === 'google') {
       this.processAntigravityQuota(account, quotaObject, collectors.quotaAccounts);
-    } else if (provider === 'copilot' || provider === 'github') {
+    } else if (provider === 'copilot') {
       this.processCopilotQuota(account, quotaObject, collectors.copilotAccounts);
     } else if (provider === 'codex' || provider === 'openai') {
       this.processCodexQuota(account, quotaObject, collectors.codexAccounts);
@@ -807,12 +807,12 @@ export class ProxyService extends BaseService {
   }
 
   /**
-   * Initiates GitHub device code OAuth flow.
+   * Initiates Copilot device code OAuth flow.
    * @param appId - OAuth app to use
    * @returns Device code response for user authorization
    */
-  async initiateGitHubAuth(appId: 'copilot' = 'copilot'): Promise<DeviceCodeResponse> {
-    this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_INITIATED, { provider: 'github', appId });
+  async initiateCopilotAuth(appId: 'copilot' = 'copilot'): Promise<DeviceCodeResponse> {
+    this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_INITIATED, { provider: 'copilot', appId });
     
     const response = await this.makeRequest<{
       device_code: string;
@@ -821,18 +821,18 @@ export class ProxyService extends BaseService {
       expires_in: number;
       interval: number;
     }>(
-      '/v0/auth/github/login',
+      '/v0/auth/copilot/login',
       await this.getRuntimeProxyApiKey(),
       'GET',
       undefined
     );
 
     if (typeof response === 'object' && response !== null && 'error' in response && response.error) {
-      this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_FAILED, { provider: 'github', appId, error: response.error as string });
-      throw new Error(`GitHub auth initiation failed: ${response.error}`);
+      this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_FAILED, { provider: 'copilot', appId, error: response.error as string });
+      throw new Error(`Copilot auth initiation failed: ${response.error}`);
     }
 
-    const githubResponse = response as {
+    const copilotResponse = response as {
         device_code: string;
         user_code: string;
         verification_uri: string;
@@ -841,30 +841,30 @@ export class ProxyService extends BaseService {
     };
     
     return {
-      device_code: githubResponse.device_code,
-      user_code: githubResponse.user_code,
-      verification_uri: githubResponse.verification_uri,
-      expires_in: githubResponse.expires_in,
-      interval: githubResponse.interval
+      device_code: copilotResponse.device_code,
+      user_code: copilotResponse.user_code,
+      verification_uri: copilotResponse.verification_uri,
+      expires_in: copilotResponse.expires_in,
+      interval: copilotResponse.interval
     };
   }
 
   /**
-   * Polls for GitHub OAuth token after device code authorization.
-   * @param deviceCode - Device code from initiateGitHubAuth
+   * Polls for Copilot OAuth token after device code authorization.
+   * @param deviceCode - Device code from initiateCopilotAuth
    * @param interval - Poll interval in seconds
    * @param appId - OAuth app identifier
    * @returns Token response
    * @throws ValidationError if inputs invalid
    */
-  async waitForGitHubToken(deviceCode: string, interval: number, appId: 'copilot' = 'copilot'): Promise<TokenResponse> {
+  async waitForCopilotToken(deviceCode: string, interval: number, appId: 'copilot' = 'copilot'): Promise<TokenResponse> {
     const codeError = validateToken(deviceCode, 'Device code');
     if (codeError) {
-      throw new ValidationError(`waitForGitHubToken: ${codeError}`);
+      throw new ValidationError(`waitForCopilotToken: ${codeError}`);
     }
     const intervalError = validateInterval(interval);
     if (intervalError) {
-      throw new ValidationError(`waitForGitHubToken: ${intervalError}`);
+      throw new ValidationError(`waitForCopilotToken: ${intervalError}`);
     }
 
     const checkToken = async (): Promise<TokenResponse> => {
@@ -880,7 +880,7 @@ export class ProxyService extends BaseService {
         copilot_plan?: string;
         error?: string;
       }>(
-        `/v0/auth/github/poll?device_code=${encodeURIComponent(deviceCode)}&provider=${encodeURIComponent(appId)}`,
+        `/v0/auth/copilot/poll?device_code=${encodeURIComponent(deviceCode)}&provider=${encodeURIComponent(appId)}`,
         await this.getRuntimeProxyApiKey(),
         'GET',
         undefined
@@ -905,16 +905,16 @@ export class ProxyService extends BaseService {
       const errorMsg = (typeof response === 'object' && response !== null && 'error' in response) ? response.error as string : undefined;
       const lowerError = errorMsg?.toLowerCase() || '';
 
-      appLogger.debug('ProxyService', `waitForGitHubToken [${appId}]: checkToken received errorMsg="${errorMsg}"`);
+      appLogger.debug('ProxyService', `waitForCopilotToken [${appId}]: checkToken received errorMsg="${errorMsg}"`);
 
       if (lowerError.includes('authorization_pending') || lowerError.includes('slow_down')) {
-        appLogger.info('ProxyService', `waitForGitHubToken [${appId}]: ${lowerError}, retrying in ${interval + 1}s...`);
+        appLogger.info('ProxyService', `waitForCopilotToken [${appId}]: ${lowerError}, retrying in ${interval + 1}s...`);
         // Wait and try again
         await new Promise(r => setTimeout(r, (interval + 1) * 1000));
         return checkToken();
       }
 
-      appLogger.error('ProxyService', `waitForGitHubToken [${appId}]: Failed with error: ${errorMsg || 'Unknown error'}`);
+      appLogger.error('ProxyService', `waitForCopilotToken [${appId}]: Failed with error: ${errorMsg || 'Unknown error'}`);
       throw new Error(errorMsg || 'Authentication failed');
     };
 
@@ -1957,18 +1957,18 @@ export class ProxyService extends BaseService {
 
 
   /**
-   * Fetches GitHub user profile using access token.
-   * @param accessToken - GitHub OAuth token
+   * Fetches Copilot user profile using access token.
+   * @param accessToken - Copilot OAuth token
    * @returns Profile with email, name, avatar, login
    */
-  async fetchGitHubProfile(accessToken: string): Promise<{ email?: string; displayName?: string; avatarUrl?: string; login?: string }> {
+  async fetchCopilotProfile(accessToken: string): Promise<{ email?: string; displayName?: string; avatarUrl?: string; login?: string }> {
     const tokenError = validateToken(accessToken, 'Access token');
     if (tokenError) {
-      this.logError(`fetchGitHubProfile: ${tokenError}`);
+      this.logError(`fetchCopilotProfile: ${tokenError}`);
       return {};
     }
 
-    appLogger.info('ProxyService', 'Fetching GitHub user profile...');
+    appLogger.info('ProxyService', 'Fetching Copilot user profile...');
     return new Promise((resolve) => {
       const request = net.request({
         method: 'GET',
@@ -1983,14 +1983,14 @@ export class ProxyService extends BaseService {
         let data = '';
         response.on('data', chunk => data += chunk);
         response.on('end', () => {
-          appLogger.debug('ProxyService', `GitHub /user response status: ${response.statusCode}`);
+          appLogger.debug('ProxyService', `Copilot /user response status: ${response.statusCode}`);
           if (response.statusCode >= 400) {
-            appLogger.error('ProxyService', `GitHub profile fetch failed: ${response.statusCode} - ${data}`);
+            appLogger.error('ProxyService', `Copilot profile fetch failed: ${response.statusCode} - ${data}`);
             resolve({});
             return;
           }
           const json = safeJsonParse<{ email?: string; name?: string; login?: string; avatar_url?: string }>(data, {});
-          appLogger.debug('ProxyService', `GitHub profile data: ${JSON.stringify({ ...json, email: json.email ? '[PRESENT]' : '[MISSING]' })}`);
+          appLogger.debug('ProxyService', `Copilot profile data: ${JSON.stringify({ ...json, email: json.email ? '[PRESENT]' : '[MISSING]' })}`);
 
           resolve({
             email: json.email ?? undefined,
@@ -2002,7 +2002,7 @@ export class ProxyService extends BaseService {
       });
 
       request.on('error', (err) => {
-        appLogger.error('ProxyService', 'GitHub profile fetch network error', err);
+        appLogger.error('ProxyService', 'Copilot profile fetch network error', err);
         resolve({});
       });
       request.end();
@@ -2010,18 +2010,18 @@ export class ProxyService extends BaseService {
   }
 
   /**
-   * Fetches primary verified email from GitHub.
-   * @param accessToken - GitHub OAuth token
+   * Fetches primary verified email from Copilot.
+   * @param accessToken - Copilot OAuth token
    * @returns Primary email or undefined
    */
-  async fetchGitHubEmails(accessToken: string): Promise<string | undefined> {
+  async fetchCopilotEmails(accessToken: string): Promise<string | undefined> {
     const tokenError = validateToken(accessToken, 'Access token');
     if (tokenError) {
-      this.logError(`fetchGitHubEmails: ${tokenError}`);
+      this.logError(`fetchCopilotEmails: ${tokenError}`);
       return undefined;
     }
 
-    appLogger.info('ProxyService', 'Fetching GitHub user emails...');
+    appLogger.info('ProxyService', 'Fetching Copilot user emails...');
     return new Promise((resolve) => {
       const request = net.request({
         method: 'GET',
@@ -2036,21 +2036,21 @@ export class ProxyService extends BaseService {
         let data = '';
         response.on('data', chunk => data += chunk);
         response.on('end', () => {
-          appLogger.debug('ProxyService', `GitHub /user/emails response status: ${response.statusCode}`);
+          appLogger.debug('ProxyService', `Copilot /user/emails response status: ${response.statusCode}`);
           if (response.statusCode >= 400) {
-            appLogger.error('ProxyService', `GitHub emails fetch failed: ${response.statusCode} - ${data}`);
+            appLogger.error('ProxyService', `Copilot emails fetch failed: ${response.statusCode} - ${data}`);
             resolve(undefined);
             return;
           }
           const emails = safeJsonParse<Array<{ email: string; primary: boolean; verified: boolean }>>(data, []);
-          appLogger.debug('ProxyService', `GitHub emails count: ${emails.length}`);
+          appLogger.debug('ProxyService', `Copilot emails count: ${emails.length}`);
           const primary = emails.find(e => e.primary && e.verified) ?? emails.find(e => e.primary) ?? emails[0];
           resolve(primary.email);
         });
       });
 
       request.on('error', (err) => {
-        appLogger.error('ProxyService', 'GitHub emails fetch network error', err);
+        appLogger.error('ProxyService', 'Copilot emails fetch network error', err);
         resolve(undefined);
       });
       request.end();

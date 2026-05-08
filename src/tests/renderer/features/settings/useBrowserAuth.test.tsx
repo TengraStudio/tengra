@@ -91,7 +91,7 @@ describe('useBrowserAuth', () => {
                 onAccountChanged: vi.fn().mockReturnValue(() => { }),
                 getBrowserAuthStatus: vi.fn().mockResolvedValue({ status: 'wait' }),
                 // Add missing properties to satisfy type check
-                githubLogin: vi.fn(),
+                copilotLogin: vi.fn(),
                 pollToken: vi.fn(),
                 claudeBrowserLogin: vi.fn(),
                 anthropicLogin: vi.fn(),

@@ -219,7 +219,7 @@ export interface ElectronAPI {
      * @returns Promise resolving to OAuth device code information
      */
     auth: {
-        githubLogin: (appId?: 'copilot') => Promise<{
+        copilotLogin: (appId?: 'copilot') => Promise<{
             device_code: string;
             user_code: string;
             verification_uri: string;
