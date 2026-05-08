@@ -1138,10 +1138,34 @@ fn build_nvidia_model(model_id: String) -> ProviderModel {
 
 fn codex_models() -> Vec<ProviderModel> {
     vec![
-        static_model("gpt-5.5", "GPT 5.5", "codex", Some("Latest GPT 5.5 release for coding and agentic tasks."), Some(vec!["minimal", "low", "medium", "high"])),
-        static_model("gpt-5.4", "GPT 5.4", "codex", Some("Stable version of GPT 5.4"), Some(vec!["low", "medium", "high", "xhigh"])),
-        static_model("gpt-5.4-mini", "GPT 5.4 Mini", "copilot", Some("Compact GPT 5.4 variant tuned for faster, lower-cost coding tasks."), Some(vec!["low", "medium", "high"])),
-        static_model("gpt-5.3-codex", "GPT 5.3 Codex", "codex", Some("Stable version of GPT 5.3 Codex"), Some(vec!["low", "medium", "high", "xhigh"])),
+        static_model(
+            "gpt-5.5",
+            "GPT 5.5",
+            "codex",
+            Some("Latest GPT 5.5 release for coding and agentic tasks."),
+            Some(vec!["minimal", "low", "medium", "high"]),
+        ),
+        static_model(
+            "gpt-5.4",
+            "GPT 5.4",
+            "codex",
+            Some("Stable version of GPT 5.4"),
+            Some(vec!["low", "medium", "high", "xhigh"]),
+        ),
+        static_model(
+            "gpt-5.4-mini",
+            "GPT 5.4 Mini",
+            "copilot",
+            Some("Compact GPT 5.4 variant tuned for faster, lower-cost coding tasks."),
+            Some(vec!["low", "medium", "high"]),
+        ),
+        static_model(
+            "gpt-5.3-codex",
+            "GPT 5.3 Codex",
+            "codex",
+            Some("Stable version of GPT 5.3 Codex"),
+            Some(vec!["low", "medium", "high", "xhigh"]),
+        ),
     ]
 }
 
@@ -1559,7 +1583,10 @@ mod tests {
             .iter()
             .map(|model| model.id.as_str())
             .collect::<Vec<_>>();
-        assert_eq!(ids, vec!["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"]);
+        assert_eq!(
+            ids,
+            vec!["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"]
+        );
     }
 
     #[test]

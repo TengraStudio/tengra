@@ -8,19 +8,20 @@
  * (at your option) any later version.
  */
 
+use crate::db::migrations::legacy_workspace_table;
+use crate::db::Database;
+use crate::types::*;
 use anyhow::{bail, Context, Result};
 use rusqlite::params;
-use crate::db::Database;
-use crate::db::migrations::legacy_workspace_table;
-use crate::types::*;
 
 pub const RAW_SQL_MIGRATION_MARKER: &str = "/* tengra-internal-migration */";
 
 impl Database {
     pub async fn get_folders(&self) -> Result<Vec<Folder>> {
         self.execute(|conn| {
-            let mut stmt = conn
-                .prepare("SELECT id, name, color, created_at, updated_at FROM folders ORDER BY name")?;
+            let mut stmt = conn.prepare(
+                "SELECT id, name, color, created_at, updated_at FROM folders ORDER BY name",
+            )?;
 
             let rows = stmt.query_map([], |row| {
                 Ok(Folder {
@@ -57,7 +58,13 @@ impl Database {
             conn.execute(
                 "INSERT INTO folders (id, name, color, created_at, updated_at)
                  VALUES (?, ?, ?, ?, ?)",
-                params![folder_clone.id, folder_clone.name, folder_clone.color, folder_clone.created_at, folder_clone.updated_at],
+                params![
+                    folder_clone.id,
+                    folder_clone.name,
+                    folder_clone.color,
+                    folder_clone.created_at,
+                    folder_clone.updated_at
+                ],
             )?;
             Ok(())
         })
@@ -91,7 +98,8 @@ impl Database {
             let query = format!("UPDATE folders SET {} WHERE id = ?", sets.join(", "));
             params_vec.push(Box::new(id));
 
-            let param_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> =
+                params_vec.iter().map(|p| p.as_ref()).collect();
             let affected = conn.execute(&query, param_refs.as_slice())?;
             Ok(affected > 0)
         })
@@ -203,7 +211,8 @@ impl Database {
             let query = format!("UPDATE prompts SET {} WHERE id = ?", sets.join(", "));
             params_vec.push(Box::new(id));
 
-            let param_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> =
+                params_vec.iter().map(|p| p.as_ref()).collect();
             let affected = conn.execute(&query, param_refs.as_slice())?;
             Ok(affected > 0)
         })
@@ -300,9 +309,12 @@ impl Database {
                             rusqlite::types::Value::Integer(i) => serde_json::json!(i),
                             rusqlite::types::Value::Real(f) => serde_json::json!(f),
                             rusqlite::types::Value::Text(s) => serde_json::json!(s),
-                            rusqlite::types::Value::Blob(b) => serde_json::json!(
-                                base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b)
-                            ),
+                            rusqlite::types::Value::Blob(b) => {
+                                serde_json::json!(base64::Engine::encode(
+                                    &base64::engine::general_purpose::STANDARD,
+                                    b
+                                ))
+                            }
                         };
                         obj.insert(name.clone(), json_value);
                     }

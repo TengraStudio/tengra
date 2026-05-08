@@ -14,10 +14,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub mod chats;
-pub mod workspaces;
 pub mod knowledge;
-pub mod system;
 pub mod migrations;
+pub mod system;
+pub mod workspaces;
 
 use crate::types::*;
 
@@ -63,7 +63,9 @@ impl Database {
     {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || {
-            let conn = conn.lock().map_err(|_| anyhow::anyhow!("Database lock poisoned"))?;
+            let conn = conn
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Database lock poisoned"))?;
             f(&conn)
         })
         .await?
@@ -76,7 +78,9 @@ impl Database {
     {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || {
-            let mut conn = conn.lock().map_err(|_| anyhow::anyhow!("Database lock poisoned"))?;
+            let mut conn = conn
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Database lock poisoned"))?;
             f(&mut conn)
         })
         .await?
@@ -86,12 +90,15 @@ impl Database {
     pub async fn initialize(&self) -> Result<()> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || {
-            let mut conn = conn.lock().map_err(|_| anyhow::anyhow!("Database lock poisoned"))?;
+            let mut conn = conn
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Database lock poisoned"))?;
             migrations::run_migrations_internal(&mut conn)?;
             migrations::repair_workspace_schema_internal(&mut conn)?;
             migrations::ensure_runtime_support_tables_internal(&mut conn)?;
             Ok::<(), anyhow::Error>(())
-        }).await??;
+        })
+        .await??;
         Ok(())
     }
 }

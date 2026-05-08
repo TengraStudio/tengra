@@ -357,13 +357,7 @@ async fn build_quota_snapshot(state: Arc<AppState>) -> anyhow::Result<Value> {
         }
         if !matches!(
             provider_raw.as_str(),
-            "antigravity"
-                | "google"
-                | "codex"
-                | "openai"
-                | "claude"
-                | "anthropic"
-                | "copilot"
+            "antigravity" | "google" | "codex" | "openai" | "claude" | "anthropic" | "copilot"
         ) {
             return None;
         }

@@ -1869,7 +1869,10 @@ mod tests {
 
     #[test]
     fn raw_sql_policy_allows_multi_statement_only_with_migration_marker() {
-        assert!(validate_raw_sql_policy("CREATE TABLE test_a(id INTEGER); CREATE INDEX test_idx ON test_a(id)").is_err());
+        assert!(validate_raw_sql_policy(
+            "CREATE TABLE test_a(id INTEGER); CREATE INDEX test_idx ON test_a(id)"
+        )
+        .is_err());
         assert!(validate_raw_sql_policy(&format!(
             "{} CREATE TABLE test_a(id INTEGER); CREATE INDEX test_idx ON test_a(id)",
             RAW_SQL_MIGRATION_MARKER

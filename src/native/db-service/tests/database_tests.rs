@@ -8,17 +8,19 @@
  * (at your option) any later version.
  */
 
+use tempfile::tempdir;
 use tengra_db_service::db::Database;
 use tengra_db_service::types::*;
-use tempfile::tempdir;
 
 #[tokio::test]
 async fn test_database_lifecycle_and_crud() {
     let dir = tempdir().unwrap();
     let db_path = dir.path().join("test.db");
-    
+
     let db = Database::new(&db_path).expect("Failed to create database");
-    db.initialize().await.expect("Failed to initialize database");
+    db.initialize()
+        .await
+        .expect("Failed to initialize database");
 
     // Test Chat CRUD
     let create_req = CreateChatRequest {
@@ -30,7 +32,10 @@ async fn test_database_lifecycle_and_crud() {
         metadata: None,
     };
 
-    let chat = db.create_chat(create_req).await.expect("Failed to create chat");
+    let chat = db
+        .create_chat(create_req)
+        .await
+        .expect("Failed to create chat");
     assert_eq!(chat.title, "Test Chat");
 
     let fetched = db.get_chat(&chat.id).await.expect("Failed to get chat");
@@ -44,9 +49,15 @@ async fn test_database_lifecycle_and_crud() {
         title: Some("Updated Chat".to_string()),
         ..Default::default()
     };
-    db.update_chat(&chat.id, update_req).await.expect("Failed to update chat");
-    
-    let updated = db.get_chat(&chat.id).await.expect("Failed to get chat").unwrap();
+    db.update_chat(&chat.id, update_req)
+        .await
+        .expect("Failed to update chat");
+
+    let updated = db
+        .get_chat(&chat.id)
+        .await
+        .expect("Failed to get chat")
+        .unwrap();
     assert_eq!(updated.title, "Updated Chat");
 
     // Test Query Policy
@@ -54,7 +65,10 @@ async fn test_database_lifecycle_and_crud() {
         sql: "SELECT * FROM chats".to_string(),
         params: vec![],
     };
-    let query_res = db.execute_query(query_req).await.expect("Failed to execute query");
+    let query_res = db
+        .execute_query(query_req)
+        .await
+        .expect("Failed to execute query");
     assert!(!query_res.rows.is_empty());
 
     // Test Blocked Query
@@ -63,10 +77,15 @@ async fn test_database_lifecycle_and_crud() {
         params: vec![],
     };
     let blocked_res = db.execute_query(blocked_req).await;
-    assert!(blocked_res.is_err(), "DROP TABLE should be blocked without migration marker");
+    assert!(
+        blocked_res.is_err(),
+        "DROP TABLE should be blocked without migration marker"
+    );
 
     // Test Delete
-    db.delete_chat(&chat.id).await.expect("Failed to delete chat");
+    db.delete_chat(&chat.id)
+        .await
+        .expect("Failed to delete chat");
     let after_delete = db.get_chat(&chat.id).await.expect("Failed to get chat");
     assert!(after_delete.is_none());
 }
