@@ -19,10 +19,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
-const mockAccess = vi.fn();
-const mockReadFile = vi.fn();
-const mockWriteFile = vi.fn();
-const mockRename = vi.fn();
+const { mockAccess, mockReadFile, mockWriteFile, mockRename } = vi.hoisted(() => ({
+    mockAccess: vi.fn(),
+    mockReadFile: vi.fn(),
+    mockWriteFile: vi.fn(),
+    mockRename: vi.fn(),
+}));
 
 vi.mock('fs', () => ({
     existsSync: vi.fn().mockReturnValue(true),
@@ -216,13 +218,13 @@ describe('ThemeService Integration', () => {
     describe('init → switch → persist → reload cycle', () => {
         it('should persist theme switch and reload correctly', async () => {
             await service.initialize();
-            await service.setTheme('obsidian');
+            await service.setTheme('tengra-black');
 
             // Capture what was written
             const writeCall = mockWriteFile.mock.calls.at(-1);
             expect(writeCall).toBeDefined();
             const writtenJson = writeCall![1] as string;
-            expect(writtenJson).toContain('obsidian');
+            expect(writtenJson).toContain('tengra-black');
 
             // Simulate reload with persisted data
             vi.resetModules();
@@ -235,19 +237,19 @@ describe('ThemeService Integration', () => {
             const mod2 = await import('@main/services/ui/theme.service');
             const reloaded = new mod2.ThemeService();
             await reloaded.initialize();
-            expect(reloaded.getCurrentTheme()).toBe('obsidian');
+            expect(reloaded.getCurrentTheme()).toBe('tengra-black');
         });
     });
 
     describe('export → import round-trip', () => {
         it('should round-trip a built-in theme via export/import', async () => {
             await service.initialize();
-            const exported = service.exportTheme('graphite');
+            const exported = service.exportTheme('tengra-white');
             expect(exported).not.toBeNull();
 
             // Modify the ID so it doesn't conflict
             const data = JSON.parse(exported!);
-            data.theme.id = 'graphite-copy-1';
+            data.theme.id = 'tengra-white-copy-1';
             const modified = JSON.stringify(data);
 
             const imported = await service.importTheme(modified);
@@ -257,7 +259,7 @@ describe('ThemeService Integration', () => {
     });
 
     describe('delete active theme → fallback', () => {
-        it('should fall back to graphite when active custom theme is deleted', async () => {
+        it('should fall back to tengra-white when active custom theme is deleted', async () => {
             await service.initialize();
             const theme = await service.addCustomTheme(validThemeInput());
             expect(theme).not.toBeNull();
@@ -265,18 +267,18 @@ describe('ThemeService Integration', () => {
             expect(service.getCurrentTheme()).toBe(theme!.id);
 
             await service.deleteCustomTheme(theme!.id);
-            expect(service.getCurrentTheme()).toBe('graphite');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
     });
 
     describe('concurrent rapid switches', () => {
         it('should handle rapid sequential theme switches without error', async () => {
             await service.initialize();
-            const themes = ['obsidian', 'midnight', 'graphite', 'obsidian', 'midnight'];
+            const themes = ['tengra-black', 'tengra-white', 'tengra-black', 'tengra-white', 'tengra-black'];
             for (const t of themes) {
                 await service.setTheme(t);
             }
-            expect(service.getCurrentTheme()).toBe('midnight');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
     });
 
@@ -292,16 +294,16 @@ describe('ThemeService Integration', () => {
                 return Promise.resolve(undefined);
             });
 
-            const result = await service.setTheme('obsidian');
+            const result = await service.setTheme('tengra-black');
             expect(result).toBe(true);
-            expect(service.getCurrentTheme()).toBe('obsidian');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
 
         it('should emit save.failed Stats after all retries fail', async () => {
             await service.initialize();
             mockWriteFile.mockRejectedValue(new Error('persistent'));
 
-            await service.setTheme('obsidian');
+            await service.setTheme('tengra-black');
             const ev = service.getusageStatsLog().find(e => e.action === 'theme.save.failed');
             expect(ev).toBeDefined();
         });
@@ -335,7 +337,7 @@ describe('ThemeService Performance', () => {
 
     it('should switch theme within 50ms (excluding I/O)', async () => {
         const start = performance.now();
-        await service.setTheme('obsidian');
+        await service.setTheme('tengra-black');
         expect(performance.now() - start).toBeLessThan(50);
     });
 
@@ -377,7 +379,7 @@ describe('ThemeService Error Codes', () => {
     it('should use THEME_DUPLICATE_ID on import of existing ID', async () => {
         const data = JSON.stringify({
             version: '1.0',
-            theme: { id: 'graphite', name: 'Clone', colors: validColors() },
+            theme: { id: 'tengra-white', name: 'Clone', colors: validColors() },
         });
         const result = await service.importTheme(data);
         expect(result).toBeNull();
@@ -414,7 +416,7 @@ describe('ThemeService Export/Import/Persistence', () => {
     });
 
     it('should export a built-in theme as JSON string', () => {
-        const json = service.exportTheme('graphite');
+        const json = service.exportTheme('tengra-white');
         expect(json).not.toBeNull();
         const parsed = JSON.parse(json as string);
         expect(parsed.version).toBe('1.0');
@@ -443,12 +445,12 @@ describe('ThemeService Export/Import/Persistence', () => {
     });
 
     it('should return null when imported theme ID collides with built-in', async () => {
-        const data = JSON.stringify({ version: '1.0', theme: { id: 'graphite', name: 'Clone', colors: validColors() } });
+        const data = JSON.stringify({ version: '1.0', theme: { id: 'tengra-white', name: 'Clone', colors: validColors() } });
         expect(await service.importTheme(data)).toBeNull();
     });
 
     it('should duplicate a built-in theme', async () => {
-        const dup = await service.duplicateTheme('graphite', 'Copy');
+        const dup = await service.duplicateTheme('tengra-white', 'Copy');
         expect(dup).not.toBeNull();
         expect(dup!.id).toMatch(/^custom-\d+$/);
     });
@@ -458,14 +460,14 @@ describe('ThemeService Export/Import/Persistence', () => {
     });
 
     it('should write to temp then rename (atomic save)', async () => {
-        await service.setTheme('obsidian');
+        await service.setTheme('tengra-white');
         expect(mockWriteFile).toHaveBeenCalledWith(expect.stringContaining('.tmp'), expect.any(String), 'utf8');
         expect(mockRename).toHaveBeenCalled();
     });
 
     it('should not throw when writeFile or rename fails', async () => {
         mockWriteFile.mockRejectedValue(new Error('ENOSPC'));
-        await expect(service.setTheme('obsidian')).resolves.toBe(true);
+        await expect(service.setTheme('tengra-white')).resolves.toBe(true);
     });
 
     it('should save store on cleanup when initialized', async () => {
@@ -485,8 +487,8 @@ describe('ThemeService Export/Import/Persistence', () => {
 
     it('should handle save failure gracefully during operations', async () => {
         mockWriteFile.mockRejectedValue(new Error('disk error'));
-        expect(await service.setTheme('obsidian')).toBe(true);
-        expect(service.getCurrentTheme()).toBe('obsidian');
+        expect(await service.setTheme('tengra-white')).toBe(true);
+        expect(service.getCurrentTheme()).toBe('tengra-white');
         await expect(service.clearHistory()).resolves.not.toThrow();
     });
 });

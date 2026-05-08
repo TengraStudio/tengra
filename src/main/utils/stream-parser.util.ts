@@ -261,11 +261,11 @@ export class StreamParser {
                     openCodeState.processedMessageIds.add(itemId);
                 }
                 const text = contentItems
-                    .filter((c) => c.type === 'output_text' || c.type === 'summary_text')
+                    .filter((c) => c.type === 'output_text')
                     .map((c) => c.text ?? '')
                     .join('');
                 const reasoning = contentItems
-                    .filter((c) => c.type === 'reasoning')
+                    .filter((c) => c.type === 'reasoning' || c.type === 'summary_text')
                     .map((c) => c.text ?? '')
                     .join('');
                 if (text && text !== openCodeState.lastContent) {

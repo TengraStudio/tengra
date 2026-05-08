@@ -253,8 +253,8 @@ describe('ThemeService', () => {
         });
 
         it('should reject uninstall of built-in themes', async () => {
-            const resultBlack = await themeService.uninstallTheme('black');
-            const resultWhite = await themeService.uninstallTheme('white');
+            const resultBlack = await themeService.uninstallTheme('tengra-black');
+            const resultWhite = await themeService.uninstallTheme('tengra-white');
 
             expect(resultBlack).toBe(false);
             expect(resultWhite).toBe(false);

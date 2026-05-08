@@ -13,10 +13,13 @@ import * as fs from 'fs';
 import { SettingsService } from '@main/services/system/settings.service';
 import { UpdateService } from '@main/services/system/update.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import path from 'path';
 
-const mockSend = vi.fn();
-const mockQuit = vi.fn();
-const mockSpawn = vi.fn(() => ({ unref: vi.fn() }));
+const { mockSend, mockQuit, mockSpawn } = vi.hoisted(() => ({
+    mockSend: vi.fn(),
+    mockQuit: vi.fn(),
+    mockSpawn: vi.fn(() => ({ unref: vi.fn() })),
+}));
 
 vi.mock('child_process', () => ({
     spawn: mockSpawn,
@@ -27,6 +30,7 @@ vi.mock('fs', () => ({
     mkdirSync: vi.fn(),
     openSync: vi.fn(() => 1),
     writeSync: vi.fn(),
+    writeFileSync: vi.fn(),
     closeSync: vi.fn(),
     readFileSync: vi.fn(),
 }));
@@ -36,6 +40,7 @@ vi.mock('electron', () => ({
         isPackaged: true,
         getVersion: vi.fn(() => '1.0.0'),
         getPath: vi.fn(() => '/mock/app.exe'),
+        getAppPath: vi.fn(() => '/mock/app'),
         quit: mockQuit,
     },
     BrowserWindow: vi.fn(),
@@ -106,12 +111,13 @@ describe('UpdateService', () => {
             } as never)
             .mockResolvedValueOnce({
                 ok: true,
-                body: new Response(new Uint8Array([1, 2, 3])).body,
+                body: true,
+                arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
                 headers: new Headers({ 'content-length': '3' }),
             } as never);
 
         await expect(service.downloadUpdate()).resolves.toBe(true);
-        expect(fs.mkdirSync).toHaveBeenCalledWith('/mock/temp', { recursive: true });
+        expect(fs.mkdirSync).toHaveBeenCalledWith(path.normalize('/mock/temp'), { recursive: true });
     });
 
     it('spawns the detached updater helper before quitting', async () => {
@@ -130,7 +136,8 @@ describe('UpdateService', () => {
         } as never);
 
         vi.mocked(fs.existsSync).mockImplementation((targetPath: fs.PathLike) => {
-            return String(targetPath).includes('Tengra.exe');
+            const str = String(targetPath);
+            return str.includes('Tengra.exe') || str.includes('tengra-updater');
         });
         vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({}) as never);
 

@@ -50,21 +50,21 @@ describe('ThemeService Integration Tests', () => {
         vi.mocked(fs.access).mockResolvedValue(undefined);
         vi.mocked(fs.readFile).mockImplementation(async (filePath) => {
             const pathStr = String(filePath);
-            if (pathStr.includes('black')) {
+            if (pathStr.includes('tengra-black')) {
                 return JSON.stringify({
-                    id: 'black',
-                    name: 'black',
-                    displayName: 'Black',
+                    id: 'tengra-black',
+                    name: 'tengra-black',
+                    displayName: 'Tengra Black',
                     version: '1.0.0',
                     type: 'dark',
                     colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
                 });
             }
-            if (pathStr.includes('white')) {
+            if (pathStr.includes('tengra-white')) {
                 return JSON.stringify({
-                    id: 'white',
-                    name: 'white',
-                    displayName: 'White',
+                    id: 'tengra-white',
+                    name: 'tengra-white',
+                    displayName: 'Tengra White',
                     version: '1.0.0',
                     type: 'light',
                     colors: { background: '0 0% 100%', foreground: '0 0% 0%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
@@ -80,7 +80,7 @@ describe('ThemeService Integration Tests', () => {
             });
         });
         vi.mocked(fs.writeFile).mockResolvedValue(undefined);
-        vi.mocked(fs.readdir).mockResolvedValue(['black.theme.json', 'white.theme.json'] as never);
+        vi.mocked(fs.readdir).mockResolvedValue(['tengra-black.theme.json', 'tengra-white.theme.json'] as never);
         vi.mocked(fs.mkdir).mockResolvedValue(undefined);
         vi.mocked(fs.unlink).mockResolvedValue(undefined);
         vi.mocked(fs.rename).mockResolvedValue(undefined);
@@ -191,18 +191,18 @@ describe('ThemeService Integration Tests', () => {
 
     describe('Built-in Theme Protection', () => {
         it('should never allow uninstalling black theme', async () => {
-            const result = await themeService.uninstallTheme('black');
+            const result = await themeService.uninstallTheme('tengra-black');
             expect(result).toBe(false);
         });
 
         it('should never allow uninstalling white theme', async () => {
-            const result = await themeService.uninstallTheme('white');
+            const result = await themeService.uninstallTheme('tengra-white');
             expect(result).toBe(false);
         });
 
         it('should allow reinstalling built-in themes', async () => {
             const blackTheme = {
-                id: 'black',
+                id: 'tengra-black',
                 name: 'tengra-black',
                 displayName: 'Tengra Black',
                 version: '1.0.0',

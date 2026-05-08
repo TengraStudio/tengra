@@ -470,6 +470,9 @@ export class ThemeService extends BaseService {
         if (idError) {
             throw new Error(ThemeErrorCode.INVALID_ID);
         } 
+        if (this.getThemeDetails(themeId)) {
+            throw new Error(ThemeErrorCode.DUPLICATE_ID);
+        }
     }
 
     async duplicateTheme(themeId: string, newName: string): Promise<CustomTheme | null> {

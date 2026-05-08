@@ -517,7 +517,7 @@ describe('ToolExecutor', () => {
             input: 'npm test',
         });
 
-        expect(result).toEqual({
+        expect(result).toMatchObject({
             success: true,
             result: {
                 success: true,
@@ -527,9 +527,17 @@ describe('ToolExecutor', () => {
                 submitted: true,
                 bytesWritten: 9,
                 complete: true,
-                displaySummary: 'Wrote command input to terminal session agent-term-1',
+                displaySummary: 'Command finished in terminal session agent-term-1',
+                idle: true,
+                matched: false,
+                output: '',
+                timedOut: false,
+                totalBytes: 0,
+                truncated: false,
+                waitedForCompletion: true,
             },
         });
+        expect(result.result?.elapsedMs).toEqual(expect.any(Number));
         expect(terminal.write).toHaveBeenCalledWith('agent-term-1', "npm test\r");
     });
 

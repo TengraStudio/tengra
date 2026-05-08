@@ -377,7 +377,7 @@ describe('StreamParser', () => {
             chunks.push(chunk);
         }
 
-        expect(chunks).toHaveLength(1);
+        expect(chunks).toHaveLength(2);
         expect(chunks[0]?.type).toBe('tool_calls');
         expect(chunks[0]?.tool_calls?.[0]?.id).toBe('call_2');
         expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('list_directory');

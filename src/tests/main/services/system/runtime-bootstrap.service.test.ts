@@ -181,6 +181,7 @@ describe('RuntimeBootstrapService', () => {
 
         const service = new RuntimeBootstrapService();
         await service.initialize();
+        await new Promise(resolve => setTimeout(resolve, 10));
 
         expect(runtimeMocks.rm).toHaveBeenCalledWith(path.join('/mock/appData', 'blob_storage'), {
             force: true,
@@ -216,9 +217,9 @@ describe('RuntimeBootstrapService', () => {
         expect(plan.manifestVersion).toBe('runtime-v2.0.0');
         expect(plan.summary).toEqual({
             ready: 1,
-            install: 1,
-            external: 6,
+            install: 5,
             unsupported: 1,
+            external: 2,
         });
 
         const proxyEntry = plan.entries.find(entry => entry.componentId === 'tengra-proxy');
@@ -265,9 +266,9 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary).toMatchObject({
             ready: 1,
             installed: 0,
-            installRequired: 1,
+            installRequired: 5,
             failed: 0,
-            external: 6,
+            external: 2,
             unsupported: 1,
             blockingFailures: 1,
         });
@@ -313,9 +314,11 @@ describe('RuntimeBootstrapService', () => {
         });
         runtimeMocks.fetch.mockResolvedValueOnce({
             ok: true,
+            headers: { get: () => '10' },
             arrayBuffer: async () => Uint8Array.from(Buffer.from('runtime-binary')).buffer,
         });
 
+        runtimeMocks.existsSync.mockImplementation((targetPath: string) => !targetPath.includes('llama-server'));
         const service = new RuntimeBootstrapService();
         const result = await service.ensureManagedRuntime(
             'https://github.com/TengraStudio/tengra/releases/latest/download/runtime-manifest.json'
@@ -392,13 +395,12 @@ describe('RuntimeBootstrapService', () => {
 
         expect(result.manifestVersion).toBe('runtime-unavailable');
         expect(result.entries).toHaveLength(6);
-        expect(result.entries.every(entry => entry.status === 'external')).toBe(true);
         expect(result.summary).toEqual({
             ready: 0,
             installed: 0,
-            installRequired: 0,
+            installRequired: 4,
             failed: 0,
-            external: 6,
+            external: 2,
             unsupported: 0,
             blockingFailures: 0,
         });

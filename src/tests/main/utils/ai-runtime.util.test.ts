@@ -197,9 +197,10 @@ describe('ai-runtime.util', () => {
 
     it('caps excessive tool-loop budgets to avoid runaway iterations', () => {
         const classification = classifyAiIntent(
-            createUserMessage('masaustumu organize et'),
+            createUserMessage('masaustunde proje olustur'),
             'agent'
         );
+        classification.preferredMaxModelTurns = 999;
         const budget = getAiToolLoopBudget(classification);
         expect(budget.maxModelTurns).toBe(96);
         expect(budget.maxExecutedToolTurns).toBe(64);
