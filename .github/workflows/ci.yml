@@ -214,17 +214,8 @@ jobs:
         $proxy = $null
 
         try {
-          $dbPort = $null
-          for ($i = 0; $i -lt 120; $i++) {
-            Start-Sleep -Milliseconds 250
-            if (Test-Path $portFile) {
-              $raw = (Get-Content $portFile -Raw).Trim()
-              if ($raw -match '^\d+$') {
-                $dbPort = [int]$raw
-                break
-              }
-            }
-          } 
+          $dbPort = 42000
+          Start-Sleep -Seconds 2
             
           $dbHealthy = $false
           for ($i = 0; $i -lt 80; $i++) {
@@ -254,17 +245,17 @@ jobs:
           $env:TENGRA_DB_URL = "http://127.0.0.1:$dbPort"
           $env:TENGRA_GITHUB_CLIENT_ID = 'gh-client-test'
           $env:TENGRA_GITHUB_CLIENT_SECRET = 'gh-secret-test'
-          $env:TENGRA_GITHUB_REDIRECT_URI = 'http://127.0.0.1:23234/oauth/github/callback'
+          $env:TENGRA_GITHUB_REDIRECT_URI = 'http://127.0.0.1:8317/oauth/github/callback'
           $env:TENGRA_GOOGLE_CLIENT_ID = 'google-client-test'
           $env:TENGRA_GOOGLE_CLIENT_SECRET = 'google-secret-test'
-          $env:TENGRA_GOOGLE_REDIRECT_URI = 'http://127.0.0.1:23234/oauth/google/callback'
+          $env:TENGRA_GOOGLE_REDIRECT_URI = 'http://127.0.0.1:8317/oauth/google/callback'
 
           $proxy = Start-Process -FilePath $proxyExe -PassThru -WindowStyle Hidden
 
           $proxyHealthy = $false
           for ($i = 0; $i -lt 100; $i++) {
             try {
-              $proxyHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/health' -Method Get -TimeoutSec 2
+              $proxyHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:8317/health' -Method Get -TimeoutSec 2
               if ($proxyHealth.success -eq $true) {
                 $proxyHealthy = $true
                 break
@@ -278,20 +269,20 @@ jobs:
             throw "tengra-proxy health endpoint did not become ready"
           }
 
-          $readiness = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/api/auth/providers/readiness' -Method Get -TimeoutSec 4
+          $readiness = Invoke-RestMethod -Uri 'http://127.0.0.1:8317/api/auth/providers/readiness' -Method Get -TimeoutSec 4
           if ($readiness.success -ne $true) {
             throw "providers readiness endpoint returned unsuccessful response"
           }
 
           $oauthStartBody = @{ provider = 'codex' } | ConvertTo-Json
-          $oauthStart = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/api/auth/oauth/start' -Method Post -Body $oauthStartBody -ContentType 'application/json' -TimeoutSec 4
+          $oauthStart = Invoke-RestMethod -Uri 'http://127.0.0.1:8317/api/auth/oauth/start' -Method Post -Body $oauthStartBody -ContentType 'application/json' -TimeoutSec 4
           if ($oauthStart.success -ne $true) {
             throw "oauth start endpoint returned unsuccessful response"
           }
 
           # Deterministic per-provider local latency baseline for auth start/callback paths.
           # pwsh -NoLogo -NoProfile -File scripts/testScripts/auth-latency-benchmark.ps1 `
-          #   -ProxyBaseUrl 'http://127.0.0.1:23234' `
+          #   -ProxyBaseUrl 'http://127.0.0.1:8317' `
           #   -Iterations 6 `
           #   -WarmupIterations 1 `
           #   -StartP95BudgetMs 1000 `
@@ -305,7 +296,7 @@ jobs:
             display_name = 'CI Integration'
             scope        = 'inference'
           } | ConvertTo-Json
-          $apiKeyResponse = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/api/auth/api-key/link' -Method Post -Body $apiKeyBody -ContentType 'application/json' -TimeoutSec 4
+          $apiKeyResponse = Invoke-RestMethod -Uri 'http://127.0.0.1:8317/api/auth/api-key/link' -Method Post -Body $apiKeyBody -ContentType 'application/json' -TimeoutSec 4
           if ($apiKeyResponse.success -ne $true) {
             throw "api-key link endpoint returned unsuccessful response"
           }
