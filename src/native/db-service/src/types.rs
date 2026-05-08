@@ -687,6 +687,7 @@ pub struct Stats {
 // ============================================================================
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[allow(dead_code)]
 pub struct Memory {
     pub id: String,
     pub content: String,
@@ -698,6 +699,7 @@ pub struct Memory {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct StoreMemoryRequest {
     pub id: String,
     pub content: String,

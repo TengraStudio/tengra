@@ -9,22 +9,19 @@
  */
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection, OpenFlags};
-use std::path::{Path, PathBuf};
+use rusqlite::{Connection};
+use std::path::{Path};
 use std::sync::{Arc, Mutex};
 
 pub mod chats;
 pub mod knowledge;
 pub mod migrations;
 pub mod system;
-pub mod workspaces;
-
-use crate::types::*;
+pub mod workspaces; 
 
 /// Database wrapper providing thread-safe access to SQLite
 pub struct Database {
-    pub(crate) conn: Arc<Mutex<Connection>>,
-    pub(crate) db_path: PathBuf,
+    pub(crate) conn: Arc<Mutex<Connection>>, 
 }
 
 impl Database {
@@ -41,21 +38,10 @@ impl Database {
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")?;
 
         Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
-            db_path: path.to_path_buf(),
+            conn: Arc::new(Mutex::new(conn)), 
         })
-    }
-
-    pub(crate) fn open_read_connection(&self) -> Result<Connection> {
-        let conn = Connection::open_with_flags(
-            &self.db_path,
-            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        )
-        .context("Failed to open read-only database connection")?;
-        conn.busy_timeout(std::time::Duration::from_millis(1_000))?;
-        Ok(conn)
-    }
-
+    } 
+    
     pub(crate) async fn execute<F, T>(&self, f: F) -> Result<T>
     where
         F: FnOnce(&Connection) -> Result<T> + Send + 'static,

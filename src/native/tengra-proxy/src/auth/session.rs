@@ -40,7 +40,7 @@ const OLLAMA_SINGLE_ACCOUNT_ID: &str = "ollama_default";
 
 static OAUTH_SESSIONS: OnceLock<RwLock<HashMap<String, OAuthSession>>> = OnceLock::new();
 static CALLBACK_SERVERS: OnceLock<RwLock<HashSet<&'static str>>> = OnceLock::new();
-static CALLBACK_BRIDGE_usageStats: OnceLock<RwLock<CallbackBridgeusageStatsState>> =
+static CALLBACK_BRIDGE_USAGE_STATS: OnceLock<RwLock<CallbackBridgeusageStatsState>> =
     OnceLock::new();
 
 #[derive(Clone, Serialize)]
@@ -134,8 +134,8 @@ fn callback_servers() -> &'static RwLock<HashSet<&'static str>> {
     CALLBACK_SERVERS.get_or_init(|| RwLock::new(HashSet::new()))
 }
 
-fn callback_bridge_usageStats() -> &'static RwLock<CallbackBridgeusageStatsState> {
-    CALLBACK_BRIDGE_usageStats.get_or_init(|| RwLock::new(CallbackBridgeusageStatsState::default()))
+fn callback_bridge_usage_stats() -> &'static RwLock<CallbackBridgeusageStatsState> {
+    CALLBACK_BRIDGE_USAGE_STATS.get_or_init(|| RwLock::new(CallbackBridgeusageStatsState::default()))
 }
 
 pub async fn create_session(
@@ -659,16 +659,16 @@ fn elapsed_ms(started_at: Instant) -> u64 {
 }
 
 async fn record_callback_bridge_event(was_redirect: bool, had_error: bool, latency_ms: u64) {
-    let mut usageStats = callback_bridge_usageStats().write().await;
+    let mut usage_stats = callback_bridge_usage_stats().write().await;
     if was_redirect {
-        usageStats.redirect_count = usageStats.redirect_count.saturating_add(1);
+        usage_stats.redirect_count = usage_stats.redirect_count.saturating_add(1);
     }
     if had_error {
-        usageStats.error_count = usageStats.error_count.saturating_add(1);
+        usage_stats.error_count = usage_stats.error_count.saturating_add(1);
     }
-    usageStats.latency_samples_ms.push_back(latency_ms);
-    while usageStats.latency_samples_ms.len() > CALLBACK_LATENCY_SAMPLE_LIMIT {
-        usageStats.latency_samples_ms.pop_front();
+    usage_stats.latency_samples_ms.push_back(latency_ms);
+    while usage_stats.latency_samples_ms.len() > CALLBACK_LATENCY_SAMPLE_LIMIT {
+        usage_stats.latency_samples_ms.pop_front();
     }
 }
 
@@ -683,12 +683,12 @@ fn percentile(values: &[u64], percentile: u8) -> u64 {
     sorted[index]
 }
 
-pub async fn callback_bridge_usageStats_snapshot() -> CallbackBridgeusageStatsSnapshot {
-    let usageStats = callback_bridge_usageStats().read().await;
-    let samples: Vec<u64> = usageStats.latency_samples_ms.iter().copied().collect();
+pub async fn callback_bridge_usage_stats_snapshot() -> CallbackBridgeusageStatsSnapshot {
+    let usage_stats = callback_bridge_usage_stats().read().await;
+    let samples: Vec<u64> = usage_stats.latency_samples_ms.iter().copied().collect();
     CallbackBridgeusageStatsSnapshot {
-        redirect_count: usageStats.redirect_count,
-        error_count: usageStats.error_count,
+        redirect_count: usage_stats.redirect_count,
+        error_count: usage_stats.error_count,
         latency_ms: CallbackBridgeLatencySnapshot {
             p50: percentile(&samples, 50),
             p95: percentile(&samples, 95),
@@ -699,10 +699,10 @@ pub async fn callback_bridge_usageStats_snapshot() -> CallbackBridgeusageStatsSn
 
 #[cfg(test)]
 async fn reset_callback_bridge_usageStats_for_tests() {
-    let mut usageStats = callback_bridge_usageStats().write().await;
-    usageStats.redirect_count = 0;
-    usageStats.error_count = 0;
-    usageStats.latency_samples_ms.clear();
+    let mut usage_stats = callback_bridge_usageStats().write().await;
+    usage_stats.redirect_count = 0;
+    usage_stats.error_count = 0;
+    usage_stats.latency_samples_ms.clear();
 }
 
 #[cfg(test)]

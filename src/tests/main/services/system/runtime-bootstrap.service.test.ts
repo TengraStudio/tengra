@@ -209,10 +209,7 @@ describe('RuntimeBootstrapService', () => {
 
     it('builds a platform-aware runtime install plan', () => {
         const service = new RuntimeBootstrapService();
-        const plan = service.buildInstallPlan(RUNTIME_MANIFEST, {
-            platform: process.platform === 'win32' ? 'darwin' : 'win32',
-            arch: process.arch === 'x64' ? 'arm64' : 'x64',
-        });
+        const plan = service.buildInstallPlan(RUNTIME_MANIFEST);
 
         expect(plan.manifestVersion).toBe('runtime-v2.0.0');
         expect(plan.summary).toEqual({

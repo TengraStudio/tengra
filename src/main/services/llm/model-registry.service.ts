@@ -659,6 +659,8 @@ export class ModelRegistryService extends BaseService {
                 return ['kimi', 'moonshot'];
             case 'nvidia':
                 return ['nvidia'];
+            case 'opencode':
+                return ['opencode'];
             default:
                 return [provider];
         }
@@ -688,6 +690,15 @@ export class ModelRegistryService extends BaseService {
         }
 
         return undefined;
+    }
+
+    private async resolveOpenCodeToken(): Promise<string | undefined> {
+        return this.resolveTokenFromAliases(['opencode']);
+    }
+
+    private async hasOpenCodeApiKeyCredential(): Promise<boolean> {
+        const token = await this.resolveOpenCodeToken();
+        return typeof token === 'string' && token.trim().length > 0;
     }
 
     private async hasApiKeyCredentialForProvider(providerHint: string): Promise<boolean> {
@@ -1270,10 +1281,14 @@ export class ModelRegistryService extends BaseService {
             ModelRegistryService.OPENCODE_REQUEST_TIMEOUT_MS
         );
 
+        const userToken = await this.resolveOpenCodeToken();
+        const normalizedUserToken = userToken?.trim();
+        const hasUserKey = typeof normalizedUserToken === 'string' && normalizedUserToken.length > 0;
+        const apiKey = hasUserKey
+            ? normalizedUserToken
+            : ModelRegistryService.OPENCODE_DEFAULT_API_KEY;
+
         try {
-            const apiKey = process.env.OPENCODE_API_KEY?.trim()
-                || ModelRegistryService.OPENCODE_DEFAULT_API_KEY;
-            const hasUserProvidedOpenCodeKey = apiKey.toLowerCase() !== ModelRegistryService.OPENCODE_DEFAULT_API_KEY;
             const response = await fetch(ModelRegistryService.OPENCODE_MODELS_URL, {
                 method: 'GET',
                 headers: {
@@ -1287,12 +1302,13 @@ export class ModelRegistryService extends BaseService {
             }
             const payload = await response.json() as JsonValue;
             const parsed = this.parseOpenCodeModels(payload);
-            if (hasUserProvidedOpenCodeKey) {
+            if (hasUserKey) {
                 return parsed;
             }
             return parsed.filter(model => {
                 const pricing = model.pricing as { input?: number; output?: number } | undefined;
-                return pricing?.input === 0 && pricing?.output === 0;
+                return pricing?.input === ModelRegistryService.OPENCODE_FREE_PRICE
+                    && pricing?.output === ModelRegistryService.OPENCODE_FREE_PRICE;
             });
         } catch (e) {
             this.usageStats.providerFetchFailures += 1;
@@ -1333,6 +1349,7 @@ export class ModelRegistryService extends BaseService {
                     id,
                     name,
                     provider: 'opencode',
+                    providerCategory: 'opencode',
                     sourceProvider: 'opencode',
                     pricing,
                 });

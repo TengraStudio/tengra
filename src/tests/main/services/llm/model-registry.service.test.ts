@@ -20,7 +20,7 @@ import { JobSchedulerService } from '@main/services/system/job-scheduler.service
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import type { AppSettings } from '@shared/types/settings';
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { en } from '../../../../renderer/i18n/locales';
 
@@ -51,80 +51,78 @@ let mockOllamaService: Partial<OllamaService>;
 let mockHuggingFaceService: MockHuggingFaceService;
 let fetchMock: ReturnType<typeof vi.fn>;
 
+beforeEach(() => {
+    vi.clearAllMocks();
+
+    fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: vi.fn().mockResolvedValue({ data: [] }),
+    } as never);
+    vi.stubGlobal('fetch', fetchMock as never as typeof fetch);
+
+    mockProcessManager = {
+        startService: vi.fn(),
+        sendRequest: vi.fn()
+    };
+
+    mockScheduler = {
+        registerRecurringJob: vi.fn()
+    };
+
+    mockSettings = {
+        getSettings: vi.fn().mockReturnValue({ ai: { modelUpdateInterval: 3600000 } })
+    };
+
+    mockProxyService = {
+        getRawModelCatalog: vi.fn().mockResolvedValue({
+            data: [{ id: 'ollama/llama3:7b', name: 'llama3:7b', provider: 'ollama' }]
+        }),
+        getEmbeddedProxyStatus: vi.fn().mockReturnValue({ port: 8317 }),
+        getProxyKey: vi.fn().mockResolvedValue('proxy-key'),
+        getCopilotQuota: vi.fn().mockResolvedValue({ accounts: [] }),
+    };
+
+    mockEventBus = { emit: vi.fn(), on: vi.fn(), onCustom: vi.fn() };
+
+    mockAuthService = {
+        getActiveToken: vi.fn().mockResolvedValue(undefined),
+        getActiveAccountFull: vi.fn().mockResolvedValue(null),
+        getAccountsByProvider: vi.fn().mockResolvedValue([]),
+        getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
+    };
+
+    mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) };
+
+    mockOllamaService = {
+        getModels: vi.fn().mockResolvedValue([{ name: 'llama3:8b', modified_at: '', size: 1, digest: 'abc' }])
+    };
+
+    mockLocalImageService = { getSDCppStatus: vi.fn().mockResolvedValue('ready') };
+
+    mockHuggingFaceService = {
+        searchModels: vi.fn().mockResolvedValue({
+            models: [{ id: 'TheBloke/Llama-7B-GGUF', name: 'Llama-7B-GGUF', description: 'GGUF', tags: [], downloads: 5000, likes: 10, author: 'TheBloke', lastModified: 'today' }],
+            total: 1
+        }),
+        listInstalledModels: vi.fn().mockResolvedValue([])
+    };
+
+    service = new ModelRegistryService({
+        processManager: mockProcessManager as ProcessManagerService,
+        jobScheduler: mockScheduler as JobSchedulerService,
+        settingsService: mockSettings as SettingsService,
+        proxyService: mockProxyService as ProxyService,
+        eventBus: mockEventBus as EventBusService,
+        authService: mockAuthService as AuthService,
+        tokenService: mockTokenService as TokenService,
+        ollamaService: mockOllamaService as OllamaService,
+        localImageService: mockLocalImageService as LocalImageService,
+        huggingFaceService: mockHuggingFaceService as never as HuggingFaceService
+    });
+});
+
 describe('ModelRegistryService - Lifecycle & Remote', () => {
-    const originalOpencodeKey = process.env.OPENCODE_API_KEY;
-
-    afterAll(() => {
-        if (originalOpencodeKey === undefined) {
-            delete process.env.OPENCODE_API_KEY;
-            return;
-        }
-        process.env.OPENCODE_API_KEY = originalOpencodeKey;
-    });
-
-    beforeEach(() => {
-        vi.clearAllMocks();
-        process.env.OPENCODE_API_KEY = '';
-        fetchMock = vi.fn().mockResolvedValue({
-            ok: false,
-            status: 404,
-            json: vi.fn().mockResolvedValue({ data: [] }),
-        } as never);
-        vi.stubGlobal('fetch', fetchMock as never as typeof fetch);
-        mockProcessManager = {
-            startService: vi.fn(),
-            sendRequest: vi.fn()
-        };
-
-        mockScheduler = {
-            registerRecurringJob: vi.fn()
-        };
-        mockSettings = {
-            getSettings: vi.fn().mockReturnValue({ ai: { modelUpdateInterval: 3600000 } })
-        };
-
-        mockProxyService = {
-            getRawModelCatalog: vi.fn().mockResolvedValue({
-                data: [{ id: 'ollama/llama3:7b', name: 'llama3:7b', provider: 'ollama' }]
-            }),
-            getEmbeddedProxyStatus: vi.fn().mockReturnValue({ port: 8317 }),
-            getProxyKey: vi.fn().mockResolvedValue('proxy-key'),
-            getCopilotQuota: vi.fn().mockResolvedValue({ accounts: [] }),
-        };
-        mockEventBus = { emit: vi.fn(), on: vi.fn(), onCustom: vi.fn() };
-        mockAuthService = {
-            getActiveToken: vi.fn().mockResolvedValue(null),
-            getActiveAccountFull: vi.fn().mockResolvedValue(null),
-            getAccountsByProvider: vi.fn().mockResolvedValue([]),
-            getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
-        };
-        mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) };
-        mockOllamaService = {
-            getModels: vi.fn().mockResolvedValue([{ name: 'llama3:8b', modified_at: '', size: 1, digest: 'abc' }])
-        };
-        mockLocalImageService = { getSDCppStatus: vi.fn().mockResolvedValue('ready') };
-        mockHuggingFaceService = {
-            searchModels: vi.fn().mockResolvedValue({
-                models: [{ id: 'TheBloke/Llama-7B-GGUF', name: 'Llama-7B-GGUF', description: 'GGUF', tags: [], downloads: 5000, likes: 10, author: 'TheBloke', lastModified: 'today' }],
-                total: 1
-            }),
-            listInstalledModels: vi.fn().mockResolvedValue([])
-        };
-
-        service = new ModelRegistryService({
-            processManager: mockProcessManager as ProcessManagerService,
-            jobScheduler: mockScheduler as JobSchedulerService,
-            settingsService: mockSettings as SettingsService,
-            proxyService: mockProxyService as ProxyService,
-            eventBus: mockEventBus as EventBusService,
-            authService: mockAuthService as AuthService,
-            tokenService: mockTokenService as TokenService,
-            ollamaService: mockOllamaService as OllamaService,
-            localImageService: mockLocalImageService as LocalImageService,
-            huggingFaceService: mockHuggingFaceService as never as HuggingFaceService
-        });
-    });
-
     describe('constructor', () => {
         it('should register a recurring job for cache updates', () => {
             expect(mockScheduler.registerRecurringJob).toHaveBeenCalledWith(
@@ -331,7 +329,13 @@ describe('ModelRegistryService - Remote Models', () => {
         });
 
         it('should include paid opencode models when user provides opencode api key', async () => {
-            process.env.OPENCODE_API_KEY = 'sk-opencode-user-key';
+            vi.mocked(mockAuthService.getActiveToken!).mockImplementation(async provider => {
+                if (provider === 'opencode') {
+                    return 'sk-opencode-user-key';
+                }
+                return undefined;
+            });
+
             fetchMock.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
