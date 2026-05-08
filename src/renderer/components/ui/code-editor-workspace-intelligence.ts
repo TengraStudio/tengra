@@ -329,6 +329,7 @@ export function useWorkspaceEditorIntelligence({
     onShowWorkspaceResults,
 }: UseWorkspaceEditorIntelligenceOptions): void {
     React.useEffect(() => {
+        let disposed = false;
         const editorInstance = editorRef.current;
         const monaco = monacoRef.current;
 
@@ -339,18 +340,18 @@ export function useWorkspaceEditorIntelligence({
         const modifierPressedRef = { current: false };
 
         const navigateToDefinition = async (symbolArg?: string): Promise<void> => {
-            if (!onNavigateToLocation) {
+            if (!onNavigateToLocation || disposed) {
                 return;
             }
 
             const symbol = symbolArg?.trim() || resolveSymbolFromSelection(editorInstance);
-            if (!symbol) {
+            if (!symbol || disposed) {
                 return;
             }
 
             try {
                 const definition = await window.electron.code.findDefinition(workspacePath, symbol);
-                if (!definition) {
+                if (!definition || disposed) {
                     return;
                 }
                 onNavigateToLocation({
@@ -358,31 +359,38 @@ export function useWorkspaceEditorIntelligence({
                     lineNumber: normalizeLineNumber(definition.line),
                 });
             } catch (error) {
-                logWorkspaceIntelligenceWarning('[CodeEditor] Failed to resolve definition', toEditorError(error instanceof Error ? error : undefined));
+                if (!disposed) {
+                    logWorkspaceIntelligenceWarning('[CodeEditor] Failed to resolve definition', toEditorError(error instanceof Error ? error : undefined));
+                }
             }
         };
 
         const resolveDefinitionAtPosition = async (
             position: IPosition
         ): Promise<WorkspaceDefinitionLocation[]> => {
+            if (disposed) return [];
             const model = editorInstance.getModel();
-            if (!model) {
+            if (!model || model.isDisposed()) {
                 return [];
             }
 
             try {
-                return await window.electron.workspace.getFileDefinition(
+                const results = await window.electron.workspace.getFileDefinition(
                     workspacePath,
                     filePath,
                     model.getValue(),
                     position.lineNumber,
                     position.column
                 );
+                if (disposed) return [];
+                return results;
             } catch (error) {
-                logWorkspaceIntelligenceWarning(
-                    '[CodeEditor] Failed to resolve LSP definition at position',
-                    toEditorError(error instanceof Error ? error : undefined)
-                );
+                if (!disposed) {
+                    logWorkspaceIntelligenceWarning(
+                        '[CodeEditor] Failed to resolve LSP definition at position',
+                        toEditorError(error instanceof Error ? error : undefined)
+                    );
+                }
                 return [];
             }
         };
@@ -391,18 +399,21 @@ export function useWorkspaceEditorIntelligence({
             symbolArg: string | undefined,
             resolver: (query: string) => Promise<FileSearchResult[]>
         ): Promise<void> => {
+            if (disposed) return;
             const symbol = symbolArg?.trim() || resolveSymbolFromSelection(editorInstance);
-            if (!symbol) {
+            if (!symbol || disposed) {
                 return;
             }
 
             try {
                 const resolvedResults = await resolver(symbol);
+                if (disposed) return;
+                
                 const limitedResults = resolvedResults
                     .filter(item => item.file.trim().length > 0)
                     .slice(0, MAX_REFERENCES_RESULTS);
 
-                if (limitedResults.length === 0) {
+                if (limitedResults.length === 0 || disposed) {
                     return;
                 }
 
@@ -424,12 +435,15 @@ export function useWorkspaceEditorIntelligence({
                     }
                 }
             } catch (error) {
-                logWorkspaceIntelligenceWarning('[CodeEditor] Failed to resolve workspace symbol results', toEditorError(error instanceof Error ? error : undefined));
+                if (!disposed) {
+                    logWorkspaceIntelligenceWarning('[CodeEditor] Failed to resolve workspace symbol results', toEditorError(error instanceof Error ? error : undefined));
+                }
             }
         };
 
         const hoverProvider = monaco.languages.registerHoverProvider(language, {
             provideHover: async (model: editor.ITextModel, position: IPosition) => {
+                if (disposed || model.isDisposed()) return null;
                 const activeModel = editorInstance.getModel();
                 if (model.uri.toString() !== activeModel?.uri.toString()) {
                     return null;
@@ -442,6 +456,7 @@ export function useWorkspaceEditorIntelligence({
                 const importTarget = resolveImportSpecifierAtPosition(model, position);
                 if (importTarget) {
                     const definitions = await resolveDefinitionAtPosition(position);
+                    if (disposed || model.isDisposed()) return null;
                     return buildDefinitionHoverContents(
                         monaco,
                         workspacePath,
@@ -465,6 +480,8 @@ export function useWorkspaceEditorIntelligence({
                         ),
                     ]);
 
+                    if (disposed || model.isDisposed()) return null;
+
                     if (!definition && relationships.length === 0) {
                         return null;
                     }
@@ -485,7 +502,9 @@ export function useWorkspaceEditorIntelligence({
                         ),
                     };
                 } catch (error) {
-                    logWorkspaceIntelligenceWarning('[CodeEditor] Failed to build hover data', toEditorError(error instanceof Error ? error : undefined));
+                    if (!disposed) {
+                        logWorkspaceIntelligenceWarning('[CodeEditor] Failed to build hover data', toEditorError(error instanceof Error ? error : undefined));
+                    }
                     return null;
                 }
             },
@@ -493,12 +512,15 @@ export function useWorkspaceEditorIntelligence({
 
         const definitionProvider = monaco.languages.registerDefinitionProvider(language, {
             provideDefinition: async (model: editor.ITextModel, position: IPosition) => {
+                if (disposed || model.isDisposed()) return [];
                 const activeModel = editorInstance.getModel();
                 if (model.uri.toString() !== activeModel?.uri.toString()) {
                     return [];
                 }
 
                 const definitions = await resolveDefinitionAtPosition(position);
+                if (disposed || model.isDisposed()) return [];
+                
                 return definitions.map(definition => ({
                     uri: monaco.Uri.parse(toMonacoFileUri(definition.file)),
                     range: new monaco.Range(
@@ -517,6 +539,7 @@ export function useWorkspaceEditorIntelligence({
         const codeActionProvider = monaco.languages.registerCodeActionProvider(language, {
             providedCodeActionKinds: [quickFixKind],
             provideCodeActions: (model: editor.ITextModel, range: IRange) => {
+                if (disposed || model.isDisposed()) return { actions: [], dispose: () => {} };
                 const activeModel = editorInstance.getModel();
                 if (model.uri.toString() !== activeModel?.uri.toString()) {
                     return {
@@ -557,6 +580,7 @@ export function useWorkspaceEditorIntelligence({
             label: labels.open,
             keybindings: keybindings.definition,
             run: async () => {
+                if (disposed) return;
                 await navigateToDefinition();
             },
         });
@@ -566,6 +590,7 @@ export function useWorkspaceEditorIntelligence({
             label: labels.history,
             keybindings: keybindings.references,
             run: async () => {
+                if (disposed) return;
                 await showWorkspaceResults(
                     undefined,
                     symbol => window.electron.code.findReferences(workspacePath, symbol)
@@ -577,6 +602,7 @@ export function useWorkspaceEditorIntelligence({
             id: FIND_RELATED_ACTION_ID,
             label: labels.related,
             run: async () => {
+                if (disposed) return;
                 await showWorkspaceResults(
                     undefined,
                     symbol =>
@@ -590,6 +616,7 @@ export function useWorkspaceEditorIntelligence({
         });
 
         const mouseSubscription = editorInstance.onMouseDown(event => {
+            if (disposed) return;
             const position = event.target.position;
             const mouseEvent = event.event;
             if (!position || !mouseEvent.leftButton || (!mouseEvent.ctrlKey && !mouseEvent.metaKey)) {
@@ -597,6 +624,7 @@ export function useWorkspaceEditorIntelligence({
             }
 
             void resolveDefinitionAtPosition(position).then(definitions => {
+                if (disposed) return;
                 const firstDefinition = definitions[0];
                 if (!firstDefinition || !onNavigateToLocation) {
                     return;
@@ -610,6 +638,7 @@ export function useWorkspaceEditorIntelligence({
         });
 
         const handleModifierState = (event: KeyboardEvent) => {
+            if (disposed) return;
             modifierPressedRef.current = event.ctrlKey || event.metaKey;
         };
         const resetModifierState = () => {
@@ -619,7 +648,40 @@ export function useWorkspaceEditorIntelligence({
         window.addEventListener('keyup', handleModifierState);
         window.addEventListener('blur', resetModifierState);
 
+        const diagnosticsCleanup = window.electron.ipcRenderer.on('lsp:diagnostics-updated', (_event, data: {
+            uri: string;
+            diagnostics: any[];
+        }) => {
+            if (disposed || !editorInstance || !monaco) return;
+            const model = editorInstance.getModel();
+            if (!model || model.isDisposed()) return;
+
+            // Match current file URI
+            const currentFileUri = toMonacoFileUri(filePath);
+            
+            const normalizedDataUri = decodeURIComponent(data.uri).toLowerCase();
+            const normalizedCurrentUri = decodeURIComponent(currentFileUri).toLowerCase();
+            
+            if (normalizedDataUri !== normalizedCurrentUri) {
+                return;
+            }
+
+            const markers = data.diagnostics.map(d => ({
+                severity: d.severity === 1 ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
+                message: d.message,
+                startLineNumber: d.range.start.line + 1,
+                startColumn: d.range.start.character + 1,
+                endLineNumber: d.range.end.line + 1,
+                endColumn: d.range.end.character + 1,
+                source: d.source || 'lsp',
+                code: d.code?.toString(),
+            }));
+
+            monaco.editor.setModelMarkers(model, 'lsp', markers);
+        });
+
         return () => {
+            disposed = true;
             hoverProvider.dispose();
             definitionProvider.dispose();
             codeActionProvider.dispose();
@@ -630,6 +692,7 @@ export function useWorkspaceEditorIntelligence({
             window.removeEventListener('keydown', handleModifierState);
             window.removeEventListener('keyup', handleModifierState);
             window.removeEventListener('blur', resetModifierState);
+            diagnosticsCleanup();
         };
     }, [
         editorMounted,

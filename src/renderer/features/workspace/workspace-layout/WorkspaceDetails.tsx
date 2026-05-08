@@ -111,6 +111,15 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
 
     const { ps, wm, handleUpdateWorkspace, submitEntryModal, entryBusy, t } =
         useWorkspaceDetailsController({ workspace, language });
+    
+    const initialMount = React.useRef(true);
+    React.useEffect(() => {
+        if (initialMount.current) {
+            ps.setSidebarCollapsed(true);
+            initialMount.current = false;
+        }
+    }, [ps]);
+
     const taskRunner = useWorkspaceTaskRunner({
         workspace
     });

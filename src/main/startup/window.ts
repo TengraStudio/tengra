@@ -292,7 +292,7 @@ function setupWindowStatePersistence(
                 const isMaximized = win.isMaximized();
                 const currentSettings = settingsService.getSettings();
                 const currentWindow = currentSettings.window;
-                
+
                 // Only get normal bounds if not maximized/fullscreen
                 const bounds = (!isFullscreen && !isMaximized)
                     ? win.getBounds()
@@ -328,7 +328,7 @@ function setupWindowStatePersistence(
 }
 
 export function setupTray(settingsService?: SettingsService) {
-    if (tray) {return;}
+    if (tray) { return; }
 
     const createWindowIfIpcReady = async () => {
         if (!settingsService) {
@@ -352,7 +352,7 @@ export function setupTray(settingsService?: SettingsService) {
 
         const contextMenu = Menu.buildFromTemplate([
             {
-                label: t('auto.showTengra'),
+                label: t('backend.showTengra'),
                 click: () => {
                     if (mainWindow && !mainWindow.isDestroyed()) {
                         mainWindow.show();

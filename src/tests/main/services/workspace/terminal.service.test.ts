@@ -113,40 +113,6 @@ vi.mock('@main/services/terminal/backends/node-pty.backend', () => ({
     }
 }));
 
-vi.mock('@main/services/terminal/backends/ghostty.backend', () => ({
-    GhosttyBackend: class {
-        id = 'ghostty';
-        async isAvailable() { return true; }
-        async create() {
-            return {
-                write: vi.fn(),
-                resize: vi.fn(),
-                kill: vi.fn(),
-            };
-        }
-    }
-}));
-vi.mock('@main/services/terminal/backends/alacritty.backend', () => ({
-    AlacrittyBackend: class {
-        id = 'alacritty';
-        async isAvailable() { return false; }
-        async create() { throw new Error('Unavailable backend'); }
-    }
-}));
-vi.mock('@main/services/terminal/backends/warp.backend', () => ({
-    WarpBackend: class {
-        id = 'warp';
-        async isAvailable() { return false; }
-        async create() { throw new Error('Unavailable backend'); }
-    }
-}));
-vi.mock('@main/services/terminal/backends/kitty.backend', () => ({
-    KittyBackend: class {
-        id = 'kitty';
-        async isAvailable() { return false; }
-        async create() { throw new Error('Unavailable backend'); }
-    }
-}));
 vi.mock('@main/services/terminal/backends/windows-terminal.backend', () => ({
     WindowsTerminalBackend: class {
         id = 'windows-terminal';
@@ -164,7 +130,18 @@ describe('TerminalService', () => {
     });
 
     it('creates, writes, resizes, and kills terminal sessions', async () => {
-        const service = new TerminalService({} as any, {} as any, {} as any, () => null);
+        const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
+        const mockEventBus = { on: vi.fn(() => () => {}) };
+        const service = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
+        service.addBackend({
+            id: 'proxy-terminal',
+            isAvailable: async () => true,
+            create: async () => ({
+                write: vi.fn(),
+                resize: vi.fn(),
+                kill: vi.fn(),
+            }),
+        } as any);
 
         const created = await service.createSession({
             id: 'session-1',
@@ -182,7 +159,19 @@ describe('TerminalService', () => {
     });
 
     it('persists snapshots and restores sessions after restart', async () => {
-        const serviceBeforeRestart = new TerminalService({} as any, {} as any, {} as any, () => null);
+        const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
+        const mockEventBus = { on: vi.fn(() => () => {}) };
+        const serviceBeforeRestart = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
+        serviceBeforeRestart.addBackend({
+            id: 'proxy-terminal',
+            isAvailable: async () => true,
+            create: async () => ({
+                write: vi.fn(),
+                resize: vi.fn(),
+                kill: vi.fn(),
+            }),
+        } as any);
+
         await serviceBeforeRestart.createSession({
             id: 'persist-1',
             cwd: USER_DATA_PATH,
@@ -196,7 +185,16 @@ describe('TerminalService', () => {
         const snapshotPath = normalizePath(path.join(USER_DATA_PATH, 'data/terminal/sessions.json'));
         expect(fileStore.get(snapshotPath)).toContain('persist-1');
 
-        const serviceAfterRestart = new TerminalService({} as any, {} as any, {} as any, () => null);
+        const serviceAfterRestart = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
+        serviceAfterRestart.addBackend({
+            id: 'proxy-terminal',
+            isAvailable: async () => true,
+            create: async () => ({
+                write: vi.fn(),
+                resize: vi.fn(),
+                kill: vi.fn(),
+            }),
+        } as any);
         await serviceAfterRestart.initialize();
 
         const snapshots = serviceAfterRestart.getSessionSnapshots();
@@ -213,7 +211,9 @@ describe('TerminalService', () => {
     });
 
     it('uses userData path from electron app for persistence files', () => {
-        new TerminalService({} as any, {} as any, {} as any, () => null);
+        const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
+        const mockEventBus = { on: vi.fn(() => () => {}) };
+        new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
         expect(app.getPath).toHaveBeenCalledWith('userData');
     });
 });

@@ -339,13 +339,15 @@ function useTerminalSession(
             sessionCreated = true;
             markTerminalSessionInitialized(tab.id);
             setupEvents(tab.id);
-            try {
-                const buffer = await window.electron.terminal.readBuffer(tab.id);
-                if (buffer && isMountedRef.current) {
-                    term.write(buffer);
+            if (tab.id && isMountedRef.current) {
+                try {
+                    const buffer = await window.electron.terminal.readBuffer(tab.id);
+                    if (buffer && isMountedRef.current) {
+                        term.write(buffer);
+                    }
+                } catch {
+                    // Ignore readBuffer failure.
                 }
-            } catch {
-                // Ignore readBuffer failure.
             }
             if (isMountedRef.current) {
                 setIsReady(true);

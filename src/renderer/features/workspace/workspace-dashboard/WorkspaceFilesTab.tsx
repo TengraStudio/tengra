@@ -85,6 +85,15 @@ export const WorkspaceFilesTab = ({
                                     enableInlayHints={false}
                                     performanceMode={true}
                                     performanceMarkPrefix="workspace:editor"
+                                    onCursorPositionChange={pos => {
+                                        window.dispatchEvent(new CustomEvent('tengra:cursor-moved', {
+                                            detail: {
+                                                filePath: activeFileObj.path,
+                                                line: pos.lineNumber,
+                                                column: pos.column
+                                            }
+                                        }));
+                                    }}
                                     onChange={newContent => {
                                         const newFiles = openFiles.map(f => f.path === activeFileObj.path ? { ...f, content: newContent ?? '', isDirty: true } : f);
                                         setOpenFiles(newFiles);

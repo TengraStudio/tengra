@@ -15,6 +15,7 @@ import React from 'react';
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 import { WorkspaceEntry } from '@/types';
+import { useFileDiagnostics } from '@/store/diagnostics.store';
 
 import {
     WorkspaceEntryRow,
@@ -126,6 +127,17 @@ function WorkspaceExplorerDiagnosticsBadges({
                     <span>{diagnostics.lint}</span>
                 </span>
             )}
+            {/* Real-time LSP Diagnostics */}
+            {(diagnostics as any).realtimeErrors > 0 && (
+                <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground">
+                    {(diagnostics as any).realtimeErrors}
+                </span>
+            )}
+            {(diagnostics as any).realtimeWarnings > 0 && (diagnostics as any).realtimeErrors === 0 && (
+                <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-warning text-[8px] font-bold text-warning-foreground">
+                    {(diagnostics as any).realtimeWarnings}
+                </span>
+            )}
         </div>
     );
 }
@@ -190,6 +202,30 @@ const EntryRowView: React.FC<{
     onEntryContextMenu,
     setRowRef,
 }) => {
+        // Diagnostic tracking
+        const uri = React.useMemo(() => {
+            if (!row.entry.path) return undefined;
+            const slashPath = row.entry.path.replace(/\\/g, '/').replace(/\/+/g, '/');
+            if (/^[A-Za-z]:\//.test(slashPath)) {
+                return `file:///${slashPath}`;
+            }
+            return `file://${slashPath}`;
+        }, [row.entry.path]);
+
+        const realtimeDiag = useFileDiagnostics(row.entry.mountId, uri);
+        const hasErrors = (realtimeDiag?.errorCount ?? 0) > 0;
+        const hasWarnings = (realtimeDiag?.warningCount ?? 0) > 0;
+
+        const mergedDiagnostics = React.useMemo(() => {
+            const base = row.diagnostics || { total: 0, typescript: 0, test: 0, agent: 0, lint: 0 };
+            return {
+                ...base,
+                realtimeErrors: realtimeDiag?.errorCount ?? 0,
+                realtimeWarnings: realtimeDiag?.warningCount ?? 0,
+                total: base.total + (realtimeDiag?.errorCount ?? 0) + (realtimeDiag?.warningCount ?? 0)
+            };
+        }, [row.diagnostics, realtimeDiag]);
+
         const entryId = `item:${row.entry.mountId}:${row.entry.path}`;
         const {
             attributes,
@@ -237,6 +273,8 @@ const EntryRowView: React.FC<{
                     isFocused && !isSelected && 'bg-git-vsc-selected/50',
                     isOver && 'bg-primary/20',
                     isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
+                    hasErrors && !isSelected && 'text-destructive hover:text-destructive',
+                    hasWarnings && !hasErrors && !isSelected && 'text-warning hover:text-warning',
                     getIgnoredEntryClassName(row.entry.isGitIgnored)
                 )}
                 style={{ ...style }}
@@ -297,7 +335,7 @@ const EntryRowView: React.FC<{
                 </div>
 
                 <div className="ml-auto flex items-center gap-1.5 pl-2 shrink-0 pr-1" style={{ zIndex: 'var(--tengra-z-1)' }}>
-                    <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
+                    <WorkspaceExplorerDiagnosticsBadges diagnostics={mergedDiagnostics as any} />
                     {row.gitStatus && (
                         <GitStatusIndicator status={row.gitStatus} rawStatus={row.gitRawStatus} />
                     )}

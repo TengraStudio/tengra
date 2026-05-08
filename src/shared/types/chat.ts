@@ -164,6 +164,7 @@ export interface ChatRequest {
     options?: JsonObject
     workspaceId?: string
     systemMode?: SystemMode
+    accountId?: string
 }
 
 export interface ChatStreamRequest extends ChatRequest {

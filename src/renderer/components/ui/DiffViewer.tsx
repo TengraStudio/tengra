@@ -16,7 +16,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
+import { ensureMonacoInitialized, applyMonacoTheme } from '@/utils/monaco-loader.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 
@@ -43,8 +43,9 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     useEffect(() => {
         let active = true;
         void ensureMonacoInitialized()
-            .then(() => {
+            .then((monaco) => {
                 if (active) {
+                    applyMonacoTheme(monaco, isLight);
                     setIsMonacoReady(true);
                 }
             })
@@ -55,7 +56,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
         return () => {
             active = false;
         };
-    }, []);
+    }, [isLight]);
 
     const handleEditorDidMount = (editor: editor.IStandaloneDiffEditor) => {
         editorRef.current = editor;
@@ -64,9 +65,17 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     useEffect(() => {
         return () => {
             if (editorRef.current) {
-                const models = editorRef.current.getModel();
-                if (models) {
-                    editorRef.current.setModel(null);
+                try {
+                    const models = editorRef.current.getModel();
+                    if (models) {
+                        // Reset models before editor is disposed to avoid race conditions
+                        editorRef.current.setModel(null);
+                        
+                        // We don't dispose the models here as @monaco-editor/react handles it,
+                        // but setting it to null prevents the 'TextModel got disposed' error
+                    }
+                } catch (e) {
+                    appLogger.warn('DiffViewer', 'Error during editor cleanup', e as any);
                 }
             }
         };

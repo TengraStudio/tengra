@@ -289,14 +289,7 @@ export class FileSystemService {
             const normalizedRoot = normalizeForComparison(root);
             const relativePath = path.relative(normalizedRoot, normalizedPath);
             const isAllowed = relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
-
-            appLogger.debug('FileSystem', `Checking path permission`, {
-                root: normalizedRoot,
-                path: normalizedPath,
-                relative: relativePath,
-                isAllowed
-            });
-
+ 
             return isAllowed;
         });
 
@@ -419,25 +412,17 @@ export class FileSystemService {
     @ipc(FILES_CHANNELS.LIST_DIRECTORY)
     async listDirectoryIpc(dirPath: string) {
         const startedAt = Date.now();
-        const channel = 'files:listDirectory';
-        appLogger.debug('FileSystem', `IPC Request: listDirectory`, { dirPath });
+        const channel = 'files:listDirectory'; 
         if (typeof dirPath !== 'string' || dirPath.trim().length === 0) {
             this.trackFailureMetrics(channel, FILE_IPC_ERROR_CODE.VALIDATION, 'validation-failure');
             return { success: false, data: [], error: 'Invalid directory path' };
-        }
-        appLogger.info('FileSystem', `IPC Request: listDirectory`, { dirPath });
+        } 
         try {
             PathSchema.parse(dirPath);
-            const result = await this.listDirectory(dirPath);
-            appLogger.info('FileSystem', `IPC Response: listDirectory`, {
-                dirPath,
-                success: result.success,
-                entries: (result.success && result.data) ? result.data.length : 0
-            });
+            const result = await this.listDirectory(dirPath); 
             this.trackSuccessMetrics(channel, Date.now() - startedAt);
             return result;
         } catch (error) {
-            appLogger.error('FileSystem', `IPC Error: listDirectory`, { dirPath, error: getErrorMessage(error as Error) });
             const isValidation = error instanceof z.ZodError;
             this.trackFailureMetrics(channel, isValidation ? FILE_IPC_ERROR_CODE.VALIDATION : FILE_IPC_ERROR_CODE.OPERATION_FAILED, isValidation ? 'validation-failure' : 'failure');
             return { success: false, data: [], error: getErrorMessage(error as Error) };
@@ -1151,7 +1136,7 @@ export class FileSystemService {
                         '-DestinationPath',
                         destPath,
                         '-Force',
-                    ]);
+                    ], { windowsHide: true });
                 } else {
                     proc = spawn('unzip', ['-o', zipPath, '-d', destPath]);
                 }

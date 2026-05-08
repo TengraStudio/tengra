@@ -58,6 +58,14 @@ export interface WorkspaceBridge {
     onFileChange: (
         callback: (event: string, path: string, rootPath: string) => void
     ) => () => void;
+    pullDiagnostics: (payload: { workspaceId: string; filePath: string; languageId: string }) => Promise<any[] | null>;
+    getCodeActions: (payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: string;
+        range: any;
+        diagnostics: any[];
+    }) => Promise<any[] | null>;
 }
 
 interface WrappedWorkspaceResponse<T> {
@@ -155,6 +163,10 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
             ipc.on(WORKSPACE_CHANNELS.FILE_CHANGE_EVENT, listener);
             return () => ipc.removeListener(WORKSPACE_CHANNELS.FILE_CHANGE_EVENT, listener);
         },
+        pullDiagnostics: payload =>
+            ipc.invoke(WORKSPACE_CHANNELS.PULL_DIAGNOSTICS, payload).then(unwrapWorkspaceResponse),
+        getCodeActions: payload =>
+            ipc.invoke(WORKSPACE_CHANNELS.GET_CODE_ACTIONS, payload).then(unwrapWorkspaceResponse),
     };
 }
 

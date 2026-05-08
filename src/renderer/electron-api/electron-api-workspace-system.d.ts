@@ -204,6 +204,18 @@ export interface ElectronApiWorkspaceSystemDomain {
             callback: (event: string, path: string, rootPath: string) => void
         ) => () => void;
         getFileDiff: (diffId: string) => Promise<{ oldValue: string; newValue: string }>;
+        pullDiagnostics: (payload: {
+            workspaceId: string;
+            filePath: string;
+            languageId: string;
+        }) => Promise<any[] | null>;
+        getCodeActions: (payload: {
+            workspaceId: string;
+            filePath: string;
+            languageId: string;
+            range: any;
+            diagnostics: any[];
+        }) => Promise<any[] | null>;
     };
 
     process: {
@@ -300,11 +312,14 @@ export interface ElectronApiWorkspaceSystemDomain {
             staged?: boolean
         ) => Promise<{ diff: string; success: boolean; error?: string }>;
         stageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>;
+        stageAll: (cwd: string) => Promise<{ success: boolean; error?: string }>;
         unstageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>;
+        unstageAll: (cwd: string) => Promise<{ success: boolean; error?: string }>;
         getDetailedStatus: (cwd: string) => Promise<{
             success: boolean;
             staged?: Array<{ path: string; status: string }>;
             unstaged?: Array<{ path: string; status: string }>;
+            untracked?: Array<{ path: string; status: string }>;
             error?: string;
         }>;
         checkout: (cwd: string, branch: string) => Promise<{ success: boolean; error?: string }>;
@@ -411,6 +426,11 @@ export interface ElectronApiWorkspaceSystemDomain {
         generatePrSummary: (cwd: string, base: string, head: string) => Promise<{ success: boolean; summary?: string; error?: string }>;
         compareRefs: (cwd: string, base: string, head: string) => Promise<GitRefComparison>;
         getHotspots: (cwd: string, limit?: number, days?: number) => Promise<{ success: boolean; hotspots: GitHotspot[]; error?: string }>;
+        getGitHubData: (repoUrl: string, type: 'pulls' | 'issues') => Promise<{ success: boolean; data?: any[]; error?: string }>;
+        getGitHubPrDetails: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: { pr: any; files: any[]; comments: any[]; reviews: any[]; checks: any[] }; error?: string }>;
+        updateGitHubPrState: (repoUrl: string, prNumber: number, state: 'open' | 'closed') => Promise<{ success: boolean; data?: any; error?: string }>;
+        mergeGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: any; error?: string }>;
+        approveGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: any; error?: string }>;
         getTreeStatusPreview: (cwd: string, directoryPath: string) => Promise<any>;
     };
 

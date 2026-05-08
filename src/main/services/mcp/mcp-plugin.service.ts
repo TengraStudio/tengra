@@ -24,7 +24,7 @@ import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { MCP_CHANNELS, MCP_PERMISSIONS_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
-import { McpPermission, McpPermissionProfile,MCPServerConfig } from '@shared/types/settings';
+import { McpPermission, McpPermissionProfile, MCPServerConfig } from '@shared/types/settings';
 
 const MAX_SERVICE_NAME_LENGTH = 128;
 const MAX_ACTION_NAME_LENGTH = 128;
@@ -70,16 +70,16 @@ export class McpPluginService extends BaseService {
     }
 
     private validateServiceName(value: RuntimeValue): string {
-        if (typeof value !== 'string') {throw new Error('Invalid service name');}
+        if (typeof value !== 'string') { throw new Error('Invalid service name'); }
         const trimmed = value.trim();
-        if (!trimmed || trimmed.length > MAX_SERVICE_NAME_LENGTH) {throw new Error('Service name too long or empty');}
+        if (!trimmed || trimmed.length > MAX_SERVICE_NAME_LENGTH) { throw new Error('Service name too long or empty'); }
         return trimmed;
     }
 
     private validateActionName(value: RuntimeValue): string {
-        if (typeof value !== 'string') {throw new Error('Invalid action name');}
+        if (typeof value !== 'string') { throw new Error('Invalid action name'); }
         const trimmed = value.trim();
-        if (!trimmed || trimmed.length > MAX_ACTION_NAME_LENGTH) {throw new Error('Action name too long or empty');}
+        if (!trimmed || trimmed.length > MAX_ACTION_NAME_LENGTH) { throw new Error('Action name too long or empty'); }
         return trimmed;
     }
 
@@ -102,7 +102,7 @@ export class McpPluginService extends BaseService {
         const service = this.validateServiceName(serviceRaw);
         const action = this.validateActionName(actionRaw);
         const args = (argsRaw && typeof argsRaw === 'object' && !Array.isArray(argsRaw)) ? argsRaw as JsonObject : {};
-        
+
         const result = await withOperationGuard('mcp', async () =>
             this.dispatch(service, action, args)
         );
@@ -113,7 +113,7 @@ export class McpPluginService extends BaseService {
     async toggleServiceIpc(serviceRaw: RuntimeValue, enabledRaw: RuntimeValue): Promise<RuntimeValue> {
         const service = this.validateServiceName(serviceRaw);
         const enabled = enabledRaw === true;
-        
+
         const settings = this.settingsService.getSettings();
         let disabled = [...(settings.mcpDisabledServers ?? [])];
 
@@ -277,54 +277,54 @@ export class McpPluginService extends BaseService {
                 name: 'filesystem',
                 description: 'Native high-performance filesystem tools',
                 actions: [
-                    { name: 'read', description: t('auto.readAFileFromDisk') },
-                    { name: 'write', description: t('auto.writeAFileToDisk') },
-                    { name: 'list', description: t('auto.listDirectoryContents') },
-                    { name: 'extract_strings', description: t('auto.extractStringsFromBinarytextFiles') },
-                    { name: 'unzip', description: t('auto.extractAZipArchive') },
-                    { name: 'download_file', description: t('auto.downloadAFileFromAUrl') }
+                    { name: 'read', description: t('backend.readAFileFromDisk') },
+                    { name: 'write', description: t('backend.writeAFileToDisk') },
+                    { name: 'list', description: t('backend.listDirectoryContents') },
+                    { name: 'extract_strings', description: t('backend.extractStringsFromBinarytextFiles') },
+                    { name: 'unzip', description: t('backend.extractAZipArchive') },
+                    { name: 'download_file', description: t('backend.downloadAFileFromAUrl') }
                 ]
             },
             {
                 name: 'terminal',
-                description: t('auto.nativePersistentTerminalAndShellCommandE'),
+                description: t('backend.nativePersistentTerminalAndShellCommandE'),
                 actions: [
-                    { name: 'run_command', description: t('auto.executeACommandInAPersistentTerminalSess') },
-                    { name: 'list_sessions', description: t('auto.listActiveTerminalSessions') },
-                    { name: 'resize', description: t('auto.resizeATerminalWindow') },
-                    { name: 'kill_session', description: t('auto.terminateATerminalSession') }
+                    { name: 'run_command', description: t('backend.executeACommandInAPersistentTerminalSess') },
+                    { name: 'list_sessions', description: t('backend.listActiveTerminalSessions') },
+                    { name: 'resize', description: t('backend.resizeATerminalWindow') },
+                    { name: 'kill_session', description: t('backend.terminateATerminalSession') }
                 ]
             },
             {
                 name: 'git',
-                description: t('auto.nativeGitIntegrationUsingLibgit2'),
+                description: t('backend.nativeGitIntegrationUsingLibgit2'),
                 actions: [
-                    { name: 'status', description: t('auto.getTheStatusOfAGitRepository') },
-                    { name: 'diff', description: t('auto.getTheDiffOfAGitRepository') },
-                    { name: 'blame', description: t('auto.getTheBlameInformationForAFile') },
-                    { name: 'log', description: t('auto.showTheCommitLogs') },
-                    { name: 'add', description: t('auto.addFileContentsToTheIndex') },
-                    { name: 'commit', description: t('auto.recordChangesToTheRepository') },
+                    { name: 'status', description: t('backend.getTheStatusOfAGitRepository') },
+                    { name: 'diff', description: t('backend.getTheDiffOfAGitRepository') },
+                    { name: 'blame', description: t('backend.getTheBlameInformationForAFile') },
+                    { name: 'log', description: t('backend.showTheCommitLogs') },
+                    { name: 'add', description: t('backend.addFileContentsToTheIndex') },
+                    { name: 'commit', description: t('backend.recordChangesToTheRepository') },
                     { name: 'push', description: 'Update remote refs along with associated objects' },
-                    { name: 'pull', description: t('auto.fetchFromAndIntegrateWithAnotherReposito') },
-                    { name: 'checkout', description: t('auto.switchBranchesOrRestoreWorkingTreeFiles') },
-                    { name: 'branches', description: t('auto.listLocalBranches') }
+                    { name: 'pull', description: t('backend.fetchFromAndIntegrateWithAnotherReposito') },
+                    { name: 'checkout', description: t('backend.switchBranchesOrRestoreWorkingTreeFiles') },
+                    { name: 'branches', description: t('backend.listLocalBranches') }
                 ]
             },
             {
                 name: 'web',
-                description: t('auto.nativeWebScrapingAndSearchTools'),
+                description: t('backend.nativeWebScrapingAndSearchTools'),
                 actions: [
-                    { name: 'search', description: t('auto.searchTheWebForInformation') },
-                    { name: 'read_page', description: t('auto.readAndExtractContentFromAWebPage') },
-                    { name: 'fetch_json', description: t('auto.fetchJsonDataFromAUrl') }
+                    { name: 'search', description: t('backend.searchTheWebForInformation') },
+                    { name: 'read_page', description: t('backend.readAndExtractContentFromAWebPage') },
+                    { name: 'fetch_json', description: t('backend.fetchJsonDataFromAUrl') }
                 ]
             },
             {
                 name: 'crawler',
-                description: t('auto.highperformanceWebCrawlerAndContentExtra'),
+                description: t('backend.highperformanceWebCrawlerAndContentExtra'),
                 actions: [
-                    { name: 'crawl', description: t('auto.deepCrawlAWebsiteAndExtractStructuredCon') }
+                    { name: 'crawl', description: t('backend.deepCrawlAWebsiteAndExtractStructuredCon') }
                 ]
             },
             {
@@ -333,60 +333,60 @@ export class McpPluginService extends BaseService {
                 actions: [
                     { name: 'get_info', description: 'Get system hardware and OS information' },
                     { name: 'env_vars', description: 'List system environment variables' },
-                    { name: 'process_list', description: t('auto.listRunningProcessesWithResourceUsage') },
+                    { name: 'process_list', description: t('backend.listRunningProcessesWithResourceUsage') },
                     { name: 'kill_process', description: 'Terminate a system process' },
-                    { name: 'disk_space', description: t('auto.getDiskSpaceInformation') }
+                    { name: 'disk_space', description: t('backend.getDiskSpaceInformation') }
                 ]
             },
             {
                 name: 'network',
-                description: t('auto.nativeNetworkDiagnosticAndInterfaceTools'),
+                description: t('backend.nativeNetworkDiagnosticAndInterfaceTools'),
                 actions: [
-                    { name: 'list_interfaces', description: t('auto.listNetworkInterfacesAndIpAddresses') },
-                    { name: 'check_port', description: t('auto.checkIfASpecificPortIsOpen') },
-                    { name: 'active_ports', description: t('auto.listActiveDevelopmentPorts') },
-                    { name: 'ping', description: t('auto.sendIcmpEchoRequestToNetworkHosts') },
-                    { name: 'traceroute', description: t('auto.printTheRoutePacketsTraceToNetworkHost') },
-                    { name: 'whois', description: t('auto.lookupDomainRegistrationInformation') }
+                    { name: 'list_interfaces', description: t('backend.listNetworkInterfacesAndIpAddresses') },
+                    { name: 'check_port', description: t('backend.checkIfASpecificPortIsOpen') },
+                    { name: 'active_ports', description: t('backend.listActiveDevelopmentPorts') },
+                    { name: 'ping', description: t('backend.sendIcmpEchoRequestToNetworkHosts') },
+                    { name: 'traceroute', description: t('backend.printTheRoutePacketsTraceToNetworkHost') },
+                    { name: 'whois', description: t('backend.lookupDomainRegistrationInformation') }
                 ]
             },
             {
                 name: 'internet',
-                description: t('auto.nativeInternetbasedUtilityTools'),
+                description: t('backend.nativeInternetbasedUtilityTools'),
                 actions: [
-                    { name: 'weather', description: t('auto.getCurrentWeatherAndForecastForALocation') }
+                    { name: 'weather', description: t('backend.getCurrentWeatherAndForecastForALocation') }
                 ]
             },
             {
                 name: 'workspace',
                 description: 'Native workspace and container management',
                 actions: [
-                    { name: 'listContainers', description: t('auto.listDockerContainers') },
-                    { name: 'stats', description: t('auto.getDockerContainerResourceUsageStats') },
-                    { name: 'listImages', description: t('auto.listDockerImages') }
+                    { name: 'listContainers', description: t('backend.listDockerContainers') },
+                    { name: 'stats', description: t('backend.getDockerContainerResourceUsageStats') },
+                    { name: 'listImages', description: t('backend.listDockerImages') }
                 ]
             },
             {
                 name: 'llm',
                 description: 'Native LLM sidecar and model management',
                 actions: [
-                    { name: 'listModels', description: t('auto.listAvailableLocalLlmModelsOllama') },
-                    { name: 'ps', description: t('auto.showRunningLlmModels') }
+                    { name: 'listModels', description: t('backend.listAvailableLocalLlmModelsOllama') },
+                    { name: 'ps', description: t('backend.showRunningLlmModels') }
                 ]
             },
             {
                 name: 'search',
-                description: t('auto.fastLocalSearchUsingRipgrepEngine'),
+                description: t('backend.fastLocalSearchUsingRipgrepEngine'),
                 actions: [
-                    { name: 'grep', description: t('auto.highspeedTextSearchAcrossFiles') }
+                    { name: 'grep', description: t('backend.highspeedTextSearchAcrossFiles') }
                 ]
             },
             {
                 name: 'analysis',
                 description: 'Native code analysis and LSP management',
                 actions: [
-                    { name: 'lsp_status', description: t('auto.checkStatusOfLanguageServers') },
-                    { name: 'symbols', description: t('auto.extractSymbolsFromAFile') }
+                    { name: 'lsp_status', description: t('backend.checkStatusOfLanguageServers') },
+                    { name: 'symbols', description: t('backend.extractSymbolsFromAFile') }
                 ]
             }
         ];
@@ -437,7 +437,7 @@ export class McpPluginService extends BaseService {
             case 'workspace-only': return ['read', 'write'];
             case 'network-enabled': return ['read', 'network'];
             case 'destructive': return ['read', 'write', 'delete'];
-            case 'full-access': 
+            case 'full-access':
             default:
                 return ['read', 'write', 'delete', 'network', 'execute'];
         }
@@ -586,14 +586,14 @@ export class McpPluginService extends BaseService {
         if (serverConfig) {
             const actionCategory = this.getActionCategory(actionName);
             const permissions = serverConfig.permissions ?? this.getPermissionsByProfile(serverConfig.permissionProfile ?? settings.mcpPermissionProfile ?? 'read-only');
-            
+
             if (!permissions.includes(actionCategory)) {
                 return {
                     success: false,
-                    error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.GRANULAR_PERMISSION_DENIED, { 
-                        pluginName, 
+                    error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.GRANULAR_PERMISSION_DENIED, {
+                        pluginName,
                         category: actionCategory,
-                        actionName 
+                        actionName
                     }),
                     messageKey: MCP_PLUGIN_MESSAGE_KEY.GRANULAR_PERMISSION_DENIED,
                     messageParams: { pluginName, category: actionCategory, actionName }

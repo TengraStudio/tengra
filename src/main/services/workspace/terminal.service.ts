@@ -20,17 +20,13 @@ import { AuthService } from '@main/services/security/auth.service';
 import { getDataFilePath, getDataSubPath } from '@main/services/system/app-layout-paths.util';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { AlacrittyBackend } from '@main/services/terminal/backends/alacritty.backend';
 import { pathExists } from '@main/services/terminal/backends/backend-discovery.util';
 import { DockerBackend } from '@main/services/terminal/backends/docker.backend';
-import { GhosttyBackend } from '@main/services/terminal/backends/ghostty.backend';
-import { KittyBackend } from '@main/services/terminal/backends/kitty.backend';
 import { ProxyTerminalBackend } from '@main/services/terminal/backends/proxy-terminal.backend';
 import {
     ITerminalBackend,
     ITerminalProcess,
 } from '@main/services/terminal/backends/terminal-backend.interface';
-import { WarpBackend } from '@main/services/terminal/backends/warp.backend';
 import { WindowsTerminalBackend } from '@main/services/terminal/backends/windows-terminal.backend';
 import { TERMINAL_CHANNELS } from '@shared/constants/ipc-channels';
 import { 
@@ -235,17 +231,6 @@ export class TerminalService extends BaseService {
             this.backends.set(dockerBackend.id, dockerBackend);
         }
 
-        const ghosttyBackend = new GhosttyBackend();
-        this.backends.set(ghosttyBackend.id, ghosttyBackend);
-
-        const alacrittyBackend = new AlacrittyBackend();
-        this.backends.set(alacrittyBackend.id, alacrittyBackend);
-
-        const warpBackend = new WarpBackend();
-        this.backends.set(warpBackend.id, warpBackend);
-
-        const kittyBackend = new KittyBackend();
-        this.backends.set(kittyBackend.id, kittyBackend);
 
         const windowsTerminalBackend = new WindowsTerminalBackend();
         this.backends.set(windowsTerminalBackend.id, windowsTerminalBackend);
@@ -431,10 +416,6 @@ export class TerminalService extends BaseService {
     private async detectAvailableBackends(): Promise<TerminalBackendInfo[]> {
         const backendNames: Record<string, string> = {
             'proxy-terminal': 'Integrated Terminal',
-            ghostty: 'Ghostty',
-            alacritty: 'Alacritty',
-            warp: 'Warp',
-            kitty: 'Kitty',
             'windows-terminal': 'Windows Terminal',
         };
 
@@ -601,6 +582,9 @@ export class TerminalService extends BaseService {
                 .map(backend => backend.id)
         );
         let backendId = options.backendId ?? 'proxy-terminal';
+        if (backendId === 'node-pty') {
+            backendId = 'proxy-terminal';
+        }
         let backend = this.backends.get(backendId);
 
         if (!backend || !availableBackendIds.has(backendId)) {
@@ -715,6 +699,7 @@ export class TerminalService extends BaseService {
             };
 
             this.sessions.set(options.id, session);
+            await this.saveSnapshots();
 
             // Initialize batched emitter for the new session
             const dataEmitter = new BatchedEventEmitter<string>({
@@ -1775,19 +1760,27 @@ export class TerminalService extends BaseService {
     /**
      * Cleanup all sessions
      */
-    async cleanup(): Promise<void> {
+    override async cleanup(): Promise<void> {
         this.logInfo('Cleaning up TerminalService...');
-        this.powerStateUnsubscribe?.();
-        this.powerStateUnsubscribe = null;
+        
+        // Stop cleanup timer
         if (this.cleanupTimer) {
             clearInterval(this.cleanupTimer);
             this.cleanupTimer = null;
         }
-        await this.saveSnapshots(); // Last save
+
+        // Unsubscribe from power state
+        this.powerStateUnsubscribe?.();
+        this.powerStateUnsubscribe = null;
+
+        // Save current state
+        await this.saveSnapshots();
         await this.saveCommandHistory();
         await this.saveScrollbackMarkers();
         await this.saveSessionTemplates();
         await this.saveSearchState();
+
+        // Kill all active sessions
         for (const [, session] of this.sessions) {
             try {
                 session.process?.kill();
@@ -1796,9 +1789,12 @@ export class TerminalService extends BaseService {
                 appLogger.warn('TerminalService', `Session cleanup warning: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
+        
         this.sessions.clear();
         this.lineBuffers.clear();
         this.discoverySnapshot = null;
+
+        await super.cleanup();
     }
 
     private getLogPath(sessionId: string): string {

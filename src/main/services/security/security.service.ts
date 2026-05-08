@@ -194,7 +194,7 @@ export class SecurityService extends BaseService implements ISecurityService {
      */
     checkPasswordStrength(password: string): ServiceResponse<{ score: number; label: string }> {
         if (!password) {
-            return { success: true, result: { score: 0, label: t('auto.veryWeak') } };
+            return { success: true, result: { score: 0, label: t('backend.veryWeak') } };
         }
 
         let score = 0;
@@ -493,7 +493,7 @@ export class SecurityService extends BaseService implements ISecurityService {
     async resetMasterKey(): Promise<ServiceResponse> {
         try {
             this.logWarn('RESETTING MASTER KEY - All existing encrypted data will become unreadable!');
-            
+
             // 1. Delete the key file
             const keyExists = await fs.promises.access(this.keyPath).then(() => true).catch(() => false);
             if (keyExists) {

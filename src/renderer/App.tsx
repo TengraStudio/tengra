@@ -14,6 +14,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { LayoutManager } from '@/components/layout/LayoutManager';
 import { OfflineBanner } from '@/components/layout/OfflineBanner';
 import { SessionLockOverlay } from '@/components/layout/SessionLockOverlay';
+import { StatusBarProvider } from '@/components/layout/StatusBar';
+import StatusBar from '@/components/layout/StatusBar';
 import { ToastsContainer } from '@/components/layout/ToastsContainer';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@/components/shared/ErrorFallback';
@@ -331,9 +333,12 @@ const WindowAppCommandConnector: React.FC<{
     return null;
 };
 
-const SelectionPersistenceConnector: React.FC = () => {
+const SelectionPersistenceConnector: React.FC<{
+    setIsSidebarCollapsed: (collapsed: boolean) => void;
+}> = ({ setIsSidebarCollapsed }) => {
     const { selectedModel } = useModel();
     const { selectedWorkspace } = useWorkspaceSelection();
+    const lastWorkspaceId = React.useRef<string | null>(null);
 
     useEffect(() => {
         if (selectedModel) {
@@ -344,8 +349,16 @@ const SelectionPersistenceConnector: React.FC = () => {
     useEffect(() => {
         if (selectedWorkspace?.id) {
             localStorage.setItem('app.lastWorkspaceId', selectedWorkspace.id);
+            
+            // Auto-collapse sidebar when entering a specific workspace
+            if (selectedWorkspace.id !== lastWorkspaceId.current) {
+                setIsSidebarCollapsed(true);
+                lastWorkspaceId.current = selectedWorkspace.id;
+            }
+        } else if (!selectedWorkspace) {
+            lastWorkspaceId.current = null;
         }
-    }, [selectedWorkspace?.id]);
+    }, [selectedWorkspace?.id, setIsSidebarCollapsed]);
 
     return null;
 };
@@ -367,6 +380,7 @@ function MainApp() {
     const { language } = useLanguage();
     const { t } = useTranslation();
     const { isAuthModalOpen, setSettingsCategory } = useAuthSettingsUi();
+    const { selectedWorkspace } = useWorkspaceSelection();
     const appState = useAppState();
     const {
         currentView,
@@ -397,6 +411,8 @@ function MainApp() {
 
 
     const lastBreakpoint = React.useRef(breakpoint);
+    const lastViewRef = React.useRef(currentView);
+
     useEffect(() => {
         if (lastBreakpoint.current !== breakpoint || !isSidebarCollapsed) {
             trackResponsiveBreakpoint({
@@ -411,6 +427,13 @@ function MainApp() {
             setIsSidebarCollapsed(true);
         }
     }, [breakpoint, isSidebarCollapsed, setIsSidebarCollapsed]);
+
+    useEffect(() => {
+        if (currentView === 'workspace' && lastViewRef.current !== 'workspace') {
+            setIsSidebarCollapsed(true);
+        }
+        lastViewRef.current = currentView;
+    }, [currentView, setIsSidebarCollapsed]);
 
     const handleScrollToBottom = () => {
         const ref = appState.messagesEndRef.current;
@@ -489,99 +512,102 @@ function MainApp() {
                 </div>
             )}
         >
-            <div className="app-container h-screen w-full overflow-hidden">
-                <OfflineBanner />
+            <StatusBarProvider>
+                <div className="app-container h-screen w-full overflow-hidden">
+                    <OfflineBanner />
 
-                {shouldRenderAppModals && (
-                    <AppModalsConnector
-                        t={t}
-                        setCurrentView={setCurrentView}
-                        showShortcuts={appState.showShortcuts}
-                        setShowShortcuts={appState.setShowShortcuts}
-                        isAudioOverlayOpen={appState.isAudioOverlayOpen}
-                        setIsAudioOverlayOpen={appState.setIsAudioOverlayOpen}
-                        language={language}
-                        showSSHManager={appState.showSSHManager}
-                        setShowSSHManager={appState.setShowSSHManager}
-                    />
-                )}
-                <WindowAppCommandConnector
-                    setShowSSHManager={appState.setShowSSHManager}
-                />
-                {nonCriticalUiReady && (
-                    <>
-                        <SelectionPersistenceConnector />
-                        <VoiceActionsConnector
+                    {shouldRenderAppModals && (
+                        <AppModalsConnector
+                            t={t}
                             setCurrentView={setCurrentView}
-                            addToast={toast => addToast(toast)}
-                        />
-                        <KeyboardShortcutsConnector
                             showShortcuts={appState.showShortcuts}
                             setShowShortcuts={appState.setShowShortcuts}
+                            isAudioOverlayOpen={appState.isAudioOverlayOpen}
+                            setIsAudioOverlayOpen={appState.setIsAudioOverlayOpen}
+                            language={language}
                             showSSHManager={appState.showSSHManager}
                             setShowSSHManager={appState.setShowSSHManager}
-                            setCurrentView={setCurrentView}
-                            onToggleSidebar={handleToggleSidebar}
-                            onOpenSettings={openSettings}
                         />
-                        <Suspense fallback={null}>
-                            <UpdateNotification />
-                        </Suspense>
-                    </>
-                )}
-                <ToastsContainer toasts={appState.toasts} removeToast={appState.removeToast} />
-                <div className="absolute inset-0 flex flex-col overflow-hidden">
-                    <LayoutManager
-                        isSidebarCollapsed={appState.isSidebarCollapsed}
-                        setIsSidebarCollapsed={appState.setIsSidebarCollapsed}
-                        sidebarContent={
-                            <SidebarConnector
-                                currentView={appState.currentView}
-                                onChangeView={setCurrentView}
-                                isCollapsed={appState.isSidebarCollapsed}
-                                toggleSidebar={handleToggleSidebar}
+                    )}
+                    <WindowAppCommandConnector
+                        setShowSSHManager={appState.setShowSSHManager}
+                    />
+                    {nonCriticalUiReady && (
+                        <>
+                            <SelectionPersistenceConnector setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                            <VoiceActionsConnector
+                                setCurrentView={setCurrentView}
+                                addToast={toast => addToast(toast)}
                             />
-                        }
-                            mainContent={
-                                <>
-                                    <Suspense fallback={null}>
-                                        <AppHeader
-                                            currentView={appState.currentView}
-                                            onOpenSettings={() => { openSettings(); }}
-                                        />
-                                    </Suspense>
-                                    <Suspense fallback={layoutSectionFallback}>
-                                        <ViewManager
-                                            currentView={currentView}
-                                            templates={chatTemplates}
-                                            messagesEndRef={appState.messagesEndRef}
-                                            fileInputRef={appState.fileInputRef}
-                                            textareaRef={appState.textareaRef}
-                                            onScrollToBottom={handleScrollToBottom}
-                                            showScrollButton={appState.showScrollButton}
-                                            setShowScrollButton={appState.setShowScrollButton}
-                                            showFileMenu={appState.showFileMenu}
-                                            setShowFileMenu={appState.setShowFileMenu}
-                                            settingsSearchQuery={settingsSearchQuery}
-                                        />
-                                    </Suspense>
-                                    <div id="modal-root" />
-                                </>
+                            <KeyboardShortcutsConnector
+                                showShortcuts={appState.showShortcuts}
+                                setShowShortcuts={appState.setShowShortcuts}
+                                showSSHManager={appState.showSSHManager}
+                                setShowSSHManager={appState.setShowSSHManager}
+                                setCurrentView={setCurrentView}
+                                onToggleSidebar={handleToggleSidebar}
+                                onOpenSettings={openSettings}
+                            />
+                            <Suspense fallback={null}>
+                                <UpdateNotification />
+                            </Suspense>
+                        </>
+                    )}
+                    <ToastsContainer toasts={appState.toasts} removeToast={appState.removeToast} />
+                    <div className="absolute inset-0 flex flex-col overflow-hidden">
+                        <LayoutManager
+                            isSidebarCollapsed={appState.isSidebarCollapsed}
+                            setIsSidebarCollapsed={appState.setIsSidebarCollapsed}
+                            sidebarContent={
+                                <SidebarConnector
+                                    currentView={appState.currentView}
+                                    onChangeView={setCurrentView}
+                                    isCollapsed={appState.isSidebarCollapsed}
+                                    toggleSidebar={handleToggleSidebar}
+                                />
                             }
-                        />
+                                mainContent={
+                                    <>
+                                        <Suspense fallback={null}>
+                                            <AppHeader
+                                                currentView={appState.currentView}
+                                                onOpenSettings={() => { openSettings(); }}
+                                            />
+                                        </Suspense>
+                                        <Suspense fallback={layoutSectionFallback}>
+                                            <ViewManager
+                                                currentView={currentView}
+                                                templates={chatTemplates}
+                                                messagesEndRef={appState.messagesEndRef}
+                                                fileInputRef={appState.fileInputRef}
+                                                textareaRef={appState.textareaRef}
+                                                onScrollToBottom={handleScrollToBottom}
+                                                showScrollButton={appState.showScrollButton}
+                                                setShowScrollButton={appState.setShowScrollButton}
+                                                showFileMenu={appState.showFileMenu}
+                                                setShowFileMenu={appState.setShowFileMenu}
+                                                settingsSearchQuery={settingsSearchQuery}
+                                            />
+                                        </Suspense>
+                                        <div id="modal-root" />
+                                    </>
+                                }
+                            />
+                        <StatusBar workspaceId={selectedWorkspace?.id} />
+                    </div>
+                    <SessionLockOverlay
+                        isOpen={sessionTimeout.isEnabled && sessionTimeout.isLocked}
+                        lockedAt={sessionTimeout.lockedAt}
+                        canUseBiometric={sessionTimeout.canUseBiometric}
+                        onUnlock={sessionTimeout.unlock}
+                    />
+                    {nonCriticalUiReady && (
+                        <Suspense fallback={null}>
+                            <VoiceOverlay />
+                        </Suspense>
+                    )}
                 </div>
-                <SessionLockOverlay
-                    isOpen={sessionTimeout.isEnabled && sessionTimeout.isLocked}
-                    lockedAt={sessionTimeout.lockedAt}
-                    canUseBiometric={sessionTimeout.canUseBiometric}
-                    onUnlock={sessionTimeout.unlock}
-                />
-                {nonCriticalUiReady && (
-                    <Suspense fallback={null}>
-                        <VoiceOverlay />
-                    </Suspense>
-                )}
-            </div>
+            </StatusBarProvider>
         </ErrorBoundary>
     );
 }

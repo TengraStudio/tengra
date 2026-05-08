@@ -222,7 +222,7 @@ Add-Type -TypeDefinition $code
 `.replace(/\n/g, ' ');
                 await this.runCommand('powershell', ['-Command', code]);
             }
-            return { success: true, message: t('auto.wallpaperChanged') };
+            return { success: true, message: t('backend.wallpaperChanged') };
         } catch (e) {
             this.logError(`Failed to set wallpaper to ${imagePath}`, e);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
@@ -426,8 +426,8 @@ Add-Type -TypeDefinition $code
             // Electron sometimes returns Megabytes for videoMemory/memorySize.
             // We normalize everything to bytes.
             memoryBytes: this.normalizeVideoMemory(
-                this.extractNumber(record.videoMemory) ?? 
-                this.extractNumber(record.memorySize) ?? 
+                this.extractNumber(record.videoMemory) ??
+                this.extractNumber(record.memorySize) ??
                 this.extractNumber(record.vramBytes)
             ) ?? undefined,
             memoryUsedBytes: this.extractNumber(record.memoryUsedBytes) ?? undefined,
@@ -439,15 +439,15 @@ Add-Type -TypeDefinition $code
      * Electron/D3D often reports VRAM in MB instead of bytes.
      */
     private normalizeVideoMemory(value: number | null): number | null {
-        if (value === null) {return null;}
-        
+        if (value === null) { return null; }
+
         // If the value is strictly less than 1,000,000, it's almost certainly in MB or GB.
         // Modern GPUs have at least 1GB (1024 MB or 1e9 bytes).
         // If it's e.g. 12288, it's 12GB in MB.
         if (value > 0 && value < 1024 * 1024) {
             return value * 1024 * 1024; // Convert MB to Bytes
         }
-        
+
         return value;
     }
 

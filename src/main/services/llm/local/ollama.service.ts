@@ -329,7 +329,7 @@ export class OllamaService {
 
     private getEffectiveNumCtx(model: string): number {
         const settings = this.settingsService.getSettings();
-        
+
         // 1. Check for per-model override
         const modelKey = `ollama/${model}`;
         const modelCtx = settings.modelSettings?.[modelKey]?.numCtx;
@@ -648,21 +648,21 @@ export class OllamaService {
             { name: 'llama3', description: 'Meta\'s Llama 3 model', tags: ['8b', '70b'] },
             { name: 'llama3.1', description: 'Meta\'s Llama 3.1 model', tags: ['8b', '70b', '405b'] },
             { name: 'llama3.2', description: 'Meta\'s Llama 3.2 - multimodal', tags: ['1b', '3b', '11b', '90b'] },
-            { name: 'mistral', description: t('auto.mistral7bModel'), tags: ['7b'] },
-            { name: 'mixtral', description: t('auto.mixtralMoeModel'), tags: ['8x7b', '8x22b'] },
-            { name: 'codellama', description: t('auto.codeGenerationModel'), tags: ['7b', '13b', '34b', '70b'] },
-            { name: 'deepseek-r1', description: t('auto.deepseekR1ReasoningModel'), tags: ['1.5b', '7b', '8b', '14b', '32b', '70b', '671b'] },
-            { name: 'deepseek-coder', description: t('auto.deepseekCoder'), tags: ['1.3b', '6.7b', '33b'] },
-            { name: 'phi3', description: t('auto.microsoftPhi3'), tags: ['mini', 'medium'] },
+            { name: 'mistral', description: t('backend.mistral7bModel'), tags: ['7b'] },
+            { name: 'mixtral', description: t('backend.mixtralMoeModel'), tags: ['8x7b', '8x22b'] },
+            { name: 'codellama', description: t('backend.codeGenerationModel'), tags: ['7b', '13b', '34b', '70b'] },
+            { name: 'deepseek-r1', description: t('backend.deepseekR1ReasoningModel'), tags: ['1.5b', '7b', '8b', '14b', '32b', '70b', '671b'] },
+            { name: 'deepseek-coder', description: t('backend.deepseekCoder'), tags: ['1.3b', '6.7b', '33b'] },
+            { name: 'phi3', description: t('backend.microsoftPhi3'), tags: ['mini', 'medium'] },
             { name: 'gemma', description: 'Google Gemma', tags: ['2b', '7b'] },
             { name: 'gemma2', description: 'Google Gemma 2', tags: ['2b', '9b', '27b'] },
-            { name: 'qwen', description: t('auto.alibabaQwen'), tags: ['0.5b', '1.8b', '4b', '7b', '14b', '72b'] },
-            { name: 'qwen2.5', description: t('auto.alibabaQwen25'), tags: ['0.5b', '1.5b', '3b', '7b', '14b', '32b', '72b'] },
-            { name: 'command-r', description: t('auto.cohereCommandR'), tags: ['35b'] },
-            { name: 'starcoder2', description: t('auto.starcoder2'), tags: ['3b', '7b', '15b'] },
-            { name: 'yi', description: t('auto.yiBy01ai'), tags: ['6b', '9b', '34b'] },
-            { name: 'orca-mini', description: t('auto.orcaMini'), tags: ['3b', '7b', '13b'] },
-            { name: 'neural-chat', description: t('auto.intelNeuralChat'), tags: ['7b'] },
+            { name: 'qwen', description: t('backend.alibabaQwen'), tags: ['0.5b', '1.8b', '4b', '7b', '14b', '72b'] },
+            { name: 'qwen2.5', description: t('backend.alibabaQwen25'), tags: ['0.5b', '1.5b', '3b', '7b', '14b', '32b', '72b'] },
+            { name: 'command-r', description: t('backend.cohereCommandR'), tags: ['35b'] },
+            { name: 'starcoder2', description: t('backend.starcoder2'), tags: ['3b', '7b', '15b'] },
+            { name: 'yi', description: t('backend.yiBy01ai'), tags: ['6b', '9b', '34b'] },
+            { name: 'orca-mini', description: t('backend.orcaMini'), tags: ['3b', '7b', '13b'] },
+            { name: 'neural-chat', description: t('backend.intelNeuralChat'), tags: ['7b'] },
             { name: 'vicuna', description: 'Vicuna', tags: ['7b', '13b', '33b'] }
         ];
 
@@ -1173,17 +1173,17 @@ export class OllamaService {
                     // Emit alerts for any warnings
                     for (const warning of status.warnings) {
                         const alert: GPUAlert = {
-                        type: warning.includes('temperature') ? 'high_temperature' :
-                            warning.includes('low') ? 'low_memory' : 'high_memory',
-                        severity: warning.includes('critical') ? 'critical' : 'warning',
-                        message: warning,
-                        gpuIndex: 0,
-                        timestamp: new Date(),
-                        value: 0,
-                        threshold: 0
-                    };
-                    this.gpuEventEmitter.emit('alert', alert);
-                }
+                            type: warning.includes('temperature') ? 'high_temperature' :
+                                warning.includes('low') ? 'low_memory' : 'high_memory',
+                            severity: warning.includes('critical') ? 'critical' : 'warning',
+                            message: warning,
+                            gpuIndex: 0,
+                            timestamp: new Date(),
+                            value: 0,
+                            threshold: 0
+                        };
+                        this.gpuEventEmitter.emit('alert', alert);
+                    }
 
                     this.gpuEventEmitter.emit('status', status);
                 } catch (error) {
@@ -1256,7 +1256,7 @@ export class OllamaService {
      */
     generateEd25519KeyPair(): { publicKeyB64: string; privateKeyB64: string } {
         const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
-            publicKeyEncoding:  { type: 'spki',  format: 'der' },
+            publicKeyEncoding: { type: 'spki', format: 'der' },
             privateKeyEncoding: { type: 'pkcs8', format: 'der' },
         });
         return {
@@ -1368,13 +1368,13 @@ export class OllamaService {
 
                     return {
                         accessToken,
-                        email:       data.email,
+                        email: data.email,
                         displayName: data.name ?? data.username,
                         metadata: {
-                            auth_type:      'ollama_connect',
-                            type:           'ollama_connect',
+                            auth_type: 'ollama_connect',
+                            type: 'ollama_connect',
                             private_key_b64: privateKeyB64,
-                            public_key_b64:  '', // stored separately; caller should pass it
+                            public_key_b64: '', // stored separately; caller should pass it
                         },
                     };
                 }

@@ -16,7 +16,7 @@ import type {
     InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 import { IconLoader2 } from '@tabler/icons-react';
-import type { editor } from 'monaco-editor';
+import type { editor, languages, CancellationToken } from 'monaco-editor';
 import React, { ComponentType,useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useCodeEditorDiagnostics } from '@/components/ui/code-editor-diagnostics';
@@ -38,7 +38,7 @@ import { useSettingsStore } from '@/store/settings.store';
 import type { AppSettings } from '@/types/settings';
 import type { Workspace } from '@/types/workspace';
 import { normalizeLanguage } from '@/utils/language-map';
-import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
+import { ensureMonacoInitialized, applyMonacoTheme } from '@/utils/monaco-loader.util';
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 import { initTextMateSupport } from '@/utils/textmate-loader';
@@ -186,146 +186,12 @@ const loadMonaco = async (): Promise<{ Editor: React.ElementType; DiffEditor: Re
     ]);
     return { Editor, DiffEditor, monaco };
 };
-
-function rgbChannelToHex(channel: number): string {
-    return channel.toString(16).padStart(2, '0');
-}
-
 export function toError(error: Error | null | undefined): Error {
     if (error instanceof Error) {
         return error;
     }
 
     return new Error('Unknown error');
-}
-
-function toHexColorFromComputedColor(colorValue: string): string | null {
-    const rgbMatch = colorValue.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-    if (!rgbMatch) {
-        return null;
-    }
-    const red = Number(rgbMatch[1]);
-    const green = Number(rgbMatch[2]);
-    const blue = Number(rgbMatch[3]);
-    return `#${rgbChannelToHex(red)}${rgbChannelToHex(green)}${rgbChannelToHex(blue)}`;
-}
-
-class MonacoColorResolver {
-    private static cache = new Map<string, string>();
-    private static lastComputedStyle: CSSStyleDeclaration | null = null;
-    private static probe: HTMLSpanElement | null = null;
-
-    static clearCache() {
-        this.cache.clear();
-        this.lastComputedStyle = null;
-    }
-
-    static resolve(name: string, fallbackName?: string): string {
-        const cacheKey = `${name}:${fallbackName}`;
-        if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey)!;
-        }
-
-        if (!this.lastComputedStyle) {
-            this.lastComputedStyle = getComputedStyle(document.documentElement);
-        }
-
-        const primaryToken = this.lastComputedStyle.getPropertyValue(name).trim();
-        const fallbackToken = fallbackName ? this.lastComputedStyle.getPropertyValue(fallbackName).trim() : '';
-        const cssToken = primaryToken || fallbackToken;
-
-        if (!cssToken) {
-            const bodyStyle = getComputedStyle(document.body);
-            const fallback =
-                toHexColorFromComputedColor(bodyStyle.color) ??
-                toHexColorFromComputedColor(this.lastComputedStyle.color) ??
-                toHexColorFromComputedColor(bodyStyle.backgroundColor);
-            
-            if (!fallback) {
-                throw new Error(`Unable to resolve Monaco color token: ${name}`);
-            }
-            this.cache.set(cacheKey, fallback);
-            return fallback;
-        }
-
-        if (!this.probe) {
-            this.probe = document.createElement('span');
-            this.probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;';
-            document.body.appendChild(this.probe);
-        }
-
-        this.probe.style.color = cssToken.includes('%') ? `hsl(${cssToken})` : cssToken;
-        const resolvedColor = getComputedStyle(this.probe).color;
-        const resolved =
-            toHexColorFromComputedColor(resolvedColor) ??
-            toHexColorFromComputedColor(getComputedStyle(document.body).color);
-
-        if (!resolved) {
-            throw new Error(`Unable to resolve Monaco color token: ${name}`);
-        }
-
-        this.cache.set(cacheKey, resolved);
-        return resolved;
-    }
-}
-
-function applyMonacoTheme(monaco: Monaco, isLight: boolean): string {
-    MonacoColorResolver.clearCache();
-    
-    const background = MonacoColorResolver.resolve('--editor-background', '--background');
-    const foreground = MonacoColorResolver.resolve('--editor-foreground', '--foreground');
-    const gutterBackground = MonacoColorResolver.resolve('--editor-gutter-background', '--background');
-    const widgetBackground = MonacoColorResolver.resolve('--editor-widget-background', '--card');
-    const widgetBorder = MonacoColorResolver.resolve('--editor-widget-border', '--border');
-    const lineNumber = MonacoColorResolver.resolve('--editor-line-number', '--muted-foreground');
-    const lineNumberActive = MonacoColorResolver.resolve('--editor-line-number-active', '--foreground');
-    const cursor = MonacoColorResolver.resolve('--editor-cursor', '--primary');
-    const selection = MonacoColorResolver.resolve('--editor-selection', '--primary');
-    const selectionInactive = MonacoColorResolver.resolve('--editor-selection-inactive', '--accent');
-    const lineHighlight = MonacoColorResolver.resolve('--editor-line-highlight', '--card');
-    const indentGuide = MonacoColorResolver.resolve('--editor-indent-guide', '--border');
-    const indentGuideActive = MonacoColorResolver.resolve('--editor-indent-guide-active', '--ring');
-    const tokenComment = MonacoColorResolver.resolve('--editor-token-comment', '--code-comment');
-    const tokenKeyword = MonacoColorResolver.resolve('--editor-token-keyword', '--code-keyword');
-    const tokenString = MonacoColorResolver.resolve('--editor-token-string', '--code-string');
-    const tokenNumber = MonacoColorResolver.resolve('--editor-token-number', '--code-number');
-    const tokenType = MonacoColorResolver.resolve('--editor-token-type', '--code-function');
-    const tokenInvalid = MonacoColorResolver.resolve('--editor-token-invalid', '--destructive');
-
-    const themeName = isLight ? 'tengra-light' : 'tengra-dark';
-    monaco.editor.defineTheme(themeName, {
-        base: isLight ? 'vs' : 'vs-dark',
-        inherit: true,
-        rules: [
-            { token: 'comment', foreground: tokenComment.replace('#', '') },
-            { token: 'keyword', foreground: tokenKeyword.replace('#', '') },
-            { token: 'string', foreground: tokenString.replace('#', '') },
-            { token: 'number', foreground: tokenNumber.replace('#', '') },
-            { token: 'type', foreground: tokenType.replace('#', '') },
-            { token: 'invalid', foreground: tokenInvalid.replace('#', '') },
-        ],
-        colors: {
-            'editor.background': background,
-            'editor.foreground': foreground,
-            'editorLineNumber.foreground': lineNumber,
-            'editorLineNumber.activeForeground': lineNumberActive,
-            'editorCursor.foreground': cursor,
-            'editor.selectionBackground': `${selection}33`,
-            'editor.inactiveSelectionBackground': `${selectionInactive}1f`,
-            'editor.lineHighlightBackground': `${lineHighlight}80`,
-            'editorIndentGuide.background1': `${indentGuide}80`,
-            'editorIndentGuide.activeBackground1': indentGuideActive,
-            'editorWidget.background': widgetBackground,
-            'editorWidget.border': widgetBorder,
-            'editorGutter.background': gutterBackground,
-            'editorWhitespace.foreground': `${indentGuide}66`,
-            'editorBracketHighlight.foreground1': tokenType,
-            'editorBracketHighlight.foreground2': tokenString,
-            'editorBracketHighlight.foreground3': tokenKeyword,
-        },
-    });
-    monaco.editor.setTheme(themeName);
-    return themeName;
 }
 
 
@@ -676,8 +542,8 @@ const useInlineCompletions = (
             provideInlineCompletions: async (
                 model: editor.ITextModel,
                 pos: { lineNumber: number; column: number },
-                context: editor.InlineCompletionContext,
-                token: editor.CancellationToken
+                context: languages.InlineCompletionContext,
+                token: CancellationToken
             ) => {
                 const requestId = latestRequestIdRef.current + 1;
                 latestRequestIdRef.current = requestId;
@@ -1003,9 +869,13 @@ const MonacoEditorInternal: React.FC<{
     useEffect(() => {
         return () => {
             if (diffEditorRef.current) {
-                const models = diffEditorRef.current.getModel();
-                if (models) {
-                    diffEditorRef.current.setModel(null);
+                try {
+                    const models = diffEditorRef.current.getModel();
+                    if (models) {
+                        diffEditorRef.current.setModel(null);
+                    }
+                } catch (e) {
+                    appLogger.warn('CodeEditor', 'Error during diff editor cleanup', e as any);
                 }
             }
         };
@@ -1134,7 +1004,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         editorRef,
         monacoRef,
         editorMounted,
-        workspacePath,
+        workspaceId: workspacePath,
         filePath,
     });
     useCodeEditorDirtyDecorations({

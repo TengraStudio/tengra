@@ -14,18 +14,14 @@ import { isAbsolute,join, relative, resolve } from 'path';
 import { promisify } from 'util';
 
 import { ipc } from '@main/core/ipc-decorators';
-import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { GIT_CHANNELS } from '@shared/constants';
-import {
-    gitTreeStatusPreviewArgsSchema,
-    gitTreeStatusPreviewResponseSchema,
-} from '@shared/schemas/git.schema';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { z } from 'zod';
+
+import { AuthService } from '../security/auth.service';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
@@ -36,8 +32,6 @@ const MAX_PATH_LENGTH = 4096;
 const MAX_BRANCH_LENGTH = 255;
 const MAX_COMMIT_MESSAGE_LENGTH = 72 * 100;
 const MAX_HASH_LENGTH = 64;
-const MAX_STATS_DAYS = 3650;
-const MAX_COMMIT_COUNT = 1000;
 const TREE_STATUS_PREVIEW_TTL_MS = 30_000;
 const CONFLICT_STATUSES = new Set(['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU']);
 const SUPPORTED_HOOKS = ['pre-commit', 'commit-msg', 'pre-push', 'post-merge', 'pre-rebase'] as const;
@@ -56,10 +50,7 @@ const CONTROLLED_COMMAND_ALLOWLIST: RegExp[] = [
 ];
 
 // --- Schemas ---
-const CwdSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
 const BranchSchema = z.string().min(1).max(MAX_BRANCH_LENGTH).regex(/^[^\s~^:?*\\[\]]+$/).trim();
-const CommitMessageSchema = z.string().min(1).max(MAX_COMMIT_MESSAGE_LENGTH);
-const HashSchema = z.string().min(1).max(MAX_HASH_LENGTH).regex(/^[a-fA-F0-9]+$/).trim();
 const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
 const SimpleArgSchema = z.string().max(MAX_PATH_LENGTH);
 const ControlledCommandSchema = z.string().max(1024).regex(/^[a-zA-Z0-9\s-]+$/);
@@ -87,7 +78,10 @@ export class GitService extends BaseService {
     private readonly activeOperations = new Map<string, AbortController>();
     private readonly treeStatusPreviewCache = new Map<string, { response: UnsafeValue; timestamp: number }>();
 
-    constructor(private readonly llmService?: LLMService) {
+    constructor(
+        private readonly llmService?: LLMService,
+        private readonly authService?: AuthService
+    ) {
         super('GitService');
     }
 
@@ -797,6 +791,233 @@ export class GitService extends BaseService {
         }
     }
 
+    @ipc(GIT_CHANNELS.GET_GITHUB_DATA)
+    async getGitHubData(repoUrl: string, type: 'pulls' | 'issues') {
+        try {
+            if (!this.authService) {
+                return { success: false, error: 'AuthService not available' };
+            }
+
+            // Parse GitHub URL
+            // Examples:
+            // https://github.com/owner/repo.git
+            // git@github.com:owner/repo.git
+            const githubRegex = /(?:https:\/\/github\.com\/|git@github\.com:)([^/]+)\/([^/.]+)(?:\.git)?/;
+            const match = repoUrl.match(githubRegex);
+
+            if (!match) {
+                return { success: false, error: 'Not a GitHub repository' };
+            }
+
+            const owner = match[1];
+            const repo = match[2];
+
+            // Get copilot token
+            const account = await this.authService.getActiveAccountFull('copilot');
+            if (!account?.accessToken) {
+                return { success: false, error: 'No active Copilot account found' };
+            }
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/${type}?state=open&per_page=50`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${account.accessToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'User-Agent': 'Tengra-AI-Assistant'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                return { success: false, error: `GitHub API error: ${errorData.message || response.statusText}` };
+            }
+
+            const data = await response.json();
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc(GIT_CHANNELS.GET_GITHUB_PR_DETAILS)
+    async getGitHubPrDetails(repoUrl: string, prNumber: number) {
+        try {
+            if (!this.authService) {
+                return { success: false, error: 'AuthService not available' };
+            }
+
+            const githubRegex = /(?:https:\/\/github\.com\/|git@github\.com:)([^/]+)\/([^/.]+)(?:\.git)?/;
+            const match = repoUrl.match(githubRegex);
+            if (!match) {
+                return { success: false, error: 'Not a GitHub repository' };
+            }
+
+            const [_, owner, repo] = match;
+            const account = await this.authService.getActiveAccountFull('copilot');
+            if (!account?.accessToken) {
+                return { success: false, error: 'No active Copilot account' };
+            }
+
+            const headers = {
+                'Authorization': `token ${account.accessToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Tengra-AI-Assistant'
+            };
+
+            const [prResponse, filesResponse, commentsResponse, reviewsResponse] = await Promise.all([
+                fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`, { headers }),
+                fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/files`, { headers }),
+                fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${prNumber}/comments`, { headers }),
+                fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, { headers })
+            ]);
+
+            if (!prResponse.ok) {
+                return { success: false, error: `GitHub API error: ${prResponse.statusText}` };
+            }
+
+            const pr = await prResponse.json();
+            
+            // Fetch checks for the head commit
+            const checksResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${pr.head.sha}/check-runs`, { headers });
+            const checks = checksResponse.ok ? await checksResponse.json() : { check_runs: [] };
+
+            const [files, comments, reviews] = await Promise.all([
+                filesResponse.ok ? filesResponse.json() : [],
+                commentsResponse.ok ? commentsResponse.json() : [],
+                reviewsResponse.ok ? reviewsResponse.json() : []
+            ]);
+
+            return { success: true, data: { pr, files, comments, reviews, checks: checks.check_runs } };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc(GIT_CHANNELS.UPDATE_GITHUB_PR_STATE)
+    async updateGitHubPrState(repoUrl: string, prNumber: number, state: 'open' | 'closed') {
+        try {
+            if (!this.authService) {
+                return { success: false, error: 'AuthService not available' };
+            }
+
+            const githubRegex = /(?:https:\/\/github\.com\/|git@github\.com:)([^/]+)\/([^/.]+)(?:\.git)?/;
+            const match = repoUrl.match(githubRegex);
+            if (!match) {
+                return { success: false, error: 'Not a GitHub repository' };
+            }
+
+            const [_, owner, repo] = match;
+            const account = await this.authService.getActiveAccountFull('copilot');
+            if (!account?.accessToken) {
+                return { success: false, error: 'No active Copilot account' };
+            }
+
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${account.accessToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Tengra-AI-Assistant'
+                },
+                body: JSON.stringify({ state })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                return { success: false, error: `GitHub API error: ${errorData.message || response.statusText}` };
+            }
+
+            const data = await response.json();
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc(GIT_CHANNELS.MERGE_GITHUB_PR)
+    async mergeGitHubPr(repoUrl: string, prNumber: number) {
+        try {
+            if (!this.authService) {
+                return { success: false, error: 'AuthService not available' };
+            }
+
+            const githubRegex = /(?:https:\/\/github\.com\/|git@github\.com:)([^/]+)\/([^/.]+)(?:\.git)?/;
+            const match = repoUrl.match(githubRegex);
+            if (!match) {
+                return { success: false, error: 'Not a GitHub repository' };
+            }
+
+            const [_, owner, repo] = match;
+            const account = await this.authService.getActiveAccountFull('copilot');
+            if (!account?.accessToken) {
+                return { success: false, error: 'No active Copilot account' };
+            }
+
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/merge`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${account.accessToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Tengra-AI-Assistant'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                return { success: false, error: `GitHub API error: ${errorData.message || response.statusText}` };
+            }
+
+            const data = await response.json();
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    @ipc(GIT_CHANNELS.APPROVE_GITHUB_PR)
+    async approveGitHubPr(repoUrl: string, prNumber: number) {
+        try {
+            if (!this.authService) {
+                return { success: false, error: 'AuthService not available' };
+            }
+
+            const githubRegex = /(?:https:\/\/github\.com\/|git@github\.com:)([^/]+)\/([^/.]+)(?:\.git)?/;
+            const match = repoUrl.match(githubRegex);
+            if (!match) {
+                return { success: false, error: 'Not a GitHub repository' };
+            }
+
+            const [_, owner, repo] = match;
+            const account = await this.authService.getActiveAccountFull('copilot');
+            if (!account?.accessToken) {
+                return { success: false, error: 'No active Copilot account' };
+            }
+
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${account.accessToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Tengra-AI-Assistant'
+                },
+                body: JSON.stringify({ event: 'APPROVE', body: 'Approved via Tengra AI Assistant' })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                return { success: false, error: `GitHub API error: ${errorData.message || response.statusText}` };
+            }
+
+            const data = await response.json();
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     private tokenizeCommand(command: string): string[] {
         const tokens: string[] = [];
         let current = '';
@@ -1328,6 +1549,16 @@ export class GitService extends BaseService {
         return await withOperationGuard('git', () => this.executeArgs(['reset', 'HEAD', '--', filePath], cwd));
     }
 
+    @ipc(GIT_CHANNELS.STAGE_ALL)
+    async stageAll(cwd: string) {
+        return await withOperationGuard('git', () => this.executeArgs(['add', '-A'], cwd));
+    }
+
+    @ipc(GIT_CHANNELS.UNSTAGE_ALL)
+    async unstageAll(cwd: string) {
+        return await withOperationGuard('git', () => this.executeArgs(['reset', 'HEAD', '--', '.'], cwd));
+    }
+
     @ipc(GIT_CHANNELS.GET_FLOW_STATUS)
     async getFlowStatus(cwd: string) {
         const currentBranchResult = await this.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
@@ -1474,7 +1705,7 @@ export class GitService extends BaseService {
     @ipc(GIT_CHANNELS.GET_REPOSITORY_STATS)
     async getRepositoryStats(cwd: string, days?: number) {
         const safeDays =
-            Number.isFinite(days) && days! > 0 ? Math.min(Math.trunc(days!), 3650) : 365;
+            Number.isFinite(days) && (days as number) > 0 ? Math.min(Math.trunc(days as number), 3650) : 365;
         const windowArg = `--since="${safeDays} days ago"`;
 
         const [totalCommitsResult, authorsResult, filesResult, activityResult] =
@@ -1540,7 +1771,7 @@ export class GitService extends BaseService {
     @ipc(GIT_CHANNELS.EXPORT_REPOSITORY_STATS)
     async exportRepositoryStats(cwd: string, days?: number) {
         const safeDays =
-            Number.isFinite(days) && days! > 0 ? Math.min(Math.trunc(days!), 3650) : 365;
+            Number.isFinite(days) && (days as number) > 0 ? Math.min(Math.trunc(days as number), 3650) : 365;
         const result = await this.executeRaw(
             cwd,
             `shortlog -sne --since="${safeDays} days ago"`

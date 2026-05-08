@@ -27,7 +27,7 @@ export type { McpAction, McpResult, McpService } from './types';
  */
 export enum McpServerType {
     FILESYSTEM = 'filesystem',
-    GIT = 'git', 
+    GIT = 'git',
     SYSTEM = 'system',
     DATABASE = 'database',
     NETWORK = 'network',
@@ -48,7 +48,7 @@ export class McpModule {
     static getInfo() {
         return {
             version: '1.0.0',
-            description: t('auto.modelContextProtocolIntegrationForTengra'),
+            description: t('backend.modelContextProtocolIntegrationForTengra'),
             availableServers: Object.values(McpServerType),
             status: 'active'
         };
@@ -80,18 +80,18 @@ export class McpModule {
 export interface McpConfig {
     /** Enable detailed logging for MCP operations */
     enableLogging: boolean
-    
+
     /** Maximum execution timeout for MCP actions (in milliseconds) */
     defaultTimeout: number
-    
+
     /** Security settings for MCP operations */
     security: {
         /** Allow file system operations */
         allowFileAccess: boolean
-        
+
         /** Allow system command execution */
         allowSystemCommands: boolean
-        
+
         /** Allow network operations */
         allowNetworkAccess: boolean
     }

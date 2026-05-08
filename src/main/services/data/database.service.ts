@@ -122,7 +122,7 @@ const VALID_SCHEMA_TABLE_NAMES = [
     'knowledge'
 ] as const;
 
-export interface CodeSymbolRecord { id: string; workspace_path?: string; [WORKSPACE_COMPAT_PATH_COLUMN]?: string; workspaceId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
+export interface CodeSymbolRecord { id: string; workspace_path?: string;[WORKSPACE_COMPAT_PATH_COLUMN]?: string; workspaceId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
 
 export interface QueryRecommendation {
     code: 'select-star' | 'missing-limit' | 'leading-wildcard-like' | 'missing-where';
@@ -927,14 +927,14 @@ export class DatabaseService extends BaseService {
             if (hasLeadingWildcardParam) {
                 recommendations.push({
                     code: 'leading-wildcard-like',
-                    message: t('auto.leadingWildcardLikePatternsCanBypassInde')
+                    message: t('backend.leadingWildcardLikePatternsCanBypassInde')
                 });
             }
         }
         if (/^update\b|^delete\b/i.test(lower) && !/\bwhere\b/i.test(lower)) {
             recommendations.push({
                 code: 'missing-where',
-                message: t('auto.updatedeleteWithoutWhereMayAffectAllRows')
+                message: t('backend.updatedeleteWithoutWhereMayAffectAllRows')
             });
         }
         return recommendations;

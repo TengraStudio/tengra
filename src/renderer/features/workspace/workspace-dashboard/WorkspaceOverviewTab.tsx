@@ -182,6 +182,7 @@ export const WorkspaceOverviewTab = ({
 }: WorkspaceOverviewTabProps) => {
     const [setDirectoryChartElement, directoryChartWidth] = useElementWidth();
     const [setLanguageChartElement, languageChartWidth] = useElementWidth();
+    const [setComplexityChartElement, complexityChartWidth] = useElementWidth();
 
     if (!analysis) {
         return null;
@@ -224,6 +225,13 @@ export const WorkspaceOverviewTab = ({
         color: LANGUAGE_COLORS[index % LANGUAGE_COLORS.length],
     }));
     const topFilesByLoc = stats?.topFilesByLoc ?? [];
+    const complexityChartData = topFilesByLoc.slice(0, 8).map((file, index) => ({
+        path: file.path,
+        name: file.path.split(/[\\/]/).pop() || file.path,
+        loc: file.loc,
+        color: LANGUAGE_COLORS[index % LANGUAGE_COLORS.length],
+    }));
+
     const technologyEntries = [
         { name: analysis.type, version: 'detected', source: t('frontend.workspaceDashboard.fileType') },
         ...(analysis.monorepo ? [{ name: analysis.monorepo.type, version: analysis.monorepo.packages.length > 0 ? `${analysis.monorepo.packages.length} packages` : 'detected', source: t('frontend.workspaceDashboard.rootPath') }] : []),
@@ -231,7 +239,7 @@ export const WorkspaceOverviewTab = ({
         ...Object.entries(analysis.dependencies).map(([name, version]) => ({ name, version: normalizeTechVersion(version), source: t('frontend.workspaceDashboard.dependencies') })),
         ...Object.entries(analysis.devDependencies).map(([name, version]) => ({ name, version: normalizeTechVersion(version), source: t('frontend.workspaceDashboard.devDependencies') })),
     ].filter((entry, index, all) => all.findIndex(item => item.name.toLowerCase() === entry.name.toLowerCase()) === index);
-    const chartsReady = directoryChartWidth > 0 && languageChartWidth > 0;
+    const chartsReady = directoryChartWidth > 0 && languageChartWidth > 0 && complexityChartWidth > 0;
 
     return (
         <div className="space-y-6 overflow-y-auto pr-2 pb-12">
@@ -342,18 +350,100 @@ export const WorkspaceOverviewTab = ({
                         icon={<IconFiles className="h-4 w-4" />}
                         title={t('frontend.workspaceDashboard.mostComplexFiles')}
                     />
-                    <div className="space-y-2">
-                        {topFilesByLoc.length > 0 ? topFilesByLoc.slice(0, 5).map(file => (
-                            <DetailItem
-                                key={file.path}
-                                label={`${file.loc.toLocaleString()} ${t('frontend.workspaceDashboard.linesLower')}`}
-                                value={file.path}
-                            />
-                        )) : (
-                            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                                {t('frontend.workspaceDashboard.noResults')}
-                            </div>
-                        )}
+                    <div className="space-y-4">
+                        <div ref={setComplexityChartElement} className="h-[280px] min-w-0 rounded-2xl border border-border bg-background p-4 shadow-inner-light transition-all hover:border-primary/20">
+                            {complexityChartData.length > 0 ? (
+                                <div className="h-full w-full">
+                                    <BarChart
+                                        width={complexityChartWidth || 400}
+                                        height={240}
+                                        data={complexityChartData}
+                                        layout="vertical"
+                                        margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                                    >
+                                        <defs>
+                                            {complexityChartData.map((entry, index) => (
+                                                <linearGradient key={`grad-${index}`} id={`grad-complex-${index}`} x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor={entry.color} stopOpacity={0.8} />
+                                                    <stop offset="100%" stopColor={entry.color} stopOpacity={0.3} />
+                                                </linearGradient>
+                                            ))}
+                                        </defs>
+                                        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} opacity={0.1} />
+                                        <XAxis
+                                            type="number"
+                                            tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontWeight: 500 }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            hide
+                                        />
+                                        <YAxis
+                                            type="category"
+                                            dataKey="name"
+                                            tick={{ fill: 'var(--foreground)', fontSize: 11, fontWeight: 600 }}
+                                            width={120}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tickFormatter={(value) => value.length > 15 ? `${value.slice(0, 12)}...` : value}
+                                        />
+                                        <Tooltip 
+                                            cursor={{ fill: 'var(--primary)', opacity: 0.05 }}
+                                            content={({ active, payload }) => {
+                                                if (!active || !payload?.length) {return null;}
+                                                const item = payload[0].payload;
+                                                return (
+                                                    <div className="rounded-xl border border-border bg-background/95 p-3 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }} />
+                                                            <div className="text-sm font-bold text-foreground truncate max-w-[200px]">{item.name}</div>
+                                                        </div>
+                                                        <div className="mt-2 flex items-center justify-between gap-4">
+                                                            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{t('frontend.workspaceDashboard.lines')}</span>
+                                                            <span className="text-xs font-bold text-primary tabular-nums">{item.loc.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="mt-1.5 text-[10px] text-muted-foreground/60 break-all font-mono bg-muted/30 p-1.5 rounded-md border border-border/30">{item.path}</div>
+                                                    </div>
+                                                );
+                                            }}
+                                        />
+                                        <Bar dataKey="loc" radius={[0, 6, 6, 0]} barSize={20}>
+                                            {complexityChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={`url(#grad-complex-${index})`} className="transition-all duration-300 hover:opacity-80" />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </div>
+                            ) : (
+                                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border/40 bg-muted/5 text-sm text-muted-foreground italic">
+                                    {t('frontend.workspaceDashboard.noResults')}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid gap-2 grid-cols-1">
+                            {topFilesByLoc.length > 0 ? topFilesByLoc.slice(0, 4).map((file, idx) => (
+                                <div key={file.path} className="group relative rounded-xl border border-border bg-background/50 p-3.5 transition-all hover:bg-accent/5 hover:border-primary/20">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
+                                                <div className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{file.path.split(/[\\/]/).pop()}</div>
+                                            </div>
+                                            <div className="mt-1 truncate text-[10px] text-muted-foreground font-mono">{file.path}</div>
+                                        </div>
+                                        <div className="shrink-0 flex flex-col items-end">
+                                            <div className="text-xs font-bold text-foreground tabular-nums">{file.loc.toLocaleString()}</div>
+                                            <div className="text-[9px] uppercase tracking-tighter text-muted-foreground font-bold">{t('frontend.workspaceDashboard.linesLower')}</div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-primary/0 group-hover:bg-primary/40 transition-all" />
+                                </div>
+                            )) : (
+                                <div className="rounded-xl border border-dashed border-border/40 p-6 text-center text-sm text-muted-foreground italic">
+                                    {t('frontend.workspaceDashboard.noResults')}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

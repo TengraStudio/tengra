@@ -37,22 +37,26 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
                             <div className={cn(
-                                "w-2.5 h-2.5 rounded-full shadow-sm",
-                                gitData.isClean ? "bg-emerald-500 shadow-emerald-500/20" : "bg-amber-500 shadow-amber-500/20"
+                                "w-2.5 h-2.5 rounded-full shadow-sm animate-pulse",
+                                gitData.isClean === null ? "bg-muted-foreground/30" : 
+                                gitData.isClean ? "bg-emerald-500 shadow-emerald-500/20 animate-none" : 
+                                "bg-amber-500 shadow-amber-500/20 animate-none"
                             )} />
                             <span className="text-sm font-bold ">
-                                {gitData.isClean ? t('frontend.workspaceDashboard.clean') : t('frontend.workspaceDashboard.dirty')}
+                                {gitData.isClean === null ? t('common.loading') : 
+                                 gitData.isClean ? t('frontend.workspaceDashboard.clean') : 
+                                 <span className="cursor-help border-b border-dotted border-amber-500/50" title="Dirty status means you have uncommitted changes in your workspace.">{t('frontend.workspaceDashboard.dirty')}</span>}
                             </span>
                         </div>
                         <span className="typo-overline font-bold text-muted-foreground/40 bg-muted/50 px-2 py-0.5 rounded uppercase ">
-                            {gitData.branch}
+                            {gitData.branch || '...'}
                         </span>
                     </div>
 
                     <div className="h-px bg-border/10" />
 
                     {/* Detailed Reason (Why it's dirty) */}
-                    {!gitData.isClean ? (
+                    {gitData.isClean === false ? (
                         <div className="grid grid-cols-1 gap-3">
                             <div className="typo-overline font-bold text-muted-foreground/30 uppercase mb-1 px-1">{t('frontend.workspaceDashboard.status')}</div>
                             <div className="space-y-2.5">
@@ -91,10 +95,15 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                                 )}
                             </div>
                         </div>
-                    ) : (
+                    ) : gitData.isClean === true ? (
                         <div className="flex flex-col items-center gap-3 py-4 text-center opacity-40 grayscale">
                             <IconCircleCheck className="w-8 h-8 text-emerald-500" />
                             <p className="typo-overline font-bold uppercase ">{t('frontend.workspaceDashboard.clean')}</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-3 py-6 text-center opacity-20">
+                            <div className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground animate-spin" />
+                            <p className="typo-overline font-bold uppercase ">{t('common.loading')}</p>
                         </div>
                     )}
 

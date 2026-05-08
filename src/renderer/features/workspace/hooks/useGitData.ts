@@ -21,14 +21,15 @@ const useGitOperations = (
     fetchGitData: () => Promise<void>,
     selectedFile: GitFile | null,
     setSelectedFile: (file: GitFile | null) => void,
-    loadFileDiff: (filePath: string, staged: boolean) => Promise<void>
+    loadFileDiff: (filePath: string, staged: boolean) => Promise<void>,
+    lastActionError: string | null,
+    setLastActionError: (error: string | null) => void
 ) => {
     const [commitMessage, setCommitMessage] = useState('');
     const [isCommitting, setIsCommitting] = useState(false);
     const [isPushing, setIsPushing] = useState(false);
     const [isPulling, setIsPulling] = useState(false);
     const [isCheckingOut, setIsCheckingOut] = useState(false);
-    const [lastActionError, setLastActionError] = useState<string | null>(null);
 
     const handleStageFile = useCallback(async (filePath: string) => {
         if (!workspacePath) { return; }
@@ -66,6 +67,46 @@ const useGitOperations = (
             }
         } catch (e) {
             appLogger.error('useGitData', 'Failed to unstage file', e as Error);
+            setLastActionError((e as Error).message);
+        }
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+
+    const handleStageAll = useCallback(async () => {
+        if (!workspacePath) { return; }
+        try {
+            const result = await window.electron.git.stageAll(workspacePath);
+            if (result.success) {
+                setLastActionError(null);
+                await fetchGitData();
+                if (selectedFile) {
+                    setSelectedFile({ ...selectedFile, staged: true });
+                    await loadFileDiff(selectedFile.path, true);
+                }
+            } else {
+                setLastActionError(result.error ?? 'Failed to stage all files');
+            }
+        } catch (e) {
+            appLogger.error('useGitData', 'Failed to stage all files', e as Error);
+            setLastActionError((e as Error).message);
+        }
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+
+    const handleUnstageAll = useCallback(async () => {
+        if (!workspacePath) { return; }
+        try {
+            const result = await window.electron.git.unstageAll(workspacePath);
+            if (result.success) {
+                setLastActionError(null);
+                await fetchGitData();
+                if (selectedFile) {
+                    setSelectedFile({ ...selectedFile, staged: false });
+                    await loadFileDiff(selectedFile.path, false);
+                }
+            } else {
+                setLastActionError(result.error ?? 'Failed to unstage all files');
+            }
+        } catch (e) {
+            appLogger.error('useGitData', 'Failed to unstage all files', e as Error);
             setLastActionError((e as Error).message);
         }
     }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
@@ -134,10 +175,12 @@ const useGitOperations = (
     const handleSync = useCallback(async () => {
         if (!workspacePath) { return; }
         setIsPulling(true);
+        setLastActionError(null);
         try {
             const pullResult = await window.electron.git.pull(workspacePath);
-            if (!pullResult.success && pullResult.error && !pullResult.error.includes("up to date")) {
-                setLastActionError(pullResult.error);
+            if (!pullResult.success && pullResult.error && !pullResult.error.toLowerCase().includes("up to date")) {
+                setLastActionError(`Pull failed: ${pullResult.error}`);
+                await fetchGitData();
                 return;
             }
             
@@ -146,11 +189,13 @@ const useGitOperations = (
                 setLastActionError(null);
                 await fetchGitData();
             } else {
-                setLastActionError(pushResult.error ?? 'Failed to push');
+                setLastActionError(`Push failed: ${pushResult.error ?? 'Unknown error'}`);
+                await fetchGitData();
             }
         } catch (e) {
             appLogger.error('useGitData', 'Failed to sync', e as Error);
             setLastActionError((e as Error).message);
+            await fetchGitData();
         } finally {
             setIsPulling(false);
         }
@@ -166,6 +211,8 @@ const useGitOperations = (
         lastActionError,
         handleStageFile,
         handleUnstageFile,
+        handleStageAll,
+        handleUnstageAll,
         handleCheckout,
         handleCommit,
         handlePush,
@@ -185,6 +232,8 @@ interface GitSectionStates {
     remotes: GitSectionState
     commits: GitSectionState
     changes: GitSectionState
+    pullRequests: GitSectionState
+    issues: GitSectionState
 }
 
 const createGitSectionStates = (
@@ -196,6 +245,8 @@ const createGitSectionStates = (
     remotes: { loading, error: errors?.remotes ?? null },
     commits: { loading, error: errors?.commits ?? null },
     changes: { loading, error: errors?.changes ?? null },
+    pullRequests: { loading, error: errors?.pullRequests ?? null },
+    issues: { loading, error: errors?.issues ?? null },
 });
 
 export function useGitData(workspace: Workspace) {
@@ -209,10 +260,16 @@ export function useGitData(workspace: Workspace) {
     const [remotes, setRemotes] = useState<Remote[]>([]);
     const [trackingInfo, setTrackingInfo] = useState<TrackingInfo | null>(null);
     const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
+    const [lastActionError, setLastActionError] = useState<string | null>(null);
     const [sectionStates, setSectionStates] = useState<GitSectionStates>(createGitSectionStates(false));
     const [commitsOffset, setCommitsOffset] = useState(0);
     const [hasMoreCommits, setHasMoreCommits] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [pullRequests, setPullRequests] = useState<any[]>([]);
+    const [issues, setIssues] = useState<any[]>([]);
+    const [selectedPrNumber, setSelectedPrNumber] = useState<number | null>(null);
+    const [prDetails, setPrDetails] = useState<{ pr: any; files: any[]; comments: any[]; reviews: any[]; checks: any[] } | null>(null);
+    const [isUpdatingPr, setIsUpdatingPr] = useState(false);
 
     const fetchGitData = useCallback(async () => {
         if (!workspace.path) { return; }
@@ -242,9 +299,121 @@ export function useGitData(workspace: Workspace) {
                 remotes: 'fetch-failed',
                 commits: 'fetch-failed',
                 changes: 'fetch-failed',
+                pullRequests: 'fetch-failed',
+                issues: 'fetch-failed',
             }));
         }
     }, [workspace.path]);
+
+    const fetchPullRequests = useCallback(async () => {
+        if (!workspace.path || remotes.length === 0) { return; }
+        setSectionStates(prev => ({ ...prev, pullRequests: { ...prev.pullRequests, loading: true } }));
+        try {
+            const result = await import('../utils/git-utils').then(m => m.fetchGitHubData(workspace.path!, remotes, 'pulls'));
+            if (result.success && result.data) {
+                setPullRequests(result.data);
+                setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: null } }));
+            } else {
+                setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: result.error ?? 'Failed to fetch PRs' } }));
+            }
+        } catch (error) {
+            appLogger.error('useGitData', 'Failed to fetch PRs', error as Error);
+            setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: (error as Error).message } }));
+        }
+    }, [workspace.path, remotes]);
+
+    const fetchIssues = useCallback(async () => {
+        if (!workspace.path || remotes.length === 0) { return; }
+        setSectionStates(prev => ({ ...prev, issues: { ...prev.issues, loading: true } }));
+        try {
+            const result = await import('../utils/git-utils').then(m => m.fetchGitHubData(workspace.path!, remotes, 'issues'));
+            if (result.success && result.data) {
+                setIssues(result.data);
+                setSectionStates(prev => ({ ...prev, issues: { loading: false, error: null } }));
+            } else {
+                setSectionStates(prev => ({ ...prev, issues: { loading: false, error: result.error ?? 'Failed to fetch issues' } }));
+            }
+        } catch (error) {
+            appLogger.error('useGitData', 'Failed to fetch issues', error as Error);
+            setSectionStates(prev => ({ ...prev, issues: { loading: false, error: (error as Error).message } }));
+        }
+    }, [workspace.path, remotes]);
+
+    const handleSelectPr = useCallback(async (prNumber: number | null) => {
+        setSelectedPrNumber(prNumber);
+        if (prNumber === null) {
+            setPrDetails(null);
+            return;
+        }
+
+        setSectionStates(prev => ({ ...prev, pullRequests: { ...prev.pullRequests, loading: true } }));
+        try {
+            const result = await import('../utils/git-utils').then(m => m.fetchGitHubPrDetails(workspace.path!, remotes, prNumber));
+            if (result.success && result.data) {
+                setPrDetails(result.data);
+                setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: null } }));
+            } else {
+                setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: result.error ?? 'Failed to fetch PR details' } }));
+            }
+        } catch (error) {
+            appLogger.error('useGitData', 'Failed to fetch PR details', error as Error);
+            setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: (error as Error).message } }));
+        }
+    }, [workspace.path, remotes]);
+
+    const handleUpdatePrState = useCallback(async (prNumber: number, state: 'open' | 'closed') => {
+        setIsUpdatingPr(true);
+        try {
+            const result = await import('../utils/git-utils').then(m => m.updateGitHubPrState(workspace.path!, remotes, prNumber, state));
+            if (result.success) {
+                // Refresh list and details
+                void fetchPullRequests();
+                void handleSelectPr(prNumber);
+            } else {
+                setLastActionError(result.error ?? 'Failed to update PR state');
+            }
+        } catch (error) {
+            appLogger.error('useGitData', 'Failed to update PR state', error as Error);
+            setLastActionError((error as Error).message);
+        } finally {
+            setIsUpdatingPr(false);
+        }
+    }, [workspace.path, remotes, fetchPullRequests, handleSelectPr, setLastActionError]);
+
+    const handleMergePr = useCallback(async (prNumber: number) => {
+        setIsUpdatingPr(true);
+        try {
+            const result = await import('../utils/git-utils').then(m => m.mergeGitHubPr(remotes[0]?.url, prNumber));
+            if (result.success) {
+                void fetchPullRequests();
+                void handleSelectPr(prNumber);
+            } else {
+                setLastActionError(result.error ?? 'Failed to merge PR');
+            }
+        } catch (error) {
+            appLogger.error('useGitData', 'Failed to merge PR', error as Error);
+            setLastActionError((error as Error).message);
+        } finally {
+            setIsUpdatingPr(false);
+        }
+    }, [remotes, fetchPullRequests, handleSelectPr, setLastActionError]);
+
+    const handleApprovePr = useCallback(async (prNumber: number) => {
+        setIsUpdatingPr(true);
+        try {
+            const result = await import('../utils/git-utils').then(m => m.approveGitHubPr(remotes[0]?.url, prNumber));
+            if (result.success) {
+                void handleSelectPr(prNumber);
+            } else {
+                setLastActionError(result.error ?? 'Failed to approve PR');
+            }
+        } catch (error) {
+            appLogger.error('useGitData', 'Failed to approve PR', error as Error);
+            setLastActionError((error as Error).message);
+        } finally {
+            setIsUpdatingPr(false);
+        }
+    }, [remotes, handleSelectPr, setLastActionError]);
 
     const loadFileDiff = useCallback(async (filePath: string, staged: boolean) => {
         if (!workspace.path) { return; }
@@ -279,13 +448,14 @@ export function useGitData(workspace: Workspace) {
         isCheckingOut,
         handleStageFile,
         handleUnstageFile,
+        handleStageAll,
+        handleUnstageAll,
         handleCheckout,
         handleCommit,
         handlePush,
         handlePull,
-        handleSync,
-        lastActionError,
-    } = useGitOperations(workspace.path, fetchGitData, selectedFile, setSelectedFile, loadFileDiff);
+        handleSync
+    } = useGitOperations(workspace.path, fetchGitData, selectedFile, setSelectedFile, loadFileDiff, lastActionError, setLastActionError);
 
     const [selectedCommit, setSelectedCommit] = useState<GitCommitInfo | null>(null);
     const [commitDiff, setCommitDiff] = useState<string | null>(null);
@@ -368,13 +538,26 @@ export function useGitData(workspace: Workspace) {
         handleGitFileSelect,
         handleStageFile,
         handleUnstageFile,
+        handleStageAll,
+        handleUnstageAll,
         handleCheckout,
         handleCommit,
         handlePush,
         handlePull,
         handleSync,
         handleCommitSelect,
-        handleLoadMoreCommits
+        handleLoadMoreCommits,
+        pullRequests,
+        issues,
+        fetchPullRequests,
+        fetchIssues,
+        selectedPrNumber,
+        prDetails,
+        isUpdatingPr,
+        handleSelectPr,
+        handleUpdatePrState,
+        handleMergePr,
+        handleApprovePr
     };
 }
 

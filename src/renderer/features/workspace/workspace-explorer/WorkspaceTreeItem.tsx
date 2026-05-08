@@ -17,6 +17,7 @@ import { joinPath, sortNodes } from '@/features/workspace/utils/workspaceUtils';
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
+import { useFileDiagnostics, useWorkspaceDiagnostics } from '@/store/diagnostics.store';
 import { appLogger } from '@main/logging/logger';
 
 export interface FileNode {
@@ -98,6 +99,48 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     useEffect(() => {
         setExpanded(Boolean(expandedTreeNodes?.[expandedNodeKey]));
     }, [expandedNodeKey, expandedTreeNodes]);
+
+    // Diagnostic tracking
+    const uri = React.useMemo(() => {
+        if (!node.path) return undefined;
+        const slashPath = node.path.replace(/\\/g, '/').replace(/\/+/g, '/');
+        if (/^[A-Za-z]:\//.test(slashPath)) {
+            return `file:///${slashPath}`;
+        }
+        return `file://${slashPath}`;
+    }, [node.path]);
+
+    const diagnostics = useFileDiagnostics(mount.id, uri);
+    const workspaceDiagnostics = useWorkspaceDiagnostics(mount.id);
+    
+    const { errorCount, warningCount } = React.useMemo(() => {
+        if (!node.isDirectory) {
+            return {
+                errorCount: diagnostics?.errorCount ?? 0,
+                warningCount: diagnostics?.warningCount ?? 0
+            };
+        }
+        
+        if (!workspaceDiagnostics || !uri) {
+            return { errorCount: 0, warningCount: 0 };
+        }
+        
+        let errors = 0;
+        let warnings = 0;
+        const uriPrefix = uri.endsWith('/') ? uri : `${uri}/`;
+        
+        for (const [fileUri, fileDiag] of workspaceDiagnostics.entries()) {
+            if (fileUri.startsWith(uriPrefix)) {
+                errors += fileDiag.errorCount;
+                warnings += fileDiag.warningCount;
+            }
+        }
+        
+        return { errorCount: errors, warningCount: warnings };
+    }, [node.isDirectory, diagnostics, workspaceDiagnostics, uri]);
+
+    const hasErrors = errorCount > 0;
+    const hasWarnings = warningCount > 0;
 
     const entryId = `item:${mount.id}:${node.path}`;
     const {
@@ -276,6 +319,8 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                     isOver &&
                     'bg-primary/20 border-dashed border-primary ring-2 ring-primary/20 ring-offset-1 ring-offset-background',
                     isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
+                    hasErrors && !isSelected && 'text-destructive hover:text-destructive',
+                    hasWarnings && !hasErrors && !isSelected && 'text-warning hover:text-warning',
                     ignoredEntryClassName
                 )}
                 style={{ ...style, paddingLeft: `${level * 12 + 8}px` }}
@@ -299,6 +344,20 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 <span className="flex-1 min-w-0 truncate typo-caption font-normal">
                     {node.name}
                 </span>
+                {(errorCount > 0 || warningCount > 0) && (
+                    <div className="flex items-center gap-0.5 ml-auto pr-1">
+                        {errorCount > 0 && (
+                            <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground animate-in fade-in zoom-in duration-300">
+                                {errorCount}
+                            </span>
+                        )}
+                        {warningCount > 0 && (
+                            <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-warning text-[8px] font-bold text-warning-foreground animate-in fade-in zoom-in duration-300">
+                                {warningCount}
+                            </span>
+                        )}
+                    </div>
+                )}
                 {node.gitStatus && (
                     <span
                         className={cn('ml-1 typo-overline font-bold leading-none', gitBadgeClass)}

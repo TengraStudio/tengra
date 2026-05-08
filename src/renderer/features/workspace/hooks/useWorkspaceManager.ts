@@ -1074,11 +1074,14 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         setOpenTabs(prev =>
             prev.map(t => (t.id === activeTabData.id ? { ...t, savedContent: t.content } : t))
         );
+        window.dispatchEvent(new CustomEvent('tengra:file-saved', { 
+            detail: { filePath: activeTabData.path, workspaceId: workspace.id } 
+        }));
         logActivity('Saved file', activeTabData.path);
         if (!options?.silent) {
             appLogger.info('useWorkspaceManager', 'File saved successfully', activeTabData.path);
         }
-    }, [activeTabId, openTabs, mounts, ensureMountReady, logActivity, setOpenTabs]);
+    }, [activeTabId, openTabs, mounts, ensureMountReady, logActivity, setOpenTabs, workspace.id]);
 
     const copyTabAbsolutePath = useCallback(
         async (tabId: string) => {
