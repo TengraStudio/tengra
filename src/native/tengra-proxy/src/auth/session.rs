@@ -135,7 +135,8 @@ fn callback_servers() -> &'static RwLock<HashSet<&'static str>> {
 }
 
 fn callback_bridge_usage_stats() -> &'static RwLock<CallbackBridgeusageStatsState> {
-    CALLBACK_BRIDGE_USAGE_STATS.get_or_init(|| RwLock::new(CallbackBridgeusageStatsState::default()))
+    CALLBACK_BRIDGE_USAGE_STATS
+        .get_or_init(|| RwLock::new(CallbackBridgeusageStatsState::default()))
 }
 
 pub async fn create_session(

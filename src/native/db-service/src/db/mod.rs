@@ -9,19 +9,19 @@
  */
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection};
-use std::path::{Path};
+use rusqlite::Connection;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 pub mod chats;
 pub mod knowledge;
 pub mod migrations;
 pub mod system;
-pub mod workspaces; 
+pub mod workspaces;
 
 /// Database wrapper providing thread-safe access to SQLite
 pub struct Database {
-    pub(crate) conn: Arc<Mutex<Connection>>, 
+    pub(crate) conn: Arc<Mutex<Connection>>,
 }
 
 impl Database {
@@ -38,10 +38,10 @@ impl Database {
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")?;
 
         Ok(Self {
-            conn: Arc::new(Mutex::new(conn)), 
+            conn: Arc::new(Mutex::new(conn)),
         })
-    } 
-    
+    }
+
     pub(crate) async fn execute<F, T>(&self, f: F) -> Result<T>
     where
         F: FnOnce(&Connection) -> Result<T> + Send + 'static,
