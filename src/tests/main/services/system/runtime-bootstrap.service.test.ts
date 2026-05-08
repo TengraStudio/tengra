@@ -298,13 +298,13 @@ describe('RuntimeBootstrapService', () => {
                         requirement: 'required',
                         targets: [
                             {
-                                platform: 'win32',
-                                arch: 'x64',
-                                assetName: 'llama-server-win32-x64.exe',
-                                downloadUrl: 'https://github.com/TengraStudio/tengra/releases/download/v4/llama-server-win32-x64.exe',
+                                platform: process.platform,
+                                arch: process.arch,
+                                assetName: `llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.exe' : ''}`,
+                                downloadUrl: `https://github.com/TengraStudio/tengra/releases/download/v4/llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.exe' : ''}`,
                                 archiveFormat: 'raw',
                                 sha256: 'ee8a920cfb4f37eaac14068653ef293301fd7f3334c15552afc662491218f5db',
-                                executableRelativePath: 'llama-server.exe',
+                                executableRelativePath: process.platform === 'win32' ? 'llama-server.exe' : 'llama-server',
                                 installSubdirectory: 'bin',
                             },
                         ],

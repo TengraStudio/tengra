@@ -102,8 +102,8 @@ describe('UpdateService', () => {
                     tag_name: 'v1.0.1',
                     assets: [
                         {
-                            name: 'Tengra.exe',
-                            browser_download_url: 'https://example.com/Tengra.exe',
+                            name: process.platform === 'win32' ? 'Tengra.exe' : 'Tengra.AppImage',
+                            browser_download_url: `https://example.com/Tengra.${process.platform === 'win32' ? 'exe' : 'AppImage'}`,
                             size: 10,
                         },
                     ],
@@ -127,8 +127,8 @@ describe('UpdateService', () => {
                 tag_name: 'v1.0.1',
                 assets: [
                     {
-                        name: 'Tengra.exe',
-                        browser_download_url: 'https://example.com/Tengra.exe',
+                        name: process.platform === 'win32' ? 'Tengra.exe' : 'Tengra.AppImage',
+                        browser_download_url: `https://example.com/Tengra.${process.platform === 'win32' ? 'exe' : 'AppImage'}`,
                         size: 10,
                     },
                 ],
@@ -137,7 +137,7 @@ describe('UpdateService', () => {
 
         vi.mocked(fs.existsSync).mockImplementation((targetPath: fs.PathLike) => {
             const str = String(targetPath);
-            return str.includes('Tengra.exe') || str.includes('tengra-updater');
+            return str.includes('Tengra.exe') || str.includes('Tengra.AppImage') || str.includes('tengra-updater');
         });
         vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({}) as never);
 

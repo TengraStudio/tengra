@@ -10,6 +10,7 @@
 
 import * as fsModule from 'fs';
 import { promises as fs } from 'fs';
+import { pathToFileURL } from 'url';
 
 import type { LspService } from '@main/services/workspace/lsp.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
@@ -545,7 +546,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             ]),
             getDiagnostics: vi.fn().mockReturnValue([
                 {
-                    uri: `file:///${path.resolve('/mock/workspace/src/index.ts').replace(/\\/g, '/')}`,
+                    uri: pathToFileURL(path.resolve('/mock/workspace/src/index.ts')).toString(),
                     diagnostics: [
                         {
                             severity: 1,
@@ -618,7 +619,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             openDocument: vi.fn().mockResolvedValue(undefined), 
             getDiagnostics: vi.fn().mockReturnValue([
                 {
-                    uri: `file:///${path.resolve('/mock/workspace/packages/app/src/index.tsx').replace(/\\/g, '/')}`,
+                    uri: pathToFileURL(path.resolve('/mock/workspace/packages/app/src/index.tsx')).toString(),
                     diagnostics: [
                         {
                             severity: 1,
