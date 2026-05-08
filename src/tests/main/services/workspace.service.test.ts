@@ -15,6 +15,7 @@ import type { LspService } from '@main/services/workspace/lsp.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { clearWorkspaceIgnoreMatcherCache } from '@main/services/workspace/workspace-ignore.util';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import path from 'path';
 
 // Mocking fs and path
 vi.mock('fs', () => ({
@@ -582,8 +583,8 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         const analysis = await workspaceService.analyzeWorkspace('/mock/workspace');
 
         expect(vi.mocked(mockLspService.startWorkspaceServers)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace',
-            'C:\\mock\\workspace',
+            path.resolve('/mock/workspace'),
+            path.resolve('/mock/workspace'),
             expect.arrayContaining([
                 expect.stringMatching(/index\.ts$/),
             ])
@@ -592,7 +593,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             {
                 severity: 'error',
                 message: 'Type error',
-                file: 'src\\index.ts',
+                file: path.join('src', 'index.ts'),
                 line: 2,
                 column: 5,
                 source: 'typescript',
@@ -614,10 +615,10 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         const mockLspService = {
             getLanguageIdForFile: vi.fn().mockReturnValue('typescript'),
             startServer: vi.fn().mockResolvedValue(undefined),
-            openDocument: vi.fn().mockResolvedValue(undefined),
+            openDocument: vi.fn().mockResolvedValue(undefined), 
             getDiagnostics: vi.fn().mockReturnValue([
                 {
-                    uri: 'file:///C:/mock/workspace/packages/app/src/index.tsx',
+                    uri: `file:///${path.resolve('/mock/workspace/packages/app/src/index.tsx').replace(/\\/g, '/')}`,
                     diagnostics: [
                         {
                             severity: 1,
@@ -649,13 +650,13 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         );
 
         expect(vi.mocked(mockLspService.startServer)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app'),
             'typescript'
         );
         expect(vi.mocked(mockLspService.openDocument)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app\\src\\index.tsx',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app/src/index.tsx'),
             'typescript',
             'export const value: string = 1;'
         );
@@ -663,7 +664,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             {
                 severity: 'error',
                 message: 'Type mismatch',
-                file: 'packages\\app\\src\\index.tsx',
+                file: path.join('packages', 'app', 'src', 'index.tsx'),
                 line: 5,
                 column: 7,
                 source: 'typescript',
@@ -679,7 +680,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             openDocument: vi.fn().mockResolvedValue(undefined),
             getDefinition: vi.fn().mockResolvedValue([
                 {
-                    uri: 'file:///C:/mock/workspace/packages/app/src/components/Popover.tsx',
+                    uri: `file:///${path.resolve('/mock/workspace/packages/app/src/components/Popover.tsx').replace(/\\/g, '/')}`,
                     line: 12,
                     column: 1,
                 },
@@ -703,20 +704,20 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         );
 
         expect(vi.mocked(mockLspService.startServer)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app'),
             'typescript'
         );
         expect(vi.mocked(mockLspService.getDefinition)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app\\src\\index.tsx',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app/src/index.tsx'),
             'typescript',
             1,
             26
         );
         expect(definitions).toEqual([
             {
-                file: 'C:\\mock\\workspace\\packages\\app\\src\\components\\Popover.tsx',
+                file: path.resolve('/mock/workspace/packages/app/src/components/Popover.tsx'),
                 line: 12,
                 column: 1,
             },

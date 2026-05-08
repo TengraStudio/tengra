@@ -107,7 +107,7 @@ describe('LspService', () => {
         expect(mockSpawn).toHaveBeenCalledTimes(1);
     });
 
-    it('spawns Windows cmd-based servers through the shell', async () => {
+    it.runIf(process.platform === 'win32')('spawns Windows cmd-based servers through the shell', async () => {
         vi.stubEnv('PATHEXT', '.COM;.EXE;.BAT;.CMD');
         await lspService.startServer('workspace-1', 'C:/repo', 'typescript');
 
