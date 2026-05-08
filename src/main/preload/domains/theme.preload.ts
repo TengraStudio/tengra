@@ -10,7 +10,7 @@
 
 import { THEME_CHANNELS } from '@shared/constants/ipc-channels';
 import { ThemeManifest } from '@shared/types/theme';
-import { IpcRenderer, IpcRendererEvent } from 'electron';
+import { IpcRenderer } from 'electron';
 
 export interface ThemeBridge {
     getAll: () => Promise<ThemeManifest[]>;

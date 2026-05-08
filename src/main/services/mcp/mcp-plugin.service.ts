@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { randomUUID } from 'crypto';
+
 import * as fs from 'fs';
 import * as path from 'path';
 

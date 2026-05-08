@@ -12,7 +12,6 @@ import { getIpcMethodsForService, registerServiceIpc } from '@main/core/ipc-deco
 import { lazyServiceRegistry } from '@main/core/lazy-services';
 import { appLogger } from '@main/logging/logger';
 import { LogoService } from '@main/services/external/logo.service';
-import { ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { UpdateService } from '@main/services/system/update.service';
 import { CodeSandboxService } from '@main/services/workspace/code-sandbox.service';
 import { DockerService } from '@main/services/workspace/docker.service';
@@ -23,8 +22,6 @@ import { safeHandle, setIpcEventBus } from '@main/utils/ipc-wrapper.util';
 import { SESSION_CHANNELS } from '@shared/constants/ipc-channels';
 import { SessionEventEnvelopeSchema } from '@shared/schemas/session-engine.schema';
 import { BrowserWindow } from 'electron';
-
-type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 export function registerIpcHandlers(
     services: Services,

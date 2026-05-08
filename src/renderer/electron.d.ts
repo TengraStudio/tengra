@@ -366,9 +366,9 @@ export interface ElectronAPI {
     };
 
     dialog: {
-        showOpenDialog: (options: any) => Promise<{ canceled: boolean; filePaths: string[] }>;
-        showSaveDialog: (options: any) => Promise<{ canceled: boolean; filePath?: string }>;
-        showMessageBox: (options: any) => Promise<{ response: number; checkboxChecked: boolean }>;
+        showOpenDialog: (options: unknown) => Promise<{ canceled: boolean; filePaths: string[] }>;
+        showSaveDialog: (options: unknown) => Promise<{ canceled: boolean; filePath?: string }>;
+        showMessageBox: (options: unknown) => Promise<{ response: number; checkboxChecked: boolean }>;
         showErrorBox: (title: string, content: string) => void;
         selectDirectory: () => Promise<{ success: boolean; path?: string; error?: string }>;
     };

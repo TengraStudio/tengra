@@ -35,23 +35,23 @@ export const WorkspaceListPage: React.FC<WorkspaceListPageProps> = ({
 }) => {
     const { t } = useTranslation(language);
     const LIST_SETTINGS_STORAGE_KEY = 'workspaces.listView.settings.v1';
+    const savedListPreferences = loadWorkspaceListPreferences(LIST_SETTINGS_STORAGE_KEY, {
+        viewMode: 'grid',
+        sortBy: 'updatedAt',
+        sortDirection: 'desc',
+        listPreset: 'recent',
+    });
     
     // UI State
     const [searchQuery, setSearchQuery] = useState('');
     const [activePage, setActivePage] = useState<'list' | 'create'>('list');
     const [showWorkspaceMenu, setShowWorkspaceMenu] = useState<string | null>(null);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [sortBy, setSortBy] = useState<'title' | 'updatedAt' | 'createdAt'>('updatedAt');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-    const [listPreset, setListPreset] = useState<'recent' | 'oldest' | 'name-az' | 'name-za'>('recent');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>(savedListPreferences.viewMode);
+    const [sortBy, setSortBy] = useState<'title' | 'updatedAt' | 'createdAt'>(savedListPreferences.sortBy);
+    const [sortDirection, _setSortDirection] = useState<'asc' | 'desc'>(savedListPreferences.sortDirection);
+    const [listPreset, setListPreset] = useState<'recent' | 'oldest' | 'name-az' | 'name-za'>(savedListPreferences.listPreset);
 
     // Preflight State
-
-    // Preferences sync
-    React.useEffect(() => {
-        const saved = loadWorkspaceListPreferences(LIST_SETTINGS_STORAGE_KEY, { viewMode: 'grid', sortBy: 'updatedAt', sortDirection: 'desc', listPreset: 'recent' });
-        setViewMode(saved.viewMode); setSortBy(saved.sortBy); setSortDirection(saved.sortDirection); setListPreset(saved.listPreset);
-    }, []);
 
     React.useEffect(() => {
         saveWorkspaceListPreferences(LIST_SETTINGS_STORAGE_KEY, { viewMode, sortBy, sortDirection, listPreset });

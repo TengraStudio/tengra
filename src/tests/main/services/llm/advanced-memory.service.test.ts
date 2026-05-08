@@ -117,10 +117,12 @@ function createService() {
     };
 
     const service = new AdvancedMemoryService(
-        db as DatabaseService,
-        embedding as EmbeddingService,
-        llm as LLMService,
-        settings as SettingsService
+        {
+            db: db as DatabaseService,
+            embedding: embedding as EmbeddingService,
+            llmService: llm as LLMService,
+            settings: settings as SettingsService
+        }
     );
 
     return { service, mocks };

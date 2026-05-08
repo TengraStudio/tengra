@@ -9,13 +9,13 @@
  */
 
 import * as fs from 'fs';
+import path from 'path';
 
 import { SettingsService } from '@main/services/system/settings.service';
 import { UpdateService } from '@main/services/system/update.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import path from 'path';
 
-const { mockSend, mockQuit, mockSpawn } = vi.hoisted(() => ({
+const { mockQuit, mockSpawn } = vi.hoisted(() => ({
     mockSend: vi.fn(),
     mockQuit: vi.fn(),
     mockSpawn: vi.fn(() => ({ unref: vi.fn() })),

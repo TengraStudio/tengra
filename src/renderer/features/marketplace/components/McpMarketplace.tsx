@@ -393,39 +393,42 @@ export function McpMarketplace({
 
         let active = true;
         const modelId = selectedStoreModel.id;
-        setHfPreviewLoadingId(modelId);
-        void window.electron.huggingface.getModelPreview(modelId)
-            .then((preview) => {
-                if (!active) {
-                    return;
-                }
-                setHfPreviewByModelId(prev => ({
-                    ...prev,
-                    [modelId]: preview
-                }));
-                const hasExistingReadme = (selectedStoreModel.readme ?? '').trim().length > 0
-                    || (hfReadmeByModelId[modelId] ?? '').trim().length > 0;
-                const fallbackReadme = !hasExistingReadme ? buildHfMarketplaceReadme(preview) : null;
-                if (fallbackReadme && fallbackReadme.trim().length > 0) {
-                    setHfReadmeByModelId(prev => ({
+        const timer = window.setTimeout(() => {
+            setHfPreviewLoadingId(modelId);
+            void window.electron.huggingface.getModelPreview(modelId)
+                .then((preview) => {
+                    if (!active) {
+                        return;
+                    }
+                    setHfPreviewByModelId(prev => ({
                         ...prev,
-                        [modelId]: fallbackReadme
+                        [modelId]: preview
                     }));
-                }
-            })
-            .catch((error: Error | string) => {
-                const message = typeof error === 'string' ? error : error.message;
-                appLogger.warn('McpMarketplace', `Failed to load HF preview for ${modelId}: ${message}`);
-            })
-            .finally(() => {
-                if (!active) {
-                    return;
-                }
-                setHfPreviewLoadingId(current => (current === modelId ? null : current));
-            });
+                    const hasExistingReadme = (selectedStoreModel.readme ?? '').trim().length > 0
+                        || (hfReadmeByModelId[modelId] ?? '').trim().length > 0;
+                    const fallbackReadme = !hasExistingReadme ? buildHfMarketplaceReadme(preview) : null;
+                    if (fallbackReadme && fallbackReadme.trim().length > 0) {
+                        setHfReadmeByModelId(prev => ({
+                            ...prev,
+                            [modelId]: fallbackReadme
+                        }));
+                    }
+                })
+                .catch((error: Error | string) => {
+                    const message = typeof error === 'string' ? error : error.message;
+                    appLogger.warn('McpMarketplace', `Failed to load HF preview for ${modelId}: ${message}`);
+                })
+                .finally(() => {
+                    if (!active) {
+                        return;
+                    }
+                    setHfPreviewLoadingId(current => (current === modelId ? null : current));
+                });
+        }, 0);
 
         return () => {
             active = false;
+            window.clearTimeout(timer);
         };
     }, [hfPreviewByModelId, hfReadmeByModelId, selectedStoreModel]);
 
@@ -441,29 +444,32 @@ export function McpMarketplace({
         }
 
         let active = true;
-        setExtReadmeLoadingId(extension.id);
+        const timer = window.setTimeout(() => {
+            setExtReadmeLoadingId(extension.id);
 
-        void marketplaceStore.fetchReadme(extension.id, repoUrl)
-            .then((readme: string | null) => {
-                if (!active || !readme) {
-                    return;
-                }
-                setExtensionReadmes(prev => ({
-                    ...prev,
-                    [extension.id]: readme
-                }));
-            })
-            .catch((err: Error) => {
-                appLogger.warn('McpMarketplace', `Failed to fetch extension readme for ${extension.id}`, err);
-            })
-            .finally(() => {
-                if (active) {
-                    setExtReadmeLoadingId(null);
-                }
-            });
+            void marketplaceStore.fetchReadme(extension.id, repoUrl)
+                .then((readme: string | null) => {
+                    if (!active || !readme) {
+                        return;
+                    }
+                    setExtensionReadmes(prev => ({
+                        ...prev,
+                        [extension.id]: readme
+                    }));
+                })
+                .catch((err: Error) => {
+                    appLogger.warn('McpMarketplace', `Failed to fetch extension readme for ${extension.id}`, err);
+                })
+                .finally(() => {
+                    if (active) {
+                        setExtReadmeLoadingId(null);
+                    }
+                });
+        }, 0);
 
         return () => {
             active = false;
+            window.clearTimeout(timer);
         };
     }, [extensionReadmes, selectedStoreItem]);
 

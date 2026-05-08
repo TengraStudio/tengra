@@ -38,19 +38,20 @@ vi.mock('@main/logging/logger', () => ({
     },
 }));
 
-describe('ModelRegistryService', () => {
-    let service: ModelRegistryService;
-    let mockProcessManager: Partial<ProcessManagerService>;
-    let mockScheduler: Partial<JobSchedulerService>;
-    let mockSettings: Partial<SettingsService>;
-    let mockProxyService: Partial<ProxyService>;
-    let mockEventBus: Partial<EventBusService>;
-    let mockAuthService: Partial<AuthService>;
-    let mockTokenService: Partial<TokenService>;
-    let mockLocalImageService: Partial<LocalImageService>;
-    let mockOllamaService: Partial<OllamaService>;
-    let mockHuggingFaceService: MockHuggingFaceService;
-    let fetchMock: ReturnType<typeof vi.fn>;
+let service: ModelRegistryService;
+let mockProcessManager: Partial<ProcessManagerService>;
+let mockScheduler: Partial<JobSchedulerService>;
+let mockSettings: Partial<SettingsService>;
+let mockProxyService: Partial<ProxyService>;
+let mockEventBus: Partial<EventBusService>;
+let mockAuthService: Partial<AuthService>;
+let mockTokenService: Partial<TokenService>;
+let mockLocalImageService: Partial<LocalImageService>;
+let mockOllamaService: Partial<OllamaService>;
+let mockHuggingFaceService: MockHuggingFaceService;
+let fetchMock: ReturnType<typeof vi.fn>;
+
+describe('ModelRegistryService - Lifecycle & Remote', () => {
     const originalOpencodeKey = process.env.OPENCODE_API_KEY;
 
     afterAll(() => {
@@ -184,6 +185,9 @@ describe('ModelRegistryService', () => {
             expect(mockProxyService.getRawModelCatalog).toHaveBeenCalled();
         });
     });
+});
+
+describe('ModelRegistryService - Remote Models', () => {
 
     describe('getRemoteModels', () => {
         it('should fetch and cache remote models', async () => {
@@ -517,137 +521,139 @@ describe('ModelRegistryService', () => {
         });
     });
 
-    describe('getInstalledModels', () => {
-        it('should return locally installed models', async () => {
-            const installed = await service.getInstalledModels();
+    describe('ModelRegistryService - Installed & Metrics', () => {
 
-            expect(installed.length).toBe(1);
-            expect(installed[0]!.id).toBe('ollama/llama3:8b');
-            expect(installed[0]!.provider).toBe('ollama');
+        describe('getInstalledModels', () => {
+            it('should return locally installed models', async () => {
+                const installed = await service.getInstalledModels();
+
+                expect(installed.length).toBe(1);
+                expect(installed[0]!.id).toBe('ollama/llama3:8b');
+                expect(installed[0]!.provider).toBe('ollama');
+            });
+
+            it('should include locally downloaded Hugging Face models', async () => {
+                vi.mocked(mockHuggingFaceService.listInstalledModels).mockResolvedValueOnce([
+                    {
+                        modelId: 'lmstudio-community/gemma-4-E4B-it-GGUF',
+                        path: 'C:\\Users\\agnes\\AppData\\Roaming\\tengra\\models\\gemma-4-E4B-it-Q4_K_M.gguf',
+                        createdAt: Date.now(),
+                        contextLength: 8192,
+                        architecture: 'gemma4',
+                    }
+                ]);
+
+                const installed = await service.getInstalledModels();
+                const hfModel = installed.find(model => model.provider === 'huggingface');
+
+                expect(hfModel).toBeDefined();
+                expect(hfModel?.id).toBe('lmstudio-community/gemma-4-E4B-it-GGUF');
+                expect(hfModel?.name).toBe('gemma-4-E4B-it-GGUF');
+                expect(hfModel?.contextWindow).toBe(8192);
+                expect(hfModel?.backend).toBe('llama.cpp');
+            });
+
+            it('should return empty array if error', async () => {
+                vi.mocked(mockOllamaService.getModels!).mockResolvedValue([]);
+
+                const installed = await service.getInstalledModels();
+                expect(installed.length).toBe(0);
+            });
+
+            it('should return empty array when provider request throws', async () => {
+                vi.mocked(mockOllamaService.getModels!).mockRejectedValueOnce(new Error('ollama down'));
+
+                const installed = await service.getInstalledModels();
+
+                expect(installed).toEqual([]);
+            });
+
+            it('should return empty array when provider response is malformed', async () => {
+                vi.mocked(mockOllamaService.getModels!).mockResolvedValueOnce([
+                    { name: '', modified_at: '', size: 1, digest: 'broken' }
+                ] as never);
+
+                const installed = await service.getInstalledModels();
+
+                expect(installed).toEqual([]);
+            });
+
+            it('should return empty array when the provider fetch fails', async () => {
+                vi.mocked(mockOllamaService.getModels!).mockRejectedValueOnce(new Error('temporary failure'));
+
+                const installed = await service.getInstalledModels();
+
+                expect(installed).toEqual([]);
+            });
         });
 
-        it('should include locally downloaded Hugging Face models', async () => {
-            vi.mocked(mockHuggingFaceService.listInstalledModels).mockResolvedValueOnce([
-                {
-                    modelId: 'lmstudio-community/gemma-4-E4B-it-GGUF',
-                    path: 'C:\\Users\\agnes\\AppData\\Roaming\\tengra\\models\\gemma-4-E4B-it-Q4_K_M.gguf',
-                    createdAt: Date.now(),
-                    contextLength: 8192,
-                    architecture: 'gemma4',
-                }
-            ]);
+        describe('getAllModels', () => {
+            it('should merge remote and installed models without requiring a linked account', async () => {
+                vi.mocked(mockProxyService.getRawModelCatalog!).mockResolvedValueOnce({ data: [] });
+                vi.mocked(mockOllamaService.getModels!).mockResolvedValueOnce([
+                    { name: 'llama3:8b', modified_at: '', size: 1, digest: 'abc' }
+                ] as never);
 
-            const installed = await service.getInstalledModels();
-            const hfModel = installed.find(model => model.provider === 'huggingface');
+                const models = await service.getAllModels();
 
-            expect(hfModel).toBeDefined();
-            expect(hfModel?.id).toBe('lmstudio-community/gemma-4-E4B-it-GGUF');
-            expect(hfModel?.name).toBe('gemma-4-E4B-it-GGUF');
-            expect(hfModel?.contextWindow).toBe(8192);
-            expect(hfModel?.backend).toBe('llama.cpp');
+                expect(models.some(model => model.id === 'ollama/llama3:8b' && model.provider === 'ollama')).toBe(true);
+            });
         });
 
-        it('should return empty array if error', async () => {
-            vi.mocked(mockOllamaService.getModels!).mockResolvedValue([]);
+        describe('getLastUpdate', () => {
+            it('should return 0 before init', () => {
+                expect(service.getLastUpdate()).toBe(0);
+            });
 
-            const installed = await service.getInstalledModels();
-            expect(installed.length).toBe(0);
+            it('should return timestamp after fetching models', async () => {
+                const before = Date.now();
+                await service.getRemoteModels();
+                const lastUpdate = service.getLastUpdate();
+
+                expect(lastUpdate).toBeGreaterThanOrEqual(before);
+            });
         });
 
-        it('should return empty array when provider request throws', async () => {
-            vi.mocked(mockOllamaService.getModels!).mockRejectedValueOnce(new Error('ollama down'));
+        describe('error handling', () => {
+            it('should handle native service errors gracefully', async () => {
+                vi.mocked(mockHuggingFaceService.searchModels!).mockRejectedValue(new Error('Failed'));
 
-            const installed = await service.getInstalledModels();
+                const models = await service.getRemoteModels();
+                expect(models.some(m => m.provider === 'huggingface')).toBe(false);
+            });
 
-            expect(installed).toEqual([]);
-        });
+            it('should track provider fetch failures in health metrics', async () => {
+                vi.mocked(mockOllamaService.getModels!).mockRejectedValue(new Error('provider unavailable'));
+                await service.getInstalledModels();
 
-        it('should return empty array when provider response is malformed', async () => {
-            vi.mocked(mockOllamaService.getModels!).mockResolvedValueOnce([
-                { name: '', modified_at: '', size: 1, digest: 'broken' }
-            ] as never);
+                expect(service.getHealthMetrics().providerFetchFailures).toBe(1);
+                expect(mockEventBus.emit).toHaveBeenCalledWith(
+                    'usageStats:model-registry',
+                    expect.objectContaining({ name: 'model-registry.provider.fetch.failed', provider: 'ollama' })
+                );
+            });
 
-            const installed = await service.getInstalledModels();
+            it('should keep ollama results when installed Hugging Face lookup fails', async () => {
+                vi.mocked(mockHuggingFaceService.listInstalledModels).mockRejectedValueOnce(new Error('hf unavailable'));
 
-            expect(installed).toEqual([]);
-        });
+                const installed = await service.getInstalledModels();
 
-        it('should return empty array when the provider fetch fails', async () => {
-            vi.mocked(mockOllamaService.getModels!).mockRejectedValueOnce(new Error('temporary failure'));
+                expect(installed.some(model => model.provider === 'ollama')).toBe(true);
+            });
 
-            const installed = await service.getInstalledModels();
+            it('should expose performance budget, normalized ui state and i18n keys in health metrics', async () => {
+                const emptyMetrics = service.getHealthMetrics();
+                expect(emptyMetrics.uiState).toBe('empty');
+                expect(emptyMetrics.performanceBudget.cacheRefreshMs).toBe(2000);
+                expect(en.frontend.serviceHealth.modelRegistry.empty).toBe(emptyMetrics.messageKey);
 
-            expect(installed).toEqual([]);
-        });
-    });
+                vi.mocked(mockOllamaService.getModels!).mockRejectedValue(new Error('provider unavailable'));
+                await service.getInstalledModels();
 
-    describe('getAllModels', () => {
-        it('should merge remote and installed models without requiring a linked account', async () => {
-            vi.mocked(mockProxyService.getRawModelCatalog!).mockResolvedValueOnce({ data: [] });
-            vi.mocked(mockOllamaService.getModels!).mockResolvedValueOnce([
-                { name: 'llama3:8b', modified_at: '', size: 1, digest: 'abc' }
-            ] as never);
-
-            const models = await service.getAllModels();
-
-            expect(models.some(model => model.id === 'ollama/llama3:8b' && model.provider === 'ollama')).toBe(true);
-        });
-    });
-
-    describe('getLastUpdate', () => {
-        it('should return 0 before init', () => {
-            expect(service.getLastUpdate()).toBe(0);
-        });
-
-        it('should return timestamp after fetching models', async () => {
-            const before = Date.now();
-            await service.getRemoteModels();
-            const lastUpdate = service.getLastUpdate();
-
-            expect(lastUpdate).toBeGreaterThanOrEqual(before);
-        });
-    });
-
-    describe('error handling', () => {
-        it('should handle native service errors gracefully', async () => {
-            vi.mocked(mockHuggingFaceService.searchModels!).mockRejectedValue(new Error('Failed'));
-
-            const models = await service.getRemoteModels();
-            expect(models.some(m => m.provider === 'huggingface')).toBe(false);
-        });
-
-        it('should track provider fetch failures in health metrics', async () => {
-            vi.mocked(mockOllamaService.getModels!).mockRejectedValue(new Error('provider unavailable'));
-            await service.getInstalledModels();
-
-            expect(service.getHealthMetrics().providerFetchFailures).toBe(1);
-            expect(mockEventBus.emit).toHaveBeenCalledWith(
-                'usageStats:model-registry',
-                expect.objectContaining({ name: 'model-registry.provider.fetch.failed', provider: 'ollama' })
-            );
-        });
-
-        it('should keep ollama results when installed Hugging Face lookup fails', async () => {
-            vi.mocked(mockHuggingFaceService.listInstalledModels).mockRejectedValueOnce(new Error('hf unavailable'));
-
-            const installed = await service.getInstalledModels();
-
-            expect(installed.some(model => model.provider === 'ollama')).toBe(true);
-        });
-
-        it('should expose performance budget, normalized ui state and i18n keys in health metrics', async () => {
-            const emptyMetrics = service.getHealthMetrics();
-            expect(emptyMetrics.uiState).toBe('empty');
-            expect(emptyMetrics.performanceBudget.cacheRefreshMs).toBe(2000);
-            expect(en.frontend.serviceHealth.modelRegistry.empty).toBe(emptyMetrics.messageKey);
-
-            vi.mocked(mockOllamaService.getModels!).mockRejectedValue(new Error('provider unavailable'));
-            await service.getInstalledModels();
-
-            const failureMetrics = service.getHealthMetrics();
-            expect(failureMetrics.uiState).toBe('failure');
-            expect(en.frontend.serviceHealth.modelRegistry.failure).toBe(failureMetrics.messageKey);
+                const failureMetrics = service.getHealthMetrics();
+                expect(failureMetrics.uiState).toBe('failure');
+                expect(en.frontend.serviceHealth.modelRegistry.failure).toBe(failureMetrics.messageKey);
+            });
         });
     });
 });
-

@@ -64,7 +64,7 @@ function loadTranslations(): void {
             const data = fs.readFileSync(localePath, 'utf8');
             const localePack = JSON.parse(data) as LocalePack;
             const parsedTranslations = asTranslationTree(localePack.translations);
-            translations = parsedTranslations ?? asTranslationTree(localePack as any);
+            translations = parsedTranslations ?? asTranslationTree(localePack as unknown as TranslationTree);
             appLogger.debug('BackendI18n', `Translations loaded from ${localePath}`);
         } else {
             appLogger.warn('BackendI18n', `Locale file not found. Checked ${possiblePaths.length} locations. Last attempted: ${possiblePaths[0]}`);

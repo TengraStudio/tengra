@@ -13,6 +13,7 @@ import type {
     CouncilRunConfig,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSessionModes,
+    WorkspaceAgentSessionSummary,
 } from '@shared/types/workspace-agent-session';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -21,7 +22,7 @@ import { useModel } from '@/context/ModelContext';
 import { useChatGenerator } from '@/features/chat/hooks/useChatGenerator';
 import type { Language } from '@/i18n';
 import { useTranslation } from '@/i18n';
-import type { Chat, Message, Workspace } from '@/types';
+import type { Chat, Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import type { WorkspaceAgentComposerPreset } from '../components/workspace/WorkspaceAgentComposer';
@@ -50,6 +51,87 @@ interface UseWorkspaceAgentSessionsOptions {
 
 type WorkspaceMessageDeliveryMode = 'send' | 'queue' | 'steer';
 
+function buildWorkspaceAgentPermissionPolicy(
+    appSettings: { general?: Record<string, unknown> } | null | undefined,
+    workspacePath: string
+): WorkspaceAgentPermissionPolicy {
+    const general = appSettings?.general ?? {};
+    return {
+        ...DEFAULT_PERMISSION_POLICY,
+        commandPolicy: (general.agentCommandPolicy as WorkspaceAgentPermissionPolicy['commandPolicy'] | undefined) ?? DEFAULT_PERMISSION_POLICY.commandPolicy,
+        pathPolicy: (general.agentPathPolicy as WorkspaceAgentPermissionPolicy['pathPolicy'] | undefined) ?? DEFAULT_PERMISSION_POLICY.pathPolicy,
+        allowedCommands: (general.agentAllowedCommands as string[] | undefined) ?? [],
+        disallowedCommands: (general.agentDisallowedCommands as string[] | undefined) ?? [],
+        allowedPaths: Array.isArray(general.agentAllowedPaths) && general.agentAllowedPaths.length
+            ? (general.agentAllowedPaths as string[])
+            : [workspacePath],
+    };
+}
+
+function updateChatCollectionEntries(
+    previousChats: Chat[],
+    sessionId: string,
+    updater: (chat: Chat) => Chat,
+    options: {
+        sessions: WorkspaceAgentSessionSummary[];
+        selectedModel: string;
+        selectedProvider: string;
+        workspaceId: string;
+    }
+): Chat[] {
+    const existingChat = previousChats.find(chat => chat.id === sessionId);
+    if (existingChat) {
+        return previousChats.map(chat => {
+            if (chat.id === sessionId) {
+                const updated = updater(chat);
+                return { ...updated, messages: dedupeChatMessages(updated.messages) };
+            }
+            return chat;
+        });
+    }
+
+    const sessionSummary = options.sessions.find(session => session.id === sessionId);
+    const fallbackChat: Chat = {
+        id: sessionId,
+        title: sessionSummary?.title ?? 'Workspace Session',
+        model: options.selectedModel,
+        backend: options.selectedProvider,
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        workspaceId: options.workspaceId,
+        metadata: {},
+        isGenerating: false,
+    };
+    return [...previousChats, updater(fallbackChat)];
+}
+
+function createUpdateChatCollection(options: {
+    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
+    sessions: WorkspaceAgentSessionSummary[];
+    selectedModel: string;
+    selectedProvider: string;
+    workspaceId: string;
+}): (sessionId: string, updater: (chat: Chat) => Chat) => void {
+    return (sessionId, updater) => {
+        options.setChats(previousChats => updateChatCollectionEntries(previousChats, sessionId, updater, options));
+    };
+}
+
+function getWorkspaceAgentSessionModes(chats: Chat[], currentSessionId: string | null): WorkspaceAgentSessionModes {
+    return toSessionModes(chats.find(chat => chat.id === currentSessionId) ?? null);
+}
+
+function formatWorkspaceAgentError(t: (key: string) => string, error: CatchError): string {
+    if (!error) {return t('common.unknownError');}
+    if (typeof error === 'string') {return error;}
+    if (error instanceof Error) {return error.message;}
+    if (typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+        return error.message;
+    }
+    return t('common.unknownError');
+}
+
 interface PendingWorkspaceMessage {
     id: string;
     content: string;
@@ -75,7 +157,6 @@ export function useWorkspaceAgentSessions({
         setSelectedProvider,
         persistLastSelection,
     } = useModel();
-
     const {
         sessions,
         setSessions,
@@ -89,7 +170,6 @@ export function useWorkspaceAgentSessions({
         setCouncilStateBySession,
         loadWorkspaceSessions,
     } = useWorkspaceAgentSessionState({ workspaceId: workspace.id });
-
     const [showSessionPicker, setShowSessionPicker] = useState(false);
     const [showCouncilSetup, setShowCouncilSetup] = useState(false);
     const [councilSetup, setCouncilSetup] = useState<CouncilRunConfig>(DEFAULT_COUNCIL_SETUP);
@@ -97,74 +177,17 @@ export function useWorkspaceAgentSessions({
     const [draftModes, setDraftModes] = useState<WorkspaceAgentSessionModes>(DEFAULT_MODES);
     const [deliveryMode, setDeliveryMode] = useState<WorkspaceMessageDeliveryMode>('send');
     const [pendingMessagesBySession, setPendingMessagesBySession] = useState<Record<string, PendingWorkspaceMessage[]>>({});
-    const [draftPermissionPolicy, setDraftPermissionPolicy] =
-        useState<WorkspaceAgentPermissionPolicy>(() => ({
-            ...DEFAULT_PERMISSION_POLICY,
-            commandPolicy: appSettings?.general?.agentCommandPolicy ?? DEFAULT_PERMISSION_POLICY.commandPolicy,
-            pathPolicy: appSettings?.general?.agentPathPolicy ?? DEFAULT_PERMISSION_POLICY.pathPolicy,
-            allowedCommands: appSettings?.general?.agentAllowedCommands ?? [],
-            disallowedCommands: appSettings?.general?.agentDisallowedCommands ?? [],
-            allowedPaths: appSettings?.general?.agentAllowedPaths?.length 
-                ? appSettings.general.agentAllowedPaths 
-                : [workspace.path],
-        }));
-
-    // Computed safe policy that uses latest settings
-    const currentSafePermissionPolicy = useMemo<WorkspaceAgentPermissionPolicy>(() => ({
-        ...DEFAULT_PERMISSION_POLICY,
-        commandPolicy: appSettings?.general?.agentCommandPolicy ?? DEFAULT_PERMISSION_POLICY.commandPolicy,
-        pathPolicy: appSettings?.general?.agentPathPolicy ?? DEFAULT_PERMISSION_POLICY.pathPolicy,
-        allowedCommands: appSettings?.general?.agentAllowedCommands ?? [],
-        disallowedCommands: appSettings?.general?.agentDisallowedCommands ?? [],
-        allowedPaths: appSettings?.general?.agentAllowedPaths?.length 
-            ? appSettings.general.agentAllowedPaths 
-            : [workspace.path],
-    }), [appSettings?.general, workspace.path]);
-
-    // Sync draft policy with settings if they change and no session is active
-    useEffect(() => {
-        if (!currentSessionId && appSettings?.general) {
-            setDraftPermissionPolicy(prev => ({
-                ...prev,
-                commandPolicy: appSettings.general.agentCommandPolicy ?? prev.commandPolicy,
-                pathPolicy: appSettings.general.agentPathPolicy ?? prev.pathPolicy,
-                allowedCommands: appSettings.general.agentAllowedCommands ?? prev.allowedCommands,
-                disallowedCommands: appSettings.general.agentDisallowedCommands ?? prev.disallowedCommands,
-                allowedPaths: appSettings.general.agentAllowedPaths ?? prev.allowedPaths,
-            }));
-        }
-    }, [appSettings?.general, currentSessionId]);
-
-    const updateChatCollection = useCallback((sessionId: string, updater: (chat: Chat) => Chat) => {
-        setChats(previousChats => {
-            const existingChat = previousChats.find(chat => chat.id === sessionId);
-            if (existingChat) {
-                return previousChats.map(chat => {
-                    if (chat.id === sessionId) {
-                        const updated = updater(chat);
-                        return { ...updated, messages: dedupeChatMessages(updated.messages) };
-                    }
-                    return chat;
-                });
-            }
-
-            const sessionSummary = sessions.find(session => session.id === sessionId);
-            const fallbackChat: Chat = {
-                id: sessionId,
-                title: sessionSummary?.title ?? 'Workspace Session',
-                model: selectedModel,
-                backend: selectedProvider,
-                messages: [],
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                workspaceId: workspace.id,
-                metadata: {},
-                isGenerating: false,
-            };
-            return [...previousChats, updater(fallbackChat)];
-        });
-    }, [selectedModel, selectedProvider, sessions, setChats, workspace.id]);
-
+    const [draftPermissionPolicy, setDraftPermissionPolicy] = useState<WorkspaceAgentPermissionPolicy>(
+        () => buildWorkspaceAgentPermissionPolicy(appSettings, workspace.path)
+    );
+    const currentSafePermissionPolicy = buildWorkspaceAgentPermissionPolicy(appSettings, workspace.path);
+    const updateChatCollection = createUpdateChatCollection({
+        setChats,
+        sessions,
+        selectedModel,
+        selectedProvider,
+        workspaceId: workspace.id,
+    });
     const {
         createSession,
         selectSession,
@@ -183,22 +206,11 @@ export function useWorkspaceAgentSessions({
         updateChatCollection,
         loadWorkspaceSessions,
     });
-
     const currentModes = useMemo(
-        () => toSessionModes(chats.find(chat => chat.id === currentSessionId) ?? null),
+        () => getWorkspaceAgentSessionModes(chats, currentSessionId),
         [chats, currentSessionId]
     );
-
-    const formatChatError = useCallback((error: CatchError) => {
-        if (!error) {return t('common.unknownError');}
-        if (typeof error === 'string') {return error;}
-        if (error instanceof Error) {return error.message;}
-        if (typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-            return error.message;
-        }
-        return t('common.unknownError');
-    }, [t]);
-
+    const formatChatError = useCallback((error: CatchError) => formatWorkspaceAgentError(t, error), [t]);
     const {
         streamingStates,
         lastChatError,
@@ -592,11 +604,15 @@ export function useWorkspaceAgentSessions({
             ? `Steer the current task with this update and continue from the latest state:\n\n${nextQueuedMessage.content}`
             : nextQueuedMessage.content;
 
-        setPendingMessagesBySession(previousState => ({
-            ...previousState,
-            [currentSessionId]: queuedMessages.slice(1),
-        }));
-        void handleSend(nextContent);
+        const timeoutId = window.setTimeout(() => {
+            setPendingMessagesBySession(previousState => ({
+                ...previousState,
+                [currentSessionId]: queuedMessages.slice(1),
+            }));
+            void handleSend(nextContent);
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [currentSessionId, handleSend, isLoading, pendingMessagesBySession]);
 
     const recentSessionsVal = useMemo(

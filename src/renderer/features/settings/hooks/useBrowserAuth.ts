@@ -564,14 +564,20 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                         } else if (result.error && !result.error.includes('pending') && !result.error.includes('waiting')) {
                             resetBrowserAuthState(result.error);
                         } else {
-                            pollTimeoutRef.current = setTimeout(pollOllama, 3000);
+                            pollTimeoutRef.current = setTimeout(() => {
+                                void pollOllama();
+                            }, 3000);
                         }
-                    } catch (e) {
+                    } catch {
                         if (requestId !== activeRequestRef.current) {return;}
-                        pollTimeoutRef.current = setTimeout(pollOllama, 3000);
+                        pollTimeoutRef.current = setTimeout(() => {
+                            void pollOllama();
+                        }, 3000);
                     }
                 };
-                pollTimeoutRef.current = setTimeout(pollOllama, 3000);
+                pollTimeoutRef.current = setTimeout(() => {
+                    void pollOllama();
+                }, 3000);
                 return;
             }
 

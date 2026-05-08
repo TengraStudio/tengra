@@ -33,7 +33,7 @@ interface UseWorkspaceManagerProps {
     t: (key: string, options?: Record<string, string | number>) => string;
 }
 
-interface FileOpenEntry {
+export interface FileOpenEntry {
     mountId: string;
     path: string;
     name: string;
@@ -99,12 +99,14 @@ function areMountListsEqual(left: WorkspaceMount[], right: WorkspaceMount[]): bo
 function useMountState(workspace: Workspace): [WorkspaceMount[], (mounts: WorkspaceMount[]) => void] {
     const [mounts, setMounts] = useState<WorkspaceMount[]>(() => buildWorkspaceMounts(workspace));
 
-    useEffect(() => {
+    const [prevWorkspace, setPrevWorkspace] = useState(workspace);
+    if (workspace !== prevWorkspace) {
+        setPrevWorkspace(workspace);
         const nextMounts = buildWorkspaceMounts(workspace);
         setMounts(currentMounts =>
             areMountListsEqual(currentMounts, nextMounts) ? currentMounts : nextMounts
         );
-    }, [workspace]);
+    }
 
     return [
         mounts,
@@ -721,11 +723,13 @@ function useTabManagement(workspaceId: string) {
     });
 
     // Reset tabs when workspaceId changes to prevent leakage between workspaces
-    useEffect(() => {
+    const [prevWorkspaceId, setPrevWorkspaceId] = useState(workspaceId);
+    if (workspaceId !== prevWorkspaceId) {
+        setPrevWorkspaceId(workspaceId);
         const persisted = loadPersistedTabsState(workspaceId);
         setOpenTabs(persisted.openTabs);
         setActiveEditorTabId(persisted.activeTabId);
-    }, [workspaceId]);
+    }
 
     const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>(
         activeTabId ? 'editor' : 'overview'

@@ -13,8 +13,7 @@ import { JsonObject } from '@shared/types/common';
 import {
     quoteShellArg,
     safeJsonParse,
-    sanitizeFilename,
-    sanitizeJson,
+    sanitizeFilename, 
     sanitizeObject,
     sanitizeSqlInput,
     sanitizeString,

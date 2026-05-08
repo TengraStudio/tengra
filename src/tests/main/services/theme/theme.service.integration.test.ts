@@ -17,7 +17,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { ThemeErrorCode, ThemeService, ThemeUsageStatsEvent } from '@main/services/theme/theme.service';
+import { ThemeService  } from '@main/services/theme/theme.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the entire module to have full control

@@ -57,6 +57,7 @@ export const DIALOG_CHANNELS = {
   SAVE_FILE: 'dialog:saveFile',
   SELECT_DIRECTORY: 'dialog:selectDirectory',
   SHOW_OPEN_DIALOG: 'dialog:showOpenDialog',
+  SHOW_MESSAGE_BOX: 'dialog:showMessageBox',
 } as const;
 
 // ---------------------------------------------------------------------------

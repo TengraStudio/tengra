@@ -67,7 +67,7 @@ describe('Accessibility Utilities', () => {
         });
 
         it('should persist settings to localStorage', async () => {
-            const { setA11ySettings, getA11ySettings } = await import('@/ui/utils/accessibility');
+            const { getA11ySettings } = await import('@/ui/utils/accessibility');
 
             // setA11ySettings({ highContrast: true });
 

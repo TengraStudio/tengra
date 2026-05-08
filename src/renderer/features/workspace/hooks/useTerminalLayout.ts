@@ -103,9 +103,16 @@ export function useTerminalLayout({
     }, [dockedTerminalRightInsetPx, viewportWidth, workspaceLeftInsetPx]);
 
     // Reset floating/maximized state when terminal is hidden
+    const [prevShowTerminal, setPrevShowTerminal] = React.useState(showTerminal);
+    if (showTerminal !== prevShowTerminal) {
+        setPrevShowTerminal(showTerminal);
+        if (!showTerminal) {
+            setIsMaximizedTerminal(false);
+        }
+    }
+
     React.useEffect(() => {
         if (!showTerminal) {
-            setIsMaximizedTerminal(false); 
             stopCommandStripResize();
         }
     }, [showTerminal, stopCommandStripResize]);

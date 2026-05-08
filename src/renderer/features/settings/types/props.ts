@@ -8,8 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota';
-import { Dispatch, SetStateAction } from 'react';
+import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota'; 
 
 import { AppSettings } from '@/types/settings';
 

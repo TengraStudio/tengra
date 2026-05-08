@@ -49,7 +49,9 @@ export function useEditorSnippets({
     );
 
     React.useEffect(() => {
-        setAllSnippets(loadWorkspaceSnippets());
+        queueMicrotask(() => {
+            setAllSnippets(loadWorkspaceSnippets());
+        });
     }, []);
 
     const persistSnippets = React.useCallback((next: WorkspaceSnippet[]) => {

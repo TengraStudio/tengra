@@ -471,7 +471,7 @@ export class LLMService {
                 signal: options?.signal,
                 workspaceRoot: options?.workspaceRoot,
                 accountId: options?.accountId,
-                numCtx: (config as any).numCtx
+                numCtx: (config as { numCtx?: number }).numCtx
             });
         }
     }
@@ -541,7 +541,7 @@ export class LLMService {
             n: options?.n,
             metadata: options?.metadata,
             accountId: options?.accountId,
-            numCtx: (config as any).numCtx,
+            numCtx: (config as { numCtx?: number }).numCtx,
         });
     }
 

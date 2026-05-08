@@ -17,7 +17,7 @@ import { ModelQuotaItem, QuotaResponse } from '@/types/quota';
 
 import { AccountWrapper } from '../../types';
 
-import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
+import { getQuotaColor, HorizontalProgressBar } from './SharedComponents';
 
 interface AntigravityCardProps {
     t: (key: string, options?: Record<string, string | number>) => string
@@ -25,13 +25,6 @@ interface AntigravityCardProps {
     locale?: string
     activeAccountId?: string | null
     activeAccountEmail?: string | null
-}
-
-function normalizeEmail(email?: string | null): string | null {
-    if (typeof email !== 'string') {
-        return null;
-    }
-    return email.trim().toLowerCase();
 }
 
 function normalizeModelLabel(label: string): string {
@@ -91,8 +84,8 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
     t,
     quotaData,
     locale = 'en-US',
-    activeAccountId,
-    activeAccountEmail
+    activeAccountId: _activeAccountId,
+    activeAccountEmail: _activeAccountEmail
 }) => {
     if (!quotaData?.accounts || quotaData.accounts.length === 0) { return null; }
 

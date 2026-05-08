@@ -11,9 +11,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { FileNode } from '@/features/workspace/components';
 import { useWorkspaceExplorerTree } from '@/features/workspace/hooks/useWorkspaceExplorerTree';
-import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
-import type { FileNode } from '@/features/workspace/workspace-explorer/WorkspaceTreeItem';
+import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus'; 
 import type { WorkspaceMount } from '@/types';
 import { webElectronMock } from '@/web-bridge';
 

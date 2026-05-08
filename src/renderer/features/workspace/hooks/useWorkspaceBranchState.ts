@@ -82,14 +82,22 @@ export function useWorkspaceBranchState({
         }
     }, [enabled, workspacePath]);
 
-    useEffect(() => {
+    const [prevEnabled, setPrevEnabled] = useState(enabled);
+    if (enabled !== prevEnabled) {
+        setPrevEnabled(enabled);
         if (!enabled) {
             setCurrentBranchName('main');
             setAvailableBranches([]);
             setIsBranchLoading(false);
-            return;
         }
-        void refreshBranchState();
+    }
+
+    useEffect(() => {
+        if (enabled) {
+            queueMicrotask(() => {
+                void refreshBranchState();
+            });
+        }
     }, [enabled, refreshBranchState]);
 
     const handleBranchSelect = useCallback(

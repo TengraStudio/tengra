@@ -267,9 +267,11 @@ const ProviderCard = React.memo<ProviderCardProps>(({
     const accountCount = accounts.length;
 
     React.useEffect(() => {
-        if (accounts.length > 0 && !expanded) {
+        if (accounts.length === 0 || expanded) { return; }
+        const timer = window.setTimeout(() => {
             setExpanded(true);
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [accounts.length, expanded]);
 
     return (

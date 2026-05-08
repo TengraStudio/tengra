@@ -24,20 +24,10 @@ import { THEME_CHANNELS } from '@shared/constants/ipc-channels';
 import { BUILTIN_THEME_IDS, BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import type { ThemeManifest } from '@shared/types/theme';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, IpcMainInvokeEvent, shell } from 'electron';
+import { BrowserWindow, shell } from 'electron';
 
 // Performance budgets for theme operations (in milliseconds)
 // ... (rest of the file remains same, I'll only show the @ipc changes)
-
-// Performance budgets for theme operations (in milliseconds)
-const THEME_OPERATION_BUDGETS = {
-    initialize: 1000,
-    loadThemes: 500,
-    installTheme: 2000,
-    uninstallTheme: 1000,
-    getTheme: 50,
-    getAllThemes: 100
-} as const;
 
 // Theme-specific error codes
 export enum ThemeErrorCode {

@@ -44,28 +44,13 @@ type TooltipMouseEvent = React.MouseEvent<TooltipTriggerElement>;
 type TooltipFocusHandler = ((event: TooltipFocusEvent) => void) | undefined;
 type TooltipMouseHandler = ((event: TooltipMouseEvent) => void) | undefined;
 
-function composeMouseHandlers(
-    childHandler: TooltipMouseHandler,
-    tooltipHandler: () => void
-): (event: TooltipMouseEvent) => void {
-    return event => {
-        childHandler?.(event);
-        if (!event.defaultPrevented) {
-            tooltipHandler();
-        }
-    };
-}
-
-function composeFocusHandlers(
-    childHandler: TooltipFocusHandler,
-    tooltipHandler: () => void
-): (event: TooltipFocusEvent) => void {
-    return event => {
-        childHandler?.(event);
-        if (!event.defaultPrevented) {
-            tooltipHandler();
-        }
-    };
+function syncRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
+    if (!ref) {return;}
+    if (typeof ref === 'function') {
+        ref(node);
+    } else if (typeof ref === 'object' && 'current' in ref) {
+        (ref as React.MutableRefObject<T | null>).current = node;
+    }
 }
 
 export function Tooltip({
@@ -95,30 +80,6 @@ export function Tooltip({
     const prefersReducedMotion = usePrefersReducedMotion();
     const animationDurationMs = getAnimationDurationMs('tooltip', prefersReducedMotion);
 
-    const showTooltip = () => {
-        if (disabled) {
-            return;
-        }
-        if (hideTimeoutRef.current !== null) {
-            window.clearTimeout(hideTimeoutRef.current);
-            hideTimeoutRef.current = null;
-        }
-        timeoutRef.current = window.setTimeout(() => {
-            setIsVisible(true);
-            updatePosition();
-        }, delay);
-    };
-
-    const hideTooltip = () => {
-        if (timeoutRef.current) {
-            window.clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-        }
-        hideTimeoutRef.current = window.setTimeout(() => {
-            setIsVisible(false);
-        }, closeDelay);
-    };
-
     const updatePosition = useCallback(() => {
         if (!triggerRef.current || !tooltipRef.current) {
             return;
@@ -137,6 +98,35 @@ export function Tooltip({
         setResolvedSide(resolved.side);
         setPosition(resolved.position);
     }, [side, sideOffset]);
+
+    const showTooltip = () => {
+        if (disabled) {
+            return;
+        }
+        if (hideTimeoutRef.current !== null) {
+            window.clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
+        if (timeoutRef.current !== null) {
+            window.clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = window.setTimeout(() => {
+            setIsVisible(true);
+        }, delay);
+    };
+
+    const hideTooltip = () => {
+        if (timeoutRef.current !== null) {
+            window.clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+        if (hideTimeoutRef.current !== null) {
+            window.clearTimeout(hideTimeoutRef.current);
+        }
+        hideTimeoutRef.current = window.setTimeout(() => {
+            setIsVisible(false);
+        }, closeDelay);
+    };
 
     useEffect(() => {
         if (isVisible) {
@@ -185,20 +175,32 @@ export function Tooltip({
     const trigger = React.cloneElement(children, {
         ref: (node: HTMLElement | null) => {
             triggerRef.current = node;
-            // Forward ref to original element if it exists
-            // Access ref safely across React 18/19
-            const originalRef = (children as React.ReactElement & { ref?: React.Ref<HTMLElement> }).ref ?? childProps.ref;
-            if (typeof originalRef === 'function') {
-                originalRef(node);
-            } else if (originalRef && typeof originalRef === 'object') {
-                // eslint-disable-next-line react-hooks/immutability
-                (originalRef as React.MutableRefObject<HTMLElement | null>).current = node;
+            syncRef((children as { ref?: React.Ref<HTMLElement> }).ref, node);
+        },
+        onMouseEnter: (event: TooltipMouseEvent) => {
+            childProps.onMouseEnter?.(event);
+            if (!event.defaultPrevented) {
+                showTooltip();
             }
         },
-        onMouseEnter: composeMouseHandlers(childProps.onMouseEnter, showTooltip),
-        onMouseLeave: composeMouseHandlers(childProps.onMouseLeave, hideTooltip),
-        onFocus: composeFocusHandlers(childProps.onFocus, showTooltip),
-        onBlur: composeFocusHandlers(childProps.onBlur, hideTooltip),
+        onMouseLeave: (event: TooltipMouseEvent) => {
+            childProps.onMouseLeave?.(event);
+            if (!event.defaultPrevented) {
+                hideTooltip();
+            }
+        },
+        onFocus: (event: TooltipFocusEvent) => {
+            childProps.onFocus?.(event);
+            if (!event.defaultPrevented) {
+                showTooltip();
+            }
+        },
+        onBlur: (event: TooltipFocusEvent) => {
+            childProps.onBlur?.(event);
+            if (!event.defaultPrevented) {
+                hideTooltip();
+            }
+        },
     });
 
     return (

@@ -38,7 +38,6 @@ vi.mock('@main/logging/logger', () => ({
 
 import * as fsp from 'fs/promises';
 
-
 import type { DataType } from '@main/services/data/data.service';
 import {
     DATA_SERVICE_PERFORMANCE_BUDGETS,

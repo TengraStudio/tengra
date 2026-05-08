@@ -120,7 +120,7 @@ export class GalleryService {
                             type: sub === 'images' ? 'image' : 'video',
                             metadata: metadataMap[fileName]
                         };
-                    } catch (error) {
+                    } catch {
                         return null;
                     }
                 }));
@@ -152,7 +152,7 @@ export class GalleryService {
             const safePath = this.resolveGalleryPath(filePath);
             await shell.openPath(safePath);
             return serializeToIpc(true);
-        } catch (error) {
+        } catch {
             return serializeToIpc(false);
         }
     }
@@ -163,7 +163,7 @@ export class GalleryService {
             const safePath = this.resolveGalleryPath(filePath);
             shell.showItemInFolder(safePath);
             return serializeToIpc(true);
-        } catch (error) {
+        } catch {
             return serializeToIpc(false);
         }
     }

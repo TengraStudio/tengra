@@ -88,23 +88,24 @@ describe('MarketplaceService MCP installed-state mapping', () => {
         const packageJsonPath = path.join(extensionRoot, extensionDirectory, 'package.json');
 
         vi.spyOn(fs, 'readdir').mockResolvedValue([extensionDirectory] as never);
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        vi.spyOn(fs, 'pathExists').mockImplementation(candidatePath =>
-            Promise.resolve(String(candidatePath) === packageJsonPath)
-        );
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+         
+        vi.spyOn(fs, 'pathExists').mockImplementation(candidatePath => {
+            void candidatePath;
+            return String(candidatePath) === packageJsonPath;
+        });
+         
         vi.spyOn(fs, 'readJson').mockImplementation(candidatePath => {
             if (String(candidatePath) !== packageJsonPath) {
-                return Promise.reject(new Error('Unexpected extension package lookup'));
+                throw new Error('Unexpected extension package lookup');
             }
-            return Promise.resolve({
+            return {
                 id: 'tengrastudio.job-finder',
                 name: 'job-finder-plugin',
                 version: '1.1.0',
                 tengra: {
                     id: 'tengrastudio.job-finder',
                 },
-            });
+            };
         });
 
         const readInstalledExtensionVersions = Reflect.get(

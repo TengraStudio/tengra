@@ -176,9 +176,8 @@ describe('IPC Fuzzing – Command injection in payloads', () => {
         'sanitizeString preserves but sanitizes injection: %s',
         (payload) => {
             const result = sanitizeString(payload);
-            expect(typeof result).toBe('string');
-            // eslint-disable-next-line no-control-regex
-            expect(result).not.toMatch(/[\x00-\x08\x0B\x0C\x0E-\x1F]/);
+            const controlCharsPattern = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(8)}${String.fromCharCode(11)}${String.fromCharCode(12)}${String.fromCharCode(14)}-${String.fromCharCode(31)}]`);
+            expect(result).not.toMatch(controlCharsPattern);
         }
     );
 

@@ -13,7 +13,6 @@ import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { USAGE_CHANNELS } from '@shared/constants/ipc-channels';
 import { AppSettings } from '@shared/types/settings';
-import { IpcMainInvokeEvent } from 'electron';
 
 export type UsagePeriod = 'hourly' | 'daily' | 'weekly';
 

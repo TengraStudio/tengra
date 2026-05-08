@@ -11,7 +11,7 @@
 import { BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import type { ThemeManifest } from '@shared/types/theme';
 import { IconAccessible, IconDeviceDesktop, IconLuggage, IconMaximize, IconPalette, IconPointer, IconRefresh, IconTerminal, IconTypography } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,7 @@ import { useTerminalAppearance } from '@/features/terminal/hooks/useTerminalAppe
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { resolveAppFontPreset } from '@/lib/typography-settings';
 import { cn } from '@/lib/utils';
+import { themeRegistry } from '@/themes/theme-registry.service';
 import { useA11ySettings } from '@/utils/accessibility';
 
 import type { SettingsSharedProps } from '../types';
@@ -54,12 +55,6 @@ interface TerminalPreviewProps {
     fontSize: number;
     lineHeight: number;
     theme: ReturnType<typeof getTerminalTheme>;
-    t: (key: string) => string;
-}
-
-interface ThemeActionStatus {
-    message: string;
-    tone: 'success' | 'error';
 }
 
 function TerminalPreview({
@@ -68,7 +63,6 @@ function TerminalPreview({
     fontSize,
     lineHeight,
     theme,
-    t,
 }: TerminalPreviewProps): JSX.Element {
     return (
         <div className="group relative h-72 w-full overflow-hidden rounded-2xl border border-border/40 bg-[#0c0c0c] shadow-2xl transition-all hover:border-border/60">
@@ -247,32 +241,24 @@ function AppearanceRow({
 export const AppearanceTab: React.FC<AppearanceTabProps> = ({
     settings,
     updateGeneral,
-    updateWindow,
+    updateWindow: _updateWindow,
     t,
 }) => {
-    const [themes, setThemes] = useState<ThemeManifest[]>([]);
-    const [themeActionStatus, setThemeActionStatus] = useState<ThemeActionStatus | null>(null);
     const { settings: a11ySettings, updateSettings } = useA11ySettings();
     const { terminalAppearance, setTerminalAppearance } = useTerminalAppearance({
         storageKey: TERMINAL_APPEARANCE_STORAGE_KEY,
         defaultAppearance: DEFAULT_TERMINAL_APPEARANCE,
     });
     const themeImportInputRef = useRef<HTMLInputElement>(null);
-
-    const refreshThemes = useCallback(async () => {
-        try {
-            const loadedThemes = await window.electron.theme.runtime.getAll();
-            setThemes(loadedThemes.length > 0 ? loadedThemes : BUILTIN_THEME_MANIFESTS);
-        } catch {
-            setThemes(BUILTIN_THEME_MANIFESTS);
-        }
-    }, []);
-
-    useEffect(() => {
-        void refreshThemes();
-    }, [refreshThemes]);
-
-    const availableThemes = themes.length > 0 ? themes : BUILTIN_THEME_MANIFESTS;
+    const themeRegistryVersion = useSyncExternalStore(
+        themeRegistry.subscribe,
+        themeRegistry.getSnapshot,
+        themeRegistry.getSnapshot
+    );
+    void themeRegistryVersion;
+    const availableThemes = themeRegistry.getAllThemes().length > 0
+        ? themeRegistry.getAllThemes()
+        : BUILTIN_THEME_MANIFESTS;
 
     const themeOptions = useMemo(() => {
         const manifestOptions: Array<Pick<ThemeManifest, 'id' | 'displayName' | 'type'>> =
@@ -308,34 +294,6 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         () => resolveTerminalAppearance(getTerminalTheme(), terminalAppearance),
         [terminalAppearance]
     );
-    const currentThemeId = settings?.general.theme ?? 'tengra-black';
-    const currentThemeManifest = useMemo(
-        () => availableThemes.find(theme => theme.id === currentThemeId) ?? null,
-        [availableThemes, currentThemeId]
-    );
-    const currentThemeVars = useMemo(
-        () => Object.entries(currentThemeManifest?.vars ?? {}),
-        [currentThemeManifest]
-    );
-    const currentThemeColors = useMemo(
-        () => Object.entries(currentThemeManifest?.colors ?? {}),
-        [currentThemeManifest]
-    );
-    const currentThemeVarGroups = useMemo(() => {
-        const keys = currentThemeVars.map(([key]) => key);
-        const layoutVars = keys.filter(key => key.startsWith('tengra-')).length;
-        const terminalVars = keys.filter(key => key.startsWith('terminal-')).length;
-        const iconVars = keys.filter(key => key.startsWith('icon-')).length;
-        const featureVars = keys.length - layoutVars - terminalVars - iconVars;
-
-        return [
-            { label: t('frontend.settings.themeManifestLayoutVars'), count: layoutVars },
-            { label: t('frontend.settings.themeManifestTerminalVars'), count: terminalVars },
-            { label: t('frontend.settings.themeManifestIconVars'), count: iconVars },
-            { label: t('frontend.settings.themeManifestFeatureVars'), count: featureVars },
-        ].filter(group => group.count > 0);
-    }, [currentThemeVars, t]);
-
     const handleImportTheme = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         event.target.value = '';
@@ -347,60 +305,11 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         try {
             const themeManifest = JSON.parse(await file.text()) as ThemeManifest;
             await window.electron.theme.runtime.install(themeManifest);
-            await refreshThemes();
-            setThemeActionStatus({
-                tone: 'success',
-                message: t('frontend.settings.themeManifestImportSuccess', {
-                    name: themeManifest.displayName ?? themeManifest.id,
-                }),
-            });
+            await themeRegistry.reloadThemes();
         } catch (error) {
-            setThemeActionStatus({
-                tone: 'error',
-                message:
-                    error instanceof SyntaxError
-                        ? t('frontend.settings.themeManifestImportInvalidJson')
-                        : t('frontend.settings.themeManifestImportFailed'),
-            });
+            void error;
         }
-    }, [refreshThemes, t]);
-
-    const handleDownloadCurrentTheme = useCallback(() => {
-        if (!currentThemeManifest) {
-            return;
-        }
-
-        const payload = JSON.stringify(currentThemeManifest, null, 2);
-        const blob = new Blob([payload], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `${currentThemeManifest.id}.theme.json`;
-        anchor.click();
-        URL.revokeObjectURL(url);
-
-        setThemeActionStatus({
-            tone: 'success',
-            message: t('frontend.settings.themeManifestDownloadSuccess', {
-                name: currentThemeManifest.displayName,
-            }),
-        });
-    }, [currentThemeManifest, t]);
-
-    const handleOpenThemesDirectory = useCallback(async () => {
-        try {
-            await window.electron.theme.runtime.openDirectory();
-            setThemeActionStatus({
-                tone: 'success',
-                message: t('frontend.settings.themeManifestOpenFolderSuccess'),
-            });
-        } catch {
-            setThemeActionStatus({
-                tone: 'error',
-                message: t('frontend.settings.themeManifestOpenFolderFailed'),
-            });
-        }
-    }, [t]);
+    }, []);
 
     const resolutionOptions = [
         { value: 'auto', label: 'Auto (Recommended)' },
@@ -417,7 +326,9 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 type="file"
                 accept="application/json,.json"
                 className="hidden"
-                onChange={handleImportTheme}
+                onChange={event => {
+                    void handleImportTheme(event);
+                }}
             />
             <div className="px-1">
                 <div className="mb-3 flex items-center gap-4">
@@ -726,7 +637,6 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             fontSize={resolvedTerminalAppearance.fontSize}
                             lineHeight={resolvedTerminalAppearance.lineHeight}
                             theme={resolvedTerminalAppearance.theme}
-                            t={t}
                         />
                     </div>
                 </div>

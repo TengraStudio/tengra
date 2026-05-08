@@ -93,8 +93,8 @@ export class MemoryContextService {
                 const result = await this.raceWithTimeout(existingLookup, options.timeoutMs);
                 this.recordLookupDuration(startTime);
                 return result;
-            } catch (error: any) {
-                this.recordLookupError(error as any);
+            } catch (error) {
+                this.recordLookupError(error as Error);
                 this.recordLookupDuration(startTime);
                 return undefined;
             }
@@ -109,8 +109,8 @@ export class MemoryContextService {
             this.setCachedContext(cacheKey, context);
             this.recordLookupDuration(startTime);
             return context;
-        } catch (error: any) {
-            this.recordLookupError(error);
+        } catch (error) {
+            this.recordLookupError(error as Error);
             this.recordLookupDuration(startTime);
             return undefined;
         } finally {
@@ -208,7 +208,10 @@ export class MemoryContextService {
         options: MemoryLookupOptions
     ): Promise<string | undefined> {
         try {
-            const matches = await this.advancedMemoryService!.findResolutionMemories(normalizedQuery, options.limit);
+            if (!this.advancedMemoryService) {
+                return undefined;
+            }
+            const matches = await this.advancedMemoryService.findResolutionMemories(normalizedQuery, options.limit);
             if (matches.length === 0) {
                 return undefined;
             }

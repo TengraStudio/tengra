@@ -22,47 +22,48 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-describe('ToolExecutor', () => {
-    const fileSystem = {
-        readFile: vi.fn(),
-        writeFile: vi.fn(),
-        applyEdits: vi.fn(),
-        listDirectory: vi.fn(),
-        fileExists: vi.fn(),
-        searchFiles: vi.fn(),
-        getFileInfo: vi.fn(),
-        createDirectory: vi.fn(),
-        deleteFile: vi.fn(),
-        copyFile: vi.fn(),
-        moveFile: vi.fn()
-    };
+const fileSystem = {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    applyEdits: vi.fn(),
+    listDirectory: vi.fn(),
+    fileExists: vi.fn(),
+    searchFiles: vi.fn(),
+    getFileInfo: vi.fn(),
+    createDirectory: vi.fn(),
+    deleteFile: vi.fn(),
+    copyFile: vi.fn(),
+    moveFile: vi.fn()
+};
 
-    const command = { executeCommand: vi.fn() }, localImage = { generateImage: vi.fn() };
-    const web = { searchWeb: vi.fn() }, system = { getSystemInfo: vi.fn() };
-    const eventBus = { emit: vi.fn() }, mcp = { dispatch: vi.fn(), getToolDefinitions: vi.fn() };
-    const terminal = {
-        createSession: vi.fn(),
-        write: vi.fn(),
-        getActiveSessions: vi.fn(),
-        getSessionBuffer: vi.fn(),
-        getSessionAnalytics: vi.fn(),
-        kill: vi.fn(),
-    };
+const command = { executeCommand: vi.fn() }, localImage = { generateImage: vi.fn() };
+const web = { searchWeb: vi.fn() }, system = { getSystemInfo: vi.fn() };
+const eventBus = { emit: vi.fn() }, mcp = { dispatch: vi.fn(), getToolDefinitions: vi.fn() };
+const terminal = {
+    createSession: vi.fn(),
+    write: vi.fn(),
+    getActiveSessions: vi.fn(),
+    getSessionBuffer: vi.fn(),
+    getSessionAnalytics: vi.fn(),
+    kill: vi.fn(),
+};
 
-    const createExecutor = () => {
-        const options = {
-            fileSystem,
-            eventBus,
-            command,
-            localImage,
-            web,
-            system,
-            mcp,
-            terminal
-        } as never as ToolExecutorOptions;
+const createExecutor = () => {
+    const options = {
+        fileSystem,
+        eventBus,
+        command,
+        localImage,
+        web,
+        system,
+        mcp,
+        terminal
+    } as never as ToolExecutorOptions;
 
-        return new ToolExecutor(options);
-    };
+    return new ToolExecutor(options);
+};
+
+describe('ToolExecutor - Core & FS', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -314,6 +315,9 @@ describe('ToolExecutor', () => {
         });
         expect(fileSystem.searchFiles).toHaveBeenCalledWith(path.resolve('/repo'), '.test.ts', 2);
     });
+});
+
+describe('ToolExecutor - Extra & Terminal', () => {
 
     it('routes get_file_info to fileSystem.getFileInfo', async () => {
         fileSystem.getFileInfo.mockResolvedValueOnce({

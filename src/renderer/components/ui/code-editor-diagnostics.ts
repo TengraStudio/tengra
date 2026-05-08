@@ -11,12 +11,20 @@
 import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import React from 'react';
+import * as protocol from 'vscode-languageserver-protocol';
 
 import { setAnalyzing, useFileDiagnostics } from '@/store/diagnostics.store';
-import * as protocol from 'vscode-languageserver-protocol';
 import { appLogger } from '@/utils/renderer-logger';
 
 const DIAGNOSTICS_OWNER = 'tengra-lsp';
+
+type WorkspaceCodeAction =
+    | protocol.CodeAction
+    | {
+        title: string;
+        command: string;
+        arguments?: unknown[];
+    };
 
 interface UseCodeEditorDiagnosticsOptions {
     editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
@@ -85,7 +93,7 @@ export function useCodeEditorDiagnostics({
 }: UseCodeEditorDiagnosticsOptions): void {
     // Generate URI for the file
     const uri = React.useMemo(() => {
-        if (!filePath) return undefined;
+        if (!filePath) { return undefined; }
         const slashPath = filePath.replace(/\\/g, '/').replace(/\/+/g, '/');
         if (/^[A-Za-z]:\//.test(slashPath)) {
             return `file:///${slashPath}`;
@@ -97,13 +105,13 @@ export function useCodeEditorDiagnostics({
 
     // Pull diagnostics on demand when model changes or file opens
     const triggerPull = React.useCallback(() => {
-        if (!workspaceId || !filePath || !editorRef.current) return;
+        if (!workspaceId || !filePath || !editorRef.current) { return; }
 
         const model = editorRef.current.getModel();
-        if (!model) return;
+        if (!model) { return; }
 
         const languageId = model.getLanguageId();
-        
+
         setAnalyzing(workspaceId, true);
         window.electron.workspace.pullDiagnostics({
             workspaceId,
@@ -117,7 +125,7 @@ export function useCodeEditorDiagnostics({
     }, [workspaceId, filePath, editorRef]);
 
     React.useEffect(() => {
-        if (!editorMounted) return;
+        if (!editorMounted) { return; }
         triggerPull();
     }, [editorMounted, triggerPull]);
 
@@ -178,16 +186,16 @@ export function useCodeEditorDiagnostics({
     // Register CodeActionProvider for Quick Fixes
     React.useEffect(() => {
         const monaco = monacoRef.current;
-        if (!editorMounted || !monaco || !workspaceId || !filePath) return;
+        if (!editorMounted || !monaco || !workspaceId || !filePath) { return; }
 
         const model = editorRef.current?.getModel();
-        if (!model) return;
+        if (!model) { return; }
 
         const languageId = model.getLanguageId();
 
         const disposable = monaco.languages.registerCodeActionProvider(languageId, {
-            provideCodeActions: async (model, range, context) => {
-                if (model.uri.toString() !== uri) return { actions: [], dispose: () => {} };
+            provideCodeActions: async (model, range, _context, _token) => {
+                if (model.uri.toString() !== uri) { return { actions: [], dispose: () => { } }; }
 
                 const lspRange = {
                     start: { line: range.startLineNumber - 1, character: range.startColumn - 1 },
@@ -209,33 +217,37 @@ export function useCodeEditorDiagnostics({
                         diagnostics: relevantDiagnostics
                     });
 
-                    if (!actions) return { actions: [], dispose: () => {} };
+                    if (!actions) { return { actions: [], dispose: () => { } }; }
+
+                    const typedActions = actions as WorkspaceCodeAction[];
 
                     return {
-                        actions: actions.map(action => {
+                        actions: typedActions.map(action => {
                             if ('command' in action && !('edit' in action)) {
                                 // It's a Command
+                                const commandAction = action as Extract<WorkspaceCodeAction, { command: string }>;
                                 return {
-                                    title: action.title,
+                                    title: commandAction.title,
                                     command: {
-                                        id: action.command,
-                                        arguments: action.arguments,
-                                        title: action.title
+                                        id: commandAction.command,
+                                        arguments: commandAction.arguments,
+                                        title: commandAction.title
                                     },
                                     kind: 'quickfix'
                                 };
                             } else {
                                 // It's a CodeAction
-                                const ca = action as any;
+                                const ca = action as protocol.CodeAction;
                                 return {
                                     title: ca.title,
                                     kind: ca.kind || 'quickfix',
-                                    diagnostics: ca.diagnostics,
+                                    diagnostics: ca.diagnostics ? ca.diagnostics.map(d => toMarkerData(monacoRef.current as Monaco, model, d)) : undefined,
                                     isPreferred: ca.isPreferred,
                                     edit: ca.edit ? {
-                                        edits: Object.entries(ca.edit.changes || {}).flatMap(([u, changes]: [string, any]) => 
-                                            changes.map((c: any) => ({
+                                        edits: Object.entries(ca.edit.changes || {}).flatMap(([u, changes]: [string, protocol.TextEdit[]]) =>
+                                            changes.map((c: protocol.TextEdit) => ({
                                                 resource: monaco.Uri.parse(u),
+                                                versionId: undefined,
                                                 textEdit: {
                                                     range: {
                                                         startLineNumber: c.range.start.line + 1,
@@ -256,11 +268,11 @@ export function useCodeEditorDiagnostics({
                                 };
                             }
                         }),
-                        dispose: () => {}
+                        dispose: () => { }
                     };
                 } catch (err) {
                     appLogger.warn('CodeEditorDiagnostics', 'Failed to provide code actions', { error: err });
-                    return { actions: [], dispose: () => {} };
+                    return { actions: [], dispose: () => { } };
                 }
             }
         });
@@ -268,4 +280,3 @@ export function useCodeEditorDiagnostics({
         return () => disposable.dispose();
     }, [editorMounted, monacoRef, editorRef, workspaceId, filePath, uri, fileDiagnostics]);
 }
-

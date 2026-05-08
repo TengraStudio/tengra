@@ -10,7 +10,7 @@
 
 import { appLogger } from '@main/logging/logger';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
-import { Chat, Folder, Message, Prompt, SearchChatsOptions } from '@shared/types/chat';
+import { Chat, Folder, Prompt, SearchChatsOptions } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { getErrorMessage } from '@shared/utils/error.util';

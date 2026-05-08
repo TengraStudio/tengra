@@ -42,9 +42,11 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
     }, [connectionId, selectedLog]);
 
     useEffect(() => {
-        if (active && logFiles.length === 0) {
+        if (!active || logFiles.length > 0) { return; }
+        const timer = window.setTimeout(() => {
             void loadFiles();
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [active, logFiles.length, loadFiles]);
 
     const selectLog = async (path: string) => {

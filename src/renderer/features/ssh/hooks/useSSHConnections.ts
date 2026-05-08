@@ -184,10 +184,12 @@ export function useSSHConnections(isOpen: boolean) {
             return;
         }
 
-        void loadConnections().catch(error => {
-            const normalizedError =
-                error instanceof Error ? error : new Error(String(error));
-            appLogger.error('SSH', 'SSH init error', normalizedError);
+        queueMicrotask(() => {
+            void loadConnections().catch(error => {
+                const normalizedError =
+                    error instanceof Error ? error : new Error(String(error));
+                appLogger.error('SSH', 'SSH init error', normalizedError);
+            });
         });
 
         const onConnected = (id: string) => {

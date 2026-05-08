@@ -66,7 +66,7 @@ export class BackgroundServiceService extends BaseService {
                 const fallbackCommand = `schtasks /create /tn "${taskName}" /tr "'${binPath}' ${argsString}" /sc onlogon /f`;
                 await execAsync(fallbackCommand);
                 this.logDebug(`Registered Windows task (fallback): ${taskName}`);
-            } catch (fallbackError) {
+            } catch {
                 throw new Error(`Task Scheduler Error: ${error instanceof Error ? error.message : 'Unknown'}`);
             }
         }

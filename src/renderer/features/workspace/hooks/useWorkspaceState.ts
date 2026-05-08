@@ -77,13 +77,15 @@ export function useWorkspaceState(workspaceId: string) {
     );
 
     useEffect(() => {
-        setSidebarCollapsedState(persistedWorkspaceShell.sidebarCollapsed);
-        setShowAgentPanelState(persistedWorkspaceShell.showAgentPanel);
-        setAgentPanelWidthState(persistedWorkspaceShell.agentPanelWidth);
-        setShowTerminalState(persistedWorkspaceShell.showTerminal);
-        setTerminalHeightState(persistedWorkspaceShell.terminalHeight);
-        setTerminalFloatingState(persistedWorkspaceShell.terminalFloating);
-        setTerminalMaximizedState(persistedWorkspaceShell.terminalMaximized);
+        queueMicrotask(() => {
+            setSidebarCollapsedState(persistedWorkspaceShell.sidebarCollapsed);
+            setShowAgentPanelState(persistedWorkspaceShell.showAgentPanel);
+            setAgentPanelWidthState(persistedWorkspaceShell.agentPanelWidth);
+            setShowTerminalState(persistedWorkspaceShell.showTerminal);
+            setTerminalHeightState(persistedWorkspaceShell.terminalHeight);
+            setTerminalFloatingState(persistedWorkspaceShell.terminalFloating);
+            setTerminalMaximizedState(persistedWorkspaceShell.terminalMaximized);
+        });
     }, [persistedWorkspaceShell]);
 
     const setSidebarCollapsed = useCallback((collapsed: boolean) => {
@@ -177,4 +179,3 @@ export function useWorkspaceState(workspaceId: string) {
         logActivity,
     };
 }
-

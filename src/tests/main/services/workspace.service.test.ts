@@ -10,13 +10,13 @@
 
 import * as fsModule from 'fs';
 import { promises as fs } from 'fs';
+import path from 'path';
 import { pathToFileURL } from 'url';
 
 import type { LspService } from '@main/services/workspace/lsp.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { clearWorkspaceIgnoreMatcherCache } from '@main/services/workspace/workspace-ignore.util';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import path from 'path';
 
 // Mocking fs and path
 vi.mock('fs', () => ({
@@ -55,7 +55,7 @@ const mockDirent = (name: string, isDirectory: boolean) => ({
 function initializeWorkspaceServiceTestState(): void {
     vi.resetAllMocks();
     clearWorkspaceIgnoreMatcherCache();
-    workspaceService = new WorkspaceService();
+    workspaceService = new WorkspaceService({});
     vi.mocked(fs.access).mockRejectedValue(new Error('ENOENT'));
     vi.mocked(fs.readFile).mockImplementation(async (filePath: Parameters<typeof fs.readFile>[0]) => {
         const normalizedPath = String(filePath).replace(/\\/g, '/');
@@ -562,7 +562,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 },
             ]),
         } as never as LspService;
-        workspaceService = new WorkspaceService(mockLspService);
+        workspaceService = new WorkspaceService({ lspService: mockLspService });
 
         vi.mocked(fs.readdir).mockResolvedValueOnce([
             mockDirent('src', true),
@@ -635,7 +635,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 },
             ]),
         } as never as LspService;
-        workspaceService = new WorkspaceService(mockLspService);
+        workspaceService = new WorkspaceService({ lspService: mockLspService });
         vi.mocked(fs.access).mockImplementation(async (filePath: fsModule.PathLike) => {
             const normalizedPath = String(filePath).replace(/\\/g, '/');
             if (normalizedPath.endsWith('/packages/app/tsconfig.json')) {
@@ -687,7 +687,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 },
             ]),
         } as never as LspService;
-        workspaceService = new WorkspaceService(mockLspService);
+        workspaceService = new WorkspaceService({ lspService: mockLspService });
         vi.mocked(fs.access).mockImplementation(async (filePath: fsModule.PathLike) => {
             const normalizedPath = String(filePath).replace(/\\/g, '/');
             if (normalizedPath.endsWith('/packages/app/tsconfig.json')) {

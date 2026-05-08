@@ -10,7 +10,6 @@
 
 import React from 'react';
 
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspaceAgentSessions } from '@/features/workspace/hooks/useWorkspaceAgentSessions';
 import { WorkspaceAgentComposer } from '@/features/workspace/workspace-agent/WorkspaceAgentComposer';

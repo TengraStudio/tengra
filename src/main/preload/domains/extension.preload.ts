@@ -32,7 +32,7 @@ export interface ExtensionBridge {
     validate: (manifest: Record<string, RuntimeValue>) => Promise<{ valid: boolean; errors: string[] }>;
     getConfig: (extensionId: string) => Promise<{ success: boolean; config?: Record<string, RuntimeValue>; error?: string }>;
     updateConfig: (extensionId: string, config: Record<string, RuntimeValue>) => Promise<{ success: boolean; config?: Record<string, RuntimeValue>; error?: string }>;
-    onLogUpdate: (callback: (log: any) => void) => () => void;
+    onLogUpdate: (callback: (log: unknown) => void) => () => void;
 }
 
 export function createExtensionBridge(ipc: IpcRenderer): ExtensionBridge {
@@ -59,7 +59,7 @@ export function createExtensionBridge(ipc: IpcRenderer): ExtensionBridge {
         getConfig: extensionId => ipc.invoke(EXTENSION_CHANNELS.GET_CONFIG, extensionId),
         updateConfig: (extensionId, config) => ipc.invoke(EXTENSION_CHANNELS.UPDATE_CONFIG, extensionId, config),
         onLogUpdate: callback => {
-            const listener = (_event: any, log: any) => callback(log);
+            const listener = (_event: unknown, log: unknown) => callback(log);
             ipc.on(EXTENSION_CHANNELS.LOG_UPDATE, listener);
             return () => ipc.removeListener(EXTENSION_CHANNELS.LOG_UPDATE, listener);
         },

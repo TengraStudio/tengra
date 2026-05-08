@@ -58,6 +58,7 @@ export default tseslint.config(
             'react/jsx-no-undef': 'error',
             'react/jsx-uses-react': 'off',
             'react/jsx-uses-vars': 'error',
+            'react-hooks/exhaustive-deps': 'warn',
             '@typescript-eslint/explicit-module-boundary-types': 'off',
             '@typescript-eslint/no-explicit-any': 'error', // NASA Rule: Eliminate all `any` types
             '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],

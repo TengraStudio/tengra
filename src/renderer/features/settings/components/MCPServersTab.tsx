@@ -11,7 +11,7 @@
 
 import { MarketplaceMcp } from '@shared/types/marketplace';
 import { AppSettings, McpPermission, McpPermissionProfile } from '@shared/types/settings';
-import { IconCheck, IconEdit, IconFilePencil, IconFileText, IconGlobe, IconPower, IconRefresh, IconServer, IconShieldCheck, IconTerminal, IconTrash, IconX } from '@tabler/icons-react';
+import { IconCheck, IconEdit, IconFilePencil, IconFileText, IconGlobe, IconRefresh, IconServer, IconShieldCheck, IconTerminal, IconTrash } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -423,7 +423,10 @@ export function MCPServersTab(): JSX.Element {
     }, [servers, registry]);
 
     useEffect(() => {
-        void loadServers();
+        const timer = window.setTimeout(() => {
+            void loadServers();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [loadServers]);
 
     const activeCount = useMemo(() => servers.filter(server => (server.enabled || server.isEnabled) && server.isAlive).length, [servers]);

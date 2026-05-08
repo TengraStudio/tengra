@@ -17,7 +17,6 @@ import * as path from 'path';
 import { promisify } from 'util';
 
 import { ipc } from '@main/core/ipc-decorators';
-import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { resolveWindowsCommand } from '@main/utils/windows-command.util';
 import { PROCESS_CHANNELS } from '@shared/constants/ipc-channels';

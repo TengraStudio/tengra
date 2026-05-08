@@ -63,9 +63,11 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
     }, [getCommands]);
 
     // Update local settings when props change
-    useEffect(() => {
+    const [prevSettings, setPrevSettings] = useState(settings);
+    if (settings !== prevSettings) {
+        setPrevSettings(settings);
         setLocalSettings(settings);
-    }, [settings]);
+    }
 
     /** Handle settings change */
     const handleSettingChange = async <K extends keyof VoiceSettings>(

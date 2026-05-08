@@ -100,6 +100,13 @@ function updateSelectionState(
     }));
 }
 
+export function clearWorkspaceExplorerFilterQuery(workspaceId: string): void {
+    updateState(workspaceId, prevState => ({
+        ...prevState,
+        filterQuery: '',
+    }));
+}
+
 export function subscribeWorkspaceExplorerStore(
     workspaceId: string,
     listener: Listener
@@ -185,7 +192,7 @@ export function startWorkspaceInlineRename(
 
 export function startWorkspaceInlineCreate(
     workspaceId: string,
-    type: 'createFile' | 'createFolder',
+    type: WorkspaceInlineActionType,
     entry: WorkspaceEntry
 ): void {
     updateState(workspaceId, prevState => ({

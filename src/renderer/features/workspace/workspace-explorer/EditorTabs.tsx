@@ -12,8 +12,8 @@ import { IconChevronRight, IconMarkdown, IconPin, IconX } from '@tabler/icons-re
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { EditorTab } from '@/types';
 import { useWorkspaceDiagnostics } from '@/store/diagnostics.store';
+import { EditorTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { EditorTabContextMenu } from './EditorTabContextMenu';
@@ -231,12 +231,19 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         setContextMenu(null);
         void action();
     };
-    const confirmCloseTabs = (tabsToClose: EditorTab[]): boolean => {
+    const confirmCloseTabs = async (tabsToClose: EditorTab[]): Promise<boolean> => {
         const dirtyTabs = tabsToClose.filter(tab => tab.content !== tab.savedContent);
         if (dirtyTabs.length === 0) {
             return true;
         }
-        return window.confirm(t('frontend.workspace.unsavedTabsWarning'));
+        const result = await window.electron.dialog.showMessageBox({
+            type: 'warning',
+            buttons: [t('common.yes'), t('common.no')],
+            defaultId: 0,
+            cancelId: 1,
+            message: t('frontend.workspace.unsavedTabsWarning'),
+        });
+        return result.response === 0;
     };
 
     return (
@@ -289,10 +296,12 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                             <span
                                 onClick={event => {
                                     event.stopPropagation();
-                                    if (!confirmCloseTabs([tab])) {
-                                        return;
-                                    }
-                                    closeTab(tab.id);
+                                    void (async () => {
+                                        if (!(await confirmCloseTabs([tab]))) {
+                                            return;
+                                        }
+                                        closeTab(tab.id);
+                                    })();
                                 }}
                                 className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-muted/60 text-muted-foreground hover:text-foreground"
                             >
@@ -388,37 +397,37 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                     canCloseToRight={canCloseToRight}
                     onPinToggle={() => runMenuAction(() => togglePinTab(contextTab.id))}
                     onCloseTab={() =>
-                        runMenuAction(() => {
-                            if (confirmCloseTabs([contextTab])) {
+                        runMenuAction(async () => {
+                            if (await confirmCloseTabs([contextTab])) {
                                 closeTab(contextTab.id);
                             }
                         })
                     }
                     onCloseAll={() =>
-                        runMenuAction(() => {
+                        runMenuAction(async () => {
                             const closableTabs = orderedTabs.filter(tab => !tab.isPinned);
-                            if (confirmCloseTabs(closableTabs)) {
+                            if (await confirmCloseTabs(closableTabs)) {
                                 closeAllTabs();
                             }
                         })
                     }
                     onCloseToRight={() =>
-                        runMenuAction(() => {
+                        runMenuAction(async () => {
                             const contextIndex = orderedTabs.findIndex(tab => tab.id === contextTab.id);
                             const closableTabs = orderedTabs
                                 .slice(contextIndex + 1)
                                 .filter(tab => !tab.isPinned);
-                            if (confirmCloseTabs(closableTabs)) {
+                            if (await confirmCloseTabs(closableTabs)) {
                                 closeTabsToRight(contextTab.id);
                             }
                         })
                     }
                     onCloseOthers={() =>
-                        runMenuAction(() => {
+                        runMenuAction(async () => {
                             const closableTabs = orderedTabs.filter(
                                 tab => tab.id !== contextTab.id && !tab.isPinned
                             );
-                            if (confirmCloseTabs(closableTabs)) {
+                            if (await confirmCloseTabs(closableTabs)) {
                                 closeOtherTabs(contextTab.id);
                             }
                         })

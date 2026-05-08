@@ -35,10 +35,6 @@ installRendererLogger();
 registerLocalExtensions();
 performanceMonitor.mark('renderer:boot');
 
-const bootstrapWindow = window as Window & {
-    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
-};
-
 const rootElement = document.getElementById('root');
 if (rootElement) {
     ReactDOMClient.createRoot(rootElement).render(

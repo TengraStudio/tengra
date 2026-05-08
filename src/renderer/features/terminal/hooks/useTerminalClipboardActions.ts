@@ -116,7 +116,7 @@ export function useTerminalClipboardActions({
                         .slice(0, 3)
                         .join('\n')
                         .slice(0, 240);
-                    const confirmed = confirmDialog(
+                    const confirmed = await confirmDialog(
                         t('frontend.terminal.pasteConfirmLines', {
                             count: text.split(/\r?\n/).length,
                             preview
@@ -163,7 +163,7 @@ export function useTerminalClipboardActions({
                 return;
             }
             const hasAnsi = ANSI_ESCAPE_SEQUENCE_REGEX.test(text);
-            alertDialog(summarizePasteText(text, hasAnsi, t));
+            await alertDialog(summarizePasteText(text, hasAnsi, t));
         } catch (error) {
             appLogger.error('TerminalPanel', 'Failed to test paste', error as Error);
         } finally {

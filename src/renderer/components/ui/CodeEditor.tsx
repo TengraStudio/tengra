@@ -16,7 +16,7 @@ import type {
     InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 import { IconLoader2 } from '@tabler/icons-react';
-import type { editor, languages, CancellationToken } from 'monaco-editor';
+import type { CancellationToken,editor, languages } from 'monaco-editor';
 import React, { ComponentType,useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useCodeEditorDiagnostics } from '@/components/ui/code-editor-diagnostics';
@@ -38,7 +38,7 @@ import { useSettingsStore } from '@/store/settings.store';
 import type { AppSettings } from '@/types/settings';
 import type { Workspace } from '@/types/workspace';
 import { normalizeLanguage } from '@/utils/language-map';
-import { ensureMonacoInitialized, applyMonacoTheme } from '@/utils/monaco-loader.util';
+import { applyMonacoTheme,ensureMonacoInitialized } from '@/utils/monaco-loader.util';
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 import { initTextMateSupport } from '@/utils/textmate-loader';
@@ -198,116 +198,89 @@ export function toError(error: Error | null | undefined): Error {
 function buildWorkspaceEditorOverrides(
     settings?: Workspace['editor']
 ): editor.IStandaloneEditorConstructionOptions {
-    const additionalOptions = settings?.additionalOptions ?? {};
-    return {
-        ...(typeof settings?.fontSize === 'number' ? { fontSize: settings.fontSize } : {}),
-        ...(typeof settings?.fontFamily === 'string' ? { fontFamily: settings.fontFamily } : {}),
-        ...(typeof settings?.fontWeight === 'string' ? { fontWeight: settings.fontWeight } : {}),
-        ...(typeof settings?.letterSpacing === 'number' ? { letterSpacing: settings.letterSpacing } : {}),
-        ...(typeof settings?.fontLigatures === 'boolean'
-            ? { fontLigatures: settings.fontLigatures }
-            : {}),
-        ...(typeof settings?.lineHeight === 'number'
-            ? { lineHeight: Math.round(settings.lineHeight * 18) }
-            : {}),
-        ...(typeof settings?.smoothScrolling === 'boolean'
-            ? { smoothScrolling: settings.smoothScrolling }
-            : {}),
-        ...(typeof settings?.cursorBlinking === 'string'
-            ? { cursorBlinking: settings.cursorBlinking }
-            : {}),
-        ...(typeof settings?.cursorStyle === 'string'
-            ? { cursorStyle: settings.cursorStyle }
-            : {}),
-        ...(typeof settings?.cursorWidth === 'number'
-            ? { cursorWidth: settings.cursorWidth }
-            : {}),
-        ...(typeof settings?.formatOnPaste === 'boolean'
-            ? { formatOnPaste: settings.formatOnPaste }
-            : {}),
-        ...(typeof settings?.formatOnType === 'boolean'
-            ? { formatOnType: settings.formatOnType }
-            : {}),
-        ...(typeof settings?.tabSize === 'number' ? { tabSize: settings.tabSize } : {}),
-        ...(typeof settings?.lineNumbers === 'string'
-            ? { lineNumbers: settings.lineNumbers }
-            : {}),
-        ...(typeof settings?.folding === 'boolean' ? { folding: settings.folding } : {}),
-        ...(typeof settings?.showFoldingControls === 'string'
-            ? { showFoldingControls: settings.showFoldingControls }
-            : {}),
-        ...(typeof settings?.wordWrap === 'string' ? { wordWrap: settings.wordWrap } : {}),
-        ...(typeof settings?.minimap === 'boolean'
-            ? {
-                minimap: {
-                    enabled: settings.minimap,
-                    side: settings.minimapSide ?? 'right',
-                    showSlider: 'always',
-                    renderCharacters: settings.minimapRenderCharacters ?? false,
-                },
-            }
-            : {}),
-        ...(typeof settings?.codeLens === 'boolean' ? { codeLens: settings.codeLens } : {}),
-        ...(typeof settings?.inlayHints === 'boolean'
-            ? { inlayHints: { enabled: settings.inlayHints ? 'on' : 'off' } }
-            : {}),
-        ...(typeof settings?.renderWhitespace === 'string'
-            ? { renderWhitespace: settings.renderWhitespace }
-            : {}),
-        ...(typeof settings?.renderLineHighlight === 'string'
-            ? { renderLineHighlight: settings.renderLineHighlight }
-            : {}),
-        ...(typeof settings?.renderControlCharacters === 'boolean'
-            ? { renderControlCharacters: settings.renderControlCharacters }
-            : {}),
-        ...(typeof settings?.roundedSelection === 'boolean'
-            ? { roundedSelection: settings.roundedSelection }
-            : {}),
-        ...(typeof settings?.scrollBeyondLastLine === 'boolean'
-            ? { scrollBeyondLastLine: settings.scrollBeyondLastLine }
-            : {}),
-        ...(typeof settings?.cursorSmoothCaretAnimation === 'string'
-            ? { cursorSmoothCaretAnimation: settings.cursorSmoothCaretAnimation }
-            : {}),
-        ...(typeof settings?.wordBasedSuggestions === 'string'
-            ? { wordBasedSuggestions: settings.wordBasedSuggestions }
-            : {}),
-        ...(typeof settings?.acceptSuggestionOnEnter === 'string'
-            ? { acceptSuggestionOnEnter: settings.acceptSuggestionOnEnter }
-            : {}),
-        ...(typeof settings?.suggestFontSize === 'number'
-            ? { suggestFontSize: settings.suggestFontSize }
-            : {}),
-        ...(typeof settings?.suggestLineHeight === 'number'
-            ? { suggestLineHeight: settings.suggestLineHeight }
-            : {}),
-        ...(typeof settings?.stickyScroll === 'boolean'
-            ? { stickyScroll: { enabled: settings.stickyScroll } }
-            : {}),
-        ...(typeof settings?.bracketPairColorization === 'boolean'
-            ? { bracketPairColorization: { enabled: settings.bracketPairColorization } }
-            : {}),
-        ...(typeof settings?.guidesIndentation === 'boolean'
-            ? { guides: { indentation: settings.guidesIndentation } }
-            : {}),
-        ...(typeof settings?.mouseWheelZoom === 'boolean'
-            ? { mouseWheelZoom: settings.mouseWheelZoom }
-            : {}),
-        ...(typeof settings?.multiCursorModifier === 'string'
-            ? { multiCursorModifier: settings.multiCursorModifier }
-            : {}),
-        ...(typeof settings?.occurrenceHighlight === 'boolean'
-            ? { occurrenceHighlight: settings.occurrenceHighlight }
-            : {}),
-        ...(typeof settings?.selectionHighlight === 'boolean'
-            ? { selectionHighlight: settings.selectionHighlight }
-            : {}),
-        ...(typeof settings?.renderFinalNewline === 'string'
-            ? { renderFinalNewline: settings.renderFinalNewline }
-            : {}),
-        ...additionalOptions,
+    if (!settings) {
+        return {};
+    }
+
+    const options: editor.IStandaloneEditorConstructionOptions = {
+        ...settings.additionalOptions,
     };
+
+    type EditorKey = keyof editor.IStandaloneEditorConstructionOptions;
+    type WorkspaceKey = keyof NonNullable<Workspace['editor']>;
+
+    const directMappings: Array<[WorkspaceKey, EditorKey, ((v: never) => unknown)?]> = [
+        ['fontSize', 'fontSize'],
+        ['fontFamily', 'fontFamily'],
+        ['fontWeight', 'fontWeight'],
+        ['letterSpacing', 'letterSpacing'],
+        ['fontLigatures', 'fontLigatures'],
+        ['lineHeight', 'lineHeight', ((v: number) => Math.round(v * 18)) as (v: never) => unknown],
+        ['smoothScrolling', 'smoothScrolling'],
+        ['cursorBlinking', 'cursorBlinking'],
+        ['cursorStyle', 'cursorStyle'],
+        ['cursorWidth', 'cursorWidth'],
+        ['formatOnPaste', 'formatOnPaste'],
+        ['formatOnType', 'formatOnType'],
+        ['tabSize', 'tabSize'],
+        ['lineNumbers', 'lineNumbers'],
+        ['folding', 'folding'],
+        ['showFoldingControls', 'showFoldingControls'],
+        ['wordWrap', 'wordWrap'],
+        ['codeLens', 'codeLens'],
+        ['renderWhitespace', 'renderWhitespace'],
+        ['renderLineHighlight', 'renderLineHighlight'],
+        ['renderControlCharacters', 'renderControlCharacters'],
+        ['roundedSelection', 'roundedSelection'],
+        ['scrollBeyondLastLine', 'scrollBeyondLastLine'],
+        ['cursorSmoothCaretAnimation', 'cursorSmoothCaretAnimation'],
+        ['wordBasedSuggestions', 'wordBasedSuggestions'],
+        ['acceptSuggestionOnEnter', 'acceptSuggestionOnEnter'],
+        ['suggestFontSize', 'suggestFontSize'],
+        ['suggestLineHeight', 'suggestLineHeight'],
+        ['mouseWheelZoom', 'mouseWheelZoom'],
+        ['multiCursorModifier', 'multiCursorModifier'], 
+        ['selectionHighlight', 'selectionHighlight'],
+        ['renderFinalNewline', 'renderFinalNewline'],
+    ];
+
+    for (const [settingsKey, editorKey, transform] of directMappings) {
+        const val = settings[settingsKey];
+        if (val !== undefined && val !== null) {
+            const finalValue = transform ? transform(val as never) : val;
+            Object.assign(options, { [editorKey]: finalValue });
+        }
+    }
+
+    // Special cases
+    if (typeof settings.minimap === 'boolean') {
+        options.minimap = {
+            enabled: settings.minimap,
+            side: settings.minimapSide ?? 'right',
+            showSlider: 'always',
+            renderCharacters: settings.minimapRenderCharacters ?? false,
+        };
+    }
+
+    if (typeof settings.inlayHints === 'boolean') {
+        options.inlayHints = { enabled: settings.inlayHints ? 'on' : 'off' };
+    }
+
+    if (typeof settings.stickyScroll === 'boolean') {
+        options.stickyScroll = { enabled: settings.stickyScroll };
+    }
+
+    if (typeof settings.bracketPairColorization === 'boolean') {
+        options.bracketPairColorization = { enabled: settings.bracketPairColorization };
+    }
+
+    if (typeof settings.guidesIndentation === 'boolean') {
+        options.guides = { ...options.guides, indentation: settings.guidesIndentation };
+    }
+
+    return options;
 }
+
 
 export interface CodeEditorProps {
     value?: string;
@@ -736,7 +709,8 @@ const useEditorLifecycle = (
     initialScrollTop?: number | null,
     onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void,
     onScrollPositionChange?: (scrollTop: number) => void,
-    performanceMarkPrefix?: string
+    performanceMarkPrefix?: string,
+    setEditorMounted?: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     return useCallback(
         async (editor: MonacoEditorInstance, monaco: Monaco) => {
@@ -792,6 +766,7 @@ const useEditorLifecycle = (
             editor.onDidScrollChange(event => {
                 onScrollPositionChange?.(event.scrollTop);
             });
+            setEditorMounted?.(true);
         },
         [
             initialPosition,
@@ -799,6 +774,7 @@ const useEditorLifecycle = (
             onCursorPositionChange,
             onScrollPositionChange,
             performanceMarkPrefix,
+            setEditorMounted,
             updateDecorations,
             editorRef,
             monacoRef,
@@ -864,7 +840,7 @@ const MonacoEditorInternal: React.FC<{
     diffMode,
     originalValue,
 }) => {
-    const diffEditorRef = useRef<any>(null);
+    const diffEditorRef = useRef<editor.IDiffEditor | null>(null);
 
     useEffect(() => {
         return () => {
@@ -875,7 +851,7 @@ const MonacoEditorInternal: React.FC<{
                         diffEditorRef.current.setModel(null);
                     }
                 } catch (e) {
-                    appLogger.warn('CodeEditor', 'Error during diff editor cleanup', e as any);
+                    appLogger.warn('CodeEditor', 'Error during diff editor cleanup', e as Error);
                 }
             }
         };
@@ -1023,7 +999,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         initialScrollTop,
         onCursorPositionChange,
         onScrollPositionChange,
-        performanceMarkPrefix
+        performanceMarkPrefix,
+        setEditorMounted
     );
 
     const monacoTheme = useMemo(() => {
@@ -1106,7 +1083,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             modelPath={modelPath || undefined}
             onChange={onChange}
             theme={monacoTheme}
-            onMount={handleEditorDidMount}
+            onMount={(editorInstance, monacoInstance) => {
+                void handleEditorDidMount(editorInstance, monacoInstance);
+            }}
             loading={<LoadingOverlay className={className} t={t} />}
             options={editorOptions}
             monaco={monacoComponents.monaco}

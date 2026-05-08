@@ -10,9 +10,9 @@
 
 import React, { isValidElement, lazy, memo, Suspense, useMemo } from 'react';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeRaw from 'rehype-raw';
 
 import { useThrottle } from '@/hooks/useThrottle';
 import { cn } from '@/lib/utils';

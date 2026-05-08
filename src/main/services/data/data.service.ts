@@ -11,8 +11,8 @@
 import * as fsp from 'fs/promises';
 import * as path from 'path';
 
-import { BaseService } from '@main/services/base.service';
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app } from 'electron';
 
@@ -104,7 +104,7 @@ export class DataService extends BaseService {
                 this.logWarn(`Initialization exceeded performance budget: ${duration}ms > ${DATA_SERVICE_PERFORMANCE_BUDGETS.INITIALIZE_MS}ms`);
             }
         } catch (error) {
-            const duration = Date.now() - startTime;
+            const _duration = Date.now() - startTime;
             this.logError('Failed to initialize data service', error);
             throw error;
         }

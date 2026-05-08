@@ -417,12 +417,17 @@ export interface KeyHandler {
  * Hook for handling keyboard shortcuts.
  */
 export function useKeyboardShortcuts(
-    handlers: KeyHandler[],
-    deps: React.DependencyList = []
+    handlers: KeyHandler[]
 ): void {
+    const handlersRef = useRef(handlers);
+
+    useEffect(() => {
+        handlersRef.current = handlers;
+    });
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent): void => {
-            for (const { key, handler, modifiers } of handlers) {
+            for (const { key, handler, modifiers } of handlersRef.current) {
                 if (e.key.toLowerCase() !== key.toLowerCase()) {
                     continue;
                 }
@@ -449,8 +454,7 @@ export function useKeyboardShortcuts(
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [handlers, ...deps]);
+    }, []);
 }
 
 // ============================================================================

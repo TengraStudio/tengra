@@ -58,14 +58,14 @@ export interface WorkspaceBridge {
     onFileChange: (
         callback: (event: string, path: string, rootPath: string) => void
     ) => () => void;
-    pullDiagnostics: (payload: { workspaceId: string; filePath: string; languageId: string }) => Promise<any[] | null>;
+    pullDiagnostics: (payload: { workspaceId: string; filePath: string; languageId: string }) => Promise<unknown[] | null>;
     getCodeActions: (payload: {
         workspaceId: string;
         filePath: string;
         languageId: string;
-        range: any;
-        diagnostics: any[];
-    }) => Promise<any[] | null>;
+        range: unknown;
+        diagnostics: unknown[];
+    }) => Promise<unknown[] | null>;
 }
 
 interface WrappedWorkspaceResponse<T> {

@@ -70,7 +70,7 @@ export function useAppState(): AppState {
 
     // UI state
     const persistedSidebarCollapsed = useUiLayoutStore(snapshot => snapshot.appShell.sidebarCollapsed);
-    const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(persistedSidebarCollapsed);
+    const isSidebarCollapsed = persistedSidebarCollapsed;
     const [isDragging, setIsDragging] = useState(false);
 
     // Modal state
@@ -80,15 +80,10 @@ export function useAppState(): AppState {
     const [showScrollButton, setShowScrollButton] = useState(false);
     const [isAudioOverlayOpen, setIsAudioOverlayOpen] = useState(false);
 
-    useEffect(() => {
-        setIsSidebarCollapsedState(persistedSidebarCollapsed);
-    }, [persistedSidebarCollapsed]);
-
     const setIsSidebarCollapsed = useCallback((collapsed: boolean) => {
         if (collapsed === isSidebarCollapsed) {
             return;
         }
-        setIsSidebarCollapsedState(collapsed);
         setAppShellState({ sidebarCollapsed: collapsed });
     }, [isSidebarCollapsed]);
 

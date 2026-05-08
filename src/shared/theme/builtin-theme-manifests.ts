@@ -1,4 +1,4 @@
-import type { ThemeColors, ThemeManifest, ThemeVars } from '@shared/types/theme';
+import type { ThemeManifest } from '@shared/types/theme';
 
 import blackThemeManifestJson from '@/themes/manifests/black.theme.json';
 import whiteThemeManifestJson from '@/themes/manifests/white.theme.json';

@@ -904,7 +904,7 @@ interface ProcessInvalidToolArgumentsParams {
 function processInvalidToolArguments(params: ProcessInvalidToolArgumentsParams) {
     const {
         executableToolCalls, tools, toolEvidenceState,
-        assistantId, chatId, selectedProvider, activeModel,
+        assistantId, chatId: _chatId, selectedProvider, activeModel,
         turnDisplayContent, turnToolCalls, reasonings,
         noProgressToolTurnCount: initialNoProgressCount,
         malformedToolCallCount: initialMalformedCount,
@@ -989,7 +989,6 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
     let lastToolFamily = '';
     let consecutiveSameFamilyTurns = 0;
     const traceId = `${chatId.slice(0, 8)}:${assistantId.slice(0, 8)}`;
-    const modelContext = { assistantId, chatId, selectedProvider, activeModel, intentClassification, t, language, reasonings, assistantId_str: assistantId };
 
     while (toolIterations < toolLoopBudget.maxModelTurns) {
         if (currentMessages.length === 0) {

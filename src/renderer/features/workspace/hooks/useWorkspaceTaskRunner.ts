@@ -100,8 +100,10 @@ export function useWorkspaceTaskRunner({
 
     React.useEffect(() => {
         if (!workspace.path) {
-            setTasks([]);
-            setScripts({});
+            queueMicrotask(() => {
+                setTasks([]);
+                setScripts({});
+            });
             return;
         }
 

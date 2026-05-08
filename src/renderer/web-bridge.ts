@@ -249,7 +249,7 @@ export const webElectronMock: ElectronAPI = {
         getLinkedAccounts: async (_provider?: string) => [],
         getActiveLinkedAccount: async (_provider: string) => null,
         setActiveLinkedAccount: async (_provider: string, _accountId: string) => ({ success: true }),
-        linkAccount: async (_provider: string, _tokenData: any) => ({ success: true }),
+        linkAccount: async (_provider: string, _tokenData: unknown) => ({ success: true }),
         unlinkAccount: async (_accountId: string) => ({ success: true }),
         unlinkProvider: async (_provider: string) => ({ success: true }),
         hasLinkedAccount: async (_provider: string) => false,
@@ -488,7 +488,7 @@ export const webElectronMock: ElectronAPI = {
         readFile: async (_path: string) => '',
         readImage: async (_path: string) => ({ success: true }),
         writeFile: async (_path: string, _content: string) => { },
-        selectFile: async (_options?: any) => ({ success: true, path: '' }),
+        selectFile: async (_options?: unknown) => ({ success: true, path: '' }),
         exists: async (_path: string) => true,
         revertFileChange: async (_diffId: string) => ({ success: false, error: 'Not supported in web bridge' }),
         copyPath: async (_sourcePath: string, _destinationPath: string) => ({
@@ -1506,8 +1506,8 @@ export const webElectronMock: ElectronAPI = {
             fontSize: 14,
             fontFamily: 'Inter',
         }),
-        setConfiguration: async (_config: any) => ({ success: true }),
-        onRuntimeUpdated: (_callback: any) => () => { },
+        setConfiguration: async (_config: unknown) => ({ success: true }),
+        onRuntimeUpdated: (_callback: unknown) => () => { },
     },
 
     locale: {
@@ -1516,14 +1516,14 @@ export const webElectronMock: ElectronAPI = {
             fallbackLocale: 'en',
             availableLocales: ['en'],
         }),
-        setConfiguration: async (_config: any) => ({ success: true }),
-        onRuntimeUpdated: (_callback: any) => () => { },
+        setConfiguration: async (_config: unknown) => ({ success: true }),
+        onRuntimeUpdated: (_callback: unknown) => () => { },
     },
 
     codeLanguages: {
         getLanguages: async () => [],
         getLanguage: async (_id: string) => null,
-        onRuntimeUpdated: (_callback: any) => () => { },
+        onRuntimeUpdated: (_callback: unknown) => () => { },
     },
 
     readPdf: async (_path: string) => ({ success: true, text: '' }),

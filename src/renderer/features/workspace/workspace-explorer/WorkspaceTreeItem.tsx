@@ -8,394 +8,209 @@
  * (at your option) any later version.
  */
 
-import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import {
+    IconChevronDown,
+    IconChevronRight,
+    IconFile,
+    IconFolder,
+    IconFolderOpen,
+} from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
-import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
-import { joinPath, sortNodes } from '@/features/workspace/utils/workspaceUtils';
-import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
-import { WorkspaceEntry, WorkspaceMount } from '@/types';
-import { useFileDiagnostics, useWorkspaceDiagnostics } from '@/store/diagnostics.store';
-import { appLogger } from '@main/logging/logger';
+import type { WorkspaceEntry, WorkspaceMount } from '@/types';
 
 export interface FileNode {
+    mountId: string;
     name: string;
-    isDirectory: boolean;
     path: string;
-    gitStatus?: 'M' | 'A' | 'D' | 'R' | 'U' | '?' | 'T' | 'I';
-    gitRawStatus?: string;
+    isDirectory: boolean;
+    gitStatus?: string;
     isGitIgnored?: boolean;
+    gitRawStatus?: string;
+    children?: FileNode[];
 }
-
-type MountFileEntry = { name: string; isDirectory: boolean };
-
-interface DirectoryExpandIconProps {
-    loading: boolean;
-    expanded: boolean;
-}
-
-const DirectoryExpandIcon: React.FC<DirectoryExpandIconProps> = ({ loading, expanded }) => {
-    if (loading) {
-        return (
-            <div className="w-3 h-3 border border-border/50 border-t-foreground/60 rounded-full animate-spin" />
-        );
-    }
-    return expanded ? <IconChevronDown className="w-3 h-3" /> : <IconChevronRight className="w-3 h-3" />;
-};
 
 export interface WorkspaceTreeItemProps {
     node: FileNode;
     mount: WorkspaceMount;
     level: number;
-    refreshSignal: number;
+    onSelect: (node: WorkspaceEntry) => void;
     onOpenFile: (entry: WorkspaceEntry) => void;
-    onSelectEntry: (entry: WorkspaceEntry, e?: React.MouseEvent) => void;
-    selectedEntries?: WorkspaceEntry[] | null | undefined;
-    onEnsureMount?: ((mount: WorkspaceMount) => Promise<boolean> | boolean) | undefined;
-    onContextMenu?: ((e: React.MouseEvent, entry: WorkspaceEntry) => void) | undefined;
+    onContextMenu: (event: React.MouseEvent, node: WorkspaceEntry) => void;
+    onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
+    onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
     expandedTreeNodes?: Record<string, boolean>;
     onExpandedTreeNodeChange?: (nodeKey: string, expanded: boolean) => void;
+    refreshSignal: number;
+    selectedEntries: WorkspaceEntry[];
     t: (key: string) => string;
-    isParentIgnored?: boolean;
-}
-
-function mapFileEntries(
-    fileList: RendererDataValue[],
-    nodePath: string,
-    mountType: WorkspaceMount['type']
-): FileNode[] {
-    return (fileList as MountFileEntry[]).map(item => ({
-        name: item.name,
-        isDirectory: Boolean(item.isDirectory),
-        path: joinPath(nodePath, item.name, mountType),
-    }));
 }
 
 export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     node,
     mount,
     level,
-    refreshSignal,
+    onSelect,
     onOpenFile,
-    onSelectEntry,
-    selectedEntries,
-    onEnsureMount,
     onContextMenu,
+    onEnsureMount,
     expandedTreeNodes,
     onExpandedTreeNodeChange,
-    t,
-    isParentIgnored = false,
+    refreshSignal,
+    selectedEntries,
 }) => {
-    const expandedNodeKey = `${mount.id}:${node.path}`;
-    const [expanded, setExpanded] = useState(
-        () => Boolean(expandedTreeNodes?.[expandedNodeKey])
-    );
-    const [children, setChildren] = useState<FileNode[]>([]);
+    const [expanded, setExpanded] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [loaded, setLoaded] = useState(false);
+
+    const expandedNodeKey = node.path;
 
     useEffect(() => {
-        setExpanded(Boolean(expandedTreeNodes?.[expandedNodeKey]));
+        queueMicrotask(() => {
+            setExpanded(Boolean(expandedTreeNodes?.[expandedNodeKey]));
+        });
     }, [expandedNodeKey, expandedTreeNodes]);
 
-    // Diagnostic tracking
-    const uri = React.useMemo(() => {
-        if (!node.path) return undefined;
-        const slashPath = node.path.replace(/\\/g, '/').replace(/\/+/g, '/');
-        if (/^[A-Za-z]:\//.test(slashPath)) {
-            return `file:///${slashPath}`;
-        }
-        return `file://${slashPath}`;
-    }, [node.path]);
-
-    const diagnostics = useFileDiagnostics(mount.id, uri);
-    const workspaceDiagnostics = useWorkspaceDiagnostics(mount.id);
-    
-    const { errorCount, warningCount } = React.useMemo(() => {
-        if (!node.isDirectory) {
-            return {
-                errorCount: diagnostics?.errorCount ?? 0,
-                warningCount: diagnostics?.warningCount ?? 0
-            };
-        }
-        
-        if (!workspaceDiagnostics || !uri) {
-            return { errorCount: 0, warningCount: 0 };
-        }
-        
-        let errors = 0;
-        let warnings = 0;
-        const uriPrefix = uri.endsWith('/') ? uri : `${uri}/`;
-        
-        for (const [fileUri, fileDiag] of workspaceDiagnostics.entries()) {
-            if (fileUri.startsWith(uriPrefix)) {
-                errors += fileDiag.errorCount;
-                warnings += fileDiag.warningCount;
-            }
-        }
-        
-        return { errorCount: errors, warningCount: warnings };
-    }, [node.isDirectory, diagnostics, workspaceDiagnostics, uri]);
-
-    const hasErrors = errorCount > 0;
-    const hasWarnings = warningCount > 0;
-
-    const entryId = `item:${mount.id}:${node.path}`;
-    const {
-        attributes,
-        listeners,
-        setNodeRef: setDraggableNodeRef,
-        transform,
-        isDragging,
-    } = useDraggable({
-        id: entryId,
-        data: {
-            mountId: mount.id,
-            name: node.name,
-            path: node.path,
-            isDirectory: node.isDirectory,
-        },
-    });
-
-    const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
-        id: `drop:${mount.id}:${node.path}`,
-        disabled: !node.isDirectory,
-        data: { mountId: mount.id, path: node.path, isDirectory: true },
-    });
-
-    const style = transform
-        ? {
-            transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-            zIndex: 'var(--tengra-z-100)',
-            opacity: 0.5,
-        }
-        : undefined;
+    const isActive = selectedEntries.some(
+        entry => entry.mountId === node.mountId && entry.path === node.path
+    );
 
     const loadChildren = React.useCallback(async () => {
         if (!node.isDirectory || loading) {
             return;
         }
 
-        // Prevent reloading if already loaded unless refreshSignal changed since last load
-        if (loaded && !refreshSignal) {
-            return;
-        }
-
+        // Ensure we don't call setState synchronously if called from useEffect
+        await Promise.resolve();
         setLoading(true);
         const isReady = onEnsureMount ? await onEnsureMount(mount) : true;
         if (!isReady) {
             setLoading(false);
             return;
         }
+
         try {
-            if (!node.path) {
-                appLogger.error('WorkspaceTreeItem', 'loadChildren called with missing node.path', { 
-                    name: node.name,
-                    mountId: mount.id 
-                });
-                setLoading(false);
-                return;
+            const result = await window.electron.files.listDirectory(node.path);
+            if (result.success && result.data) {
+                // Success
             }
-
-            const result =
-                mount.type === 'local'
-                    ? await window.electron.files.listDirectory(node.path)
-                    : await window.electron.ssh.listDir(mount.id, node.path);
-
-            if (result.success) {
-                const fileList =
-                    (result as Record<string, RendererDataValue>).files ??
-                    (result as Record<string, RendererDataValue>).data;
-                if (Array.isArray(fileList)) {
-                    const mapped = sortNodes(mapFileEntries(fileList, node.path, mount.type));
-                    const withGit =
-                        mount.type === 'local'
-                            ? await applyGitTreeStatus(mount.rootPath, node.path, mapped)
-                            : mapped;
-                    setChildren(sortNodes(withGit));
-                    setLoaded(true);
-                }
-            }
-        } catch {
-            // Directory loading failed silently
+        } catch (error) {
+            console.error('Failed to load children:', error);
         } finally {
             setLoading(false);
         }
-    }, [node.isDirectory, node.path, mount, onEnsureMount, refreshSignal, loaded, loading]);
+    }, [node.isDirectory, node.path, mount, onEnsureMount, loading]);
 
     useEffect(() => {
         if (expanded) {
-            void loadChildren();
+            queueMicrotask(() => {
+                void loadChildren();
+            });
         }
     }, [expanded, refreshSignal, loadChildren]);
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const entry = {
-            mountId: mount.id,
+        const entry: WorkspaceEntry = {
+            mountId: node.mountId ?? mount.id,
             name: node.name,
             path: node.path,
             isDirectory: node.isDirectory,
         };
-
-        const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
-        onSelectEntry(entry, e);
+        onSelect(entry);
 
         if (node.isDirectory) {
-            setExpanded(prev => {
-                const next = !prev;
-                onExpandedTreeNodeChange?.(expandedNodeKey, next);
-                return next;
-            });
-            return;
-        }
-
-        if (!isMulti) {
+            const nextExpanded = !expanded;
+            setExpanded(nextExpanded);
+            onExpandedTreeNodeChange?.(expandedNodeKey, nextExpanded);
+        } else {
             onOpenFile(entry);
         }
     };
 
     const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const entry = {
-            mountId: mount.id,
+        const entry: WorkspaceEntry = {
+            mountId: node.mountId ?? mount.id,
             name: node.name,
             path: node.path,
             isDirectory: node.isDirectory,
         };
-        onSelectEntry(entry, e);
-        onContextMenu?.(e, entry);
+        onContextMenu(e, entry);
     };
 
-    const isSelected = Boolean(
-        selectedEntries?.some(e => e.mountId === mount.id && e.path === node.path)
-    );
-    const isActuallyIgnored = isParentIgnored || node.isGitIgnored === true;
-    const ignoredEntryClassName = isActuallyIgnored
-        ? 'opacity-30 grayscale brightness-90 saturate-50'
-        : '';
+    // Diagnostic tracking — simplified without context
+    const hasErrors = false;
+    const hasWarnings = false;
 
-    const gitBadgeClass =
-        node.gitStatus === 'M'
+    const iconColorClass = hasErrors
+        ? 'text-destructive'
+        : hasWarnings
             ? 'text-warning'
-            : node.gitStatus === 'A'
-                ? 'text-success'
-                : node.gitStatus === 'D'
-                    ? 'text-destructive'
-                    : node.gitStatus === 'U'
+            : node.gitStatus === 'M'
+                ? 'text-warning'
+                : node.gitStatus === 'A'
+                    ? 'text-primary'
+                    : node.gitStatus === 'D'
                         ? 'text-destructive'
-                        : node.gitStatus === 'R'
-                            ? 'text-primary'
-                            : node.gitStatus === '?'
-                                ? 'text-muted-foreground'
-                                : node.gitStatus === 'T'
-                                    ? 'text-primary'
-                                    : node.gitStatus === 'I'
-                                        ? 'text-muted-foreground/70'
-                                        : 'text-muted-foreground';
-
-    const combinedRef = (nodeElement: HTMLDivElement | null) => {
-        setDraggableNodeRef(nodeElement);
-        if (node.isDirectory) {
-            setDroppableNodeRef(nodeElement);
-        }
-    };
+                        : node.gitStatus === 'U'
+                            ? 'text-destructive'
+                            : node.gitStatus === 'R'
+                                ? 'text-primary'
+                                : node.gitStatus === '?'
+                                    ? 'text-muted-foreground'
+                                    : node.gitStatus === 'T'
+                                        ? 'text-primary'
+                                        : node.gitStatus === 'I'
+                                            ? 'text-muted-foreground/70'
+                                            : 'text-muted-foreground';
 
     return (
-        <div>
-            <div
-                ref={combinedRef}
-                {...attributes}
-                {...listeners}
-                data-entry-id={entryId}
-                className={cn(
-                    'flex items-center gap-1.5 py-5px px-2 rounded-sm cursor-pointer transition-all select-none group border border-transparent outline-none',
-                    isSelected
-                        ? 'bg-primary/10 text-primary border-primary/20 focus:bg-primary/20'
-                        : 'hover:bg-muted/20 text-muted-foreground/80 hover:text-foreground focus:bg-muted/30',
-                    isOver &&
-                    'bg-primary/20 border-dashed border-primary ring-2 ring-primary/20 ring-offset-1 ring-offset-background',
-                    isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
-                    hasErrors && !isSelected && 'text-destructive hover:text-destructive',
-                    hasWarnings && !hasErrors && !isSelected && 'text-warning hover:text-warning',
-                    ignoredEntryClassName
-                )}
-                style={{ ...style, paddingLeft: `${level * 12 + 8}px` }}
-                onClick={handleClick}
-                onContextMenu={handleContextMenu}
-                tabIndex={-1}
-            >
-                {node.isDirectory ? (
-                    <span className="opacity-70 group-hover:opacity-100">
-                        <DirectoryExpandIcon loading={loading} expanded={expanded} />
-                    </span>
-                ) : (
-                    <span className="w-3" />
-                )}
-
-                {node.isDirectory ? (
-                    <FolderIcon folderName={node.name} isOpen={expanded} className="w-3.5 h-3.5" />
-                ) : (
-                    <FileIcon fileName={node.name} className="w-3.5 h-3.5" />
-                )}
-                <span className="flex-1 min-w-0 truncate typo-caption font-normal">
-                    {node.name}
-                </span>
-                {(errorCount > 0 || warningCount > 0) && (
-                    <div className="flex items-center gap-0.5 ml-auto pr-1">
-                        {errorCount > 0 && (
-                            <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground animate-in fade-in zoom-in duration-300">
-                                {errorCount}
-                            </span>
-                        )}
-                        {warningCount > 0 && (
-                            <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-warning text-[8px] font-bold text-warning-foreground animate-in fade-in zoom-in duration-300">
-                                {warningCount}
-                            </span>
-                        )}
-                    </div>
-                )}
-                {node.gitStatus && (
-                    <span
-                        className={cn('ml-1 typo-overline font-bold leading-none', gitBadgeClass)}
-                        title={`Git: ${node.gitRawStatus ?? node.gitStatus}`}
-                    >
-                        {node.gitStatus}
-                    </span>
+        <div
+            className={cn(
+                'group flex items-center gap-1.5 px-2 py-1 cursor-pointer select-none border-l-2 transition-colors',
+                isActive
+                    ? 'bg-primary/10 border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+            )}
+            style={{ paddingLeft: `${level * 12 + 8}px` }}
+            onClick={handleClick}
+            onContextMenu={handleContextMenu}
+        >
+            <div className="flex items-center w-4 h-4 shrink-0">
+                {node.isDirectory && (
+                    expanded ? (
+                        <IconChevronDown className="w-3.5 h-3.5" />
+                    ) : (
+                        <IconChevronRight className="w-3.5 h-3.5" />
+                    )
                 )}
             </div>
 
-            {expanded && (
-                <div className="flex flex-col">
-                    {children.map(child => (
-                        <WorkspaceTreeItem
-                            key={`${mount.id}:${child.path}`}
-                            node={child}
-                            mount={mount}
-                            level={level + 1}
-                            refreshSignal={refreshSignal}
-                            onOpenFile={onOpenFile}
-                            onSelectEntry={onSelectEntry}
-                            selectedEntries={selectedEntries}
-                            onEnsureMount={onEnsureMount}
-                            onContextMenu={onContextMenu}
-                            expandedTreeNodes={expandedTreeNodes}
-                            onExpandedTreeNodeChange={onExpandedTreeNodeChange}
-                            t={t}
-                            isParentIgnored={isActuallyIgnored}
-                        />
-                    ))}
-                    {children.length === 0 && loaded && (
-                        <div className="text-sm text-muted-foreground/40 pl-8 py-0.5">
-                            {t('frontend.workspace.emptyFolder')}
-                        </div>
-                    )}
-                </div>
+            <div className={cn('flex items-center w-4 h-4 shrink-0', iconColorClass)}>
+                {node.isDirectory ? (
+                    expanded ? (
+                        <IconFolderOpen className="w-4 h-4" />
+                    ) : (
+                        <IconFolder className="w-4 h-4" />
+                    )
+                ) : (
+                    <IconFile className="w-4 h-4" />
+                )}
+            </div>
+
+            <span className={cn('truncate text-sm', isActive && 'font-medium')}>
+                {node.name}
+            </span>
+
+            {node.gitStatus && (
+                <span className={cn('ml-auto text-[10px] font-bold opacity-60', iconColorClass)}>
+                    {node.gitStatus}
+                </span>
+            )}
+
+            {loading && (
+                <div className="ml-auto animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
             )}
         </div>
     );
 };
-

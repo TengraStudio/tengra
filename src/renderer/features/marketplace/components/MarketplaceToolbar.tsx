@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import type { MarketplaceFilterValue, MarketplaceQueryState, MarketplaceSortValue, MarketplaceViewMode, ModelTab } from '../marketplace-query.types';
+import type { MarketplaceFilterValue, MarketplaceQueryState, MarketplaceSortValue } from '../marketplace-query.types';
 
 /* Batch-02: Extracted Long Classes */
 const C_MARKETPLACETOOLBAR_1 = "w-full bg-muted/30 rounded-xl px-12 py-2.5 text-sm focus:outline-none transition-all font-medium border border-transparent focus:border-primary/20 placeholder:text-muted-foreground/20";

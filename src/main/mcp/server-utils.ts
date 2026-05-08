@@ -65,11 +65,11 @@ interface LocalizedMcpError {
 
 export function wrap(
     handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult>,
-    serviceName: string,
-    actionName: string
+    _serviceName: string,
+    _actionName: string
 ): (args: JsonObject) => Promise<McpResult> {
     return async (args: JsonObject) => {
-        const startTime = Date.now();
+        const _startTime = Date.now();
         try {
             const rawResult = await Promise.resolve(handler(args));
             return normalizeResult(rawResult);

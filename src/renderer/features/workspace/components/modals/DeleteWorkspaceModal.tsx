@@ -29,7 +29,10 @@ interface DeleteWorkspaceModalProps {
 
 export const DeleteWorkspaceModal: React.FC<DeleteWorkspaceModalProps> = ({ workspace, onClose, onSubmit, t }) => {
     const [deleteFiles, setDeleteFiles] = React.useState(false);
-    React.useEffect(() => { if (!workspace) { setDeleteFiles(false); } }, [workspace]);
+    // Reset state when workspace is cleared to ensure it starts fresh next time
+    if (!workspace && deleteFiles) {
+        setDeleteFiles(false);
+    }
 
     return (
         <AnimatePresence>

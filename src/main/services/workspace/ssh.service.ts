@@ -13,7 +13,7 @@ import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { ipc, registerServiceIpc } from '@main/core/ipc-decorators';
+import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { SecurityService } from '@main/services/security/security.service';
 import { SSHKeyManager } from '@main/services/workspace/ssh-key-manager';
@@ -21,12 +21,10 @@ import { SSHProfileManager } from '@main/services/workspace/ssh-profile-manager'
 import { SSHSessionRecordingManager } from '@main/services/workspace/ssh-session-recording-manager';
 import { SSHTunnelManager } from '@main/services/workspace/ssh-tunnel-manager';
 import { validateCommand } from '@main/utils/command-validator.util';
-import { fileOpSchema,sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/utils/ipc-validation';
-import { isPathAllowed } from '@main/utils/path-security.util';
+import { fileOpSchema, sshConnectionSchema, sshProfileSchema } from '@main/utils/ipc-validation';
 import { withRetry } from '@main/utils/retry.util';
 import { SSH_CHANNELS } from '@shared/constants/ipc-channels';
-import { ServiceResponse } from '@shared/types';
-import { IpcValue, JsonValue, RuntimeValue } from '@shared/types/common';
+import { RuntimeValue } from '@shared/types/common';
 import { BrowserWindow, safeStorage } from 'electron';
 import { Client, ClientChannel } from 'ssh2';
 import { z } from 'zod';

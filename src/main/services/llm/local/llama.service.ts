@@ -699,7 +699,7 @@ export class LlamaService extends BaseService {
     async getModelsDirIpc(): Promise<string> {
         try {
             return this.getModelsDir();
-        } catch (e) {
+        } catch {
             return '';
         }
     }
@@ -864,7 +864,7 @@ export class LlamaService extends BaseService {
         try {
             this.config = this.resolveEffectiveConfig(config);
             return { success: true };
-        } catch (e) {
+        } catch {
             return { success: false };
         }
     }

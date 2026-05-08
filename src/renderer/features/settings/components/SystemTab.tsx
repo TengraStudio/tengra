@@ -109,25 +109,25 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     <SettingsToggleRow
                         title={t('frontend.general.startOnStartup')}
                         description={t('frontend.general.startOnStartupDesc')}
-                        control={<Switch checked={settings?.window?.startOnStartup ?? true} onCheckedChange={checked => updateWindow({ startOnStartup: checked })} />}
+                        control={<Switch checked={settings?.window?.startOnStartup ?? true} onCheckedChange={checked => { void updateWindow({ startOnStartup: checked }); }} />}
                         icon={IconPower}
                     />
                     <SettingsToggleRow
                         title={t('frontend.general.workAtBackground')}
                         description={t('frontend.general.workAtBackgroundDesc')}
-                        control={<Switch checked={settings?.window?.workAtBackground ?? true} onCheckedChange={checked => updateWindow({ workAtBackground: checked })} />}
+                        control={<Switch checked={settings?.window?.workAtBackground ?? true} onCheckedChange={checked => { void updateWindow({ workAtBackground: checked }); }} />}
                         icon={IconTerminal}
                     />
                     <SettingsToggleRow
                         title={t('frontend.settings.lowPowerMode')}
                         description={t('frontend.settings.lowPowerModeDescription')}
-                        control={<Switch checked={settings?.window?.lowPowerMode ?? true} onCheckedChange={checked => updateWindow({ lowPowerMode: checked })} />}
+                        control={<Switch checked={settings?.window?.lowPowerMode ?? true} onCheckedChange={checked => { void updateWindow({ lowPowerMode: checked }); }} />}
                         icon={IconBolt}
                     />
                     <SettingsToggleRow
                         title={t('frontend.settings.autoHibernation')}
                         description={t('frontend.settings.autoHibernationDescription')}
-                        control={<Switch checked={settings?.window?.autoHibernation ?? true} onCheckedChange={checked => updateWindow({ autoHibernation: checked })} />}
+                        control={<Switch checked={settings?.window?.autoHibernation ?? true} onCheckedChange={checked => { void updateWindow({ autoHibernation: checked }); }} />}
                         icon={IconShieldCheck}
                     />
                 </div>

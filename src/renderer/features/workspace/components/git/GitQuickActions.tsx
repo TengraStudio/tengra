@@ -40,7 +40,7 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
                 <Button
                     variant="outline"
                     className="flex-1 h-11 rounded-xl border-border/20 bg-background/40 hover:bg-muted/40 hover:border-indigo-500/30 transition-all font-semibold text-sm gap-2"
-                    onClick={() => handlePull()}
+                    onClick={() => { void handlePull(); }}
                     disabled={isPulling || !hasRemotes}
                 >
                     {isPulling ? <IconRefresh className="w-4 h-4 animate-spin" /> : <IconArrowDown className="w-4 h-4 text-indigo-400" />}
@@ -53,7 +53,7 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
                 <Button
                     variant="outline"
                     className="flex-1 h-11 rounded-xl border-border/20 bg-background/40 hover:bg-muted/40 hover:border-indigo-500/30 transition-all font-semibold text-sm gap-2"
-                    onClick={() => handlePush()}
+                    onClick={() => { void handlePush(); }}
                     disabled={isPushing || !hasRemotes}
                 >
                     {isPushing ? <IconRefresh className="w-4 h-4 animate-spin" /> : <IconArrowUp className="w-4 h-4 text-emerald-400" />}

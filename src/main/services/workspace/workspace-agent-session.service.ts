@@ -30,13 +30,13 @@ import type {
     CouncilRunConfig,
     CouncilSubagentRuntime,
     CouncilSubagentWorkspaceDraft,
-    WorkspaceAgentUsageStats,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSession,
     WorkspaceAgentSessionListResponse,
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionPersistence,
     WorkspaceAgentSessionSummary,
+    WorkspaceAgentUsageStats,
 } from '@shared/types/workspace-agent-session';
 import { WORKSPACE_AGENT_CHAT_TYPE } from '@shared/types/workspace-agent-session';
 import { estimateTokens } from '@shared/utils/token.util';

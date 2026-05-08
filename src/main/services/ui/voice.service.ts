@@ -15,7 +15,6 @@
 
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
-import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { withRetry } from '@main/utils/retry.util';
 import { VOICE_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonValue } from '@shared/types/common';

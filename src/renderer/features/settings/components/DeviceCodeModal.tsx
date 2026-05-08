@@ -43,7 +43,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
     onClose,
     userCode,
     verificationUri,
-    provider,
+    provider: _provider,
     status,
     errorMessage
 }) => {

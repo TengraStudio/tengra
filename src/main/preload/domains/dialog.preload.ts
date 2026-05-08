@@ -15,6 +15,7 @@ export interface DialogBridge {
     selectDirectory: () => Promise<{ success: boolean; path?: string; error?: string }>;
     showOpenDialog: (options: Electron.OpenDialogOptions) => Promise<{ success: boolean; filePaths?: string[]; path?: string; error?: string }>;
     saveFile: (options: { filename: string; content: string }) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+    showMessageBox: (options: Electron.MessageBoxOptions) => Promise<Electron.MessageBoxReturnValue>;
 }
 
 export function createDialogBridge(ipc: IpcRenderer): DialogBridge {
@@ -22,6 +23,7 @@ export function createDialogBridge(ipc: IpcRenderer): DialogBridge {
         selectDirectory: () => ipc.invoke(DIALOG_CHANNELS.SELECT_DIRECTORY),
         showOpenDialog: (options) => ipc.invoke(DIALOG_CHANNELS.SHOW_OPEN_DIALOG, options),
         saveFile: (options) => ipc.invoke(DIALOG_CHANNELS.SAVE_FILE, options),
+        showMessageBox: (options) => ipc.invoke(DIALOG_CHANNELS.SHOW_MESSAGE_BOX, options),
     };
 }
 

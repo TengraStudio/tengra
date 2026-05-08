@@ -205,7 +205,7 @@ export class PromptTemplatesService extends BaseService {
         if (typeof id !== 'string' || !variables || typeof variables !== 'object') {
             return serializeToIpc('');
         }
-        const result = await this.renderTemplate(id, variables);
+        const result = this.renderTemplate(id, variables);
         return serializeToIpc(result ?? '');
     }
 

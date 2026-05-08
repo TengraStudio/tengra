@@ -49,32 +49,40 @@ export class LocaleService extends BaseService {
         ];
 
         for (const sourceDir of possibleSourceDirs) {
-            try {
-                const files = await fs.readdir(sourceDir);
-                for (const fileName of files) {
-                    if (!fileName.endsWith(LOCALE_FILE_SUFFIX)) {
-                        continue;
-                    }
-                    const sourcePath = path.join(sourceDir, fileName);
-                    const targetPath = path.join(this.localesDir, fileName);
+            await this.syncLocaleDir(sourceDir);
+        }
+    }
 
-                    try {
-                        const [sourceBytes, targetBytes] = await Promise.all([
-                            fs.readFile(sourcePath),
-                            fs.readFile(targetPath).catch(() => null),
-                        ]);
-
-                        if (!targetBytes || !sourceBytes.equals(targetBytes)) {
-                            await fs.copyFile(sourcePath, targetPath);
-                            this.logInfo(`Synced locale ${fileName} from ${sourcePath}`);
-                        }
-                    } catch (error) {
-                        this.logWarn(`Failed to sync locale ${fileName}: ${getErrorMessage(error as Error)}`);
-                    }
+    private async syncLocaleDir(sourceDir: string): Promise<void> {
+        try {
+            const files = await fs.readdir(sourceDir);
+            for (const fileName of files) {
+                if (!fileName.endsWith(LOCALE_FILE_SUFFIX)) {
+                    continue;
                 }
-            } catch {
-                // Directory doesn't exist, skip
+                await this.syncLocaleFile(sourceDir, fileName);
             }
+        } catch {
+            // Directory doesn't exist, skip
+        }
+    }
+
+    private async syncLocaleFile(sourceDir: string, fileName: string): Promise<void> {
+        const sourcePath = path.join(sourceDir, fileName);
+        const targetPath = path.join(this.localesDir, fileName);
+
+        try {
+            const [sourceBytes, targetBytes] = await Promise.all([
+                fs.readFile(sourcePath),
+                fs.readFile(targetPath).catch(() => null),
+            ]);
+
+            if (!targetBytes || !sourceBytes.equals(targetBytes)) {
+                await fs.copyFile(sourcePath, targetPath);
+                this.logInfo(`Synced locale ${fileName} from ${sourcePath}`);
+            }
+        } catch (error) {
+            this.logWarn(`Failed to sync locale ${fileName}: ${getErrorMessage(error as Error)}`);
         }
     }
 

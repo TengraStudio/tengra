@@ -48,7 +48,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
 
     async cleanup(): Promise<void> {
         appLogger.info('ProcessManagerService', 'Cleaning up ProcessManagerService...');
-        await this.killAll(false);
+        this.killAll(false);
     }
 
     private getPortFileCandidates(name: string): string[] {

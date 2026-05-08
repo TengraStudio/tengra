@@ -104,7 +104,7 @@ export function useTerminalPreferenceActions({
                         'TerminalPanel',
                         `Theme validation failed: ${validationMessage}`
                     );
-                    alertDialog(t('frontend.terminal.invalidThemeFile'));
+                    void alertDialog(t('frontend.terminal.invalidThemeFile'));
                     return;
                 }
                 applyAppearancePatch(parsed as Partial<TerminalAppearancePreferences>);
@@ -114,7 +114,7 @@ export function useTerminalPreferenceActions({
                     'Failed to import terminal appearance preset',
                     error as Error
                 );
-                alertDialog(t('frontend.terminal.failedImportThemeInvalidJson'));
+                void alertDialog(t('frontend.terminal.failedImportThemeInvalidJson'));
             }
         },
         [applyAppearancePatch, t]

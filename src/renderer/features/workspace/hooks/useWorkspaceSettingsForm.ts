@@ -169,8 +169,10 @@ export const useWorkspaceSettingsForm = (
     );
 
     useEffect(() => {
-        setFormData(getInitialState(workspace));
-    }, [workspace.id]);
+        queueMicrotask(() => {
+            setFormData(getInitialState(workspace));
+        });
+    }, [workspace]);
 
     const isDirty = useMemo(() => checkIsDirty(formData, workspace), [formData, workspace]);
 

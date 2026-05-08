@@ -80,9 +80,13 @@ export const useWorkspaceWizardState = (isOpen: boolean): UseWorkspaceWizardStat
     }, []);
 
     React.useEffect(() => {
-        if (isOpen) {
-            resetWizardState();
+        if (!isOpen) {
+            return;
         }
+        const timer = window.setTimeout(() => {
+            resetWizardState();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [isOpen, resetWizardState]);
 
     return {

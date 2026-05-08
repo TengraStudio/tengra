@@ -23,7 +23,7 @@ import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { COLLABORATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { Message } from '@shared/types/chat';
-import { JsonObject, RuntimeValue } from '@shared/types/common';
+import { RuntimeValue } from '@shared/types/common';
 import { z } from 'zod';
 
 export interface CollaborationRequest {
@@ -165,7 +165,7 @@ export class ModelCollaborationService extends BaseService {
             }
             const stats = multiLLMOrchestrator.getProviderStats(provider);
             return serializeToIpc(stats ?? null);
-        } catch (error) {
+        } catch {
             return serializeToIpc({});
         }
     }
@@ -180,7 +180,7 @@ export class ModelCollaborationService extends BaseService {
                 return serializeToIpc(0);
             }
             return serializeToIpc(multiLLMOrchestrator.getActiveTaskCount(provider));
-        } catch (error) {
+        } catch {
             return serializeToIpc(0);
         }
     }

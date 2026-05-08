@@ -109,23 +109,34 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
 
     const summaryCacheKey = `${workspace.id}:${workspace.path}`;
 
-    useEffect(() => {
+    // Reset state when workspace changes
+    const [prevWorkspaceId, setPrevWorkspaceId] = useState(workspace.id);
+    if (workspace.id !== prevWorkspaceId) {
+        setPrevWorkspaceId(workspace.id);
         setWorkspaceRoot(workspace.path);
         setEditName(workspace.title);
         setEditDesc(workspace.description || '');
         setAnalysis(null);
         setStats(null);
-        setLoading(false);
+        queueMicrotask(() => {
+            setLoading(false);
+        });
+    }
+
+    useEffect(() => {
         analysisRef.current = null;
-    }, [workspace.description, workspace.id, workspace.path, workspace.title]);
+    }, [workspace.id]);
 
     useEffect(() => {
         analysisRef.current = analysis;
     }, [analysis]);
 
-    useEffect(() => {
+    // Adjust selected folder when selected entry changes
+    const [prevSelectedEntryPath, setPrevSelectedEntryPath] = useState(selectedEntry?.path);
+    if (selectedEntry?.path !== prevSelectedEntryPath) {
+        setPrevSelectedEntryPath(selectedEntry?.path);
         setSelectedFolder(selectedEntry?.isDirectory ? selectedEntry.path : null);
-    }, [selectedEntry]);
+    }
 
     const handleSearch = async () => {
         if (searchQuery.trim().length < 2) { return; }
@@ -194,7 +205,9 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         if (activeTab !== 'overview' || analysis) {
             return;
         }
-        void loadWorkspaceSummary();
+        queueMicrotask(() => {
+            void loadWorkspaceSummary();
+        });
     }, [activeTab, analysis, loadWorkspaceSummary]);
 
     useVisibilityAwareInterval(() => {
@@ -203,7 +216,7 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         }
     }, WORKSPACE_ANALYSIS_REFRESH_INTERVAL_MS);
 
-    const handleFileSelect = async (path: string, line?: number) => {
+    const handleFileSelect = useCallback(async (path: string, line?: number) => {
         if (onOpenFile) { return onOpenFile(path, line); }
         if (openFiles.find(f => f.path === path)) {
             setActiveFile(path);
@@ -220,9 +233,9 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         } catch (error) {
             appLogger.error('WorkspaceDashboard', 'Failed to open file', error as Error);
         }
-    };
+    }, [onOpenFile, openFiles, setActiveTab]);
 
-    const handleDiffSelect = async (path: string, diffId?: string) => {
+    const handleDiffSelect = useCallback(async (path: string, diffId?: string) => {
         try {
             const diff = diffId ? await window.electron.workspace.getFileDiff(diffId) : null;
             if (!diff) {
@@ -256,7 +269,7 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
             // Fallback to normal file select
             void handleFileSelect(path);
         }
-    };
+    }, [handleFileSelect, openFiles, setActiveTab]);
 
     useEffect(() => {
         const handler = (event: Event) => {

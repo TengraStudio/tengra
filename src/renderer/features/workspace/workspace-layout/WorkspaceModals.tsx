@@ -78,16 +78,6 @@ const EditWorkspaceModal: React.FC<{
     const [isSaving, setIsSaving] = React.useState(false);
     const rollbackRef = React.useRef(form);
 
-    React.useEffect(() => {
-        if (workspace) {
-            rollbackRef.current = {
-                title: workspace.title,
-                description: workspace.description,
-            };
-            setIsSaving(false);
-        }
-    }, [workspace]);
-
     const handleSubmit = async () => {
         if (!hasValidTitle || isSaving) {
             return;
@@ -176,11 +166,6 @@ const DeleteWorkspaceModal: React.FC<{
     t: (key: string) => string;
 }> = ({ workspace, onClose, onSubmit, t }) => {
     const [deleteFiles, setDeleteFiles] = React.useState(false);
-    React.useEffect(() => {
-        if (!workspace) {
-            setDeleteFiles(false);
-        }
-    }, [workspace]);
 
     return (
         <AnimatePresence>
@@ -334,11 +319,6 @@ const BulkDeleteModal: React.FC<{
     t: (key: string) => string;
 }> = ({ isOpen, count, onClose, onSubmit, t }) => {
     const [deleteFiles, setDeleteFiles] = React.useState(false);
-    React.useEffect(() => {
-        if (!isOpen) {
-            setDeleteFiles(false);
-        }
-    }, [isOpen]);
 
     return (
         <AnimatePresence>
@@ -435,6 +415,7 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
 }) => (
     <>
         <EditWorkspaceModal
+            key={editingWorkspace?.id ?? 'edit-empty'}
             workspace={editingWorkspace}
             onClose={() => setEditingWorkspace(null)}
             form={editForm}
@@ -443,6 +424,7 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
             t={t}
         />
         <DeleteWorkspaceModal
+            key={deletingWorkspace?.id ?? 'delete-empty'}
             workspace={deletingWorkspace}
             onClose={() => setDeletingWorkspace(null)}
             onSubmit={handleDeleteWorkspace}
@@ -455,6 +437,7 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
             t={t}
         />
         <BulkArchiveModal
+            key={isBulkArchiving ? 'bulk-archive-open' : 'bulk-archive-closed'}
             isOpen={isBulkArchiving}
             count={selectedCount}
             mode={bulkArchiveMode}
@@ -463,6 +446,7 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
             t={t}
         />
         <BulkDeleteModal
+            key={isBulkDeleting ? 'bulk-delete-open' : 'bulk-delete-closed'}
             isOpen={isBulkDeleting}
             count={selectedCount}
             onClose={() => setIsBulkDeleting(false)}

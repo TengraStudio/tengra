@@ -31,7 +31,6 @@ import {
 } from './MessageBubbleContent.util';
 import { MessageFooter } from './MessageFooter';
 import { MessageImages } from './MessageImages';
-import { MessageSources } from './MessageSources';
 import { PlanSection } from './PlanSection';
 import { RawToggle } from './RawToggle';
 import { ResponseProgress } from './ResponseProgress';
@@ -113,14 +112,14 @@ function readThoughtSegments(message: Message): string[] {
 
 interface BubbleContentSectionProps {
     contentProps: MessageBubbleContentProps;
-    message: Message;
+    _message: Message;
     showToggle: boolean;
     setShowRawMarkdown: (val: boolean) => void;
     t: TranslationFn;
 }
 
 const BubbleContentSection = memo(
-    ({ contentProps, message, showToggle, setShowRawMarkdown, t }: BubbleContentSectionProps) => {
+    ({ contentProps, _message, showToggle, setShowRawMarkdown, t }: BubbleContentSectionProps) => {
         // Sources removed as per user request
 
         return (
@@ -174,14 +173,6 @@ type ToolActivityLine = {
     terminal?: TerminalCardData;
 };
 
-function basename(pathValue: string): string {
-    const trimmed = pathValue.trim();
-    if (!trimmed) {
-        return trimmed;
-    }
-    return trimmed.split(/[\\/]/).pop() || trimmed;
-}
-
 type FileChangeItem = {
     path: string;
     displayPath: string;
@@ -222,60 +213,6 @@ function extractDiffStats(value: unknown): { additions: number; deletions: numbe
         return null;
     }
     return { additions, deletions };
-}
-
-function extractStringField(value: unknown, key: string): string {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        return '';
-    }
-    const record = value as Record<string, unknown>;
-    const v = record[key];
-    return typeof v === 'string' ? v : '';
-}
-
-function extractNumberField(value: unknown, key: string): number | null {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        return null;
-    }
-    const record = value as Record<string, unknown>;
-    const v = record[key];
-    return typeof v === 'number' && Number.isFinite(v) ? v : null;
-}
-
-function extractTerminalOutput(value: unknown): string {
-    // Different providers/tools return terminal text under different keys.
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        return '';
-    }
-    const record = value as Record<string, unknown>;
-
-    const direct =
-        extractStringField(record, 'output')
-        || extractStringField(record, 'stdout')
-        || '';
-
-    const stderr = extractStringField(record, 'stderr');
-    if (direct || stderr) {
-        return [direct, stderr].filter(Boolean).join(direct && stderr ? '\n' : '');
-    }
-
-    // Some IPC responses wrap payload as { data/result/content: { ... } }
-    const nested = record.data ?? record.result ?? record.content;
-    if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
-        const n = nested as Record<string, unknown>;
-        const nestedOut =
-            extractStringField(n, 'output')
-            || extractStringField(n, 'stdout')
-            || '';
-        const nestedErr = extractStringField(n, 'stderr');
-        if (nestedOut || nestedErr) {
-            return [nestedOut, nestedErr].filter(Boolean).join(nestedOut && nestedErr ? '\n' : '');
-        }
-    }
-
-    // Don't fall back to "message" here. Many terminal tools include a generic
-    // status message (e.g. "session is persistent") which is not command output.
-    return '';
 }
 
 function extractFileChanges(message: Message): FileChangeItem[] {
@@ -389,7 +326,9 @@ const TerminalToolCard = memo(({
                     )}
                     <button
                         type="button"
-                        onClick={onCopy}
+                        onClick={() => {
+                            void onCopy();
+                        }}
                         className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/20"
                         aria-label="Copy command"
                     >
@@ -416,29 +355,6 @@ const TerminalToolCard = memo(({
 
 TerminalToolCard.displayName = 'TerminalToolCard';
 
-function getToolArgsPaths(args: Record<string, JsonValue>): string[] {
-    const paths: string[] = [];
-    if (Array.isArray(args.files)) {
-        for (const entry of args.files) {
-            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-                continue;
-            }
-            const record = entry as Record<string, JsonValue>;
-            const p = typeof record.path === 'string' ? record.path : (typeof record.file === 'string' ? record.file : '');
-            if (p.trim().length > 0) {
-                paths.push(p);
-            }
-        }
-    }
-    const direct = typeof args.path === 'string'
-        ? args.path
-        : (typeof args.file === 'string' ? args.file : '');
-    if (direct.trim().length > 0) {
-        paths.push(direct);
-    }
-    return Array.from(new Set(paths));
-}
-
 function readToolErrorText(toolResult?: ToolResult): string {
     if (!toolResult) {
         return '';
@@ -456,308 +372,112 @@ function readToolErrorText(toolResult?: ToolResult): string {
     return '';
 }
 
+function buildToolLine(
+    key: string,
+    text: string,
+    status: ToolLineStatus,
+    action?: ToolActivityAction
+): ToolActivityLine {
+    return action ? { key, text, status, action } : { key, text, status };
+}
+
 function buildToolActivityLines(
     toolCall: ToolCallView,
     toolResult: ToolResult | undefined,
     isExecuting: boolean
 ): ToolActivityLine[] {
-    const name = toolCall.name;
-    const args = toolCall.arguments ?? {};
     const errorText = readToolErrorText(toolResult);
     const status: ToolLineStatus = isExecuting ? 'running' : (errorText ? 'failed' : 'completed');
-
-    // Providers use slightly different naming conventions (e.g. mcp_filesystem_list vs filesystem__list).
-    const isFsWrite =
-        name.includes('filesystem__write')
-        || name.includes('filesystem_write')
-        || name.includes('mcp_filesystem_write')
-        || name === 'write_file'
-        || name === 'write_files';
-    const isFsRead =
-        name.includes('filesystem__read')
-        || name.includes('filesystem_read')
-        || name.includes('mcp_filesystem_read')
-        || name === 'read_file';
-    const isFsList =
-        name.includes('filesystem__list')
-        || name.includes('filesystem_list')
-        || name.includes('mcp_filesystem_list')
-        || name === 'list_directory'
-        || name === 'list_dir';
-    const isSearch = name.includes('search') && !name.includes('web');
-    const isCmd =
-        name.includes('terminal__run_command')
-        || name.includes('terminal_run_command')
-        || name.includes('mcp_terminal_run_command')
-        || name === 'execute_command';
-    const isPatch = name === 'patch_file' || name === 'edit_file';
-
-    const isFsMkdir =
-        name.includes('create_directory')
-        || name.includes('filesystem__create_directory')
-        || name.includes('mcp_filesystem_create_directory');
-    const isFsDeleteFile =
-        name.includes('delete_file')
-        || name.includes('filesystem__delete_file')
-        || name.includes('mcp_filesystem_delete_file');
-    const isFsDeleteDir =
-        name.includes('delete_directory')
-        || name.includes('filesystem__delete_directory')
-        || name.includes('mcp_filesystem_delete_directory');
-    const isFsRename =
-        name.includes('rename_path')
-        || name.includes('filesystem__rename_path')
-        || name.includes('mcp_filesystem_rename_path');
-    const isFsCopy =
-        name.includes('copy_path')
-        || name.includes('filesystem__copy_path')
-        || name.includes('mcp_filesystem_copy_path');
-    const isFsExists =
-        name.includes('exists')
-        || name.includes('filesystem__exists')
-        || name.includes('mcp_filesystem_exists');
-
-    if (isFsWrite) {
-        const paths = getToolArgsPaths(args).filter(Boolean);
-        if (paths.length === 0) {
-            return [{ key: toolCall.id, text: status === 'running' ? 'Creating file(s)...' : 'Created file(s)', status }];
-        }
-        const verb = status === 'running' ? 'Write' : status === 'failed' ? 'Failed to write' : 'Wrote';
-        return paths.map((p, i) => ({
-            key: `${toolCall.id}:${i}`,
-            text: `${verb} file ${toDisplayPath(p)}${status === 'failed' && errorText ? ` — ${errorText}` : ''}`,
-            status,
-            action: status === 'failed' ? undefined : { type: 'open_file', path: p, readOnly: true },
-        }));
-    }
-
-    if (isFsRead) {
-        const pathValue = typeof args.path === 'string' ? args.path : (typeof args.file === 'string' ? args.file : '');
-        const displayPath = pathValue ? toDisplayPath(pathValue) : 'file';
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        return [{
-            key: toolCall.id,
-            text: `Read file ${displayPath}${suffix}`,
-            status,
-            action: status === 'failed' || !pathValue ? undefined : { type: 'open_file', path: pathValue, readOnly: true },
-        }];
-    }
-
-    if (isFsList) {
-        const argPath = typeof args.path === 'string' ? args.path : '';
-        const folderName = basename(argPath || '');
-        if (status === 'running') {
-            return [{ key: toolCall.id, text: `Exploring ${folderName || 'folder'}`, status }];
-        }
-        const payload = toolResult?.result;
-        const basePath = payload && typeof payload === 'object' && !Array.isArray(payload)
-            ? (typeof (payload as Record<string, unknown>).path === 'string' ? (payload as Record<string, unknown>).path as string : '')
-            : '';
-        const entries = payload && typeof payload === 'object' && !Array.isArray(payload) && Array.isArray((payload as Record<string, unknown>).entries)
-            ? ((payload as Record<string, unknown>).entries as unknown[])
-            : [];
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        const baseName = (basePath || argPath || '').split(/[\\/]/).pop() || '';
-        return [{
-            key: toolCall.id,
-            text: `${status === 'failed' ? 'Failed' : 'Found'} ${entries.length} item(s) in ${baseName || 'folder'} folder${suffix}`,
-            status,
-        }];
-    }
-
-    if (isFsMkdir) {
-        const pathValue = typeof args.path === 'string' ? args.path : '';
-        const folderName = (pathValue || '').split(/[\\/]/).pop() || '';
-        const verb = status === 'running' ? 'Creating' : status === 'failed' ? 'Failed' : 'Created';
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        return [{
-            key: toolCall.id,
-            text: `${verb} folder: ${folderName || 'folder'}${suffix}`,
-            status,
-        }];
-    }
-
-    if (isFsDeleteFile || isFsDeleteDir) {
-        const pathValue = typeof args.path === 'string' ? args.path : '';
-        const nameValue = (pathValue || '').split(/[\\/]/).pop() || '';
-        const noun = isFsDeleteDir ? 'folder' : 'file';
-        const verb = status === 'running' ? 'Deleting' : status === 'failed' ? 'Failed' : 'Deleted';
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        return [{
-            key: toolCall.id,
-            text: `${verb} ${noun}: ${nameValue || noun}${suffix}`,
-            status,
-        }];
-    }
-
-    if (isFsRename) {
-        const oldPath = typeof (args as Record<string, JsonValue>).oldPath === 'string' ? String((args as Record<string, JsonValue>).oldPath) : '';
-        const newPath = typeof (args as Record<string, JsonValue>).newPath === 'string' ? String((args as Record<string, JsonValue>).newPath) : '';
-        const fromName = (oldPath || '').split(/[\\/]/).pop() || '';
-        const toName = (newPath || '').split(/[\\/]/).pop() || '';
-        const verb = status === 'running' ? 'Renaming' : status === 'failed' ? 'Failed' : 'Renamed';
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        return [{
-            key: toolCall.id,
-            text: `${verb}: ${fromName || 'item'} → ${toName || 'item'}${suffix}`,
-            status,
-        }];
-    }
-
-    if (isFsCopy) {
-        const sourcePath = typeof (args as Record<string, JsonValue>).sourcePath === 'string' ? String((args as Record<string, JsonValue>).sourcePath) : '';
-        const destinationPath = typeof (args as Record<string, JsonValue>).destinationPath === 'string' ? String((args as Record<string, JsonValue>).destinationPath) : '';
-        const fromName = basename(sourcePath || '');
-        const toName = basename(destinationPath || '');
-        const verb = status === 'running' ? 'Copying' : status === 'failed' ? 'Failed' : 'Copied';
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        return [{
-            key: toolCall.id,
-            text: `${verb}: ${fromName || 'item'} → ${toName || 'item'}${suffix}`,
-            status,
-        }];
-    }
-
-    if (isFsExists) {
-        const pathValue = typeof args.path === 'string' ? args.path : '';
-        const nameValue = basename(pathValue || '');
-        const verb = status === 'running' ? 'Checking' : status === 'failed' ? 'Failed' : 'Checked';
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        return [{
-            key: toolCall.id,
-            text: `${verb}: ${nameValue || 'path'}${suffix}`,
-            status,
-        }];
-    }
-
-    if (isSearch) {
-        if (status === 'running') {
-            return [{ key: toolCall.id, text: 'Searching files...', status }];
-        }
-        const payload = toolResult?.result;
-        const results = payload && typeof payload === 'object' && !Array.isArray(payload) && Array.isArray((payload as Record<string, unknown>).results)
-            ? ((payload as Record<string, unknown>).results as unknown[])
-            : [];
-        if (results.length === 0) {
-            const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-            return [{ key: toolCall.id, text: `${status === 'failed' ? 'Failed' : 'No results'}${suffix}`.trim(), status }];
-        }
-        return [{
-            key: toolCall.id,
-            text: `Found ${results.length} result(s)`,
-            status,
-        }];
-    }
-
-    if (isPatch) {
-        const pathValue = typeof args.path === 'string' ? args.path : (typeof args.file === 'string' ? args.file : '');
-        const displayPath = pathValue ? toDisplayPath(pathValue) : 'file';
-        const verb = status === 'running' ? 'Patch' : status === 'failed' ? 'Failed to patch' : 'Patched';
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        const diffId = (() => {
-            const payload = toolResult?.result;
-            if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-                const d = (payload as Record<string, unknown>).diffId;
-                return typeof d === 'string' ? d : undefined;
-            }
-            return undefined;
-        })();
-
-        return [{
-            key: toolCall.id,
-            text: `${verb} file ${displayPath}${suffix}`,
-            status,
-            action: status === 'failed' || !pathValue ? undefined : { type: 'open_diff', path: pathValue, diffId },
-        }];
-    }
-
-    if (isCmd) {
-        const cmd = typeof args.command === 'string' ? args.command.trim() : '';
-        const base = cmd.length > 0 ? cmd.split(/\s+/)[0] : 'command';
-        if (status === 'running') {
-            return [{ key: toolCall.id, text: `Running ${base}`, status }];
-        }
-        const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-        return [{ key: toolCall.id, text: `${status === 'failed' ? 'Failed' : 'Ran'} ${base}${suffix}`, status }];
-    }
-
+    const prettyName = toolCall.name.replace(/__/g, ' ').replace(/_/g, ' ').trim() || 'tool';
+    const prefix = status === 'running' ? 'Running' : status === 'failed' ? 'Failed' : 'Completed';
     const suffix = status === 'failed' && errorText ? ` — ${errorText}` : '';
-    const categoryKey = (() => {
-        const lower = name.toLowerCase();
-        const argKeys = Object.keys(args ?? {});
-
-        // 1) Name-based classification (fast path)
-        if (lower.includes('filesystem')) { return 'files'; }
-        if (lower.includes('terminal')) { return 'command'; }
-        if (lower.includes('git')) { return 'git'; }
-        if (lower.includes('clipboard')) { return 'clipboard'; }
-        if (lower.includes('web')) { return 'web'; }
-        if (lower.includes('screenshot') || lower.includes('capture')) { return 'screenshot'; }
-        if (lower.includes('workspace')) { return 'workspace'; }
-        if (lower.includes('process')) { return 'process'; }
-        if (lower.includes('performance')) { return 'performance'; }
-        if (lower.includes('system')) { return 'system'; }
-        if (lower.includes('proxy')) { return 'proxy'; }
-
-        // 2) Args-based heuristics (covers providers that omit "filesystem/terminal" in tool names)
-        if (argKeys.some(k => k.toLowerCase() === 'command' || k.toLowerCase() === 'cmd')) { return 'command'; }
-        if (argKeys.some(k => k.toLowerCase() === 'cwd')) { return 'command'; }
-        if (argKeys.some(k => ['path', 'file', 'files', 'oldpath', 'newpath', 'sourcepath', 'destinationpath'].includes(k.toLowerCase()))) {
-            return 'files';
-        }
-        if (argKeys.some(k => ['url', 'href', 'query'].includes(k.toLowerCase()))) { return 'web'; }
-
-        return 'background';
-    })();
-
-    const friendly = (() => {
-        const lower = name.toLowerCase();
-        if (categoryKey === 'system') {
-            if (lower.includes('env')) { return 'Checked environment'; }
-            if (lower.includes('gpu')) { return 'Checked graphics'; }
-            if (lower.includes('health')) { return 'Checked health'; }
-            if (lower.includes('info')) { return 'Checked computer info'; }
-            return 'Checked computer';
-        }
-        if (categoryKey === 'process') {
-            if (lower.includes('spawn')) { return 'Started a task'; }
-            if (lower.includes('kill')) { return 'Stopped a task'; }
-            if (lower.includes('list')) { return 'Checked running tasks'; }
-            return 'Checked running tasks';
-        }
-
-        switch (categoryKey) {
-            case 'files':
-                return 'File updated';
-            case 'command':
-                return 'Command ran';
-            case 'git':
-                return 'Checked changes';
-            case 'clipboard':
-                return 'Copied';
-            case 'web':
-                return 'Checked web';
-            case 'screenshot':
-                return 'Captured screenshot';
-            case 'workspace':
-                return 'Checked project';
-            case 'performance':
-                return 'Checked performance';
-            case 'proxy':
-                return 'Synced service';
-            default:
-                return 'Background task finished';
-        }
-    })();
-
-    const text = status === 'running'
-        ? 'Working in background…'
-        : status === 'failed'
-            ? `Failed: ${friendly}${suffix}`
-            : `${friendly}${suffix}`;
-
-    return [{ key: toolCall.id, text, status }];
+    return [buildToolLine(toolCall.id, `${prefix} ${prettyName}${suffix}`, status)];
 }
+
+type ThoughtTimelineEntry = {
+    idx: number;
+    thoughtText: string;
+    expanded: boolean;
+    header: string;
+    lines: ToolActivityLine[];
+};
+
+function getThoughtStatusDot(lines: ToolActivityLine[]): string {
+    const hasRunning = lines.some(line => line.status === 'running');
+    if (hasRunning) {
+        return 'bg-primary/70';
+    }
+    const hasFailed = lines.some(line => line.status === 'failed');
+    return hasFailed ? 'bg-destructive/70' : 'bg-muted-foreground/60';
+}
+
+function renderThoughtActivityLine(line: ToolActivityLine): React.ReactNode {
+    return (
+        <div key={line.key} className="flex items-start gap-2 text-sm text-foreground/80">
+            <span
+                className={cn(
+                    'mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0',
+                    line.status === 'running'
+                        ? 'bg-primary/70'
+                        : line.status === 'failed'
+                            ? 'bg-destructive/70'
+                            : 'bg-muted-foreground/60'
+                )}
+            />
+            <div className="min-w-0 break-words">{line.text ?? ''}</div>
+        </div>
+    );
+}
+
+const ThoughtTimelineItem = memo(({
+    entry,
+    onToggle,
+    t,
+}: {
+    entry: ThoughtTimelineEntry;
+    onToggle: (idx: number) => void;
+    t: TranslationFn;
+}) => {
+    const { idx, thoughtText, expanded, header, lines } = entry;
+    const statusDot = getThoughtStatusDot(lines);
+
+    return (
+        <div className="w-full">
+            <button
+                type="button"
+                onClick={() => onToggle(idx)}
+                className={cn(
+                    'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
+                    expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
+                )}
+                aria-label={expanded ? t('frontend.chat.collapse') : t('frontend.chat.expand')}
+            >
+                <div className="flex min-w-0 items-center gap-2">
+                    <span className={cn('h-2 w-2 rounded-full', statusDot)} />
+                    <div className="truncate text-sm font-medium text-foreground/90">{header}</div>
+                </div>
+                <IconChevronDown className={cn('h-4 w-4 text-muted-foreground/60 transition-transform', expanded && 'rotate-180')} />
+            </button>
+
+            {expanded && (
+                <div className="px-3 pb-2 pt-2 space-y-2">
+                    {thoughtText.trim().length > 0 && (
+                        <div className="text-sm leading-relaxed text-foreground/85">
+                            <MarkdownContent content={thoughtText} t={t} />
+                        </div>
+                    )}
+                    {lines.length > 0 && (
+                        <div className="space-y-1">
+                            {lines.map(renderThoughtActivityLine)}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+
+ThoughtTimelineItem.displayName = 'ThoughtTimelineItem';
 
 const ThoughtTimeline = memo(({
     message,
@@ -770,22 +490,21 @@ const ThoughtTimeline = memo(({
     isLast: boolean;
     t: TranslationFn;
 }) => {
-    const toolCalls = buildToolCalls(message);
-    const toolResultMap = buildToolResultMap(message);
     const thoughts = readThoughtSegments(message);
-    const hasUnscopedToolCalls = toolCalls.some(tc => typeof tc.thoughtIndex !== 'number');
-
-    const maxThoughtIndex = Math.max(
-        thoughts.length - 1,
-        hasUnscopedToolCalls ? 0 : -1,
-        ...toolCalls.map(tc => (typeof tc.thoughtIndex === 'number' ? tc.thoughtIndex : -1))
+    const toolCalls = buildToolCalls(message);
+    const toolResultMap = useMemo(() => buildToolResultMap(message), [message]);
+    const maxThoughtIndex = useMemo(
+        () => Math.max(
+            thoughts.length - 1,
+            toolCalls.length === 0 ? -1 : 0,
+            ...toolCalls.map(tc => (typeof tc.thoughtIndex === 'number' ? tc.thoughtIndex : -1))
+        ),
+        [thoughts.length, toolCalls]
     );
 
     const [expandedMap, setExpandedMap] = useState<Record<number, boolean>>({});
     const [inferredToolThoughtMap, setInferredToolThoughtMap] = useState<Record<string, number>>({});
 
-    // Assign tools (without explicit thoughtIndex) to the current thought *once*,
-    // so they don't "jump" to the last thought when new thought blocks arrive.
     useEffect(() => {
         if (toolCalls.length === 0) {
             return;
@@ -794,14 +513,11 @@ const ThoughtTimeline = memo(({
         setInferredToolThoughtMap(prev => {
             let changed = false;
             const next = { ...prev };
-            for (const tc of toolCalls) {
-                if (typeof tc.thoughtIndex === 'number') {
+            for (const toolCall of toolCalls) {
+                if (typeof toolCall.thoughtIndex === 'number' || next[toolCall.id] !== undefined) {
                     continue;
                 }
-                if (next[tc.id] !== undefined) {
-                    continue;
-                }
-                next[tc.id] = currentThoughtIndex;
+                next[toolCall.id] = currentThoughtIndex;
                 changed = true;
             }
             return changed ? next : prev;
@@ -810,8 +526,6 @@ const ThoughtTimeline = memo(({
 
     useEffect(() => {
         const latest = Math.max(0, maxThoughtIndex);
-
-        // While streaming the last message, keep only the newest thought open.
         if (isStreaming && isLast) {
             setExpandedMap(() => {
                 const next: Record<number, boolean> = {};
@@ -822,8 +536,6 @@ const ThoughtTimeline = memo(({
             });
             return;
         }
-
-        // Once the last message is done, collapse all thoughts by default.
         if (!isStreaming && isLast) {
             setExpandedMap(() => {
                 const next: Record<number, boolean> = {};
@@ -835,232 +547,76 @@ const ThoughtTimeline = memo(({
         }
     }, [isStreaming, isLast, maxThoughtIndex]);
 
+    const entries = useMemo(() => {
+        if (maxThoughtIndex < 0) {
+            return [] as ThoughtTimelineEntry[];
+        }
+
+        const entriesForThoughts: ThoughtTimelineEntry[] = [];
+        for (let idx = 0; idx <= maxThoughtIndex; idx += 1) {
+            const thoughtText = thoughts[idx] ?? '';
+            const expanded = Boolean(expandedMap[idx] ?? true);
+            const headerBase = thoughtText.trim().length > 0
+                ? t('frontend.workspaceAgent.thoughtStep', { index: idx + 1 })
+                : t('frontend.chat.usingTool');
+            const durationSuffix = typeof message.responseTime === 'number' && Number.isFinite(message.responseTime)
+                ? ` • ${(message.responseTime / 1000).toFixed(1)}${t('frontend.messageBubble.secondsShort')}`
+                : '';
+            const header = `${headerBase}${durationSuffix}`;
+
+            const lines: ToolActivityLine[] = [];
+            const toolCallsForThought = toolCalls.filter(toolCall => {
+                const thoughtIndex = typeof toolCall.thoughtIndex === 'number'
+                    ? toolCall.thoughtIndex
+                    : (inferredToolThoughtMap[toolCall.id] ?? Math.max(0, thoughts.length - 1));
+                return thoughtIndex === idx;
+            });
+
+            for (const toolCall of toolCallsForThought) {
+                const result = toolResultMap.get(toolCall.id);
+                const executing = Boolean(isStreaming) && !toolResultMap.has(toolCall.id);
+                lines.push(...buildToolActivityLines(toolCall, result, executing));
+            }
+
+            if (thoughtText.trim().length === 0 && lines.length === 0) {
+                continue;
+            }
+
+            entriesForThoughts.push({
+                idx,
+                thoughtText,
+                expanded,
+                header,
+                lines,
+            });
+        }
+
+        return entriesForThoughts;
+    }, [expandedMap, inferredToolThoughtMap, isStreaming, maxThoughtIndex, message.responseTime, t, thoughts, toolCalls, toolResultMap]);
+
     if (maxThoughtIndex < 0) {
         return null;
     }
 
     return (
         <div className="w-full my-2 space-y-2">
-            {Array.from({ length: maxThoughtIndex + 1 }).map((_, idx) => {
-                const thoughtText = thoughts[idx] ?? '';
-                const expanded = Boolean(expandedMap[idx] ?? true);
-                const headerBase = thoughtText.trim().length > 0
-                    ? t('frontend.workspaceAgent.thoughtStep', { index: idx + 1 })
-                    : t('frontend.chat.usingTool');
-                const durationSuffix = typeof message.responseTime === 'number' && Number.isFinite(message.responseTime)
-                    ? ` • ${(message.responseTime / 1000).toFixed(1)}${t('frontend.messageBubble.secondsShort')}`
-                    : '';
-                const header = `${headerBase}${durationSuffix}`;
-
-                const lines: ToolActivityLine[] = [];
-
-                // Build per-thought tool lines with a small amount of aggregation for terminal commands.
-                const terminalSessionMeta = new Map<string, { cwd: string }>();
-                const terminalBlocksBySession = new Map<string, TerminalCardData>();
-
-                const toolCallsForThought = toolCalls.filter(toolCall => {
-                    const thoughtIndex = typeof toolCall.thoughtIndex === 'number'
-                        ? toolCall.thoughtIndex
-                        : (inferredToolThoughtMap[toolCall.id] ?? Math.max(0, thoughts.length - 1));
-                    return thoughtIndex === idx;
-                });
-
-                for (const toolCall of toolCallsForThought) {
-                    const result = toolResultMap.get(toolCall.id);
-                    const executing = Boolean(isStreaming) && !toolResultMap.has(toolCall.id);
-                    const name = toolCall.name;
-                    const args = toolCall.arguments ?? {};
-
-                    // --- Terminal (fake terminal UI) ---
-                    if (name === 'terminal_session_start') {
-                        const sessionId = typeof args.sessionId === 'string' ? args.sessionId : '';
-                        const cwd = typeof args.cwd === 'string' ? args.cwd : '';
-                        if (sessionId) {
-                            terminalSessionMeta.set(sessionId, { cwd: cwd || '.' });
-                        }
-                        continue; // Don't show a line for session start.
-                    }
-
-                    if (name === 'terminal_session_write') {
-                        const sessionId = typeof args.sessionId === 'string' ? args.sessionId : '';
-                        const input = typeof args.input === 'string' ? args.input : '';
-                        const inputKind = args.inputKind === 'input' ? 'input' : 'command';
-                        if (sessionId && inputKind === 'command' && input.trim().length > 0) {
-                            const cwd = terminalSessionMeta.get(sessionId)?.cwd ?? '.';
-                            const card: TerminalCardData = {
-                                kind: 'terminal',
-                                title: executing ? 'Running background command' : 'Ran background command',
-                                cwd,
-                                command: input.trim(),
-                                output: '',
-                                exitCode: null,
-                            };
-                            terminalBlocksBySession.set(sessionId, card);
-                            lines.push({ key: toolCall.id, status: executing ? 'running' : (result?.success === false ? 'failed' : 'completed'), terminal: card });
-                            continue;
-                        }
-                        // Non-command input: keep minimal.
-                        continue;
-                    }
-
-                    if (name === 'terminal_session_wait' || name === 'terminal_session_read') {
-                        const sessionId = typeof args.sessionId === 'string' ? args.sessionId : '';
-                        const payload = result?.result;
-                        const output = extractTerminalOutput(payload);
-                        const exitCode = extractNumberField(payload, 'exitCode');
-                        const cwd = terminalSessionMeta.get(sessionId)?.cwd ?? '.';
-                        if (sessionId) {
-                            const existing = terminalBlocksBySession.get(sessionId);
-                            if (existing) {
-                                if (output.trim().length > 0) {
-                                    existing.output = output;
-                                }
-                                if (typeof exitCode === 'number') {
-                                    existing.exitCode = exitCode;
-                                }
-                                continue;
-                            }
-                            // Output without a visible command: show it as a standalone terminal block.
-                            if (output.trim().length > 0 || typeof exitCode === 'number') {
-                                const card: TerminalCardData = {
-                                    kind: 'terminal',
-                                    title: 'Terminal output',
-                                    cwd,
-                                    command: '',
-                                    output,
-                                    exitCode: typeof exitCode === 'number' ? exitCode : null,
-                                };
-                                lines.push({ key: toolCall.id, status: executing ? 'running' : (result?.success === false ? 'failed' : 'completed'), terminal: card });
-                            }
-                            continue;
-                        }
-                    }
-
-                    const isCmd = name.includes('terminal__run_command') || name === 'execute_command';
-                    if (isCmd) {
-                        const cmd = typeof (args as Record<string, unknown>).command === 'string'
-                            ? String((args as Record<string, unknown>).command).trim()
-                            : '';
-                        const cwd = typeof (args as Record<string, unknown>).cwd === 'string'
-                            ? String((args as Record<string, unknown>).cwd).trim()
-                            : '.';
-                        const payload = result?.result;
-                        const output = extractTerminalOutput(payload);
-                        const exitCode = extractNumberField(payload, 'exitCode');
-                        const card: TerminalCardData = {
-                            kind: 'terminal',
-                            title: executing ? 'Running background command' : 'Ran background command',
-                            cwd: cwd || '.',
-                            command: cmd,
-                            output: output || '',
-                            exitCode: typeof exitCode === 'number' ? exitCode : null,
-                        };
-                        lines.push({ key: toolCall.id, status: executing ? 'running' : (result?.success === false ? 'failed' : 'completed'), terminal: card });
-                        continue;
-                    }
-
-                    // --- Default tool lines ---
-                    lines.push(...buildToolActivityLines(toolCall, result, executing));
-                }
-
-                if (thoughtText.trim().length === 0 && lines.length === 0) {
-                    return null;
-                }
-
-                const statusDot = (() => {
-                    const hasRunning = lines.some(l => l.status === 'running');
-                    const hasFailed = lines.some(l => l.status === 'failed');
-                    if (hasRunning) {
-                        return 'bg-primary/70';
-                    }
-                    if (hasFailed) {
-                        return 'bg-destructive/70';
-                    }
-                    return 'bg-muted-foreground/60';
-                })();
-
-                return (
-                    <div key={idx} className="w-full">
-                        <button
-                            type="button"
-                            onClick={() => setExpandedMap(prev => ({ ...prev, [idx]: !(prev[idx] ?? true) }))}
-                            className={cn(
-                                'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
-                                expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
-                            )}
-                            aria-label={expanded ? t('frontend.chat.collapse') : t('frontend.chat.expand')}
-                        >
-                            <div className="flex min-w-0 items-center gap-2">
-                                <span className={cn('h-2 w-2 rounded-full', statusDot)} />
-                                <div className="truncate text-sm font-medium text-foreground/90">{header}</div>
-                            </div>
-                            <IconChevronDown className={cn('h-4 w-4 text-muted-foreground/60 transition-transform', expanded && 'rotate-180')} />
-                        </button>
-
-                        {expanded && (
-                            <div className="px-3 pb-2 pt-2 space-y-2">
-                                {thoughtText.trim().length > 0 && (
-                                    <div className="text-sm leading-relaxed text-foreground/85">
-                                        <MarkdownContent content={thoughtText} t={t} />
-                                    </div>
-                                )}
-                                {lines.length > 0 && (
-                                    <div className="space-y-1">
-                                        {lines.map(line => (
-                                            <div key={line.key} className="flex items-start gap-2 text-sm text-foreground/80">
-                                                <span
-                                                    className={cn(
-                                                        'mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0',
-                                                        line.status === 'running'
-                                                            ? 'bg-primary/70'
-                                                            : line.status === 'failed'
-                                                                ? 'bg-destructive/70'
-                                                                : 'bg-muted-foreground/60'
-                                                    )}
-                                                />
-                                                {line.terminal ? (
-                                                    <div className="min-w-0 flex-1">
-                                                        <TerminalToolCard data={line.terminal} />
-                                                    </div>
-                                                ) : line.action ? (
-                                                    <button
-                                                        type="button"
-                                                        className="min-w-0 break-words text-left hover:underline"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (line.action?.type === 'open_file') {
-                                                                navigateToWorkspace({ type: 'open_file', path: line.action.path, readOnly: line.action.readOnly });
-                                                            } else if (line.action?.type === 'open_diff') {
-                                                                navigateToWorkspace({ type: 'open_diff', path: line.action.path, diffId: line.action.diffId });
-                                                            }
-                                                        }}
-                                                    >
-                                                        {line.text ?? ''}
-                                                    </button>
-                                                ) : (
-                                                    <div className="min-w-0 break-words">{line.text ?? ''}</div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
+            {entries.map(entry => (
+                <ThoughtTimelineItem
+                    key={entry.idx}
+                    entry={entry}
+                    onToggle={idx => setExpandedMap(prev => ({ ...prev, [idx]: !(prev[idx] ?? true) }))}
+                    t={t}
+                />
+            ))}
         </div>
     );
 });
 
 ThoughtTimeline.displayName = 'ThoughtTimeline';
-
 const FileChangesCard = memo(({
     changes,
-    t,
 }: {
     changes: FileChangeItem[];
-    t: TranslationFn;
 }) => {
     const [isUndoing, setIsUndoing] = useState(false);
 
@@ -1111,7 +667,9 @@ const FileChangesCard = memo(({
                 <div className="flex items-center gap-4">
                     <button
                         type="button"
-                        onClick={onUndo}
+                        onClick={() => {
+                            void onUndo();
+                        }}
                         disabled={!canUndo}
                         className={cn(
                             'flex items-center gap-1.5 text-xs font-medium transition-colors',
@@ -1175,7 +733,7 @@ const MessageBubbleInner = memo(
         );
         const fileChanges = useMemo(
             () => (!isUser ? extractFileChanges(message) : []),
-            [isUser, message.toolCalls, message.toolResults]
+            [isUser, message]
         );
 
         return (
@@ -1183,7 +741,7 @@ const MessageBubbleInner = memo(
                 {isStreaming && <ResponseProgress />}
                 <BubbleContentSection
                     contentProps={contentProps}
-                    message={message}
+                    _message={message}
                     showToggle={showToggle}
                     setShowRawMarkdown={actionsContextProps.setShowRawMarkdown}
                     t={actionsContextProps.t}
@@ -1203,7 +761,7 @@ const MessageBubbleInner = memo(
                     />
                 )}
                 {!isUser && fileChanges.length > 0 && (
-                    <FileChangesCard changes={fileChanges} t={actionsContextProps.t} />
+                    <FileChangesCard changes={fileChanges} />
                 )}
                 {isUser && (
                     <svg
@@ -1400,4 +958,6 @@ export const SingleMessageViewContent = memo(
 );
 
 SingleMessageViewContent.displayName = 'SingleMessageViewContent';
+
+
 

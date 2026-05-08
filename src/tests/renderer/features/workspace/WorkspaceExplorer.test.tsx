@@ -136,6 +136,7 @@ function createMockEntry(overrides?: Partial<WorkspaceEntry>): WorkspaceEntry {
 function createMockProps(overrides?: Partial<React.ComponentProps<typeof WorkspaceExplorer>>) {
     return {
         workspaceId: 'workspace-1',
+        workspacePath: 'mock-path',
         mounts: [createMockMount()],
         mountStatus: { 'mount-1': 'connected' as const },
         refreshSignal: 0,

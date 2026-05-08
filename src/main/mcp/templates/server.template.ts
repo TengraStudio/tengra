@@ -15,7 +15,7 @@ import { McpService } from '@main/mcp/types';
  * Template for creating a new MCP server module.
  * Copy this file and replace placeholders.
  */
-export function buildTemplateServer(deps: McpDeps): McpService {
+export function buildTemplateServer(_deps: McpDeps): McpService {
     return {
         name: 'template-server',
         actions: buildActions([

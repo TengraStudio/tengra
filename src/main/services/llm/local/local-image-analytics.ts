@@ -17,7 +17,6 @@ import type {
     ImageGenerationPreset,
     ImageGenerationRecord,
 } from './local-image.types';
-import type { RuntimeValue } from '@shared/types/common';
 
 
 

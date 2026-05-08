@@ -11,7 +11,6 @@
 import { MarketplaceLanguage } from '@shared/types/marketplace';
 import { useSyncExternalStore } from 'react';
 
-import { localeRegistry } from '@/i18n/locale-registry.service';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { marketplaceStore } from './marketplace.store';

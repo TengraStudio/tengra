@@ -46,11 +46,9 @@ export function ipc(channelOrOptions?: string | IpcChannelOptions): MethodDecora
         const ipcMethods = constructor['_ipc_methods'] ?? [];
         constructor['_ipc_methods'] = ipcMethods;
 
-        const channelName = typeof channelOrOptions === 'string'
+        const channel = typeof channelOrOptions === 'string'
             ? channelOrOptions
             : (channelOrOptions?.channel || propertyKey.toString());
-
-        let channel: string;
         let withEvent = false;
         let type: 'handle' | 'on' | 'both' = 'handle';
         let isBatchable = false;
@@ -58,16 +56,13 @@ export function ipc(channelOrOptions?: string | IpcChannelOptions): MethodDecora
         let defaultValue: RuntimeValue | undefined;
 
         if (typeof channelOrOptions === 'string') {
-            channel = channelOrOptions;
+            // Already handled
         } else if (channelOrOptions && typeof channelOrOptions === 'object') {
-            channel = channelOrOptions.channel || propertyKey.toString();
             withEvent = !!channelOrOptions.withEvent;
             type = channelOrOptions.type || 'handle';
             isBatchable = !!channelOrOptions.isBatchable;
             argsSchema = channelOrOptions.argsSchema;
             defaultValue = channelOrOptions.defaultValue;
-        } else {
-            channel = propertyKey.toString();
         }
 
         ipcMethods.push({

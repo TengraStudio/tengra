@@ -81,9 +81,11 @@ export const ExtensionViewHost: React.FC<ExtensionViewHostProps> = ({ viewId }) 
 
     useEffect(() => {
         if (!activeExtension) {
-            setError(`Extension view "${viewId}" not found or extension not active.`);
-            setLoading(false);
-            return;
+            const timer = window.setTimeout(() => {
+                setError(`Extension view "${viewId}" not found or extension not active.`);
+                setLoading(false);
+            }, 0);
+            return () => window.clearTimeout(timer);
         }
 
         const viewSignature = [
@@ -175,7 +177,10 @@ export const ExtensionViewHost: React.FC<ExtensionViewHostProps> = ({ viewId }) 
             }
         };
 
-        void loadView();
+        const timer = window.setTimeout(() => {
+            void loadView();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [viewId, activeExtension, reloadNonce]);
 
     if (loading) {

@@ -179,7 +179,10 @@ class MonacoColorResolver {
     static resolve(name: string, fallbackName?: string): string {
         const cacheKey = `${name}:${fallbackName}`;
         if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey)!;
+            const cached = this.cache.get(cacheKey);
+            if (cached) {
+                return cached;
+            }
         }
 
         if (!this.lastComputedStyle) {

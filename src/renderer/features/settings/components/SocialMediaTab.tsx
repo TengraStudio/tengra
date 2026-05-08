@@ -73,11 +73,17 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
     const [newCronDraft, setNewCronDraft] = useState<CronJobEntry>(createEmptyCronJob);
 
     useEffect(() => {
-        setTelegramToken(telegramConfig.token ?? '');
+        const timer = window.setTimeout(() => {
+            setTelegramToken(telegramConfig.token ?? '');
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [telegramConfig.token]);
 
     useEffect(() => {
-        setDiscordToken(discordConfig.token ?? '');
+        const timer = window.setTimeout(() => {
+            setDiscordToken(discordConfig.token ?? '');
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [discordConfig.token]);
 
     const handleDiscordUpdate = (patch: Partial<NonNullable<AppSettings['remoteAccounts']>['discord']>) => {

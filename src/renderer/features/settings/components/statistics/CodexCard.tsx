@@ -18,7 +18,7 @@ import { CodexUsage } from '@/types/quota';
 
 import { AccountWrapper } from '../../types';
 
-import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
+import { getQuotaColor, HorizontalProgressBar } from './SharedComponents';
 
 interface CodexCardProps {
     codexUsage: AccountWrapper<{ usage: CodexUsage }> | null
@@ -34,9 +34,6 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
             {codexUsage.accounts.map((acc, idx: number) => {
                 const usage = acc.usage as CodexUsage & { error?: string };
                 const usageError = typeof usage?.error === 'string' ? usage.error : null;
-                const status = usageError ? 'error' : 'active';
-                const statusText = usageError ? t('common.error') : t('frontend.statistics.active');
-
                 const percentFromRequests =
                     typeof usage?.remainingRequests === 'number'
                         && typeof usage?.totalRequests === 'number'

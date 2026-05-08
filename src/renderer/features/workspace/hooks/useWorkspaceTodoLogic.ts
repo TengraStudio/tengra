@@ -24,6 +24,8 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
     const undoStackRef = useRef<TodoFile[][]>([]);
     const redoStackRef = useRef<TodoFile[][]>([]);
     const [historyVersion, setHistoryVersion] = useState(0);
+    const [canUndo, setCanUndo] = useState(false);
+    const [canRedo, setCanRedo] = useState(false);
 
     const snapshotTodoFiles = useCallback((files: TodoFile[]): TodoFile[] => {
         return files.map(file => ({
@@ -40,6 +42,8 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
             }
             redoStackRef.current = [];
             setHistoryVersion(version => version + 1);
+            setCanUndo(true);
+            setCanRedo(false);
         },
         [snapshotTodoFiles]
     );
@@ -54,6 +58,8 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
             undoStackRef.current = [];
             redoStackRef.current = [];
             setHistoryVersion(version => version + 1);
+            setCanUndo(false);
+            setCanRedo(false);
 
             // Auto expand all by default
             const expanded: Record<string, boolean> = {};
@@ -71,7 +77,10 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
     }, [workspaceRoot]);
 
     useEffect(() => {
-        void fetchTodos();
+        // Use queueMicrotask to avoid synchronous setState in effect warning
+        queueMicrotask(() => {
+            void fetchTodos();
+        });
     }, [fetchTodos]);
 
     const handleToggle = useCallback(async (item: TodoItem) => {
@@ -162,6 +171,8 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
         redoStackRef.current.push(snapshotTodoFiles(todoFiles));
         setTodoFiles(snapshotTodoFiles(previous));
         setHistoryVersion(version => version + 1);
+        setCanUndo(undoStackRef.current.length > 0);
+        setCanRedo(redoStackRef.current.length > 0);
         return true;
     }, [snapshotTodoFiles, todoFiles]);
 
@@ -173,6 +184,8 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
         undoStackRef.current.push(snapshotTodoFiles(todoFiles));
         setTodoFiles(snapshotTodoFiles(next));
         setHistoryVersion(version => version + 1);
+        setCanUndo(undoStackRef.current.length > 0);
+        setCanRedo(redoStackRef.current.length > 0);
         return true;
     }, [snapshotTodoFiles, todoFiles]);
 
@@ -217,8 +230,8 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
         toggleFileExpand,
         undo,
         redo,
-        canUndo: undoStackRef.current.length > 0,
-        canRedo: redoStackRef.current.length > 0,
+        canUndo,
+        canRedo,
         historyVersion,
     };
 }

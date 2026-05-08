@@ -43,9 +43,13 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     const [hasActivatedAgentPanel, setHasActivatedAgentPanel] = React.useState(showAgentPanel);
 
     React.useEffect(() => {
-        if (showAgentPanel) {
-            setHasActivatedAgentPanel(true);
+        if (!showAgentPanel) {
+            return;
         }
+        const timer = window.setTimeout(() => {
+            setHasActivatedAgentPanel(true);
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [showAgentPanel]);
 
     return (

@@ -22,10 +22,10 @@ import {
     QuotaBucket,
     QuotaWindow,
     WORKSPACE_AGENT_SESSION_STATUSES,
-    WorkspaceAgentUsageStats,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionStatus,
+    WorkspaceAgentUsageStats,
 } from '@shared/types/workspace-agent-session';
 import { z } from 'zod';
 

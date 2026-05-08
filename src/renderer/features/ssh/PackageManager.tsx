@@ -47,7 +47,10 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
     }, [connectionId, manager]);
 
     useEffect(() => {
-        void fetchPackages();
+        const timer = window.setTimeout(() => {
+            void fetchPackages();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [fetchPackages]);
 
     const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));

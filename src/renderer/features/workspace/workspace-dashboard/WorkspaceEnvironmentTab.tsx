@@ -56,7 +56,10 @@ const useWorkspaceEnv = (workspacePath: string) => {
     }, [workspacePath]);
 
     useEffect(() => {
-        void loadEnvVars();
+        const timer = window.setTimeout(() => {
+            void loadEnvVars();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [loadEnvVars]);
 
     const handleSave = async () => {

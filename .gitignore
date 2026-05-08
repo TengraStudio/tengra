@@ -111,10 +111,6 @@ typings/
 t_keys.txt
 all_t_keys.txt
 tmp-hardcoded.json
-IPC_CHANNELS.md
-.codex/SESSION_ENGINE.md
-docs/changelog/i18n/.tr.translation.cache.json
-docs/components_checklist.md
 lint_errors.txt
 fresh-lint.txt
 fresh-analysis.txt

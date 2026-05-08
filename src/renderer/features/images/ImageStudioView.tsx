@@ -176,12 +176,10 @@ function encodeJpegWithinBudget(
 
 function drawFeatheredMaskRect(
     ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
+    rect: MaskRect,
     feather: number
 ): void {
+    const { x, y, width, height } = rect;
     ctx.fillStyle = 'white';
     if (feather > 0) {
         ctx.save();
@@ -323,10 +321,12 @@ async function createInpaintPatchContext(
     const maskH = Math.round(selH * scale);
     drawFeatheredMaskRect(
         maskCtx,
-        maskX,
-        maskY,
-        maskW,
-        maskH,
+        {
+            x: maskX,
+            y: maskY,
+            width: maskW,
+            height: maskH,
+        },
         Math.max(4, Math.round(Math.min(maskW, maskH, 64) * 0.18))
     );
 

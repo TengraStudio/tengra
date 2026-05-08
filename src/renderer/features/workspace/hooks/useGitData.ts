@@ -16,15 +16,91 @@ import { appLogger } from '@/utils/renderer-logger';
 import { DiffStats, GitCommitInfo, GitData, GitFile, Remote, TrackingInfo } from '../components/git/types';
 import { emptyGitData, fetchFullGitData, GitSectionErrors } from '../utils/git-utils';
 
-const useGitOperations = (
-    workspacePath: string | undefined,
-    fetchGitData: () => Promise<void>,
-    selectedFile: GitFile | null,
-    setSelectedFile: (file: GitFile | null) => void,
-    loadFileDiff: (filePath: string, staged: boolean) => Promise<void>,
-    lastActionError: string | null,
-    setLastActionError: (error: string | null) => void
-) => {
+interface GitHubUser {
+    login: string;
+    avatar_url: string;
+}
+
+interface GitHubLabel {
+    id: number;
+    name: string;
+    color: string;
+}
+
+interface GitHubPR {
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    merged: boolean;
+    draft: boolean;
+    created_at: string;
+    html_url: string;
+    user: GitHubUser;
+    labels: GitHubLabel[];
+    body: string;
+    base: { ref: string };
+    head: { ref: string };
+    additions: number;
+    deletions: number;
+    mergeable?: boolean;
+}
+
+interface GitHubIssue {
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    created_at: string;
+    html_url: string;
+    user: GitHubUser;
+}
+
+interface GitHubComment {
+    id: number;
+    user: GitHubUser;
+    created_at: string;
+    body: string;
+}
+
+interface GitHubFile {
+    sha: string;
+    filename: string;
+    status: string;
+    additions: number;
+    deletions: number;
+    patch?: string;
+}
+
+interface GitHubReview {
+    id: number;
+    user: GitHubUser;
+    state: string;
+}
+
+interface GitHubCheck {
+    conclusion: string;
+}
+
+interface GitOperationsOptions {
+    workspacePath: string | undefined;
+    fetchGitData: () => Promise<void>;
+    selectedFile: GitFile | null;
+    setSelectedFile: (file: GitFile | null) => void;
+    loadFileDiff: (filePath: string, staged: boolean) => Promise<void>;
+    lastActionError: string | null;
+    setLastActionError: (error: string | null) => void;
+}
+
+const useGitOperations = ({
+    workspacePath,
+    fetchGitData,
+    selectedFile,
+    setSelectedFile,
+    loadFileDiff,
+    lastActionError,
+    setLastActionError
+}: GitOperationsOptions) => {
     const [commitMessage, setCommitMessage] = useState('');
     const [isCommitting, setIsCommitting] = useState(false);
     const [isPushing, setIsPushing] = useState(false);
@@ -49,7 +125,7 @@ const useGitOperations = (
             appLogger.error('useGitData', 'Failed to stage file', e as Error);
             setLastActionError((e as Error).message);
         }
-    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile, setLastActionError]);
 
     const handleUnstageFile = useCallback(async (filePath: string) => {
         if (!workspacePath) { return; }
@@ -69,7 +145,7 @@ const useGitOperations = (
             appLogger.error('useGitData', 'Failed to unstage file', e as Error);
             setLastActionError((e as Error).message);
         }
-    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile, setLastActionError]);
 
     const handleStageAll = useCallback(async () => {
         if (!workspacePath) { return; }
@@ -89,7 +165,7 @@ const useGitOperations = (
             appLogger.error('useGitData', 'Failed to stage all files', e as Error);
             setLastActionError((e as Error).message);
         }
-    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile, setLastActionError]);
 
     const handleUnstageAll = useCallback(async () => {
         if (!workspacePath) { return; }
@@ -109,7 +185,7 @@ const useGitOperations = (
             appLogger.error('useGitData', 'Failed to unstage all files', e as Error);
             setLastActionError((e as Error).message);
         }
-    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile, setLastActionError]);
 
     const handleCheckout = useCallback(async (branch: string) => {
         if (!workspacePath) { return; }
@@ -129,7 +205,7 @@ const useGitOperations = (
         } finally {
             setIsCheckingOut(false);
         }
-    }, [workspacePath, fetchGitData]);
+    }, [workspacePath, fetchGitData, setLastActionError]);
 
     const handleCommit = useCallback(async () => {
         if (!workspacePath || !commitMessage.trim()) { return; }
@@ -150,7 +226,7 @@ const useGitOperations = (
         } finally {
             setIsCommitting(false);
         }
-    }, [workspacePath, commitMessage, fetchGitData]);
+    }, [workspacePath, commitMessage, fetchGitData, setLastActionError]);
 
     const handlePush = useCallback(async () => {
         if (!workspacePath) { return; }
@@ -170,7 +246,7 @@ const useGitOperations = (
         } finally {
             setIsPushing(false);
         }
-    }, [workspacePath, fetchGitData]);
+    }, [workspacePath, fetchGitData, setLastActionError]);
 
     const handleSync = useCallback(async () => {
         if (!workspacePath) { return; }
@@ -199,7 +275,7 @@ const useGitOperations = (
         } finally {
             setIsPulling(false);
         }
-    }, [workspacePath, fetchGitData]);
+    }, [workspacePath, fetchGitData, setLastActionError]);
 
     return {
         commitMessage,
@@ -236,6 +312,14 @@ interface GitSectionStates {
     issues: GitSectionState
 }
 
+interface PRDetails {
+    pr: GitHubPR;
+    files: GitHubFile[];
+    comments: GitHubComment[];
+    reviews: GitHubReview[];
+    checks: GitHubCheck[];
+}
+
 const createGitSectionStates = (
     loading: boolean,
     errors?: GitSectionErrors
@@ -265,10 +349,10 @@ export function useGitData(workspace: Workspace) {
     const [commitsOffset, setCommitsOffset] = useState(0);
     const [hasMoreCommits, setHasMoreCommits] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [pullRequests, setPullRequests] = useState<any[]>([]);
-    const [issues, setIssues] = useState<any[]>([]);
+    const [pullRequests, setPullRequests] = useState<GitHubPR[]>([]);
+    const [issues, setIssues] = useState<GitHubIssue[]>([]);
     const [selectedPrNumber, setSelectedPrNumber] = useState<number | null>(null);
-    const [prDetails, setPrDetails] = useState<{ pr: any; files: any[]; comments: any[]; reviews: any[]; checks: any[] } | null>(null);
+    const [prDetails, setPrDetails] = useState<PRDetails | null>(null);
     const [isUpdatingPr, setIsUpdatingPr] = useState(false);
 
     const fetchGitData = useCallback(async () => {
@@ -309,9 +393,9 @@ export function useGitData(workspace: Workspace) {
         if (!workspace.path || remotes.length === 0) { return; }
         setSectionStates(prev => ({ ...prev, pullRequests: { ...prev.pullRequests, loading: true } }));
         try {
-            const result = await import('../utils/git-utils').then(m => m.fetchGitHubData(workspace.path!, remotes, 'pulls'));
+            const result = await import('../utils/git-utils').then(m => m.fetchGitHubData(workspace.path, remotes, 'pulls'));
             if (result.success && result.data) {
-                setPullRequests(result.data);
+                setPullRequests(result.data as GitHubPR[]);
                 setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: null } }));
             } else {
                 setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: result.error ?? 'Failed to fetch PRs' } }));
@@ -326,9 +410,9 @@ export function useGitData(workspace: Workspace) {
         if (!workspace.path || remotes.length === 0) { return; }
         setSectionStates(prev => ({ ...prev, issues: { ...prev.issues, loading: true } }));
         try {
-            const result = await import('../utils/git-utils').then(m => m.fetchGitHubData(workspace.path!, remotes, 'issues'));
+            const result = await import('../utils/git-utils').then(m => m.fetchGitHubData(workspace.path, remotes, 'issues'));
             if (result.success && result.data) {
-                setIssues(result.data);
+                setIssues(result.data as GitHubIssue[]);
                 setSectionStates(prev => ({ ...prev, issues: { loading: false, error: null } }));
             } else {
                 setSectionStates(prev => ({ ...prev, issues: { loading: false, error: result.error ?? 'Failed to fetch issues' } }));
@@ -348,9 +432,9 @@ export function useGitData(workspace: Workspace) {
 
         setSectionStates(prev => ({ ...prev, pullRequests: { ...prev.pullRequests, loading: true } }));
         try {
-            const result = await import('../utils/git-utils').then(m => m.fetchGitHubPrDetails(workspace.path!, remotes, prNumber));
+            const result = await import('../utils/git-utils').then(m => m.fetchGitHubPrDetails(workspace.path, remotes, prNumber));
             if (result.success && result.data) {
-                setPrDetails(result.data);
+                setPrDetails(result.data as PRDetails);
                 setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: null } }));
             } else {
                 setSectionStates(prev => ({ ...prev, pullRequests: { loading: false, error: result.error ?? 'Failed to fetch PR details' } }));
@@ -364,7 +448,7 @@ export function useGitData(workspace: Workspace) {
     const handleUpdatePrState = useCallback(async (prNumber: number, state: 'open' | 'closed') => {
         setIsUpdatingPr(true);
         try {
-            const result = await import('../utils/git-utils').then(m => m.updateGitHubPrState(workspace.path!, remotes, prNumber, state));
+            const result = await import('../utils/git-utils').then(m => m.updateGitHubPrState(workspace.path, remotes, prNumber, state));
             if (result.success) {
                 // Refresh list and details
                 void fetchPullRequests();
@@ -455,7 +539,15 @@ export function useGitData(workspace: Workspace) {
         handlePush,
         handlePull,
         handleSync
-    } = useGitOperations(workspace.path, fetchGitData, selectedFile, setSelectedFile, loadFileDiff, lastActionError, setLastActionError);
+    } = useGitOperations({
+        workspacePath: workspace.path,
+        fetchGitData,
+        selectedFile,
+        setSelectedFile,
+        loadFileDiff,
+        lastActionError,
+        setLastActionError
+    });
 
     const [selectedCommit, setSelectedCommit] = useState<GitCommitInfo | null>(null);
     const [commitDiff, setCommitDiff] = useState<string | null>(null);

@@ -9,8 +9,9 @@
  */
 
 import React from 'react';
-import { MarkdownContent } from '@/features/chat/components/message/MarkdownContent';
+
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { MarkdownContent } from '@/features/chat/components/message/MarkdownContent';
 import { cn } from '@/lib/utils';
 
 interface MarkdownPreviewProps {
