@@ -11,7 +11,7 @@
 
 import { loader } from '@monaco-editor/react';
 import { appLogger } from '@system/utils/renderer-logger';
-import * as monacoCore from 'monaco-editor/esm/vs/editor/editor.api';
+import * as monacoCore from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';

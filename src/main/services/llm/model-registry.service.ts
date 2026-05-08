@@ -126,29 +126,29 @@ export class ModelRegistryService extends BaseService {
         name: string;
         description?: string;
     }>> = {
-        'claude-haiku-4.5': { name: 'Claude Haiku 4.5' },
-        'claude-opus-4.5': { name: 'Claude Opus 4.5' },
-        'claude-opus-4.6': { name: 'Claude Opus 4.6' },
-        'claude-opus-4.6-fast': { name: 'Claude Opus 4.6 (fast mode) (preview)' },
-        'claude-opus-4.7': { name: 'Claude Opus 4.7' },
-        'claude-sonnet-4': { name: 'Claude Sonnet 4' },
-        'claude-sonnet-4.5': { name: 'Claude Sonnet 4.5' },
-        'claude-sonnet-4.6': { name: 'Claude Sonnet 4.6' },
-        'gemini-2.5-pro': { name: 'Gemini 2.5 Pro' },
-        'gemini-3-flash': { name: 'Gemini 3 Flash' },
-        'gemini-3.1-pro': { name: 'Gemini 3.1 Pro' },
-        'gpt-4.1': { name: 'GPT-4.1' },
-        'gpt-5-mini': { name: 'GPT-5 mini' },
-        'gpt-5.2': { name: 'GPT-5.2' },
-        'gpt-5.2-codex': { name: 'GPT-5.2-Codex' },
-        'gpt-5.3-codex': { name: 'GPT-5.3-Codex' },
-        'gpt-5.4': { name: 'GPT-5.4' },
-        'gpt-5.4-mini': { name: 'GPT-5.4 mini' },
-        'gpt-5.5': { name: 'GPT-5.5' },
-        'grok-code-fast-1': { name: 'Grok Code Fast 1' },
-        'raptor-mini': { name: 'Raptor mini' },
-        'goldeneye': { name: 'Goldeneye' },
-    };
+            'claude-haiku-4.5': { name: 'Claude Haiku 4.5' },
+            'claude-opus-4.5': { name: 'Claude Opus 4.5' },
+            'claude-opus-4.6': { name: 'Claude Opus 4.6' },
+            'claude-opus-4.6-fast': { name: 'Claude Opus 4.6 (fast mode) (preview)' },
+            'claude-opus-4.7': { name: 'Claude Opus 4.7' },
+            'claude-sonnet-4': { name: 'Claude Sonnet 4' },
+            'claude-sonnet-4.5': { name: 'Claude Sonnet 4.5' },
+            'claude-sonnet-4.6': { name: 'Claude Sonnet 4.6' },
+            'gemini-2.5-pro': { name: 'Gemini 2.5 Pro' },
+            'gemini-3-flash': { name: 'Gemini 3 Flash' },
+            'gemini-3.1-pro': { name: 'Gemini 3.1 Pro' },
+            'gpt-4.1': { name: 'GPT-4.1' },
+            'gpt-5-mini': { name: 'GPT-5 mini' },
+            'gpt-5.2': { name: 'GPT-5.2' },
+            'gpt-5.2-codex': { name: 'GPT-5.2-Codex' },
+            'gpt-5.3-codex': { name: 'GPT-5.3-Codex' },
+            'gpt-5.4': { name: 'GPT-5.4' },
+            'gpt-5.4-mini': { name: 'GPT-5.4 mini' },
+            'gpt-5.5': { name: 'GPT-5.5' },
+            'grok-code-fast-1': { name: 'Grok Code Fast 1' },
+            'raptor-mini': { name: 'Raptor mini' },
+            'goldeneye': { name: 'Goldeneye' },
+        };
     private static readonly COPILOT_MODELS_BY_PLAN: Readonly<Record<CopilotPlanTier, readonly string[]>> = {
         free: [
             'claude-haiku-4.5',
@@ -619,7 +619,7 @@ export class ModelRegistryService extends BaseService {
     /**
      * Get all available models from all sources.
      * This is a cache-aware wrapper that merges remote and local installed models.
-     */ 
+     */
     @ipc(MODEL_REGISTRY_CHANNELS.GET_ALL_MODELS)
     async getAllModelsIpc(): Promise<RuntimeValue> {
         return serializeToIpc(await this.getAllModels());
@@ -638,6 +638,7 @@ export class ModelRegistryService extends BaseService {
 
         return Array.from(unique.values());
     }
+
 
     private getTokenProviderAliases(provider: ModelProviderId): readonly string[] {
         switch (provider) {

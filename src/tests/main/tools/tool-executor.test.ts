@@ -63,23 +63,24 @@ const createExecutor = () => {
     return new ToolExecutor(options);
 };
 
+beforeEach(() => {
+    vi.clearAllMocks();
+    terminal.createSession.mockResolvedValue(true);
+    terminal.write.mockReturnValue(true);
+    terminal.getActiveSessions.mockReturnValue(['agent-term-1']);
+    terminal.getSessionBuffer.mockResolvedValue('');
+    terminal.getSessionAnalytics.mockResolvedValue({
+        sessionId: 'agent-term-1',
+        bytes: 0,
+        lineCount: 0,
+        commandCount: 0,
+        updatedAt: 0,
+    });
+    mcp.getToolDefinitions.mockResolvedValue([]);
+});
+
 describe('ToolExecutor - Core & FS', () => {
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        terminal.createSession.mockResolvedValue(true);
-        terminal.write.mockReturnValue(true);
-        terminal.getActiveSessions.mockReturnValue(['agent-term-1']);
-        terminal.getSessionBuffer.mockResolvedValue('');
-        terminal.getSessionAnalytics.mockResolvedValue({
-            sessionId: 'agent-term-1',
-            bytes: 0,
-            lineCount: 0,
-            commandCount: 0,
-            updatedAt: 0,
-        });
-        mcp.getToolDefinitions.mockResolvedValue([]);
-    });
 
     it('routes list_directory to fileSystem.listDirectory', async () => {
         fileSystem.listDirectory.mockResolvedValueOnce({
