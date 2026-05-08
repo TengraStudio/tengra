@@ -67,6 +67,7 @@ function initializeWorkspaceServiceTestState(): void {
         }
         return '';
     });
+    vi.mocked(fs.readdir).mockResolvedValue([] as never);
     vi.mocked(fsModule.watch).mockReturnValue({
         close: vi.fn(),
         on: vi.fn(),
@@ -80,12 +81,6 @@ describe('WorkspaceService core behavior', () => {
 
     it('should analyze a workspace correctly', async () => {
         const mockDirPath = '/mock/workspace';
-
-        // Mock readdir for scanFiles
-        vi.mocked(fs.readdir).mockResolvedValue([
-            mockDirent('src', true),
-            mockDirent('package.json', false)
-        ] as never);
 
         // Mock readdir for nested src
         vi.mocked(fs.readdir).mockResolvedValueOnce([
@@ -336,9 +331,9 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
     });
 
     it('weights language distribution by file size and recognizes special filenames', async () => {
-        vi.mocked(fs.stat).mockImplementation(async (filePath: import('fs').PathLike) => {
-            const normalizedPath = String(filePath);
-            const sizeMap: Record<string, number> = {
+        vi.mocked(fs.readFile).mockImplementation(async (filePath: Parameters<typeof fs.readFile>[0]) => {
+            const normalizedPath = String(filePath).replace(/\\/g, '/');
+            const linesMap: Record<string, number> = {
                 '/mock/workspace/src/app.ts': 400,
                 '/mock/workspace/src/view.tsx': 600,
                 '/mock/workspace/Dockerfile': 50,
@@ -350,12 +345,9 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 '/mock/workspace/native/project.vcxproj': 1200,
             };
 
-            return {
-                size: sizeMap[normalizedPath] ?? 1,
-                mtimeMs: Date.now(),
-                isDirectory: () => false,
-                isFile: () => true,
-            } as never as import('fs').Stats;
+            const key = Object.keys(linesMap).find(k => normalizedPath.endsWith(k));
+            const numLines = key ? linesMap[key] : 1;
+            return '\n'.repeat(numLines - 1);
         });
 
         const languageMap = await (
