@@ -10,7 +10,7 @@
 
 
 import { loader } from '@monaco-editor/react';
-import * as monacoCore from 'monaco-editor/esm/vs/editor/editor.api';
+import * as Monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
@@ -26,7 +26,7 @@ import 'monaco-editor/esm/vs/language/html/monaco.contribution';
 import 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
 import 'monaco-editor/esm/vs/basic-languages/monaco.contribution';
 
-type MonacoModule = typeof monacoCore;
+type MonacoModule = typeof Monaco;
 type MonacoWorkerFactory = new () => Worker;
 interface MonacoTypeScriptDefaults {
     setEagerModelSync(value: boolean): void;
@@ -135,7 +135,7 @@ export async function ensureMonacoInitialized(): Promise<MonacoModule> {
 
             // Config loader to use our statically imported monaco instance
             loader.config({
-                monaco: monacoCore
+                monaco: Monaco
             });
 
             const monaco = await loader.init();
@@ -199,7 +199,7 @@ class MonacoColorResolver {
                 toHexColorFromComputedColor(bodyStyle.color) ??
                 toHexColorFromComputedColor(this.lastComputedStyle.color) ??
                 toHexColorFromComputedColor(bodyStyle.backgroundColor);
-            
+
             if (!fallback) {
                 return '#888888'; // Safe fallback
             }
@@ -226,9 +226,9 @@ class MonacoColorResolver {
 
 let lastThemeConfig: string | null = null;
 
-export function applyMonacoTheme(monaco: typeof monacoCore, isLight: boolean): string {
+export function applyMonacoTheme(monaco: typeof Monaco, isLight: boolean): string {
     MonacoColorResolver.clearCache();
-    
+
     const colors = {
         background: MonacoColorResolver.resolve('--editor-background', '--background'),
         foreground: MonacoColorResolver.resolve('--editor-foreground', '--foreground'),

@@ -504,7 +504,7 @@ export class SdCppManager {
     private async downloadToFile(url: string, outputPath: string, expectedSha256?: string): Promise<void> {
         const tempPath = `${outputPath}.tmp`;
         const response = await axios.get(url, { responseType: 'stream', timeout: 300000 });
-        const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+        const totalBytes = parseInt(String(response.headers['content-length'] ?? '0'), 10);
         let downloadedBytes = 0;
         const filename = path.basename(outputPath);
         await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });

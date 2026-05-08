@@ -16,8 +16,8 @@ import type {
     InlineSuggestionUsageStats,
 } from '@shared/schemas/inline-suggestions.schema';
 import { IconLoader2 } from '@tabler/icons-react';
-import type { CancellationToken,editor, languages } from 'monaco-editor';
-import React, { ComponentType,useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CancellationToken, editor, languages } from 'monaco-editor';
+import React, { ComponentType, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useCodeEditorDiagnostics } from '@/components/ui/code-editor-diagnostics';
 import { useCodeEditorDirtyDecorations } from '@/components/ui/code-editor-dirty-decorations';
@@ -38,7 +38,7 @@ import { useSettingsStore } from '@/store/settings.store';
 import type { AppSettings } from '@/types/settings';
 import type { Workspace } from '@/types/workspace';
 import { normalizeLanguage } from '@/utils/language-map';
-import { applyMonacoTheme,ensureMonacoInitialized } from '@/utils/monaco-loader.util';
+import { applyMonacoTheme, ensureMonacoInitialized } from '@/utils/monaco-loader.util';
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 import { initTextMateSupport } from '@/utils/textmate-loader';
@@ -239,7 +239,7 @@ function buildWorkspaceEditorOverrides(
         ['suggestFontSize', 'suggestFontSize'],
         ['suggestLineHeight', 'suggestLineHeight'],
         ['mouseWheelZoom', 'mouseWheelZoom'],
-        ['multiCursorModifier', 'multiCursorModifier'], 
+        ['multiCursorModifier', 'multiCursorModifier'],
         ['selectionHighlight', 'selectionHighlight'],
         ['renderFinalNewline', 'renderFinalNewline'],
     ];
@@ -489,7 +489,7 @@ const useInlineCompletions = (
         }
         const monaco = monacoRef.current;
         const trackUsageStats = (event: InlineSuggestionUsageStats) => {
-            void window.electron.workspace.trackInlineSuggestionUsageStats(event).catch(() => {});
+            void window.electron.workspace.trackInlineSuggestionUsageStats(event).catch(() => { });
         };
         const commandDisposable = monaco.editor.registerCommand(
             INLINE_SUGGESTION_ACCEPT_COMMAND,
@@ -840,60 +840,60 @@ const MonacoEditorInternal: React.FC<{
     diffMode,
     originalValue,
 }) => {
-    const diffEditorRef = useRef<editor.IDiffEditor | null>(null);
+        const diffEditorRef = useRef<editor.IDiffEditor | null>(null);
 
-    useEffect(() => {
-        return () => {
-            if (diffEditorRef.current) {
-                try {
-                    const models = diffEditorRef.current.getModel();
-                    if (models) {
-                        diffEditorRef.current.setModel(null);
+        useEffect(() => {
+            return () => {
+                if (diffEditorRef.current) {
+                    try {
+                        const models = diffEditorRef.current.getModel();
+                        if (models) {
+                            diffEditorRef.current.setModel(null);
+                        }
+                    } catch (e) {
+                        appLogger.warn('CodeEditor', 'Error during diff editor cleanup', e as Error);
                     }
-                } catch (e) {
-                    appLogger.warn('CodeEditor', 'Error during diff editor cleanup', e as Error);
                 }
-            }
-        };
-    }, []);
+            };
+        }, []);
 
-    return (
-        <div className={cn('relative w-full h-full overflow-hidden', className)}>
-            {diffMode ? (
-                <DiffEditor
-                    height="100%"
-                    original={originalValue ?? ''}
-                    modified={value}
-                    language={language}
-                    theme={theme}
-                    onMount={(editor: UnsafeValue, m: UnsafeValue) => {
-                        diffEditorRef.current = editor;
-                        onMount(editor.getModifiedEditor(), m);
-                    }}
-                    loading={loading}
-                    options={{
-                        ...options,
-                        renderSideBySide: true,
-                    }}
-                />
-            ) : (
-                <Editor
-                    height="100%"
-                    defaultLanguage={language}
-                    language={language}
-                    path={modelPath}
-                    value={value}
-                    onChange={onChange ? (val) => onChange(val, modelPath) : undefined}
-                    theme={theme}
-                    onMount={onMount}
-                    loading={loading}
-                    options={options}
-                    monaco={monaco}
-                />
-            )}
-        </div>
-    );
-};
+        return (
+            <div className={cn('relative w-full h-full overflow-hidden', className)}>
+                {diffMode ? (
+                    <DiffEditor
+                        height="100%"
+                        original={originalValue ?? ''}
+                        modified={value}
+                        language={language}
+                        theme={theme}
+                        onMount={(editor: UnsafeValue, m: UnsafeValue) => {
+                            diffEditorRef.current = editor;
+                            onMount(editor.getModifiedEditor(), m);
+                        }}
+                        loading={loading}
+                        options={{
+                            ...options,
+                            renderSideBySide: true,
+                        }}
+                    />
+                ) : (
+                    <Editor
+                        height="100%"
+                        defaultLanguage={language}
+                        language={language}
+                        path={modelPath}
+                        value={value}
+                        onChange={onChange ? (val) => onChange(val, modelPath) : undefined}
+                        theme={theme}
+                        onMount={onMount}
+                        loading={loading}
+                        options={options}
+                        monaco={monaco}
+                    />
+                )}
+            </div>
+        );
+    };
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
     value,
@@ -1068,7 +1068,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             settings?.editor,
             workspaceEditorSettings,
             contentBottomPaddingPx,
-            ]
+        ]
     );
 
     if (loading || !monacoComponents) {

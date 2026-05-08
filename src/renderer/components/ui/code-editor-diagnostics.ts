@@ -9,7 +9,7 @@
  */
 
 import type { Monaco } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
+import type { CancellationToken, editor, languages, Range } from 'monaco-editor';
 import React from 'react';
 import * as protocol from 'vscode-languageserver-protocol';
 
@@ -194,7 +194,12 @@ export function useCodeEditorDiagnostics({
         const languageId = model.getLanguageId();
 
         const disposable = monaco.languages.registerCodeActionProvider(languageId, {
-            provideCodeActions: async (model, range, _context, _token) => {
+            provideCodeActions: async (
+                model: editor.ITextModel,
+                range: Range,
+                _context: languages.CodeActionContext,
+                _token: CancellationToken
+            ): Promise<languages.CodeActionList> => {
                 if (model.uri.toString() !== uri) { return { actions: [], dispose: () => { } }; }
 
                 const lspRange = {
