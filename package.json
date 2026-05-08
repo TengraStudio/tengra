@@ -282,5 +282,9 @@
             "owner": "TengraStudio",
             "repo": "tengra"
         }
+    },
+    "optionalDependencies": {
+        "bufferutil": "*",
+        "utf-8-validate": "*"
     }
 }
