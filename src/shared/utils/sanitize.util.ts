@@ -41,12 +41,13 @@ export function sanitizeString(
     // Remove null bytes and control characters (except newlines if allowed)
     if (allowNewlines) {
         // Keep newlines, tabs, and carriage returns, but remove other control chars
-        // eslint-disable-next-line no-control-regex
-        sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+        const controlChars = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(8)}${String.fromCharCode(11)}${String.fromCharCode(12)}${String.fromCharCode(14)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`, 'g');
+        sanitized = sanitized.replace(controlChars, '');
     } else {
-        // Remove all control characters including newlines
-        // eslint-disable-next-line no-control-regex
-        sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
+        // Remove all control characters including newlines 
+        const allControlChars = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`, 'g');
+        sanitized = sanitized.replace(allControlChars, '');
     }
 
     // Remove potentially dangerous Unicode characters
@@ -79,9 +80,9 @@ export function sanitizeFilename(filename: string): string {
         .replace(/\.+$/, '') // Remove trailing dots
         .trim();
 
-    // Remove control characters
-    // eslint-disable-next-line no-control-regex
-    sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
+    // Remove control characters 
+    const filenameControlChars = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`, 'g');
+    sanitized = sanitized.replace(filenameControlChars, '');
 
     // Limit length
     if (sanitized.length > 255) {
@@ -172,24 +173,24 @@ export function safeJsonParse<T>(jsonString: string | null | undefined, defaultV
  */
 export function fixPartialJson(json: string): string {
     let fixed = json.trim();
-    if (!fixed) {return '{}';}
+    if (!fixed) { return '{}'; }
 
     // Basic heuristic for common partial JSON states
-    if (!fixed.startsWith('{')) {fixed = '{' + fixed;}
-    
+    if (!fixed.startsWith('{')) { fixed = '{' + fixed; }
+
     let openQuotes = 0;
     for (let i = 0; i < fixed.length; i++) {
-        if (fixed[i] === '"' && (i === 0 || fixed[i-1] !== '\\')) {
+        if (fixed[i] === '"' && (i === 0 || fixed[i - 1] !== '\\')) {
             openQuotes++;
         }
     }
-    if (openQuotes % 2 !== 0) {fixed += '"';}
+    if (openQuotes % 2 !== 0) { fixed += '"'; }
 
     // Count open braces
     let openBraces = 0;
     for (const char of fixed) {
-        if (char === '{') {openBraces++;}
-        if (char === '}') {openBraces--;}
+        if (char === '{') { openBraces++; }
+        if (char === '}') { openBraces--; }
     }
     while (openBraces > 0) {
         fixed += '}';

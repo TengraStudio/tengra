@@ -13,6 +13,7 @@ import type { FileSearchResult } from '@shared/types/common';
 import type { WorkspaceDefinitionLocation } from '@shared/types/workspace';
 import type { editor, IMarkdownString, IPosition, IRange, languages } from 'monaco-editor';
 import React from 'react';
+import * as protocol from 'vscode-languageserver-protocol';
 
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -368,7 +369,7 @@ export function useWorkspaceEditorIntelligence({
         const resolveDefinitionAtPosition = async (
             position: IPosition
         ): Promise<WorkspaceDefinitionLocation[]> => {
-            if (disposed) return [];
+            if (disposed) {return [];}
             const model = editorInstance.getModel();
             if (!model || model.isDisposed()) {
                 return [];
@@ -382,7 +383,7 @@ export function useWorkspaceEditorIntelligence({
                     position.lineNumber,
                     position.column
                 );
-                if (disposed) return [];
+                if (disposed) {return [];}
                 return results;
             } catch (error) {
                 if (!disposed) {
@@ -399,7 +400,7 @@ export function useWorkspaceEditorIntelligence({
             symbolArg: string | undefined,
             resolver: (query: string) => Promise<FileSearchResult[]>
         ): Promise<void> => {
-            if (disposed) return;
+            if (disposed) {return;}
             const symbol = symbolArg?.trim() || resolveSymbolFromSelection(editorInstance);
             if (!symbol || disposed) {
                 return;
@@ -407,7 +408,7 @@ export function useWorkspaceEditorIntelligence({
 
             try {
                 const resolvedResults = await resolver(symbol);
-                if (disposed) return;
+                if (disposed) {return;}
                 
                 const limitedResults = resolvedResults
                     .filter(item => item.file.trim().length > 0)
@@ -443,7 +444,7 @@ export function useWorkspaceEditorIntelligence({
 
         const hoverProvider = monaco.languages.registerHoverProvider(language, {
             provideHover: async (model: editor.ITextModel, position: IPosition) => {
-                if (disposed || model.isDisposed()) return null;
+                if (disposed || model.isDisposed()) {return null;}
                 const activeModel = editorInstance.getModel();
                 if (model.uri.toString() !== activeModel?.uri.toString()) {
                     return null;
@@ -456,7 +457,7 @@ export function useWorkspaceEditorIntelligence({
                 const importTarget = resolveImportSpecifierAtPosition(model, position);
                 if (importTarget) {
                     const definitions = await resolveDefinitionAtPosition(position);
-                    if (disposed || model.isDisposed()) return null;
+                    if (disposed || model.isDisposed()) {return null;}
                     return buildDefinitionHoverContents(
                         monaco,
                         workspacePath,
@@ -480,7 +481,7 @@ export function useWorkspaceEditorIntelligence({
                         ),
                     ]);
 
-                    if (disposed || model.isDisposed()) return null;
+                    if (disposed || model.isDisposed()) {return null;}
 
                     if (!definition && relationships.length === 0) {
                         return null;
@@ -512,14 +513,14 @@ export function useWorkspaceEditorIntelligence({
 
         const definitionProvider = monaco.languages.registerDefinitionProvider(language, {
             provideDefinition: async (model: editor.ITextModel, position: IPosition) => {
-                if (disposed || model.isDisposed()) return [];
+                if (disposed || model.isDisposed()) {return [];}
                 const activeModel = editorInstance.getModel();
                 if (model.uri.toString() !== activeModel?.uri.toString()) {
                     return [];
                 }
 
                 const definitions = await resolveDefinitionAtPosition(position);
-                if (disposed || model.isDisposed()) return [];
+                if (disposed || model.isDisposed()) {return [];}
                 
                 return definitions.map(definition => ({
                     uri: monaco.Uri.parse(toMonacoFileUri(definition.file)),
@@ -539,7 +540,7 @@ export function useWorkspaceEditorIntelligence({
         const codeActionProvider = monaco.languages.registerCodeActionProvider(language, {
             providedCodeActionKinds: [quickFixKind],
             provideCodeActions: (model: editor.ITextModel, range: IRange) => {
-                if (disposed || model.isDisposed()) return { actions: [], dispose: () => {} };
+                if (disposed || model.isDisposed()) {return { actions: [], dispose: () => {} };}
                 const activeModel = editorInstance.getModel();
                 if (model.uri.toString() !== activeModel?.uri.toString()) {
                     return {
@@ -580,7 +581,7 @@ export function useWorkspaceEditorIntelligence({
             label: labels.open,
             keybindings: keybindings.definition,
             run: async () => {
-                if (disposed) return;
+                if (disposed) {return;}
                 await navigateToDefinition();
             },
         });
@@ -590,7 +591,7 @@ export function useWorkspaceEditorIntelligence({
             label: labels.history,
             keybindings: keybindings.references,
             run: async () => {
-                if (disposed) return;
+                if (disposed) {return;}
                 await showWorkspaceResults(
                     undefined,
                     symbol => window.electron.code.findReferences(workspacePath, symbol)
@@ -602,7 +603,7 @@ export function useWorkspaceEditorIntelligence({
             id: FIND_RELATED_ACTION_ID,
             label: labels.related,
             run: async () => {
-                if (disposed) return;
+                if (disposed) {return;}
                 await showWorkspaceResults(
                     undefined,
                     symbol =>
@@ -616,7 +617,7 @@ export function useWorkspaceEditorIntelligence({
         });
 
         const mouseSubscription = editorInstance.onMouseDown(event => {
-            if (disposed) return;
+            if (disposed) {return;}
             const position = event.target.position;
             const mouseEvent = event.event;
             if (!position || !mouseEvent.leftButton || (!mouseEvent.ctrlKey && !mouseEvent.metaKey)) {
@@ -624,7 +625,7 @@ export function useWorkspaceEditorIntelligence({
             }
 
             void resolveDefinitionAtPosition(position).then(definitions => {
-                if (disposed) return;
+                if (disposed) {return;}
                 const firstDefinition = definitions[0];
                 if (!firstDefinition || !onNavigateToLocation) {
                     return;
@@ -638,7 +639,7 @@ export function useWorkspaceEditorIntelligence({
         });
 
         const handleModifierState = (event: KeyboardEvent) => {
-            if (disposed) return;
+            if (disposed) {return;}
             modifierPressedRef.current = event.ctrlKey || event.metaKey;
         };
         const resetModifierState = () => {
@@ -650,11 +651,11 @@ export function useWorkspaceEditorIntelligence({
 
         const diagnosticsCleanup = window.electron.ipcRenderer.on('lsp:diagnostics-updated', (_event, data: {
             uri: string;
-            diagnostics: any[];
+            diagnostics: protocol.Diagnostic[];
         }) => {
-            if (disposed || !editorInstance || !monaco) return;
+            if (disposed || !editorInstance || !monaco) {return;}
             const model = editorInstance.getModel();
-            if (!model || model.isDisposed()) return;
+            if (!model || model.isDisposed()) {return;}
 
             // Match current file URI
             const currentFileUri = toMonacoFileUri(filePath);

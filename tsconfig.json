@@ -65,7 +65,8 @@
         "types": [
             "vitest",
             "node",
-            "react"
+            "react",
+            "react-virtualized"
         ]
     },
     "include": [

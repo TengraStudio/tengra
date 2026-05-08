@@ -12,7 +12,7 @@ import { AUTH_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcRenderer } from 'electron';
 
 export interface AuthBridge {
-    githubLogin: (appId?: 'copilot') => Promise<{
+    copilotLogin: () => Promise<{
         device_code: string;
         user_code: string;
         verification_uri: string;
@@ -21,8 +21,7 @@ export interface AuthBridge {
     }>;
     pollToken: (
         deviceCode: string,
-        interval: number,
-        appId?: 'copilot'
+        interval: number
     ) => Promise<{
         success: boolean;
         account?: {
@@ -40,9 +39,9 @@ export interface AuthBridge {
 
 export function createAuthBridge(ipc: IpcRenderer): AuthBridge {
     return {
-        githubLogin: (appId?: 'copilot') => ipc.invoke(AUTH_CHANNELS.GITHUB_LOGIN, appId),
-        pollToken: (deviceCode: string, interval: number, appId?: 'copilot') =>
-            ipc.invoke(AUTH_CHANNELS.POLL_TOKEN, deviceCode, interval, appId),
+        copilotLogin: () => ipc.invoke(AUTH_CHANNELS.COPILOT_LOGIN),
+        pollToken: (deviceCode: string, interval: number) =>
+            ipc.invoke(AUTH_CHANNELS.POLL_TOKEN, deviceCode, interval),
         createAccount: (name: string) => ipc.invoke(AUTH_CHANNELS.CREATE_ACCOUNT, name),
         switchAccount: (id: string) => ipc.invoke(AUTH_CHANNELS.SWITCH_ACCOUNT, id),
         onAccountChanged: callback => {

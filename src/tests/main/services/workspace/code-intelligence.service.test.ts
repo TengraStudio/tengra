@@ -8,6 +8,8 @@
  * (at your option) any later version.
  */
 
+import path from 'path';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('fs', () => ({
@@ -116,7 +118,7 @@ import {
 import { parseFileSymbols } from '@main/services/workspace/code-intelligence/symbol-parser.util';
 import type { CodeSymbol } from '@main/services/workspace/code-intelligence/types';
 import { getWorkspaceIgnoreMatcher } from '@main/services/workspace/workspace-ignore.util';
-import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants'; 
 import { BrowserWindow } from 'electron';
 
 function createMockDb(): {
@@ -236,27 +238,27 @@ describe('CodeIntelligenceService', () => {
     describe('derived workspace artifacts', () => {
         it('builds and caches a workspace dependency graph', async () => {
             mockDb.getCodeSymbolsByWorkspacePath.mockResolvedValue([
-                { name: 'Foo', kind: 'class', path: '/root/src/a.ts', line: 1, signature: 'class Foo' },
-                { name: 'bar', kind: 'function', path: '/root/src/b.ts', line: 4, signature: 'function bar()' },
+                { name: 'Foo', kind: 'class', path: path.resolve('/root/src/a.ts'), line: 1, signature: 'class Foo' },
+                { name: 'bar', kind: 'function', path: path.resolve('/root/src/b.ts'), line: 4, signature: 'function bar()' },
             ]);
             vi.mocked(scanDirRecursively).mockImplementation(async (_root: string, files: string[]) => {
-                files.push('/root/src/a.ts', '/root/src/b.ts');
+                files.push(path.resolve('/root/src/a.ts'), path.resolve('/root/src/b.ts'));
             });
             vi.mocked(fs.readFile).mockImplementation(async (filePath: Parameters<typeof fs.readFile>[0]) => {
                 const normalizedPath = typeof filePath === 'string' ? filePath : String(filePath);
-                if (normalizedPath === '/root/src/a.ts') {
+                if (normalizedPath === path.resolve('/root/src/a.ts')) {
                     return "import './b';\nimport React from 'react';";
                 }
                 return 'export function bar() { return 1; }';
             });
 
-            const graph = await service.getWorkspaceDependencyGraph('/root');
-            const cachedGraph = await service.getWorkspaceDependencyGraph('/root');
+            const graph = await service.getWorkspaceDependencyGraph(path.resolve('/root'));
+            const cachedGraph = await service.getWorkspaceDependencyGraph(path.resolve('/root'));
 
             expect(graph.nodes).toEqual(
                 expect.arrayContaining([
                     expect.objectContaining({
-                        path: '/root/src/a.ts',
+                        path: path.resolve('/root/src/a.ts'),
                         symbolCount: 1,
                     }),
                 ])
@@ -264,18 +266,20 @@ describe('CodeIntelligenceService', () => {
             expect(graph.edges).toEqual(
                 expect.arrayContaining([
                     expect.objectContaining({
-                        from: '/root/src/a.ts',
-                        to: './b',
-                        kind: 'package',
+                        from: path.resolve('/root/src/a.ts'),
+                        to: path.resolve('/root/src/b.ts'),
+                        kind: 'workspace',
+                        specifier: './b',
                     }),
                     expect.objectContaining({
-                        from: '/root/src/a.ts',
+                        from: path.resolve('/root/src/a.ts'),
                         to: 'react',
                         kind: 'package',
+                        specifier: 'react',
                     }),
                 ])
             );
-            expect(graph.externalDependencies).toEqual(['./b', 'react']);
+            expect(graph.externalDependencies).toEqual(['react']);
             expect(cachedGraph).toEqual(graph);
             expect(vi.mocked(scanDirRecursively)).toHaveBeenCalledTimes(1);
         });

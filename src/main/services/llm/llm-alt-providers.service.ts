@@ -186,7 +186,7 @@ export class LLMAltProvidersService {
         const apiKey = await this.keyGetters.getOpenCodeApiKey();
         const baseUrl = 'https://opencode.ai/zen/v1';
         void chatOpenAIStream;
-        yield* this.handleOpenCodeResponsesStream(messages, model, tools, apiKey, baseUrl, signal);
+        yield* this.handleOpenCodeResponsesStream({ messages, model, tools, apiKey, baseUrl, signal });
     }
 
     /**
@@ -253,14 +253,15 @@ export class LLMAltProvidersService {
         return this.parseOpenCodeResponse(json);
     }
 
-    private async *handleOpenCodeResponsesStream(
-        messages: Array<Message | ChatMessage>,
-        model: string,
-        tools: ToolDefinition[] | undefined,
-        apiKey: string,
-        baseUrl: string,
-        signal?: AbortSignal
-    ): AsyncGenerator<AltStreamYield> {
+    private async *handleOpenCodeResponsesStream(params: {
+        messages: Array<Message | ChatMessage>;
+        model: string;
+        tools: ToolDefinition[] | undefined;
+        apiKey: string;
+        baseUrl: string;
+        signal?: AbortSignal;
+    }): AsyncGenerator<AltStreamYield> {
+        const { messages, model, tools, apiKey, baseUrl, signal } = params;
         const endpoint = `${baseUrl}/responses`;
         const normalized = MessageNormalizer.normalizeOpenCodeResponsesMessages(messages);
         const body: Record<string, unknown> = { model, input: normalized, stream: true };

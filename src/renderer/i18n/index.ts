@@ -44,10 +44,6 @@ const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => 
     return current;
 };
 
-const hasScopePrefix = (path: string): boolean => {
-    return path.startsWith('frontend.') || path.startsWith('backend.') || path.startsWith('common.');
-};
-
 const normalizeTranslationPath = (path: string): string => {
     if (path.startsWith(TRANSLATION_ROOT_PREFIX)) {
         return path.slice(TRANSLATION_ROOT_PREFIX.length);

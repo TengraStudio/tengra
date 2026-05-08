@@ -12,14 +12,11 @@ import { spawn } from 'child_process';
 import * as path from 'path';
 
 import { ipc } from '@main/core/ipc-decorators';
-import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { createWindowsSpawnCommand } from '@main/utils/windows-command.util';
 import { SHELL_CHANNELS,WINDOW_CHANNELS } from '@shared/constants/ipc-channels';
-import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, shell } from 'electron';
-import { z } from 'zod';
 
 const COMPACT_WIDTH = 400;
 const COMPACT_HEIGHT = 600;
@@ -238,7 +235,7 @@ export class WindowService extends BaseService {
             if (!COOKIE_CAPTURE_ALLOWED_HOSTS.has(parsedUrl.hostname)) {
                 return { success: false, cookies: [], error: 'Host not allowed' };
             }
-        } catch (e) {
+        } catch {
             return { success: false, cookies: [], error: 'Invalid URL' };
         }
         return { success: true, cookies: [] }; // Placeholder

@@ -152,8 +152,10 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
 
     useEffect(() => {
         if (!query && hfResults.length === 0) {
-            void fetchModels();
-            return;
+            const timer = setTimeout(() => {
+                void fetchModels();
+            }, 0);
+            return () => clearTimeout(timer);
         }
         const timer = setTimeout(() => { void fetchModels(); }, 500);
         return () => clearTimeout(timer);

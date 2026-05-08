@@ -40,13 +40,8 @@ export const ResizablePane: React.FC<ResizablePaneProps> = ({
     onResize,
     direction = 'horizontal',
 }) => {
-    const [size, setSize] = useState(initialSize);
     const containerRef = useRef<HTMLDivElement>(null);
-
-    // Update size when initialSize changes
-    useEffect(() => {
-        setSize(initialSize);
-    }, [initialSize]);
+    const size = initialSize;
 
     useEffect(() => {
         if (onResize) {

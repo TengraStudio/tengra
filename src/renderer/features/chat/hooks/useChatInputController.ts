@@ -149,13 +149,16 @@ export function useChatInputController() {
         if (!appSettings) {
             return;
         }
-        setPermissionPolicy({
-            commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
-            pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
-            allowedCommands: appSettings.general.agentAllowedCommands ?? [],
-            disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
-            allowedPaths: appSettings.general.agentAllowedPaths ?? [],
-        });
+        const timer = window.setTimeout(() => {
+            setPermissionPolicy({
+                commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
+                pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
+                allowedCommands: appSettings.general.agentAllowedCommands ?? [],
+                disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
+                allowedPaths: appSettings.general.agentAllowedPaths ?? [],
+            });
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [appSettings]);
 
     const isImageOnlyModel = useMemo(() => {

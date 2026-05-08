@@ -40,7 +40,8 @@ const OLLAMA_SINGLE_ACCOUNT_ID: &str = "ollama_default";
 
 static OAUTH_SESSIONS: OnceLock<RwLock<HashMap<String, OAuthSession>>> = OnceLock::new();
 static CALLBACK_SERVERS: OnceLock<RwLock<HashSet<&'static str>>> = OnceLock::new();
-static CALLBACK_BRIDGE_usageStats: OnceLock<RwLock<CallbackBridgeusageStatsState>> = OnceLock::new();
+static CALLBACK_BRIDGE_usageStats: OnceLock<RwLock<CallbackBridgeusageStatsState>> =
+    OnceLock::new();
 
 #[derive(Clone, Serialize)]
 pub struct SessionStatus {

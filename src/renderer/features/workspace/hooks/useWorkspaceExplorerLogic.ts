@@ -8,195 +8,280 @@
  * (at your option) any later version.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React from 'react';
 
-import { FileNode } from '@/features/workspace/components/WorkspaceTreeItem';
-import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
 import {
-    joinPath,
-    loadExpandedMountState,
-    saveExpandedMountState,
-    sortNodes,
-} from '@/features/workspace/utils/workspaceUtils';
-import { WorkspaceEntry, WorkspaceMount } from '@/types';
-import { performanceMonitor } from '@/utils/performance';
-import { appLogger } from '@/utils/renderer-logger';
+    clearWorkspaceBulkAction,
+    clearWorkspaceInlineAction,
+    setWorkspaceExplorerFilterQuery,
+    setWorkspaceExplorerFocusedRowKey,
+    startWorkspaceBulkAction,
+    type WorkspaceBulkAction,
+    type WorkspaceInlineAction,
+} from '@/store/workspace-explorer.store';
+import type { WorkspaceEntry } from '@/types';
 
-import { ContextMenuAction, ContextMenuState, MountFileEntry } from '../components/workspace/types';
+import type { WorkspaceEntryRow, WorkspaceExplorerRow } from '../hooks/useWorkspaceExplorerTree';
+import { canUseSharedTargetDirectory } from '../utils/workspace-bulk-actions'; 
+import { findParentEntryRow, findTypeToSelectMatch } from '../utils/workspace-explorer.util';
 
-export function useWorkspaceExplorerLogic(
-    mounts: WorkspaceMount[],
-    refreshSignal: number,
-    onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean,
-    onContextAction?: (action: ContextMenuAction) => void,
-    storageKey?: string
-) {
-    const initialExpandedState = useMemo(
-        () => (storageKey ? loadExpandedMountState(storageKey) : {}),
-        [storageKey]
-    );
-    const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>(initialExpandedState);
-    const [rootNodes, setRootNodes] = useState<Record<string, FileNode[]>>({});
-    const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({});
-    const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-    const loadDebounceRef = useRef<number | null>(null);
-
-    const loadRoot = useCallback(
-        async (mount: WorkspaceMount) => {
-            if (!mount.rootPath || mount.rootPath.trim().length === 0) {
-                appLogger.warn('WorkspaceExplorer', 'Skipping mount root load with empty rootPath', { mountId: mount.id });
-                return;
-            }
-            setLoadingMounts(prev => ({ ...prev, [mount.id]: true }));
-            const isReady = onEnsureMount ? await onEnsureMount(mount) : true;
-            if (!isReady) {
-                setLoadingMounts(prev => ({ ...prev, [mount.id]: false }));
-                return;
-            }
-            try {
-                const result =
-                    mount.type === 'local'
-                        ? await window.electron.files.listDirectory(mount.rootPath)
-                        : await window.electron.ssh.listDir(mount.id, mount.rootPath);
-                if (result.success) {
-                    const anyResult = result as {
-                        files?: MountFileEntry[];
-                        data?: MountFileEntry[];
-                    };
-                    const fileList = anyResult.files ?? anyResult.data ?? [];
-                    if (Array.isArray(fileList)) {
-                        const mapped = fileList.map((item: MountFileEntry) => ({
-                            name: item.name,
-                            isDirectory: Boolean(item.isDirectory),
-                            path: joinPath(mount.rootPath, item.name, mount.type),
-                        }));
-                        const sorted = sortNodes(mapped);
-                        setRootNodes(prev => ({ ...prev, [mount.id]: sorted }));
-                        if (!performanceMonitor.hasMark('workspace:explorer:ready')) {
-                            performanceMonitor.mark('workspace:explorer:ready');
-                        }
-                        if (mount.type === 'local') {
-                            void applyGitTreeStatus(mount.rootPath, mount.rootPath, sorted)
-                                .then(withGit => {
-                                    setRootNodes(prev => ({
-                                        ...prev,
-                                        [mount.id]: sortNodes(withGit),
-                                    }));
-                                })
-                                .catch(error => {
-                                    appLogger.error(
-                                        'WorkspaceExplorer',
-                                        'Failed to apply git tree preview',
-                                        error as Error
-                                    );
-                                });
-                        }
-                    }
-                }
-            } catch (error) {
-                appLogger.error('WorkspaceExplorer', 'Failed to load mount root', error as Error);
-            } finally {
-                setLoadingMounts(prev => ({ ...prev, [mount.id]: false }));
-            }
-        },
-        [onEnsureMount]
+export function useWorkspaceBulkActionControls(args: {
+    bulkAction: WorkspaceBulkAction | null;
+    onRequestBulkDelete?: (entries: WorkspaceEntry[]) => void;
+    onSubmitBulkAction?: (
+        type: 'rename' | 'move' | 'copy',
+        entries: WorkspaceEntry[],
+        draftValue: string
+    ) => Promise<boolean>;
+    selectedEntries?: WorkspaceEntry[] | null;
+    workspaceId: string;
+}) {
+    const {
+        bulkAction,
+        onRequestBulkDelete,
+        onSubmitBulkAction,
+        selectedEntries,
+        workspaceId,
+    } = args;
+    const canUsePathBulkAction = React.useMemo(
+        () => canUseSharedTargetDirectory(selectedEntries ?? []),
+        [selectedEntries]
     );
 
-    useEffect(() => {
-        if (loadDebounceRef.current !== null) {
-            window.clearTimeout(loadDebounceRef.current);
-        }
-        loadDebounceRef.current = window.setTimeout(() => {
-            mounts.forEach(mount => {
-                const shouldLoad =
-                    expandedMounts[mount.id] || (mounts.length === 1 && mount.type === 'local');
-                if (shouldLoad) {
-                    void loadRoot(mount);
-                }
-            });
-            loadDebounceRef.current = null;
-        }, 120);
-
-        return () => {
-            if (loadDebounceRef.current !== null) {
-                window.clearTimeout(loadDebounceRef.current);
-                loadDebounceRef.current = null;
-            }
-        };
-    }, [refreshSignal, mounts, expandedMounts, loadRoot]);
-
-    useEffect(() => {
-        setExpandedMounts(initialExpandedState);
-    }, [initialExpandedState]);
-
-    useEffect(() => {
-        const mountIds = new Set(mounts.map(mount => mount.id));
-        setExpandedMounts(prev =>
-            Object.fromEntries(Object.entries(prev).filter(([mountId]) => mountIds.has(mountId)))
-        );
-    }, [mounts]);
-
-    useEffect(() => {
-        if (!storageKey) {
+    React.useEffect(() => {
+        if ((selectedEntries?.length ?? 0) > 1 || !bulkAction) {
             return;
         }
-        saveExpandedMountState(storageKey, expandedMounts);
-    }, [expandedMounts, storageKey]);
+        clearWorkspaceBulkAction(workspaceId);
+    }, [bulkAction, selectedEntries, workspaceId]);
 
-    useEffect(() => {
-        const handleClick = () => setContextMenu(null);
-        if (contextMenu) {
-            document.addEventListener('click', handleClick);
-            return () => document.removeEventListener('click', handleClick);
+    const handleBulkActionStart = React.useCallback(
+        (type: 'rename' | 'move' | 'copy') => {
+            startWorkspaceBulkAction(workspaceId, type);
+        },
+        [workspaceId]
+    );
+    const handleBulkActionCancel = React.useCallback(() => {
+        clearWorkspaceBulkAction(workspaceId);
+    }, [workspaceId]);
+    const handleBulkActionSubmit = React.useCallback(() => {
+        if (
+            !bulkAction ||
+            !onSubmitBulkAction ||
+            !selectedEntries ||
+            selectedEntries.length <= 1
+        ) {
+            return;
         }
-        return undefined;
-    }, [contextMenu]);
-
-    const toggleMount = useCallback(
-        (mount: WorkspaceMount) => {
-            setExpandedMounts(prev => {
-                const next = { ...prev, [mount.id]: !prev[mount.id] };
-                if (!prev[mount.id]) {
-                    void loadRoot(mount);
-                }
-                return next;
-            });
-        },
-        [loadRoot]
-    );
-
-    const handleContextMenu = useCallback((e: React.MouseEvent, entry: WorkspaceEntry) => {
-        setContextMenu({ x: e.clientX, y: e.clientY, entry });
-    }, []);
-
-    const handleMountContextMenu = useCallback((e: React.MouseEvent, mountId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setContextMenu({ x: e.clientX, y: e.clientY, mountId });
-    }, []);
-
-    const handleContextActionInternal = useCallback(
-        (type: ContextMenuAction['type']) => {
-            if (contextMenu?.entry && onContextAction) {
-                onContextAction({ type, entry: contextMenu.entry });
+        void onSubmitBulkAction(
+            bulkAction.type,
+            selectedEntries,
+            bulkAction.draftValue
+        ).then(success => {
+            if (success) {
+                clearWorkspaceBulkAction(workspaceId);
             }
-            setContextMenu(null);
-        },
-        [contextMenu, onContextAction]
-    );
-
-    const closeContextMenu = useCallback(() => setContextMenu(null), []);
+        });
+    }, [bulkAction, onSubmitBulkAction, selectedEntries, workspaceId]);
+    const handleBulkDelete = React.useCallback(() => {
+        if (!selectedEntries || selectedEntries.length <= 1) {
+            return;
+        }
+        onRequestBulkDelete?.(selectedEntries);
+    }, [onRequestBulkDelete, selectedEntries]);
 
     return {
-        expandedMounts,
-        rootNodes,
-        loadingMounts,
-        contextMenu,
-        toggleMount,
-        handleContextMenu,
-        handleMountContextMenu,
-        handleContextAction: handleContextActionInternal,
-        closeContextMenu,
+        canUsePathBulkAction,
+        handleBulkActionStart,
+        handleBulkActionCancel,
+        handleBulkActionSubmit,
+        handleBulkDelete,
     };
 }
 
+export function useWorkspaceInlineActionControls(args: {
+    inlineAction: WorkspaceInlineAction | null;
+    onCancelInlineAction?: () => void;
+    onSubmitInlineAction?: (action: WorkspaceInlineAction) => Promise<boolean>;
+    workspaceId: string;
+}) {
+    const {
+        inlineAction,
+        onCancelInlineAction,
+        onSubmitInlineAction,
+        workspaceId,
+    } = args;
+    const handleInlineSubmit = React.useCallback(() => {
+        if (!inlineAction || !onSubmitInlineAction) {
+            return;
+        }
+
+        void onSubmitInlineAction(inlineAction).then(success => {
+            if (!success) {
+                return;
+            }
+            setWorkspaceExplorerFocusedRowKey(
+                workspaceId,
+                inlineAction.type === 'rename'
+                    ? `${inlineAction.entry.mountId}:${inlineAction.entry.path}`
+                    : null
+            );
+        });
+    }, [inlineAction, onSubmitInlineAction, workspaceId]);
+
+    const handleInlineCancel = React.useCallback(() => {
+        clearWorkspaceInlineAction(workspaceId);
+        onCancelInlineAction?.();
+    }, [onCancelInlineAction, workspaceId]);
+
+    return {
+        handleInlineSubmit,
+        handleInlineCancel,
+    };
+}
+
+interface WorkspaceExplorerKeyboardOptions {
+    workspaceId: string;
+    entryRows: WorkspaceEntryRow[];
+    effectiveDisplayRows: WorkspaceExplorerRow[];
+    selectedEntries: WorkspaceEntry[] | null;
+    focusedRowKey: string | null;
+    filterQuery: string;
+    onContextAction?: (action: { type: string; entry: WorkspaceEntry }) => void;
+    toggleNode: (row: WorkspaceEntryRow) => void;
+    onOpenFile: (entry: WorkspaceEntry) => void;
+    updateSelection: (row: WorkspaceEntryRow, mode: 'replace' | 'range' | 'toggle') => void;
+}
+
+export function useWorkspaceExplorerKeyboard({
+    workspaceId,
+    entryRows,
+    effectiveDisplayRows,
+    selectedEntries,
+    focusedRowKey,
+    filterQuery,
+    onContextAction,
+    toggleNode,
+    onOpenFile,
+    updateSelection,
+}: WorkspaceExplorerKeyboardOptions) {
+    const typeaheadStateRef = React.useRef({ query: '', timestamp: 0 });
+
+    const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (
+            target &&
+            (target.tagName === 'INPUT'
+                || target.tagName === 'TEXTAREA'
+                || target.isContentEditable)
+        ) {
+            return;
+        }
+
+        if (entryRows.length === 0) {
+            return;
+        }
+
+        const primary = selectedEntries?.[selectedEntries.length - 1];
+        const activeRowKey = primary ? `${primary.mountId}:${primary.path}` : focusedRowKey;
+        const currentIndex = entryRows.findIndex(row => row.key === activeRowKey);
+        const selectedRow = currentIndex >= 0 ? entryRows[currentIndex] : entryRows[0];
+        if (!selectedRow) {
+            return;
+        }
+
+        if (e.key === 'Escape') {
+            if (filterQuery.trim()) {
+                e.preventDefault();
+                setWorkspaceExplorerFilterQuery(workspaceId, '');
+            }
+            return;
+        }
+
+        if (e.key === 'F2') {
+            e.preventDefault();
+            onContextAction?.({ type: 'rename', entry: selectedRow.entry });
+            return;
+        }
+
+        if (e.key === 'Delete') {
+            e.preventDefault();
+            onContextAction?.({ type: 'delete', entry: selectedRow.entry });
+            return;
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedRow.entry.isDirectory) {
+                toggleNode(selectedRow);
+                return;
+            }
+            onOpenFile(selectedRow.entry);
+            return;
+        }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const fallbackIndex = currentIndex >= 0 ? currentIndex : 0;
+            const nextIndex = e.key === 'ArrowDown' ? fallbackIndex + 1 : fallbackIndex - 1;
+            const nextRow = entryRows[nextIndex];
+            if (nextRow) {
+                updateSelection(nextRow, e.shiftKey ? 'range' : 'replace');
+            }
+            return;
+        }
+
+        if (e.key === 'Home' || e.key === 'End') {
+            e.preventDefault();
+            const nextRow = e.key === 'Home' ? entryRows[0] : entryRows.at(-1);
+            if (nextRow) {
+                updateSelection(nextRow, e.shiftKey ? 'range' : 'replace');
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowRight' && selectedRow.entry.isDirectory) {
+            e.preventDefault();
+            if (!selectedRow.expanded) {
+                toggleNode(selectedRow);
+                return;
+            }
+            const currentVisibleIndex = effectiveDisplayRows.findIndex(row => row.key === selectedRow.key);
+            const nextVisibleRow = effectiveDisplayRows[currentVisibleIndex + 1];
+            if (nextVisibleRow?.type === 'entry') {
+                updateSelection(nextVisibleRow, e.shiftKey ? 'range' : 'replace');
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (selectedRow.entry.isDirectory && selectedRow.expanded) {
+                toggleNode(selectedRow);
+                return;
+            }
+            const parentRow = findParentEntryRow(effectiveDisplayRows.filter((row): row is WorkspaceExplorerRow => row.type === 'entry' || row.type === 'mount'), selectedRow);
+            if (parentRow) {
+                updateSelection(parentRow, e.shiftKey ? 'range' : 'replace');
+            }
+            return;
+        }
+
+        if (e.key.length === 1 && e.key.trim() && !e.altKey && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            const currentTimestamp = Date.now();
+            const shouldResetBuffer = currentTimestamp - typeaheadStateRef.current.timestamp > 700;
+            const nextQuery = `${shouldResetBuffer ? '' : typeaheadStateRef.current.query}${e.key}`;
+            typeaheadStateRef.current = {
+                query: nextQuery,
+                timestamp: currentTimestamp,
+            };
+
+            const match = findTypeToSelectMatch(entryRows, nextQuery, selectedRow.entry);
+            if (match) {
+                updateSelection(match, 'replace');
+            }
+        }
+    }, [entryRows, selectedEntries, focusedRowKey, filterQuery, workspaceId, onContextAction, toggleNode, onOpenFile, updateSelection, effectiveDisplayRows]);
+
+    return { handleKeyDown };
+}

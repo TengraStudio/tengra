@@ -135,7 +135,7 @@ import { BrowserWindow } from 'electron';
 // Export the container instance so it can be accessed if needed
 export const container = new Container();
 
-function createDeferredContainerProxy<T extends object>(serviceName: string, serviceClass?: any): T {
+function createDeferredContainerProxy<T extends object>(serviceName: string, serviceClass?: unknown): T {
     let resolvedService: T | null = null;
     const getService = (): T => {
         if (!resolvedService) {
@@ -848,15 +848,15 @@ function registerLLMServices() {
     );
     container.register(
         'sessionConversationService',
-        (settingsService, localeService, llmService, proxyService, codeIntelligenceService, contextRetrievalService, databaseService, chatSessionRegistryService) => new SessionConversationService({
-            settingsService: settingsService as SettingsService,
-            localeService: localeService as LocaleService,
-            llmService: llmService as LLMService,
-            proxyService: proxyService as ProxyService,
-            codeIntelligenceService: codeIntelligenceService as CodeIntelligenceService,
-            contextRetrievalService: contextRetrievalService as ContextRetrievalService,
-            databaseService: databaseService as DatabaseService,
-            chatSessionRegistryService: chatSessionRegistryService as ChatSessionRegistryService,
+        (...args: RuntimeValue[]) => new SessionConversationService({
+            settingsService: args[0] as SettingsService,
+            localeService: args[1] as LocaleService,
+            llmService: args[2] as LLMService,
+            proxyService: args[3] as ProxyService,
+            codeIntelligenceService: args[4] as CodeIntelligenceService,
+            contextRetrievalService: args[5] as ContextRetrievalService,
+            databaseService: args[6] as DatabaseService,
+            chatSessionRegistryService: args[7] as ChatSessionRegistryService,
             advancedMemoryService: createDeferredContainerProxy<AdvancedMemoryService>('advancedMemoryService'),
             brainService: createDeferredContainerProxy<BrainService>('brainService'),
         }),
@@ -885,7 +885,17 @@ function registerLazyServices() {
         const jss = container.resolve<JobSchedulerService>('jobSchedulerService');
         const mwp = container.resolve<() => BrowserWindow | null>('mainWindowProvider');
         const afr = container.resolve<Set<string>>('allowedFileRoots');
-        return new WorkspaceService(lspService, ups, cs, proxyService, dbs, cis, jss, mwp, afr);
+        return new WorkspaceService({
+            lspService,
+            utilityProcessService: ups,
+            cacheService: cs,
+            proxyService,
+            databaseService: dbs,
+            codeIntelligenceService: cis,
+            jobSchedulerService: jss,
+            mainWindowProvider: mwp,
+            allowedFileRoots: afr
+        });
     });
 
     lazyServiceRegistry.register('advancedMemoryService', async () => {
@@ -895,7 +905,7 @@ function registerLazyServices() {
         const ss = container.resolve<SettingsService>('settingsService');
         const bmr = container.resolve<BackgroundModelResolver>('backgroundModelResolver');
         const { AdvancedMemoryService } = await import('@main/services/llm/advanced-memory.service');
-        return new AdvancedMemoryService(dbs, es, ls, ss, bmr);
+        return new AdvancedMemoryService({ db: dbs, embedding: es, llmService: ls, settings: ss, backgroundModelResolver: bmr });
     });
 
     lazyServiceRegistry.register('memoryService', async () => {

@@ -207,7 +207,7 @@ export interface ElectronApiIntegrationsDomain {
             rows?: number;
             backendId?: string;
             title?: string;
-            metadata?: Record<string, IpcValue | RuntimeValue | any>;
+            metadata?: Record<string, IpcValue | RuntimeValue>;
         }) => Promise<string>;
         getDockerContainers: () => Promise<{ success: boolean; containers: Array<{ id: string; name: string; status: string }> }>;
         detach: (options: {

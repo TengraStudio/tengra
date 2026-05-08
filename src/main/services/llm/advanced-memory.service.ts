@@ -132,6 +132,14 @@ export type PersonalitySettings = {
     customInstructions: string;
 } & JsonObject;
 
+export interface AdvancedMemoryDeps {
+    db: DatabaseService;
+    embedding: EmbeddingService;
+    llmService: LLMService;
+    settings: SettingsService;
+    backgroundModelResolver?: BackgroundModelResolver;
+}
+
 export class AdvancedMemoryService {
     private config: AdvancedMemoryConfig;
     private stagingBuffer: Map<string, PendingMemory> = new Map();
@@ -169,15 +177,21 @@ export class AdvancedMemoryService {
     private readonly indexingService: AdvancedMemoryIndexingService;
     private readonly normalizationAdapter: AdvancedMemoryNormalizationAdapter;
     private readonly persistenceAdapter: AdvancedMemoryPersistenceAdapter;
+    private readonly db: DatabaseService;
+    private readonly embedding: EmbeddingService;
+    private readonly llmService: LLMService;
+    private readonly settings: SettingsService;
+    private readonly backgroundModelResolver?: BackgroundModelResolver;
 
     constructor(
-        private db: DatabaseService,
-        private embedding: EmbeddingService,
-        private llmService: LLMService,
-        private settings: SettingsService,
-        private backgroundModelResolver?: BackgroundModelResolver,
+        deps: AdvancedMemoryDeps,
         config?: Partial<AdvancedMemoryConfig>
     ) {
+        this.db = deps.db;
+        this.embedding = deps.embedding;
+        this.llmService = deps.llmService;
+        this.settings = deps.settings;
+        this.backgroundModelResolver = deps.backgroundModelResolver;
         this.config = { ...DEFAULT_MEMORY_CONFIG, ...config };
         this.normalizationAdapter = new AdvancedMemoryNormalizationAdapter({
             generateId: this.generateId.bind(this)

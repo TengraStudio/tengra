@@ -38,7 +38,10 @@ export function useOllamaManager() {
     }, []);
 
     useEffect(() => {
-        void checkOllama();
+        const timer = window.setTimeout(() => {
+            void checkOllama();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [checkOllama]);
 
     const startOllama = useCallback(async () => {

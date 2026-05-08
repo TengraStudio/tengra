@@ -15,7 +15,6 @@ import * as path from 'path';
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
-import { t } from '@main/utils/i18n.util';
 import { RuntimeValue } from '@shared/types/common';
 import { AntigravityCreditUsageMode, AppSettings } from '@shared/types/settings';
 import { getErrorMessage, TengraError } from '@shared/utils/error.util';
@@ -36,10 +35,6 @@ const SETTINGS_ERROR_CODE = {
     SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
 } as const;
 
-const SETTINGS_MESSAGE_KEY = {
-    SAVE_FAILED: 'errors.settings.saveFailed',
-    VALIDATION_FAILED: 'errors.settings.validationFailed',
-} as const;
 
 // --- Schemas ---
 const AntigravityCreditUsageModeSchema = z.enum(['auto', 'ask-every-time']);

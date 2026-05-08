@@ -124,9 +124,14 @@ export function useSettingsStats(): {
     }, [statsPeriod]);
 
     useEffect(() => {
-        void loadStats();
+        const timer = window.setTimeout(() => {
+            void loadStats();
+        }, 0);
         const interval = setInterval(() => { void refreshDetailedStatsOnly(); }, 60000);
-        return () => clearInterval(interval);
+        return () => {
+            window.clearTimeout(timer);
+            clearInterval(interval);
+        };
     }, [loadStats, refreshDetailedStatsOnly, reloadTrigger]);
 
     useEffect(() => {

@@ -73,7 +73,9 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     }, []);
 
     React.useEffect(() => {
-        void fetchHistory();
+        queueMicrotask(() => {
+            void fetchHistory();
+        });
     }, [fetchHistory]);
 
     const availableModels = useMemo(() => {
@@ -304,7 +306,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
             <ConfirmationModal
                 isOpen={isConfirmDeleteOpen}
                 onClose={() => setIsConfirmDeleteOpen(false)}
-                onConfirm={handleConfirmDelete}
+                onConfirm={() => { void handleConfirmDelete(); }}
                 title={t('frontend.modelsPage.confirmDeleteTitle')}
                 message={t('frontend.modelsPage.confirmDelete')}
                 variant="danger"

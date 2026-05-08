@@ -46,7 +46,10 @@ export const AccountManager: React.FC = () => {
     }, [t]);
 
     useEffect(() => {
-        void loadAccounts();
+        const timer = window.setTimeout(() => {
+            void loadAccounts();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [loadAccounts]);
 
     const handleCreateAccount = async () => {

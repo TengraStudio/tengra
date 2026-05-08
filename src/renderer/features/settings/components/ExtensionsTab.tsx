@@ -35,7 +35,10 @@ export const ExtensionsTab: React.FC<ExtensionsTabProps> = ({
     const registry = useMarketplaceStore(s => s.registry);
 
     useEffect(() => {
-        setSection(initialSection);
+        const timer = window.setTimeout(() => {
+            setSection(initialSection);
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [initialSection]);
 
     return (

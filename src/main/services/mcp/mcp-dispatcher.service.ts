@@ -15,7 +15,6 @@ import { appLogger } from '@main/logging/logger';
 import { McpDispatchResult } from '@main/mcp/types';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { withOperationGuard } from '@main/utils/common/operation-wrapper.util';
 import { MCP_CHANNELS, MCP_PERMISSIONS_CHANNELS } from '@shared/constants/ipc-channels';
 import { ToolDefinition } from '@shared/types/ai/chat';
 import { JsonObject } from '@shared/types/common';

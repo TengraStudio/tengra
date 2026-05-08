@@ -143,8 +143,9 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                         type="button"
                         onClick={() => {
                             void window.electron.dialog.selectDirectory().then((result: { success: boolean; path?: string }) => {
-                                if (result.success && typeof result.path === 'string') {
-                                    onFormChange(p => ({ ...p, customPath: result.path! }));
+                                const path = result.path;
+                                if (result.success && typeof path === 'string') {
+                                    onFormChange(p => ({ ...p, customPath: path }));
                                 }
                             });
                         }}
@@ -191,4 +192,3 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
 };
 
 export type CategoryConfig = WorkspaceCategoryConfig;
-

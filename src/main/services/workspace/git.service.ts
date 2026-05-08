@@ -30,8 +30,6 @@ const execFileAsync = promisify(execFile);
 // --- Constants ---
 const MAX_PATH_LENGTH = 4096;
 const MAX_BRANCH_LENGTH = 255;
-const MAX_COMMIT_MESSAGE_LENGTH = 72 * 100;
-const MAX_HASH_LENGTH = 64;
 const TREE_STATUS_PREVIEW_TTL_MS = 30_000;
 const CONFLICT_STATUSES = new Set(['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU']);
 const SUPPORTED_HOOKS = ['pre-commit', 'commit-msg', 'pre-push', 'post-merge', 'pre-rebase'] as const;

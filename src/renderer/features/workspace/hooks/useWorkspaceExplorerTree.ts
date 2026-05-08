@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FILES_CHANNELS } from '@shared/constants/ipc-channels';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useWorkspaceExplorerWatchers } from '@/features/workspace/hooks/useWorkspaceExplorerWatchers';
 import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
@@ -133,9 +134,11 @@ function extractFileList(result: unknown): MountFileEntry[] {
 function mapFileEntries(
     fileList: MountFileEntry[],
     nodePath: string,
-    mountType: WorkspaceMount['type']
+    mountType: WorkspaceMount['type'],
+    mountId: string
 ): FileNode[] {
     return fileList.map(item => ({
+        mountId,
         name: item.name,
         isDirectory: Boolean(item.isDirectory),
         path: joinPath(nodePath, item.name, mountType),
@@ -222,6 +225,265 @@ function areBooleanMapsEqual(
     }
 
     return true;
+}
+
+function syncPrunedMountState(
+    mounts: WorkspaceMount[],
+    storageKey: string,
+    setState: Dispatch<SetStateAction<Record<string, boolean>>>
+): void {
+    setState(prev => {
+        const prunedPrev = pruneTreeState(prev, mounts);
+        const persistedState = loadExpandedMountState(storageKey);
+        const nextState = { ...prunedPrev, ...persistedState };
+        return areBooleanMapsEqual(prev, nextState) ? prev : nextState;
+    });
+}
+
+function syncPrunedTreeState(
+    mounts: WorkspaceMount[],
+    setState: Dispatch<SetStateAction<Record<string, boolean>>>
+): void {
+    setState(prev => {
+        const nextState = pruneTreeState(prev, mounts);
+        return areBooleanMapsEqual(prev, nextState) ? prev : nextState;
+    });
+}
+
+function syncPrunedLoadedState(
+    mounts: WorkspaceMount[],
+    setState: Dispatch<SetStateAction<Record<string, boolean>>>
+): void {
+    setState(prev => {
+        const nextState = pruneMountState(prev, mounts);
+        return areBooleanMapsEqual(prev, nextState) ? prev : nextState;
+    });
+}
+
+function loadVisibleMountDirectories(
+    mounts: WorkspaceMount[],
+    expandedMounts: Record<string, boolean>,
+    loadedMounts: Record<string, boolean>,
+    rootNodeKeys: Record<string, string[]>,
+    loadDirectory: (
+        mount: WorkspaceMount,
+        directoryPath: string,
+        parentKey: string | null,
+        updateLoadState?: boolean
+    ) => Promise<void>
+): void {
+    for (const mount of mounts) {
+        if (!shouldMountBeOpen(mounts, mount, expandedMounts)) {
+            continue;
+        }
+        const mountRootKeys = rootNodeKeys[mount.id] ?? [];
+        if (loadedMounts[mount.id] && mountRootKeys.length > 0) {
+            continue;
+        }
+        void loadDirectory(mount, mount.rootPath, null, loadedMounts[mount.id] === true);
+    }
+}
+
+function recoverBlankMountRootsIfNeeded(
+    mounts: WorkspaceMount[],
+    expandedMounts: Record<string, boolean>,
+    loadingMounts: Record<string, boolean>,
+    rootNodeKeys: Record<string, string[]>,
+    recoverBlankMountRoots: () => Promise<void>
+): void {
+    const hasVisibleMount = mounts.some(mount => shouldMountBeOpen(mounts, mount, expandedMounts));
+    const isAnyMountLoading = mounts.some(mount => Boolean(loadingMounts[mount.id]));
+    const hasAnyRootRows = mounts.some(mount => (rootNodeKeys[mount.id] ?? []).length > 0);
+
+    if (!hasVisibleMount || isAnyMountLoading || hasAnyRootRows) {
+        return;
+    }
+
+    void recoverBlankMountRoots();
+}
+
+function loadExpandedTreeDirectories(
+    mounts: WorkspaceMount[],
+    expandedTreeNodes: Record<string, boolean>,
+    nodeRecords: Record<string, ExplorerNodeRecord>,
+    loadDirectory: (
+        mount: WorkspaceMount,
+        directoryPath: string,
+        parentKey: string | null,
+        updateLoadState?: boolean
+    ) => Promise<void>
+): void {
+    for (const [nodeKey, isExpanded] of Object.entries(expandedTreeNodes)) {
+        if (!isExpanded) {
+            continue;
+        }
+
+        const record = nodeRecords[nodeKey];
+        if (!record?.node.isDirectory || record.loaded || record.loading) {
+            continue;
+        }
+
+        const mount = mounts.find(item => item.id === record.mountId);
+        if (!mount) {
+            continue;
+        }
+
+        void loadDirectory(mount, record.node.path, nodeKey);
+    }
+}
+
+function refreshExplorerDirectories(options: {
+    mounts: WorkspaceMount[];
+    expandedMounts: Record<string, boolean>;
+    expandedTreeNodes: Record<string, boolean>;
+    nodeRecords: Record<string, ExplorerNodeRecord>;
+    loadedMounts: Record<string, boolean>;
+    rootNodeKeys: Record<string, string[]>;
+    loadDirectory: (
+        mount: WorkspaceMount,
+        directoryPath: string,
+        parentKey: string | null,
+        updateLoadState?: boolean
+    ) => Promise<void>;
+    refreshTokenRef: { current: number };
+    refreshSignal: number;
+}): void {
+    if (options.refreshSignal === options.refreshTokenRef.current) {
+        return;
+    }
+
+    options.refreshTokenRef.current = options.refreshSignal;
+    void loadVisibleMountDirectories(options.mounts, options.expandedMounts, options.loadedMounts, options.rootNodeKeys, options.loadDirectory);
+    void loadExpandedTreeDirectories(options.mounts, options.expandedTreeNodes, options.nodeRecords, options.loadDirectory);
+}
+
+async function revealPathInTree(options: {
+    targetPath: string;
+    mountsRef: React.MutableRefObject<WorkspaceMount[]>;
+    loadedMountsRef: React.MutableRefObject<Record<string, boolean>>;
+    nodeRecordsRef: React.MutableRefObject<Record<string, ExplorerNodeRecord>>;
+    setExpandedTreeNodes: Dispatch<SetStateAction<Record<string, boolean>>>;
+    loadDirectory: (
+        mount: WorkspaceMount,
+        directoryPath: string,
+        parentKey: string | null,
+        updateLoadState?: boolean
+    ) => Promise<void>;
+    waitForTreeState: (predicate: () => boolean, timeoutMs?: number) => Promise<boolean>;
+}): Promise<string | null> {
+    const normalizedTarget = normalizePath(options.targetPath);
+    const mount = options.mountsRef.current.find(item => {
+        const mountRoot = normalizePath(item.rootPath);
+        return (
+            normalizedTarget === mountRoot ||
+            normalizedTarget.startsWith(`${mountRoot}/`)
+        );
+    });
+
+    if (!mount) {
+        return null;
+    }
+
+    if (!(options.loadedMountsRef.current[mount.id] ?? false)) {
+        await options.loadDirectory(mount, mount.rootPath, null);
+        await options.waitForTreeState(() => options.loadedMountsRef.current[mount.id] ?? false);
+    }
+
+    const normalizedRoot = normalizePath(mount.rootPath);
+    const relativePath = trimLeadingSeparators(
+        normalizedTarget.slice(normalizedRoot.length)
+    );
+    const segments = relativePath.split('/').filter(Boolean);
+
+    if (segments.length <= 1) {
+        return buildNodeKey(mount.id, options.targetPath);
+    }
+
+    let currentPath = mount.rootPath;
+    for (let index = 0; index < segments.length - 1; index += 1) {
+        currentPath = joinPath(currentPath, segments[index] ?? '', mount.type);
+        const nodeKey = buildNodeKey(mount.id, currentPath);
+        if (!options.nodeRecordsRef.current[nodeKey]) {
+            const rootKey = buildNodeKey(mount.id, mount.rootPath);
+            await options.waitForTreeState(() => {
+                if (currentPath === mount.rootPath) {
+                    return options.loadedMountsRef.current[mount.id] ?? false;
+                }
+                return Boolean(options.nodeRecordsRef.current[nodeKey] ?? options.nodeRecordsRef.current[rootKey]);
+            });
+        }
+
+        options.setExpandedTreeNodes(prev => {
+            if (prev[nodeKey]) {
+                return prev;
+            }
+            return { ...prev, [nodeKey]: true };
+        });
+
+        const currentRecord = options.nodeRecordsRef.current[nodeKey];
+        if (!currentRecord?.loaded) {
+            await options.loadDirectory(mount, currentPath, nodeKey);
+            await options.waitForTreeState(() => {
+                const nextRecord = options.nodeRecordsRef.current[nodeKey];
+                return Boolean(nextRecord?.loaded);
+            });
+        }
+    }
+
+    return buildNodeKey(mount.id, options.targetPath);
+}
+
+function createHandleContextMenu(options: {
+    setContextMenu: Dispatch<SetStateAction<ContextMenuState | null>>;
+}): (
+    e: React.MouseEvent,
+    row: Pick<WorkspaceEntryRow, 'entry' | 'gitStatus' | 'gitRawStatus' | 'mount'>
+) => void {
+    return (e, row) => {
+        e.preventDefault();
+        e.stopPropagation();
+        options.setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            entry: row.entry,
+            entryGitStatus: row.gitStatus,
+            entryGitRawStatus: row.gitRawStatus,
+            entryMountType: row.mount.type,
+        });
+    };
+}
+
+function createHandleMountContextMenu(options: {
+    setContextMenu: Dispatch<SetStateAction<ContextMenuState | null>>;
+}): (e: React.MouseEvent, mountId: string) => void {
+    return (e, mountId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        options.setContextMenu({ x: e.clientX, y: e.clientY, mountId });
+    };
+}
+
+function createHandleContextAction(options: {
+    contextMenu: ContextMenuState | null;
+    onContextAction?: (action: ContextMenuAction) => void;
+    setContextMenu: Dispatch<SetStateAction<ContextMenuState | null>>;
+}): (type: ContextMenuAction['type']) => void {
+    return (type) => {
+        if (options.contextMenu?.entry) {
+            options.onContextAction?.({ type, entry: options.contextMenu.entry });
+        }
+        options.setContextMenu(null);
+    };
+}
+
+function createCollapseAll(
+    treeStorageKey: string,
+    setExpandedTreeNodes: Dispatch<SetStateAction<Record<string, boolean>>>
+): () => void {
+    return () => {
+        setExpandedTreeNodes({});
+        saveExpandedTreeState(treeStorageKey, {});
+    };
 }
 
 interface ExplorerTreeSnapshot {
@@ -455,10 +717,10 @@ export function useWorkspaceExplorerTree({
             const mountRootLoading = loadingMountsRef.current[mount.id] ?? false;
 
             if (!directoryPath) {
-                appLogger.error('WorkspaceExplorer', 'loadDirectory called with missing directoryPath', { 
-                    mountId: mount.id, 
+                appLogger.error('WorkspaceExplorer', 'loadDirectory called with missing directoryPath', {
+                    mountId: mount.id,
                     mountRoot: mount.rootPath,
-                    parentKey 
+                    parentKey
                 });
                 if (!parentKey) {
                     setLoadingMounts(prev => ({ ...prev, [mount.id]: false }));
@@ -528,11 +790,11 @@ export function useWorkspaceExplorerTree({
                     mount.type === 'local'
                         ? await listLocalDirectory(directoryPath)
                         : await window.electron.ssh.listDir(mount.id, directoryPath) as DirectoryListingResult;
-                
+
                 const fileList = extractFileList(result);
 
                 appLogger.info('WorkspaceExplorer', 'Received directory listing', {
-                    directoryPath, 
+                    directoryPath,
                     success: result.success,
                     entries: fileList.length,
                 });
@@ -546,7 +808,7 @@ export function useWorkspaceExplorerTree({
                     return;
                 }
 
-                const initialNodes = sortNodes(mapFileEntries(fileList, directoryPath, mount.type));
+                const initialNodes = sortNodes(mapFileEntries(fileList, directoryPath, mount.type, mount.id));
                 const nextChildKeys = initialNodes.map(node => buildNodeKey(mount.id, node.path));
 
                 // Root listings are the only path that can blank the whole explorer.
@@ -687,7 +949,7 @@ export function useWorkspaceExplorerTree({
                 continue;
             }
 
-            const initialNodes = sortNodes(mapFileEntries(fileList, mount.rootPath, mount.type));
+            const initialNodes = sortNodes(mapFileEntries(fileList, mount.rootPath, mount.type, mount.id));
             const snapshot = buildMountRootSnapshot(mount, initialNodes);
 
             setNodeRecords(prev => ({
@@ -753,6 +1015,17 @@ export function useWorkspaceExplorerTree({
         }, 75);
     }, [flushPendingDirectoryReloads]);
 
+    const loadDirectoryTask = useCallback(
+        async (mount: WorkspaceMount, directoryPath: string, parentKey: string | null, updateLoadState?: boolean) => {
+            await loadDirectory(mount, directoryPath, parentKey, updateLoadState);
+        },
+        [loadDirectory]
+    );
+
+    const recoverBlankMountRootsTask = useCallback(async () => {
+        await recoverBlankMountRoots();
+    }, [recoverBlankMountRoots]);
+
     useWorkspaceExplorerWatchers({
         mounts,
         mountsRef,
@@ -763,19 +1036,11 @@ export function useWorkspaceExplorerTree({
     });
 
     useEffect(() => {
-        setExpandedMounts(prev => {
-            const prunedPrev = pruneTreeState(prev, mounts);
-            const persistedState = loadExpandedMountState(storageKey);
-            const nextState = { ...prunedPrev, ...persistedState };
-            return areBooleanMapsEqual(prev, nextState) ? prev : nextState;
-        });
+        syncPrunedMountState(mounts, storageKey, setExpandedMounts);
     }, [mounts, storageKey]);
 
     useEffect(() => {
-        setExpandedTreeNodes(prev => {
-            const nextState = pruneTreeState(prev, mounts);
-            return areBooleanMapsEqual(prev, nextState) ? prev : nextState;
-        });
+        syncPrunedTreeState(mounts, setExpandedTreeNodes);
     }, [mounts]);
 
     useEffect(() => {
@@ -787,10 +1052,7 @@ export function useWorkspaceExplorerTree({
     }, [expandedTreeNodes, treeStorageKey]);
 
     useEffect(() => {
-        setLoadedMounts(prev => {
-            const nextState = pruneMountState(prev, mounts);
-            return areBooleanMapsEqual(prev, nextState) ? prev : nextState;
-        });
+        syncPrunedLoadedState(mounts, setLoadedMounts);
     }, [mounts]);
 
     useEffect(() => {
@@ -803,78 +1065,36 @@ export function useWorkspaceExplorerTree({
     }, [contextMenu]);
 
     useEffect(() => {
-        for (const mount of mounts) {
-            if (!shouldMountBeOpen(mounts, mount, expandedMounts)) {
-                continue;
-            }
-            const mountRootKeys = rootNodeKeys[mount.id] ?? [];
-            if (loadedMounts[mount.id] && mountRootKeys.length > 0) {
-                continue;
-            }
-            void loadDirectory(mount, mount.rootPath, null, loadedMounts[mount.id] === true);
-        }
-    }, [expandedMounts, loadDirectory, loadedMounts, mounts, rootNodeKeys]);
+        loadVisibleMountDirectories(mounts, expandedMounts, loadedMounts, rootNodeKeys, loadDirectoryTask);
+    }, [expandedMounts, loadDirectoryTask, loadedMounts, mounts, rootNodeKeys]);
 
     useEffect(() => {
-        const hasVisibleMount = mounts.some(mount => shouldMountBeOpen(mounts, mount, expandedMounts));
-        const isAnyMountLoading = mounts.some(mount => Boolean(loadingMounts[mount.id]));
-        const hasAnyRootRows = mounts.some(mount => (rootNodeKeys[mount.id] ?? []).length > 0);
-
-        if (!hasVisibleMount || isAnyMountLoading || hasAnyRootRows) {
-            return;
-        }
-
-        void recoverBlankMountRoots();
-    }, [expandedMounts, loadingMounts, mounts, recoverBlankMountRoots, rootNodeKeys]);
+        recoverBlankMountRootsIfNeeded(
+            mounts,
+            expandedMounts,
+            loadingMounts,
+            rootNodeKeys,
+            recoverBlankMountRootsTask
+        );
+    }, [expandedMounts, loadingMounts, mounts, recoverBlankMountRootsTask, rootNodeKeys]);
 
     useEffect(() => {
-        for (const [nodeKey, isExpanded] of Object.entries(expandedTreeNodes)) {
-            if (!isExpanded) {
-                continue;
-            }
-
-            const record = nodeRecords[nodeKey];
-            if (!record || !record.node.isDirectory || record.loaded || record.loading) {
-                continue;
-            }
-
-            const mount = mounts.find(item => item.id === record.mountId);
-            if (!mount) {
-                continue;
-            }
-
-            void loadDirectory(mount, record.node.path, nodeKey);
-        }
-    }, [expandedTreeNodes, loadDirectory, mounts, nodeRecords]);
+        loadExpandedTreeDirectories(mounts, expandedTreeNodes, nodeRecords, loadDirectoryTask);
+    }, [expandedTreeNodes, loadDirectoryTask, mounts, nodeRecords]);
 
     useEffect(() => {
-        if (refreshSignal === refreshTokenRef.current) {
-            return;
-        }
-
-        refreshTokenRef.current = refreshSignal;
-        for (const mount of mounts) {
-            if (!shouldMountBeOpen(mounts, mount, expandedMounts)) {
-                continue;
-            }
-            void loadDirectory(mount, mount.rootPath, null, true);
-        }
-
-        for (const [nodeKey, isExpanded] of Object.entries(expandedTreeNodes)) {
-            if (!isExpanded) {
-                continue;
-            }
-            const record = nodeRecords[nodeKey];
-            if (!record?.node.isDirectory) {
-                continue;
-            }
-            const mount = mounts.find(item => item.id === record.mountId);
-            if (!mount) {
-                continue;
-            }
-            void loadDirectory(mount, record.node.path, nodeKey, true);
-        }
-    }, [expandedMounts, expandedTreeNodes, loadDirectory, mounts, nodeRecords, refreshSignal]);
+        refreshExplorerDirectories({
+            mounts,
+            expandedMounts,
+            expandedTreeNodes,
+            nodeRecords,
+            loadedMounts,
+            rootNodeKeys,
+            loadDirectory: loadDirectoryTask,
+            refreshTokenRef,
+            refreshSignal,
+        });
+    }, [expandedMounts, expandedTreeNodes, loadDirectoryTask, loadedMounts, mounts, nodeRecords, refreshSignal, rootNodeKeys]);
 
     const visibleRows = useMemo(
         () =>
@@ -894,12 +1114,12 @@ export function useWorkspaceExplorerTree({
                 const nextExpanded = !shouldMountBeOpen(mountsRef.current, mountRow.mount, prev);
                 const next = { ...prev, [mountRow.mount.id]: nextExpanded };
                 if (nextExpanded && !(loadedMountsRef.current[mountRow.mount.id] ?? false)) {
-                    void loadDirectory(mountRow.mount, mountRow.mount.rootPath, null);
+                    void loadDirectoryTask(mountRow.mount, mountRow.mount.rootPath, null);
                 }
                 return next;
             });
         },
-        [loadDirectory]
+        [loadDirectoryTask, loadedMountsRef, mountsRef, setExpandedMounts]
     );
 
     const toggleNode = useCallback(
@@ -912,130 +1132,46 @@ export function useWorkspaceExplorerTree({
                 const nextExpanded = !prev[row.key];
                 const next = { ...prev, [row.key]: nextExpanded };
                 if (nextExpanded) {
-                    void loadDirectory(row.mount, row.entry.path, row.key);
+                    void loadDirectoryTask(row.mount, row.entry.path, row.key);
                 }
                 return next;
             });
         },
-        [loadDirectory]
+        [loadDirectoryTask, setExpandedTreeNodes]
     );
 
     const revealPath = useCallback(
-        async (targetPath: string): Promise<string | null> => {
-            const normalizedTarget = normalizePath(targetPath);
-            const mount = mountsRef.current.find(item => {
-                const mountRoot = normalizePath(item.rootPath);
-                return (
-                    normalizedTarget === mountRoot ||
-                    normalizedTarget.startsWith(`${mountRoot}/`)
-                );
-            });
-
-            if (!mount) {
-                return null;
-            }
-
-            if (!(loadedMountsRef.current[mount.id] ?? false)) {
-                await loadDirectory(mount, mount.rootPath, null);
-                await waitForTreeState(() => loadedMountsRef.current[mount.id] ?? false);
-            }
-
-            const normalizedRoot = normalizePath(mount.rootPath);
-            const relativePath = trimLeadingSeparators(
-                normalizedTarget.slice(normalizedRoot.length)
-            );
-            const segments = relativePath.split('/').filter(Boolean);
-
-            if (segments.length <= 1) {
-                return buildNodeKey(mount.id, targetPath);
-            }
-
-            let currentPath = mount.rootPath;
-            for (let index = 0; index < segments.length - 1; index += 1) {
-                currentPath = joinPath(currentPath, segments[index] ?? '', mount.type);
-                const nodeKey = buildNodeKey(mount.id, currentPath);
-                if (!nodeRecordsRef.current[nodeKey]) {
-                    const rootKey = buildNodeKey(mount.id, mount.rootPath);
-                    await waitForTreeState(() => {
-                        if (currentPath === mount.rootPath) {
-                            return loadedMountsRef.current[mount.id] ?? false;
-                        }
-                        return Boolean(nodeRecordsRef.current[nodeKey] ?? nodeRecordsRef.current[rootKey]);
-                    });
-                }
-
-                setExpandedTreeNodes(prev => {
-                    if (prev[nodeKey]) {
-                        return prev;
-                    }
-                    return { ...prev, [nodeKey]: true };
-                });
-
-                const currentRecord = nodeRecordsRef.current[nodeKey];
-                if (!currentRecord?.loaded) {
-                    await loadDirectory(mount, currentPath, nodeKey);
-                    await waitForTreeState(() => {
-                        const nextRecord = nodeRecordsRef.current[nodeKey];
-                        return Boolean(nextRecord?.loaded);
-                    });
-                }
-            }
-
-            return buildNodeKey(mount.id, targetPath);
-        },
-        [loadDirectory, waitForTreeState]
+        (targetPath: string) => revealPathInTree({
+            targetPath,
+            mountsRef,
+            loadedMountsRef,
+            nodeRecordsRef,
+            setExpandedTreeNodes,
+            loadDirectory: loadDirectoryTask,
+            waitForTreeState,
+        }),
+        [loadDirectoryTask, mountsRef, loadedMountsRef, nodeRecordsRef, setExpandedTreeNodes, waitForTreeState]
     );
 
-    const handleContextMenu = useCallback(
-        (
-            e: React.MouseEvent,
-            row: Pick<WorkspaceEntryRow, 'entry' | 'gitStatus' | 'gitRawStatus' | 'mount'>
-        ) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setContextMenu({
-                x: e.clientX,
-                y: e.clientY,
-                entry: row.entry,
-                entryGitStatus: row.gitStatus,
-                entryGitRawStatus: row.gitRawStatus,
-                entryMountType: row.mount.type,
-            });
-        },
-        []
+    const handleContextMenu = useMemo(() => createHandleContextMenu({ setContextMenu }), [setContextMenu]);
+    const handleMountContextMenu = useMemo(() => createHandleMountContextMenu({ setContextMenu }), [setContextMenu]);
+    const handleContextAction = useMemo(
+        () => createHandleContextAction({ contextMenu, onContextAction, setContextMenu }),
+        [contextMenu, onContextAction, setContextMenu]
     );
-
-    const handleMountContextMenu = useCallback((e: React.MouseEvent, mountId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setContextMenu({ x: e.clientX, y: e.clientY, mountId });
-    }, []);
-
-    const handleContextAction = useCallback(
-        (type: ContextMenuAction['type']) => {
-            if (contextMenu?.entry) {
-                onContextAction?.({ type, entry: contextMenu.entry });
-            }
-            setContextMenu(null);
-        },
-        [contextMenu, onContextAction]
+    const closeContextMenu = useMemo(() => () => setContextMenu(null), [setContextMenu]);
+    const collapseAll = useMemo(
+        () => createCollapseAll(treeStorageKey, setExpandedTreeNodes),
+        [setExpandedTreeNodes, treeStorageKey]
     );
-
-    const closeContextMenu = useCallback(() => setContextMenu(null), []);
-
-    const collapseAll = useCallback(() => {
-        setExpandedTreeNodes({});
-        saveExpandedTreeState(treeStorageKey, {});
-    }, [treeStorageKey]);
-
     const reloadAll = useCallback(() => {
         for (const mount of mountsRef.current) {
             if (!shouldMountBeOpen(mountsRef.current, mount, expandedMounts)) {
                 continue;
             }
-            void loadDirectory(mount, mount.rootPath, null, true);
+            void loadDirectoryTask(mount, mount.rootPath, null, true);
         }
-    }, [expandedMounts, loadDirectory]);
+    }, [expandedMounts, loadDirectoryTask, mountsRef]);
 
     return {
         contextMenu,

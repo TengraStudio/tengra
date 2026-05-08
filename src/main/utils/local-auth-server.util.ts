@@ -20,7 +20,7 @@ function getAuthLocaleString(key: string): string {
             const data = JSON.parse(fs.readFileSync(localePath, 'utf8'));
             return data?.backend?.auth?.[key] || key;
         }
-    } catch (e) {
+    } catch {
         // Fallback
     }
     return key;

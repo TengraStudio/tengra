@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
+use crate::db::migrations::legacy_workspace_id_column;
+use crate::db::Database;
+use crate::types::*;
 use anyhow::{Context, Result};
 use rusqlite::{params, OptionalExtension};
-use crate::db::Database;
-use crate::db::migrations::legacy_workspace_id_column;
-use crate::types::*;
 
 impl Database {
     pub async fn get_all_chats(&self) -> Result<Vec<Chat>> {
@@ -179,7 +179,8 @@ impl Database {
             let query = format!("UPDATE chats SET {} WHERE id = ?", sets.join(", "));
             params_vec.push(Box::new(id));
 
-            let param_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> =
+                params_vec.iter().map(|p| p.as_ref()).collect();
             let affected = conn.execute(&query, param_refs.as_slice())?;
             Ok(affected > 0)
         })
@@ -287,7 +288,8 @@ impl Database {
             let query = format!("UPDATE messages SET {} WHERE id = ?", sets.join(", "));
             params_vec.push(Box::new(id));
 
-            let param_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> =
+                params_vec.iter().map(|p| p.as_ref()).collect();
             let affected = conn.execute(&query, param_refs.as_slice())?;
             Ok(affected > 0)
         })

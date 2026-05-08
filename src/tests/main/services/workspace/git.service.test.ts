@@ -61,16 +61,26 @@ describe('GitService', () => {
         it('should parse git status output', async () => {
             setupExecFile(' M src/file.ts\n?? new.ts\n');
             const result = await service.getStatus('/repo');
-            expect(result).toEqual([
-                { path: 'src/file.ts', status: ' M' },
-                { path: 'new.ts', status: '??' }
-            ]);
+            expect(result).toEqual({
+                success: true,
+                isClean: false,
+                changes: 2,
+                files: [
+                    { path: 'src/file.ts', status: ' M' },
+                    { path: 'new.ts', status: '??' }
+                ]
+            });
         });
 
         it('should return empty array when no output', async () => {
             setupExecFile('');
             const result = await service.getStatus('/repo');
-            expect(result).toEqual([]);
+            expect(result).toEqual({
+                success: true,
+                isClean: true,
+                changes: 0,
+                files: []
+            });
         });
     });
 
@@ -167,7 +177,8 @@ describe('GitService', () => {
             setupExecFile('* main\n  feature');
             const result = await service.getBranches('/repo');
             expect(result.success).toBe(true);
-            expect(result.branches).toContain('main');
+            expect(result.branches).toContain('* main');
+            expect(result.branches).toContain('  feature');
         });
     });
 

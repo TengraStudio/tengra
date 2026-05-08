@@ -162,20 +162,20 @@ fn db_service_token_file_candidates() -> Vec<PathBuf> {
     let mut candidates = Vec::new();
 
     if let Ok(root) = std::env::var("TENGRA_USER_DATA_ROOT") {
-        candidates.push(PathBuf::from(root).join("services").join("db-service.token"));
+        candidates.push(
+            PathBuf::from(root)
+                .join("services")
+                .join("db-service.token"),
+        );
     }
 
     if let Ok(app_data) = std::env::var("APPDATA") {
-        candidates.extend(
-            ["Tengra", "tengra"]
-                .into_iter()
-                .map(|root| {
-                    PathBuf::from(&app_data)
-                        .join(root)
-                        .join("services")
-                        .join("db-service.token")
-                }),
-        );
+        candidates.extend(["Tengra", "tengra"].into_iter().map(|root| {
+            PathBuf::from(&app_data)
+                .join(root)
+                .join("services")
+                .join("db-service.token")
+        }));
     }
 
     candidates

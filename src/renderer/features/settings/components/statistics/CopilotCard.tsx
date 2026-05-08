@@ -17,7 +17,54 @@ import { CopilotQuota } from '@/types/quota';
 
 import { AccountWrapper } from '../../types';
 
-import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
+import { getQuotaColor, HorizontalProgressBar } from './SharedComponents';
+
+type RenderLimitRowOptions = {
+    title: string;
+    subtitle: string;
+    current: number;
+    max: number;
+    resetAt?: string;
+    color?: string;
+};
+
+function renderLimitRow(t: (key: string) => string, options: RenderLimitRowOptions): JSX.Element {
+    const { title, subtitle, current, max, resetAt, color = 'primary' } = options;
+    const rowPercent = max > 0 ? Math.round(((max - current) / max) * 100) : 0;
+
+    return (
+        <div className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/5 transition-colors">
+            <div className="flex items-center justify-between">
+                <div className="flex flex-col min-w-0">
+                    <span className="truncate text-sm font-bold text-foreground">
+                        {title}
+                    </span>
+                    {resetAt ? (
+                        <span className="text-sm text-muted-foreground/60 tabular-nums">
+                            {t('frontend.statistics.resetsAt')} {resetAt}
+                        </span>
+                    ) : (
+                        <span className="text-sm text-muted-foreground/40 font-medium">
+                            {subtitle}
+                        </span>
+                    )}
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                    <span className={cn("text-sm font-bold", color === 'destructive' ? "text-destructive" : `text-${color}`)}>
+                        {rowPercent}%
+                    </span>
+                    <span className="text-sm font-medium text-muted-foreground/60 tabular-nums">
+                        {current.toLocaleString()} / {max.toLocaleString()}
+                    </span>
+                </div>
+            </div>
+            <HorizontalProgressBar
+                percentage={rowPercent}
+                color={color === 'primary' ? 'bg-primary' : (color === 'destructive' ? 'bg-destructive' : getQuotaColor(rowPercent))}
+            />
+        </div>
+    );
+}
 
 interface CopilotCardProps {
     copilotQuota: AccountWrapper<CopilotQuota> | null
@@ -30,49 +77,10 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
     return (
         <div className="space-y-4">
             {copilotQuota.accounts.map((acc, idx: number) => {
-                const status = acc.error ? 'error' : 'active';
-                const statusText = acc.error ? t('common.error') : t('frontend.statistics.active');
-
                 const seatInfo = acc.seat_breakdown;
                 const limit = seatInfo ? seatInfo.total_seats : acc.limit;
                 const remaining = seatInfo ? (limit - seatInfo.active_seats) : acc.remaining;
                 const percent = limit > 0 ? Math.round((remaining / limit) * 100) : 0;
-
-                const renderLimitRow = (title: string, subtitle: string, current: number, max: number, resetAt?: string, color: string = 'primary') => {
-                    const rowPercent = max > 0 ? Math.round(((max - current) / max) * 100) : 0;
-                    return (
-                        <div className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/5 transition-colors">
-                            <div className="flex items-center justify-between">
-                                <div className="flex flex-col min-w-0">
-                                    <span className="truncate text-sm font-bold text-foreground">
-                                        {title}
-                                    </span>
-                                    {resetAt ? (
-                                        <span className="text-sm text-muted-foreground/60 tabular-nums">
-                                            {t('frontend.statistics.resetsAt')} {resetAt}
-                                        </span>
-                                    ) : (
-                                        <span className="text-sm text-muted-foreground/40 font-medium">
-                                            {subtitle}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex flex-col items-end shrink-0">
-                                    <span className={cn("text-sm font-bold", color === 'destructive' ? "text-destructive" : `text-${color}`)}>
-                                        {rowPercent}%
-                                    </span>
-                                    <span className="text-sm font-medium text-muted-foreground/60 tabular-nums">
-                                        {current.toLocaleString()} / {max.toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                            <HorizontalProgressBar
-                                percentage={rowPercent}
-                                color={color === 'primary' ? 'bg-primary' : (color === 'destructive' ? 'bg-destructive' : getQuotaColor(rowPercent))}
-                            />
-                        </div>
-                    );
-                };
 
                 return (
                     <div key={acc.accountId ?? idx} className="overflow-hidden rounded-2xl border border-border/15 bg-background shadow-sm">
@@ -91,41 +99,37 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
 
                         {!acc.error && (
                             <div className="divide-y divide-border/5">
-                                {renderLimitRow(
-                                    seatInfo ? t('frontend.statistics.seatsStatus') : t('frontend.statistics.usageStatus'),
-                                    seatInfo?.plan_type ?? acc.copilot_plan ?? t('frontend.statistics.individual'),
-                                    seatInfo ? seatInfo.active_seats : acc.limit - acc.remaining,
-                                    limit,
-                                    undefined,
-                                    percent <= 10 ? 'destructive' : 'primary'
-                                )}
+                                {renderLimitRow(t, {
+                                    title: seatInfo ? t('frontend.statistics.seatsStatus') : t('frontend.statistics.usageStatus'),
+                                    subtitle: seatInfo?.plan_type ?? acc.copilot_plan ?? t('frontend.statistics.individual'),
+                                    current: seatInfo ? seatInfo.active_seats : acc.limit - acc.remaining,
+                                    max: limit,
+                                    color: percent <= 10 ? 'destructive' : 'primary',
+                                })}
 
-                                {acc.rate_limit && renderLimitRow(
-                                    t('frontend.statistics.rateLimit'),
-                                    t('frontend.statistics.apiUsage'),
-                                    acc.rate_limit.limit - acc.rate_limit.remaining,
-                                    acc.rate_limit.limit,
-                                    acc.rate_limit.reset,
-                                    'primary'
-                                )}
+                                {acc.rate_limit && renderLimitRow(t, {
+                                    title: t('frontend.statistics.rateLimit'),
+                                    subtitle: t('frontend.statistics.apiUsage'),
+                                    current: acc.rate_limit.limit - acc.rate_limit.remaining,
+                                    max: acc.rate_limit.limit,
+                                    resetAt: acc.rate_limit.reset,
+                                })}
 
-                                {acc.session_limits?.weekly && renderLimitRow(
-                                    t('frontend.statistics.weeklyLimit'),
-                                    t('frontend.statistics.weeklyQuota'),
-                                    acc.session_limits.weekly.current,
-                                    acc.session_limits.weekly.limit,
-                                    acc.session_limits.weekly.reset_at,
-                                    'primary'
-                                )}
+                                {acc.session_limits?.weekly && renderLimitRow(t, {
+                                    title: t('frontend.statistics.weeklyLimit'),
+                                    subtitle: t('frontend.statistics.weeklyQuota'),
+                                    current: acc.session_limits.weekly.current,
+                                    max: acc.session_limits.weekly.limit,
+                                    resetAt: acc.session_limits.weekly.reset_at,
+                                })}
 
-                                {acc.session_limits?.session && renderLimitRow(
-                                    t('frontend.statistics.sessionLimit'),
-                                    t('frontend.statistics.sessionQuota'),
-                                    acc.session_limits.session.current,
-                                    acc.session_limits.session.limit,
-                                    acc.session_limits.session.reset_at,
-                                    'primary'
-                                )}
+                                {acc.session_limits?.session && renderLimitRow(t, {
+                                    title: t('frontend.statistics.sessionLimit'),
+                                    subtitle: t('frontend.statistics.sessionQuota'),
+                                    current: acc.session_limits.session.current,
+                                    max: acc.session_limits.session.limit,
+                                    resetAt: acc.session_limits.session.reset_at,
+                                })}
 
                                 {acc.session_usage && (
                                     <div className="px-4 py-4 bg-muted/5">

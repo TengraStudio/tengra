@@ -21,8 +21,8 @@ import {
 } from '@main/services/ui/theme-error';
 import { withRetry } from '@main/utils/retry.util';
 import { RETRY_DEFAULTS } from '@shared/constants/defaults';
-import { JsonObject } from '@shared/types/common';
 import { BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
+import { JsonObject } from '@shared/types/common';
 import { CustomTheme, ThemeColors, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -470,6 +470,9 @@ export class ThemeService extends BaseService {
         if (idError) {
             throw new Error(ThemeErrorCode.INVALID_ID);
         } 
+        if (this.getThemeDetails(themeId)) {
+            throw new Error(ThemeErrorCode.DUPLICATE_ID);
+        }
     }
 
     async duplicateTheme(themeId: string, newName: string): Promise<CustomTheme | null> {

@@ -65,7 +65,7 @@ export function useDeviceAuth(options: DeviceAuthOptions) {
         setAuthBusy({ provider: 'copilot', startedAt: Date.now() });
         setAuthNotice('');
         try {
-            const data = await window.electron.auth.githubLogin('copilot');
+            const data = await window.electron.auth.copilotLogin();
 
             // Open the modal with device code
             if (data.user_code && data.verification_uri) {

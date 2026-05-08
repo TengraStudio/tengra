@@ -49,7 +49,9 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                 title: workspace.title,
                 description: workspace.description,
             };
-            setIsSaving(false);
+            queueMicrotask(() => {
+                setIsSaving(false);
+            });
         }
     }, [workspace]);
 

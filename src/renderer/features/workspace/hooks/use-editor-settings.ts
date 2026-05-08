@@ -40,9 +40,13 @@ export function useEditorSettings({ workspaceKey, contentLength }: UseEditorSett
                 return;
             }
             const parsed = JSON.parse(raw) as Record<string, EditorViewState>;
-            setViewStateMap(parsed);
+            queueMicrotask(() => {
+                setViewStateMap(parsed);
+            });
         } catch {
-            setViewStateMap({});
+            queueMicrotask(() => {
+                setViewStateMap({});
+            });
         }
     }, [viewStateStorageKey]);
 

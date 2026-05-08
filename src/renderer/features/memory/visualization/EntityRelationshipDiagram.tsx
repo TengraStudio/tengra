@@ -60,17 +60,17 @@ const nodeTypes = {
 
 export const EntityRelationshipDiagram: React.FC = () => {
     const { t } = useTranslation();
-    const { isLight, theme } = useTheme();
+    const { isLight } = useTheme();
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [loading, setLoading] = useState(true);
     const relationshipStroke = useMemo(
         () => resolveCssColorVariable('memory-relationship-edge', 'hsl(239 84% 67% / 0.4)'),
-        [theme]
+        []
     );
     const relationshipGridColor = useMemo(
         () => resolveCssColorVariable('memory-relationship-grid', 'hsl(215 16% 47% / 0.35)'),
-        [theme]
+        []
     );
 
     const loadData = useCallback(async () => {
@@ -143,7 +143,10 @@ export const EntityRelationshipDiagram: React.FC = () => {
     }, [relationshipStroke, setEdges, setNodes]);
 
     useEffect(() => {
-        void loadData();
+        const timer = window.setTimeout(() => {
+            void loadData();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [loadData]);
 
     return (

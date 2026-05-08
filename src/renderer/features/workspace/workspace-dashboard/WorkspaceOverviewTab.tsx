@@ -1,4 +1,5 @@
 import { IconBrandTypescript, IconFiles, IconFolder, IconStack } from '@tabler/icons-react';
+import React from 'react';
 import {
     Bar,
     BarChart,
@@ -8,7 +9,6 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import React from 'react';
 
 import { WorkspaceDashboardHeader } from '@/features/workspace/components/WorkspaceDashboardHeader';
 import { WorkspaceStatsCards } from '@/features/workspace/components/WorkspaceStatsCards';
@@ -31,15 +31,6 @@ interface WorkspaceOverviewTabProps {
     handleSaveDesc: () => Promise<void>;
     onUploadLogo?: () => void;
     t: (key: string, options?: Record<string, unknown>) => string;
-}
-
-function DetailItem({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-            <div className="mt-2 text-sm text-foreground break-all">{value}</div>
-        </div>
-    );
 }
 
 function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
@@ -386,10 +377,10 @@ export const WorkspaceOverviewTab = ({
                                             tickLine={false}
                                             tickFormatter={(value) => value.length > 15 ? `${value.slice(0, 12)}...` : value}
                                         />
-                                        <Tooltip 
+                                        <Tooltip
                                             cursor={{ fill: 'var(--primary)', opacity: 0.05 }}
                                             content={({ active, payload }) => {
-                                                if (!active || !payload?.length) {return null;}
+                                                if (!active || !payload?.length) { return null; }
                                                 const item = payload[0].payload;
                                                 return (
                                                     <div className="rounded-xl border border-border bg-background/95 p-3 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
@@ -421,7 +412,7 @@ export const WorkspaceOverviewTab = ({
                         </div>
 
                         <div className="grid gap-2 grid-cols-1">
-                            {topFilesByLoc.length > 0 ? topFilesByLoc.slice(0, 4).map((file, idx) => (
+                            {topFilesByLoc.length > 0 ? topFilesByLoc.slice(0, 4).map((file, _idx) => (
                                 <div key={file.path} className="group relative rounded-xl border border-border bg-background/50 p-3.5 transition-all hover:bg-accent/5 hover:border-primary/20">
                                     <div className="flex items-center justify-between gap-4">
                                         <div className="min-w-0">

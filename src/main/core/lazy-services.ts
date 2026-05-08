@@ -176,7 +176,7 @@ export function createLazyServiceDependency<T extends object>(serviceName: strin
  * @param serviceClass - Optional constructor function for metadata discovery
  * @returns A proxy object that behaves like T but loads on demand
  */
-export function createLazyServiceProxy<T extends object>(serviceName: string, serviceClass?: any): T {
+export function createLazyServiceProxy<T extends object>(serviceName: string, serviceClass?: unknown): T {
     return new Proxy({} as T, {
         get(_target: T, prop: string | symbol, _receiver: T): RuntimeValue {
             // Handle constructor access for metadata/IPC decorators

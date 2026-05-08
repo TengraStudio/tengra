@@ -421,7 +421,9 @@ export function useTerminalBackendsAndRemote({
      * Load preferred backend on mount
      */
     useEffect(() => {
-        void loadPreferredBackendPreference();
+        queueMicrotask(() => {
+            void loadPreferredBackendPreference();
+        });
     }, [loadPreferredBackendPreference]);
 
     /**
@@ -437,7 +439,9 @@ export function useTerminalBackendsAndRemote({
             return;
         }
 
-        void persistPreferredBackendId(resolved);
+        queueMicrotask(() => {
+            void persistPreferredBackendId(resolved);
+        });
     }, [availableBackends, preferredBackendId, resolveDefaultBackendId, persistPreferredBackendId]);
 
     const hasRemoteConnections = remoteSshProfiles.length > 0 || remoteDockerContainers.length > 0;

@@ -21,9 +21,7 @@ export const WorkspaceDashboardHeader: React.FC<{
     handleSaveDesc: () => Promise<void>;
     onUploadLogo?: () => void;
 }> = ({
-    workspace,
-    workspaceRoot,
-    type,
+    workspace, 
     isEditingName,
     setIsEditingName,
     editName,
@@ -38,7 +36,9 @@ export const WorkspaceDashboardHeader: React.FC<{
 }) => {
         const { t } = useTranslation();
         const baseLogoUrl = toSafeFileUrl(workspace.logo);
-        const workspaceLogoUrl = baseLogoUrl && baseLogoUrl.startsWith('data:') ? baseLogoUrl : (baseLogoUrl ? `${baseLogoUrl}?v=${workspace.updatedAt}` : null);
+        const workspaceLogoUrl = baseLogoUrl?.startsWith('data:')
+            ? baseLogoUrl
+            : (baseLogoUrl ? `${baseLogoUrl}?v=${workspace.updatedAt}` : null);
 
         return (
             <div className="flex flex-col md:flex-row gap-10 items-start">

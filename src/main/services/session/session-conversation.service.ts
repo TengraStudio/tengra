@@ -19,7 +19,6 @@ import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.servic
 import type { BrainService } from '@main/services/llm/brain.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { OllamaHealthService } from '@main/services/llm/local/ollama-health.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ChatSessionRegistryService } from '@main/services/session/chat-session-registry.service';
@@ -52,11 +51,9 @@ import {
     sanitizeConversationRequestParams,
     sanitizeConversationStreamInputs,
 } from '@main/services/session/orchestration/session-validation-orchestrator';
-import { EventBusService } from '@main/services/system/event-bus.service';
 import { LocaleService } from '@main/services/system/locale.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
-import { createMainWindowSenderValidator } from '@main/utils/ipc-sender-validator';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import {
     SESSION_CONVERSATION_CHANNELS,
@@ -73,7 +70,7 @@ import { SessionCapability, SessionMessageEnvelope, SessionStartOptions } from '
 import { getErrorMessage } from '@shared/utils/error.util';
 import { sanitizeString } from '@shared/utils/sanitize.util';
 import { estimateTokens } from '@shared/utils/token.util';
-import { app, BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
+import { app, ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
 
@@ -85,26 +82,6 @@ interface ConversationCompleteParams {
     workspaceId?: string; 
     systemMode?: SystemMode; 
     chatId?: string; 
-}
-
-interface ConversationStreamParams { 
-    messages: Message[]; 
-    model: string; 
-    tools?: ToolDefinition[]; 
-    provider: string; 
-    optionsJson: JsonObject | undefined; 
-    chatId: string; 
-    assistantId?: string;
-    streamId?: string;
-    workspaceId?: string; 
-    systemMode?: SystemMode; 
-}
-
-interface ConversationRetryParams { 
-    chatId: string; 
-    messageId: string; 
-    model: string; 
-    provider: string; 
 }
 
 export interface SessionConversationDependencies {

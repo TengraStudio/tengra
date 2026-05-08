@@ -56,6 +56,7 @@ const VALID_MANIFEST = {
             installUrl: 'https://ollama.com/download',
             targets: [],
         },
+        
     ],
 };
 
@@ -74,10 +75,10 @@ describe('RuntimeManifestService', () => {
         expect(manifest.components.map(component => component.id)).toEqual([
             'ollama',
             'sd-cpp',
-            'ghostty',
-            'alacritty',
-            'warp',
-            'kitty',
+            'biome',
+            'ruff',
+            'golangci-lint',
+            'rust-analyzer',
             'tengra-db-service',
         ]);
     });

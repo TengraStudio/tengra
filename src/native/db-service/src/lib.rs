@@ -10,6 +10,6 @@
 
 pub mod database;
 pub mod db;
-pub mod types;
 pub mod handlers;
 pub mod server;
+pub mod types;

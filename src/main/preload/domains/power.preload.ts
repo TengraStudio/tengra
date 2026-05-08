@@ -18,7 +18,7 @@ export interface PowerBridge {
 export function createPowerBridge(ipc: IpcRenderer): PowerBridge {
     return {
         onStateChanged: callback => {
-            const listener = (_event: any, state: { lowPowerMode: boolean }) => callback(state);
+            const listener = (_event: unknown, state: { lowPowerMode: boolean }) => callback(state);
             ipc.on(POWER_CHANNELS.STATE_CHANGED, listener);
             return () => ipc.removeListener(POWER_CHANNELS.STATE_CHANGED, listener);
         },

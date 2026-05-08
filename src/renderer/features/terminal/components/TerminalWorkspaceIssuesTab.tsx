@@ -17,14 +17,10 @@ import { Input } from '@/components/ui/input';
 import { MarkdownContent } from '@/features/chat/components/message/MarkdownContent';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useWorkspaceDiagnostics } from '@/store/diagnostics.store';
 import { CodeAnnotation, WorkspaceDiagnosticsStatus, WorkspaceIssue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
-import { useWorkspaceDiagnostics } from '@/store/diagnostics.store';
-
-/* Batch-02: Extracted Long Classes */
-const C_TERMINALWORKSPACEISSUESTAB_1 = "px-1.5 py-0.5 bg-muted/30 rounded text-sm font-bold text-muted-foreground/60 border border-border/30 ml-auto flex items-center gap-1";
-
-
+ 
 interface TerminalWorkspaceIssuesTabProps {
     workspacePath?: string;
     workspaceId?: string;
@@ -183,13 +179,15 @@ export function TerminalWorkspaceIssuesTab({
     }, [workspaceId, workspacePath, activeFilePath, activeFileContent, activeFileType]);
 
     useEffect(() => {
-        void loadIssues();
+        queueMicrotask(() => {
+            void loadIssues();
+        });
     }, [loadIssues]);
 
     const workspaceDiagnostics = useWorkspaceDiagnostics(workspaceId);
 
     const lspIssues = (() => {
-        if (!workspaceDiagnostics) return [];
+        if (!workspaceDiagnostics) {return [];}
         const issues: WorkspaceIssue[] = [];
         for (const [uri, fileDiag] of workspaceDiagnostics.entries()) {
             const isWin = /win/i.test(navigator.platform);
@@ -213,7 +211,7 @@ export function TerminalWorkspaceIssuesTab({
 
     useEffect(() => {
         const handler = (e: Event) => {
-            if (!followCursor) return;
+            if (!followCursor) {return;}
             const detail = (e as CustomEvent).detail;
             if (detail?.filePath && typeof detail?.line === 'number') {
                 setActiveCursor({ filePath: detail.filePath, line: detail.line });
@@ -232,7 +230,7 @@ export function TerminalWorkspaceIssuesTab({
     }, [loadIssues, workspacePath]);
 
     const filterIssues = <T extends WorkspaceIssue | CodeAnnotation>(issues: T[]) => {
-        if (!filterText.trim()) return issues;
+        if (!filterText.trim()) {return issues;}
         const search = filterText.toLowerCase();
         return issues.filter(issue => 
             issue.file.toLowerCase().includes(search) || 
@@ -259,8 +257,7 @@ export function TerminalWorkspaceIssuesTab({
         const line = issue.line;
         const message = issue.message;
 
-        const isHighlighted = activeCursor && 
-            filePath === activeCursor.filePath && 
+        const isHighlighted = filePath === activeCursor?.filePath && 
             line === activeCursor.line;
 
         return (
@@ -323,7 +320,7 @@ export function TerminalWorkspaceIssuesTab({
                         </div>
 
                         <div className="text-sm text-foreground/80 leading-relaxed font-medium markdown-issue">
-                            <MarkdownContent content={message} t={t as any} />
+                            <MarkdownContent content={message} t={t as (key: string, options?: Record<string, string | number>) => string} />
                         </div>
                     </div>
                 </div>

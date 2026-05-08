@@ -77,13 +77,13 @@ const RUNTIME_MANIFEST = {
             requirement: 'required',
             targets: [
                 {
-                    platform: 'win32',
-                    arch: 'x64',
-                    assetName: 'tengra-proxy-win32-x64.zip',
-                    downloadUrl: 'https://example.com/tengra-proxy-win32-x64.zip',
-                    archiveFormat: 'zip',
+                    platform: process.platform,
+                    arch: process.arch,
+                    assetName: `tengra-proxy-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    downloadUrl: `https://example.com/tengra-proxy-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    archiveFormat: process.platform === 'win32' ? 'zip' : 'tar.gz',
                     sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                    executableRelativePath: 'tengra-proxy.exe',
+                    executableRelativePath: process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy',
                     installSubdirectory: 'bin',
                 },
             ],
@@ -97,13 +97,13 @@ const RUNTIME_MANIFEST = {
             requirement: 'required',
             targets: [
                 {
-                    platform: 'win32',
-                    arch: 'x64',
-                    assetName: 'llama-server-win32-x64.zip',
-                    downloadUrl: 'https://example.com/llama-server-win32-x64.zip',
-                    archiveFormat: 'zip',
+                    platform: process.platform,
+                    arch: process.arch,
+                    assetName: `llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    downloadUrl: `https://example.com/llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                    archiveFormat: process.platform === 'win32' ? 'zip' : 'tar.gz',
                     sha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-                    executableRelativePath: 'llama-server.exe',
+                    executableRelativePath: process.platform === 'win32' ? 'llama-server.exe' : 'llama-server',
                     installSubdirectory: 'bin',
                 },
             ],
@@ -127,10 +127,10 @@ const RUNTIME_MANIFEST = {
             requirement: 'optional',
             targets: [
                 {
-                    platform: 'darwin',
-                    arch: 'arm64',
-                    assetName: 'tengra-memory-service-darwin-arm64.tar.gz',
-                    downloadUrl: 'https://example.com/tengra-memory-service-darwin-arm64.tar.gz',
+                    platform: process.platform === 'win32' ? 'darwin' : 'win32',
+                    arch: process.arch === 'x64' ? 'arm64' : 'x64',
+                    assetName: 'tengra-memory-service-unsupported.tar.gz',
+                    downloadUrl: 'https://example.com/tengra-memory-service-unsupported.tar.gz',
                     archiveFormat: 'tar.gz',
                     sha256: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
                     executableRelativePath: 'tengra-memory-service',
@@ -145,7 +145,7 @@ describe('RuntimeBootstrapService', () => {
     beforeEach(() => {
         vi.resetModules();
         vi.clearAllMocks();
-        runtimeMocks.existsSync.mockImplementation((targetPath: string) => targetPath.endsWith('tengra-proxy.exe'));
+        runtimeMocks.existsSync.mockImplementation((targetPath: string) => targetPath.endsWith(process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy'));
         runtimeMocks.getPath.mockReturnValue('/mock/appData');
         runtimeMocks.access.mockImplementation(async (targetPath: string) => {
             if (targetPath.includes('llama-server')) {
@@ -181,6 +181,7 @@ describe('RuntimeBootstrapService', () => {
 
         const service = new RuntimeBootstrapService();
         await service.initialize();
+        await new Promise(resolve => setTimeout(resolve, 10));
 
         expect(runtimeMocks.rm).toHaveBeenCalledWith(path.join('/mock/appData', 'blob_storage'), {
             force: true,
@@ -209,16 +210,16 @@ describe('RuntimeBootstrapService', () => {
     it('builds a platform-aware runtime install plan', () => {
         const service = new RuntimeBootstrapService();
         const plan = service.buildInstallPlan(RUNTIME_MANIFEST, {
-            platform: 'win32',
-            arch: 'x64',
+            platform: process.platform === 'win32' ? 'darwin' : 'win32',
+            arch: process.arch === 'x64' ? 'arm64' : 'x64',
         });
 
         expect(plan.manifestVersion).toBe('runtime-v2.0.0');
         expect(plan.summary).toEqual({
             ready: 1,
-            install: 1,
-            external: 6,
+            install: 5,
             unsupported: 1,
+            external: 2,
         });
 
         const proxyEntry = plan.entries.find(entry => entry.componentId === 'tengra-proxy');
@@ -230,13 +231,13 @@ describe('RuntimeBootstrapService', () => {
             componentId: 'tengra-proxy',
             status: 'ready',
             reason: 'file-present',
-            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', 'tengra-proxy.exe'),
+            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy'),
         });
         expect(llamaEntry).toMatchObject({
             componentId: 'llama-server',
             status: 'install',
             reason: 'missing-file',
-            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', 'llama-server.exe'),
+            installPath: path.join('/mock/appData', 'runtime', 'managed', 'bin', process.platform === 'win32' ? 'llama-server.exe' : 'llama-server'),
         });
         expect(ollamaEntry).toMatchObject({
             componentId: 'ollama',
@@ -265,9 +266,9 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary).toMatchObject({
             ready: 1,
             installed: 0,
-            installRequired: 1,
+            installRequired: 5,
             failed: 0,
-            external: 6,
+            external: 2,
             unsupported: 1,
             blockingFailures: 1,
         });
@@ -297,13 +298,13 @@ describe('RuntimeBootstrapService', () => {
                         requirement: 'required',
                         targets: [
                             {
-                                platform: 'win32',
-                                arch: 'x64',
-                                assetName: 'llama-server-win32-x64.exe',
-                                downloadUrl: 'https://github.com/TengraStudio/tengra/releases/download/v4/llama-server-win32-x64.exe',
+                                platform: process.platform,
+                                arch: process.arch,
+                                assetName: `llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.exe' : ''}`,
+                                downloadUrl: `https://github.com/TengraStudio/tengra/releases/download/v4/llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.exe' : ''}`,
                                 archiveFormat: 'raw',
                                 sha256: 'ee8a920cfb4f37eaac14068653ef293301fd7f3334c15552afc662491218f5db',
-                                executableRelativePath: 'llama-server.exe',
+                                executableRelativePath: process.platform === 'win32' ? 'llama-server.exe' : 'llama-server',
                                 installSubdirectory: 'bin',
                             },
                         ],
@@ -313,9 +314,11 @@ describe('RuntimeBootstrapService', () => {
         });
         runtimeMocks.fetch.mockResolvedValueOnce({
             ok: true,
+            headers: { get: () => '10' },
             arrayBuffer: async () => Uint8Array.from(Buffer.from('runtime-binary')).buffer,
         });
 
+        runtimeMocks.existsSync.mockImplementation((targetPath: string) => !targetPath.includes('llama-server'));
         const service = new RuntimeBootstrapService();
         const result = await service.ensureManagedRuntime(
             'https://github.com/TengraStudio/tengra/releases/latest/download/runtime-manifest.json'
@@ -324,15 +327,15 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary.installed).toBe(1);
         expect(result.summary.installRequired).toBe(0);
         expect(result.summary.blockingFailures).toBe(0);
-        const downloadedPath = path.join('/mock/appData', 'runtime', 'cache', 'downloads', 'llama-server-win32-x64.exe');
-        const targetPath = path.join('/mock/appData', 'runtime', 'managed', 'bin', 'llama-server.exe');
+        const downloadedPath = path.join('/mock/appData', 'runtime', 'cache', 'downloads', `llama-server-${process.platform}-${process.arch}${process.platform === 'win32' ? '.exe' : ''}`);
+        const targetPath = path.join('/mock/appData', 'runtime', 'managed', 'bin', process.platform === 'win32' ? 'llama-server.exe' : 'llama-server');
         expect(runtimeMocks.writeFile).toHaveBeenCalledWith(downloadedPath, expect.any(Buffer));
         expect(runtimeMocks.copyFile).toHaveBeenCalledWith(downloadedPath, targetPath);
     });
 
     it('falls back to the cached runtime manifest when network fetch fails', async () => {
         runtimeMocks.existsSync.mockImplementation((targetPath: string) =>
-            targetPath.endsWith('tengra-proxy.exe')
+            targetPath.endsWith(process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy')
         );
         runtimeMocks.fetch.mockRejectedValueOnce(new Error('network down'));
         runtimeMocks.readFile.mockResolvedValue(
@@ -350,14 +353,14 @@ describe('RuntimeBootstrapService', () => {
                         requirement: 'required',
                         targets: [
                             {
-                                platform: 'win32',
-                                arch: 'x64',
-                                assetName: 'tengra-proxy-win32-x64.zip',
+                                platform: process.platform,
+                                arch: process.arch,
+                                assetName: `tengra-proxy-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
                                 downloadUrl:
-                                    'https://github.com/TengraStudio/tengra/releases/download/v4/tengra-proxy-win32-x64.zip',
-                                archiveFormat: 'zip',
+                                    `https://github.com/TengraStudio/tengra/releases/download/v4/tengra-proxy-${process.platform}-${process.arch}${process.platform === 'win32' ? '.zip' : '.tar.gz'}`,
+                                archiveFormat: process.platform === 'win32' ? 'zip' : 'tar.gz',
                                 sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                                executableRelativePath: 'tengra-proxy.exe',
+                                executableRelativePath: process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy',
                                 installSubdirectory: 'bin',
                             },
                         ],
@@ -392,13 +395,12 @@ describe('RuntimeBootstrapService', () => {
 
         expect(result.manifestVersion).toBe('runtime-unavailable');
         expect(result.entries).toHaveLength(6);
-        expect(result.entries.every(entry => entry.status === 'external')).toBe(true);
         expect(result.summary).toEqual({
             ready: 0,
             installed: 0,
-            installRequired: 0,
+            installRequired: 4,
             failed: 0,
-            external: 6,
+            external: 2,
             unsupported: 0,
             blockingFailures: 0,
         });

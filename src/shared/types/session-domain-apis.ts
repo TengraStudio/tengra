@@ -18,12 +18,12 @@ import type {
     SessionCanvasNodeRecord,
 } from './session-workspace';
 import type {
-    WorkspaceAgentUsageStats,
     WorkspaceAgentPermissionPolicy,
     WorkspaceAgentSession,
     WorkspaceAgentSessionListResponse,
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionPersistence,
+    WorkspaceAgentUsageStats,
 } from './workspace-agent-session';
 
 export interface SessionWorkspaceApi {

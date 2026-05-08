@@ -43,7 +43,7 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
             }
 
             // 2. Get Staged Diff
-            let diffResult = await window.electron.git.getStagedDiff(workspacePath);
+            const diffResult = await window.electron.git.getStagedDiff(workspacePath);
             let diffText = diffResult.success ? diffResult.diff.trim() : '';
 
             if (!diffText) {
@@ -90,29 +90,23 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
 
             for (const p of oauthPriority) {
                 const providerAccounts = accounts.filter(acc => acc.provider === p && acc.isActive);
-                if (providerAccounts.length > 0) {
-                    // Pick the one with highest quota
-                    let bestAcc = providerAccounts[0];
-                    let maxQuota = quotaMap.get(bestAcc.id) ?? 0;
+                if (providerAccounts.length === 0) { continue; }
 
-                    for (const acc of providerAccounts) {
-                        const q = quotaMap.get(acc.id) ?? 0;
-                        if (q > maxQuota) {
-                            maxQuota = q;
-                            bestAcc = acc;
-                        }
-                    }
+                // Pick the one with highest quota
+                const best = providerAccounts.reduce((acc, curr) => {
+                    const q = quotaMap.get(curr.id) ?? 0;
+                    return q > acc.quota ? { account: curr, quota: q } : acc;
+                }, { account: providerAccounts[0], quota: quotaMap.get(providerAccounts[0].id) ?? 0 });
 
-                    const providerModels = allModels.filter(m => getSelectableProviderId(m) === p);
-                    if (providerModels.length > 0) {
-                        selectedProvider = {
-                            provider: p,
-                            accountId: bestAcc.id,
-                            quota: maxQuota,
-                            models: providerModels
-                        };
-                        break; 
-                    }
+                const providerModels = allModels.filter(m => getSelectableProviderId(m) === p);
+                if (providerModels.length > 0) {
+                    selectedProvider = {
+                        provider: p,
+                        accountId: best.account.id,
+                        quota: best.quota,
+                        models: providerModels
+                    };
+                    break;
                 }
             }
 

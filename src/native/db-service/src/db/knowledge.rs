@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-use anyhow::{Context, Result};
-use rusqlite::params;
-use crate::db::Database;
 use crate::db::migrations::legacy_workspace_path_column;
+use crate::db::Database;
 use crate::types::*;
+use anyhow::{Context, Result};
 use rayon::prelude::*;
+use rusqlite::params;
 
 impl Database {
     pub async fn store_code_symbol(&self, req: StoreCodeSymbolRequest) -> Result<()> {
@@ -22,7 +22,7 @@ impl Database {
             .embedding
             .as_ref()
             .map(|e| bincode::serialize(e).unwrap_or_default());
-        
+
         self.execute_mut(move |conn| {
             let workspace_path = legacy_workspace_path_column();
             let insert_sql = format!(
@@ -144,7 +144,10 @@ impl Database {
         .await
     }
 
-    pub async fn search_semantic_fragments(&self, req: VectorSearchRequest) -> Result<Vec<SemanticFragment>> {
+    pub async fn search_semantic_fragments(
+        &self,
+        req: VectorSearchRequest,
+    ) -> Result<Vec<SemanticFragment>> {
         let workspace_path_filter = req.workspace_path.clone();
         let query_embedding = req.embedding.clone();
         let limit = req.limit;

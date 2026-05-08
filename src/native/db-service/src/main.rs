@@ -22,7 +22,7 @@ mod server;
 mod types;
 
 use anyhow::{Context, Result};
-use std::ffi::OsString; 
+use std::ffi::OsString;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -53,9 +53,13 @@ fn get_db_path(override_path: Option<PathBuf>) -> PathBuf {
     }
     get_data_root().join("runtime").join("db").join("Tengra.db")
 }
- 
+
 /// Run the database server
-async fn run_server(db_path_override: Option<PathBuf>, port_override: Option<u16>, shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
+async fn run_server(
+    db_path_override: Option<PathBuf>,
+    port_override: Option<u16>,
+    shutdown_rx: Option<oneshot::Receiver<()>>,
+) -> Result<()> {
     // Initialize tracing with JSON output to stdout
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -106,13 +110,11 @@ async fn run_server(db_path_override: Option<PathBuf>, port_override: Option<u16
         axum::serve(listener, router).await?;
     }
 
-    // Cleanup 
+    // Cleanup
     tracing::info!("Database service stopped");
 
     Ok(())
 }
-
-
 
 fn get_data_root() -> PathBuf {
     if let Ok(root) = std::env::var("TENGRA_USER_DATA_ROOT") {
@@ -207,10 +209,14 @@ fn main() -> Result<()> {
         match args[1].as_str() {
             "--console" | "-c" => {
                 // Run in console mode (for development/debugging)
-                let db_path = args.iter().position(|a| a == "--db-path" || a == "-d")
+                let db_path = args
+                    .iter()
+                    .position(|a| a == "--db-path" || a == "-d")
                     .and_then(|i| args.get(i + 1))
                     .map(PathBuf::from);
-                let port = args.iter().position(|a| a == "--port" || a == "-p")
+                let port = args
+                    .iter()
+                    .position(|a| a == "--port" || a == "-p")
                     .and_then(|i| args.get(i + 1))
                     .and_then(|p| p.parse::<u16>().ok());
                 let rt = tokio::runtime::Runtime::new()?;
@@ -345,7 +351,7 @@ fn uninstall_service() -> Result<()> {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         anyhow::bail!("Failed to delete service: {}", stderr);
-    } 
+    }
 
     Ok(())
 }

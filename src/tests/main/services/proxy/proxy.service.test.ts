@@ -153,7 +153,7 @@ describe('ProxyService', () => {
                 return mockReq;
             });
 
-            const res = (await proxyService.initiateGitHubAuth('copilot')) as DeviceCodeResponse;
+            const res = (await proxyService.initiateCopilotAuth()) as DeviceCodeResponse;
             expect(res.device_code).toBe('123');
         });
 
@@ -193,7 +193,7 @@ describe('ProxyService', () => {
                 return mockReq;
             });
 
-            const result = await proxyService.waitForGitHubToken('device-code', 5, 'copilot');
+            const result = await proxyService.waitForCopilotToken('device-code', 5);
 
             expect(result.refresh_token).toBe('ghr_token');
             expect(result.session_token).toBe('ghs_token');
@@ -776,44 +776,44 @@ describe('ProxyService input validation', () => {
         });
     });
 
-    describe('waitForGitHubToken validation', () => {
+    describe('waitForCopilotToken validation', () => {
         it('should reject empty device code', async () => {
-            await expect(proxyService.waitForGitHubToken('', 5)).rejects.toThrow('Device code');
+            await expect(proxyService.waitForCopilotToken('', 5)).rejects.toThrow('Device code');
         });
 
         it('should reject whitespace-only device code', async () => {
-            await expect(proxyService.waitForGitHubToken('   ', 5)).rejects.toThrow('Device code');
+            await expect(proxyService.waitForCopilotToken('   ', 5)).rejects.toThrow('Device code');
         });
 
         it('should reject zero interval', async () => {
-            await expect(proxyService.waitForGitHubToken('valid-code', 0)).rejects.toThrow('Interval');
+            await expect(proxyService.waitForCopilotToken('valid-code', 0)).rejects.toThrow('Interval');
         });
 
         it('should reject negative interval', async () => {
-            await expect(proxyService.waitForGitHubToken('valid-code', -5)).rejects.toThrow('Interval');
+            await expect(proxyService.waitForCopilotToken('valid-code', -5)).rejects.toThrow('Interval');
         });
     });
 
-    describe('fetchGitHubProfile validation', () => {
+    describe('fetchCopilotProfile validation', () => {
         it('should return empty object for empty token', async () => {
-            const result = await proxyService.fetchGitHubProfile('');
+            const result = await proxyService.fetchCopilotProfile('');
             expect(result).toEqual({});
         });
 
         it('should return empty object for whitespace-only token', async () => {
-            const result = await proxyService.fetchGitHubProfile('   ');
+            const result = await proxyService.fetchCopilotProfile('   ');
             expect(result).toEqual({});
         });
     });
 
-    describe('fetchGitHubEmails validation', () => {
+    describe('fetchCopilotEmails validation', () => {
         it('should return undefined for empty token', async () => {
-            const result = await proxyService.fetchGitHubEmails('');
+            const result = await proxyService.fetchCopilotEmails('');
             expect(result).toBeUndefined();
         });
 
         it('should return undefined for whitespace-only token', async () => {
-            const result = await proxyService.fetchGitHubEmails('   ');
+            const result = await proxyService.fetchCopilotEmails('   ');
             expect(result).toBeUndefined();
         });
     });

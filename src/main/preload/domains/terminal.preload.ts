@@ -27,7 +27,7 @@ export interface TerminalBridge {
         backendId?: string;
         workspaceId?: string;
         title?: string;
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
     }) => Promise<string | null>;
     close: (id: string) => Promise<boolean>;
     kill: (id: string) => Promise<boolean>;
@@ -42,7 +42,7 @@ export interface TerminalBridge {
         backends: Array<{ id: string; name: string; available: boolean }>;
         refreshedAt: number;
     }>;
-    getDockerContainers: () => Promise<{ success: boolean; containers?: Record<string, any>[]; error?: string; raw?: string }>;
+    getDockerContainers: () => Promise<{ success: boolean; containers?: Record<string, unknown>[]; error?: string; raw?: string }>;
     readBuffer: (id: string) => Promise<string>;
     getSuggestions: (options: { command: string; shell: string; cwd: string; historyLimit?: number }) => Promise<string[]>;
     clearCommandHistory: () => Promise<boolean>;
@@ -52,9 +52,9 @@ export interface TerminalBridge {
         warnings?: string[];
         relatedCommands?: string[];
     }>;
-    getCommandHistory: (query?: string, limit?: number) => Promise<any[]>;
-    explainError: (options: { errorOutput: string; command?: string; shell: string; cwd?: string }) => Promise<any>;
-    fixError: (options: { errorOutput: string; command: string; shell: string; cwd?: string }) => Promise<any>;
+    getCommandHistory: (query?: string, limit?: number) => Promise<unknown[]>;
+    explainError: (options: { errorOutput: string; command?: string; shell: string; cwd?: string }) => Promise<unknown>;
+    fixError: (options: { errorOutput: string; command: string; shell: string; cwd?: string }) => Promise<unknown>;
     getSnapshotSessions: () => Promise<Array<{ id: string; title: string; lastActivity: number }>>;
     restoreAllSnapshots: () => Promise<{ restored: number; failed: number; sessionIds: string[] }>;
     setSessionTitle: (id: string, title: string) => Promise<boolean>;
@@ -64,17 +64,17 @@ export interface TerminalBridge {
 export function createTerminalBridge(ipc: IpcRenderer): TerminalBridge {
     return {
         onData: callback => {
-            const listener = (_event: any, payload: { id: string; data: string }) => callback(payload);
+            const listener = (_event: unknown, payload: { id: string; data: string }) => callback(payload);
             ipc.on(TERMINAL_CHANNELS.DATA, listener);
             return () => ipc.removeListener(TERMINAL_CHANNELS.DATA, listener);
         },
         onExit: callback => {
-            const listener = (_event: any, payload: { id: string; code?: number; signal?: number }) => callback(payload);
+            const listener = (_event: unknown, payload: { id: string; code?: number; signal?: number }) => callback(payload);
             ipc.on(TERMINAL_CHANNELS.EXIT, listener);
             return () => ipc.removeListener(TERMINAL_CHANNELS.EXIT, listener);
         },
         onStatusChange: callback => {
-            const listener = (_event: any, payload: { id: string; online?: boolean }) => callback(payload);
+            const listener = (_event: unknown, payload: { id: string; online?: boolean }) => callback(payload);
             ipc.on(TERMINAL_CHANNELS.STATUS_CHANGE_EVENT, listener);
             return () => ipc.removeListener(TERMINAL_CHANNELS.STATUS_CHANGE_EVENT, listener);
         },

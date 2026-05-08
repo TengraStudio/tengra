@@ -60,6 +60,240 @@ interface SshFormState {
 const MODE_CARD_CLASS_NAME =
     'rounded-2xl border border-border/50 bg-card/80 p-4 text-left transition-colors hover:border-primary/30 hover:bg-card';
 
+// --- Sub-components to satisfy max-lines-per-function ---
+
+interface LocalCreateFormProps {
+    form: CreateFormState;
+    onChange: (form: CreateFormState) => void;
+    onPickPath: () => void;
+    onSubmit: () => void;
+    isLoading: boolean;
+    t: (key: string) => string;
+}
+
+const LocalCreateForm: React.FC<LocalCreateFormProps> = ({
+    form,
+    onChange,
+    onPickPath,
+    onSubmit,
+    isLoading,
+    t,
+}) => (
+    <div className="space-y-5">
+        <div className="space-y-2">
+            <Label>{t('frontend.workspaces.nameLabel')}</Label>
+            <Input
+                value={form.name}
+                onChange={event => onChange({ ...form, name: event.target.value })}
+                placeholder={t('frontend.workspaces.namePlaceholder')}
+            />
+        </div>
+        <div className="space-y-2">
+            <Label>{t('frontend.workspaces.description')}</Label>
+            <Textarea
+                value={form.description}
+                onChange={event => onChange({ ...form, description: event.target.value })}
+                placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
+                rows={4}
+            />
+        </div>
+        <div className="space-y-2">
+            <Label>{t('frontend.settings.workspacesBasePath')}</Label>
+            <div className="flex gap-3">
+                <Input
+                    value={form.basePath}
+                    onChange={event => onChange({ ...form, basePath: event.target.value })}
+                    placeholder={t('frontend.workspaceWizard.createPage.localBasePathPlaceholder')}
+                />
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onPickPath}
+                    disabled={isLoading}
+                >
+                    {t('frontend.workspaceWizard.selectFolder')}
+                </Button>
+            </div>
+        </div>
+        <Button onClick={onSubmit} disabled={isLoading}>
+            {t('frontend.workspaces.createNew')}
+        </Button>
+    </div>
+);
+
+interface LocalImportFormProps {
+    form: ImportFormState;
+    onChange: (form: ImportFormState) => void;
+    onPickPath: () => void;
+    onSubmit: () => void;
+    isLoading: boolean;
+    t: (key: string) => string;
+}
+
+const LocalImportForm: React.FC<LocalImportFormProps> = ({
+    form,
+    onChange,
+    onPickPath,
+    onSubmit,
+    isLoading,
+    t,
+}) => (
+    <div className="space-y-5">
+        <div className="space-y-2">
+            <Label>{t('frontend.workspaceWizard.createPage.directoryLabel')}</Label>
+            <div className="flex gap-3">
+                <Input
+                    value={form.selectedPath}
+                    readOnly
+                    placeholder={t('frontend.workspaceWizard.createPage.importPathPlaceholder')}
+                />
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onPickPath}
+                    disabled={isLoading}
+                >
+                    {t('frontend.workspaceWizard.selectFolder')}
+                </Button>
+            </div>
+        </div>
+        <div className="space-y-2">
+            <Label>{t('frontend.workspaces.nameLabel')}</Label>
+            <Input
+                value={form.name}
+                onChange={event => onChange({ ...form, name: event.target.value })}
+                placeholder={t('frontend.workspaces.namePlaceholder')}
+            />
+        </div>
+        <div className="space-y-2">
+            <Label>{t('frontend.workspaces.description')}</Label>
+            <Textarea
+                value={form.description}
+                onChange={event => onChange({ ...form, description: event.target.value })}
+                placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
+                rows={4}
+            />
+        </div>
+        <Button onClick={onSubmit} disabled={isLoading}>
+            {t('frontend.workspaceWizard.createPage.importAction')}
+        </Button>
+    </div>
+);
+
+interface SshConnectFormProps {
+    form: SshFormState;
+    onChange: (form: SshFormState) => void;
+    onSubmit: () => void;
+    isLoading: boolean;
+    t: (key: string) => string;
+}
+
+const SshConnectForm: React.FC<SshConnectFormProps> = ({
+    form,
+    onChange,
+    onSubmit,
+    isLoading,
+    t,
+}) => (
+    <div className="space-y-5">
+        <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+                <Label>{t('frontend.workspaces.nameLabel')}</Label>
+                <Input
+                    value={form.name}
+                    onChange={event => onChange({ ...form, name: event.target.value })}
+                    placeholder={t('frontend.workspaces.namePlaceholder')}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label>{t('common.host')}</Label>
+                <Input
+                    value={form.host}
+                    onChange={event => onChange({ ...form, host: event.target.value })}
+                    placeholder={t('frontend.workspaceWizard.createPage.sshHostPlaceholder')}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label>{t('common.port')}</Label>
+                <Input
+                    value={form.port}
+                    onChange={event => onChange({ ...form, port: event.target.value })}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label>{t('common.username')}</Label>
+                <Input
+                    value={form.username}
+                    onChange={event => onChange({ ...form, username: event.target.value })}
+                    placeholder={t('frontend.workspaceWizard.createPage.sshUsernamePlaceholder')}
+                />
+            </div>
+        </div>
+        <div className="space-y-2">
+            <Label>{t('frontend.workspaceWizard.selectFolder')}</Label>
+            <Input
+                value={form.rootPath}
+                onChange={event => onChange({ ...form, rootPath: event.target.value })}
+                placeholder={t('frontend.workspaceWizard.createPage.sshRootPathPlaceholder')}
+            />
+        </div>
+        <div className="space-y-2">
+            <Label>{t('frontend.workspaces.description')}</Label>
+            <Textarea
+                value={form.description}
+                onChange={event => onChange({ ...form, description: event.target.value })}
+                placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
+                rows={4}
+            />
+        </div>
+        <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+                <Label>{t('frontend.accounts.authType')}</Label>
+                <select
+                    value={form.authType}
+                    onChange={event => onChange({ ...form, authType: event.target.value as 'password' | 'key' })}
+                    className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                >
+                    <option value="password">{t('frontend.accounts.password')}</option>
+                    <option value="key">{t('frontend.accounts.privateKey')}</option>
+                </select>
+            </div>
+            {form.authType === 'password' ? (
+                <div className="space-y-2">
+                    <Label>{t('frontend.accounts.password')}</Label>
+                    <Input
+                        type="password"
+                        value={form.password}
+                        onChange={event => onChange({ ...form, password: event.target.value })}
+                    />
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    <Label>{t('frontend.accounts.passphrase')}</Label>
+                    <Input
+                        type="password"
+                        value={form.passphrase}
+                        onChange={event => onChange({ ...form, passphrase: event.target.value })}
+                    />
+                </div>
+            )}
+        </div>
+        {form.authType === 'key' && (
+            <div className="space-y-2">
+                <Label>{t('frontend.accounts.privateKey')}</Label>
+                <Textarea
+                    value={form.privateKey}
+                    onChange={event => onChange({ ...form, privateKey: event.target.value })}
+                    rows={6}
+                />
+            </div>
+        )}
+        <Button onClick={onSubmit} disabled={isLoading}>
+            {t('frontend.workspaceWizard.connect')}
+        </Button>
+    </div>
+);
+
 export const WorkspaceCreatePage: React.FC<WorkspaceCreatePageProps> = ({
     language,
     onBack,
@@ -128,7 +362,7 @@ export const WorkspaceCreatePage: React.FC<WorkspaceCreatePageProps> = ({
 
         setCreateForm(prev => ({
             ...prev,
-            basePath: result.path!,
+            basePath: result.path as string,
         }));
     }, [selectDirectory, t]);
 
@@ -282,249 +516,38 @@ export const WorkspaceCreatePage: React.FC<WorkspaceCreatePageProps> = ({
     const renderModeForm = () => {
         if (mode === 'create') {
             return (
-                <div className="space-y-5">
-                    <div className="space-y-2">
-                        <Label>{t('frontend.workspaces.nameLabel')}</Label>
-                        <Input
-                            value={createForm.name}
-                            onChange={event =>
-                                setCreateForm(prev => ({ ...prev, name: event.target.value }))
-                            }
-                            placeholder={t('frontend.workspaces.namePlaceholder')}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('frontend.workspaces.description')}</Label>
-                        <Textarea
-                            value={createForm.description}
-                            onChange={event =>
-                                setCreateForm(prev => ({
-                                    ...prev,
-                                    description: event.target.value,
-                                }))
-                            }
-                            placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
-                            rows={4}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('frontend.settings.workspacesBasePath')}</Label>
-                        <div className="flex gap-3">
-                            <Input
-                                value={createForm.basePath}
-                                onChange={event =>
-                                    setCreateForm(prev => ({
-                                        ...prev,
-                                        basePath: event.target.value,
-                                    }))
-                                }
-                                placeholder={t('frontend.workspaceWizard.createPage.localBasePathPlaceholder')}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => void handlePickCreateBasePath()}
-                                disabled={isLoading}
-                            >
-                                {t('frontend.workspaceWizard.selectFolder')}
-                            </Button>
-                        </div>
-                    </div>
-                    <Button onClick={() => void handleCreateLocalWorkspace()} disabled={isLoading}>
-                        {t('frontend.workspaces.createNew')}
-                    </Button>
-                </div>
+                <LocalCreateForm
+                    form={createForm}
+                    onChange={setCreateForm}
+                    onPickPath={() => void handlePickCreateBasePath()}
+                    onSubmit={() => void handleCreateLocalWorkspace()}
+                    isLoading={isLoading}
+                    t={t}
+                />
             );
         }
 
         if (mode === 'import') {
             return (
-                <div className="space-y-5">
-                    <div className="space-y-2">
-                        <Label>{t('frontend.workspaceWizard.createPage.directoryLabel')}</Label>
-                        <div className="flex gap-3">
-                            <Input
-                                value={importForm.selectedPath}
-                                readOnly
-                                placeholder={t('frontend.workspaceWizard.createPage.importPathPlaceholder')}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => void handlePickImportDirectory()}
-                                disabled={isLoading}
-                            >
-                                {t('frontend.workspaceWizard.selectFolder')}
-                            </Button>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('frontend.workspaces.nameLabel')}</Label>
-                        <Input
-                            value={importForm.name}
-                            onChange={event =>
-                                setImportForm(prev => ({ ...prev, name: event.target.value }))
-                            }
-                            placeholder={t('frontend.workspaces.namePlaceholder')}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('frontend.workspaces.description')}</Label>
-                        <Textarea
-                            value={importForm.description}
-                            onChange={event =>
-                                setImportForm(prev => ({
-                                    ...prev,
-                                    description: event.target.value,
-                                }))
-                            }
-                            placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
-                            rows={4}
-                        />
-                    </div>
-                    <Button onClick={() => void handleImportWorkspace()} disabled={isLoading}>
-                        {t('frontend.workspaceWizard.createPage.importAction')}
-                    </Button>
-                </div>
+                <LocalImportForm
+                    form={importForm}
+                    onChange={setImportForm}
+                    onPickPath={() => void handlePickImportDirectory()}
+                    onSubmit={() => void handleImportWorkspace()}
+                    isLoading={isLoading}
+                    t={t}
+                />
             );
         }
 
         return (
-            <div className="space-y-5">
-                <div className="grid gap-5 md:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label>{t('frontend.workspaces.nameLabel')}</Label>
-                        <Input
-                            value={sshForm.name}
-                            onChange={event =>
-                                setSshForm(prev => ({ ...prev, name: event.target.value }))
-                            }
-                            placeholder={t('frontend.workspaces.namePlaceholder')}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('common.host')}</Label>
-                        <Input
-                            value={sshForm.host}
-                            onChange={event =>
-                                setSshForm(prev => ({ ...prev, host: event.target.value }))
-                            }
-                            placeholder={t('frontend.workspaceWizard.createPage.sshHostPlaceholder')}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('common.port')}</Label>
-                        <Input
-                            value={sshForm.port}
-                            onChange={event =>
-                                setSshForm(prev => ({ ...prev, port: event.target.value }))
-                            }
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>{t('common.username')}</Label>
-                        <Input
-                            value={sshForm.username}
-                            onChange={event =>
-                                setSshForm(prev => ({
-                                    ...prev,
-                                    username: event.target.value,
-                                }))
-                            }
-                            placeholder={t('frontend.workspaceWizard.createPage.sshUsernamePlaceholder')}
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label>{t('frontend.workspaceWizard.selectFolder')}</Label>
-                    <Input
-                        value={sshForm.rootPath}
-                        onChange={event =>
-                            setSshForm(prev => ({ ...prev, rootPath: event.target.value }))
-                        }
-                        placeholder={t('frontend.workspaceWizard.createPage.sshRootPathPlaceholder')}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>{t('frontend.workspaces.description')}</Label>
-                    <Textarea
-                        value={sshForm.description}
-                        onChange={event =>
-                            setSshForm(prev => ({
-                                ...prev,
-                                description: event.target.value,
-                            }))
-                        }
-                        placeholder={t('frontend.workspaces.workspaceDescPlaceholder')}
-                        rows={4}
-                    />
-                </div>
-                <div className="grid gap-5 md:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label>{t('frontend.accounts.authType')}</Label>
-                        <select
-                            value={sshForm.authType}
-                            onChange={event =>
-                                setSshForm(prev => ({
-                                    ...prev,
-                                    authType: event.target.value as 'password' | 'key',
-                                }))
-                            }
-                            className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                        >
-                            <option value="password">{t('frontend.accounts.password')}</option>
-                            <option value="key">{t('frontend.accounts.privateKey')}</option>
-                        </select>
-                    </div>
-                    {sshForm.authType === 'password' ? (
-                        <div className="space-y-2">
-                            <Label>{t('frontend.accounts.password')}</Label>
-                            <Input
-                                type="password"
-                                value={sshForm.password}
-                                onChange={event =>
-                                    setSshForm(prev => ({
-                                        ...prev,
-                                        password: event.target.value,
-                                    }))
-                                }
-                            />
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            <Label>{t('frontend.accounts.passphrase')}</Label>
-                            <Input
-                                type="password"
-                                value={sshForm.passphrase}
-                                onChange={event =>
-                                    setSshForm(prev => ({
-                                        ...prev,
-                                        passphrase: event.target.value,
-                                    }))
-                                }
-                            />
-                        </div>
-                    )}
-                </div>
-                {sshForm.authType === 'key' && (
-                    <div className="space-y-2">
-                        <Label>{t('frontend.accounts.privateKey')}</Label>
-                        <Textarea
-                            value={sshForm.privateKey}
-                            onChange={event =>
-                                setSshForm(prev => ({
-                                    ...prev,
-                                    privateKey: event.target.value,
-                                }))
-                            }
-                            rows={6}
-                        />
-                    </div>
-                )}
-                <Button onClick={() => void handleCreateSshWorkspace()} disabled={isLoading}>
-                    {t('frontend.workspaceWizard.connect')}
-                </Button>
-            </div>
+            <SshConnectForm
+                form={sshForm}
+                onChange={setSshForm}
+                onSubmit={() => void handleCreateSshWorkspace()}
+                isLoading={isLoading}
+                t={t}
+            />
         );
     };
 
@@ -620,4 +643,3 @@ export const WorkspaceCreatePage: React.FC<WorkspaceCreatePageProps> = ({
         </div>
     );
 };
-

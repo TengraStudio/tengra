@@ -16,7 +16,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { ensureMonacoInitialized, applyMonacoTheme } from '@/utils/monaco-loader.util';
+import { applyMonacoTheme,ensureMonacoInitialized } from '@/utils/monaco-loader.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 
@@ -75,7 +75,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                         // but setting it to null prevents the 'TextModel got disposed' error
                     }
                 } catch (e) {
-                    appLogger.warn('DiffViewer', 'Error during editor cleanup', e as any);
+                    appLogger.warn('DiffViewer', 'Error during editor cleanup', e as Error);
                 }
             }
         };

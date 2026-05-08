@@ -34,3 +34,5 @@ export interface ContextMenuState {
 
 export type MountFileEntry = { name: string; isDirectory: boolean };
 
+export type WorkspaceInlineActionType = 'rename' | 'createFile' | 'createFolder';
+

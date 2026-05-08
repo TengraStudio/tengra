@@ -11,11 +11,11 @@
 import type { AgentEventRecord } from '@shared/types/agent-state';
 import type { WorkspaceStep } from '@shared/types/council';
 import type {
-    WorkspaceAgentUsageStats,
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionSummary,
+    WorkspaceAgentUsageStats,
 } from '@shared/types/workspace-agent-session';
-import { IconClipboardCheck, IconHierarchy, IconMessage2, IconSparkles } from '@tabler/icons-react';
+import { IconClipboardCheck, IconHierarchy, IconMessage2  } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -138,8 +138,7 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
     timeline,
     onRetry,
     onApprovePlan,
-    onSourceClick,
-    t,
+    onSourceClick, 
 }) => {
     // The store's messages already receive real-time streaming updates via
     // onMessageUpdated → updateChatCollection, so we use them directly.

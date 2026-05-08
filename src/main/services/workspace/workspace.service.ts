@@ -12,7 +12,6 @@ import { spawn } from 'child_process';
 import { existsSync, promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
-import * as protocol from 'vscode-languageserver-protocol';
 
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
@@ -21,19 +20,17 @@ import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { CacheService } from '@main/services/system/cache.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
 import { UtilityProcessService } from '@main/services/system/utility-process.service';
 import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
-import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
-import { LspService } from '@main/services/workspace/lsp.service';
+import { scanDirForTodos } from '@main/services/workspace/code-intelligence/file-scanner.util';
+import { LspService, WorkspaceServerLanguageId } from '@main/services/workspace/lsp.service';
 import {
     DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
     getWorkspaceIgnoreMatcher,
     type WorkspaceIgnoreMatcher
 } from '@main/services/workspace/workspace-ignore.util';
-import { scanDirForTodos } from '@main/services/workspace/code-intelligence/file-scanner.util';
-import { FileSearchResult } from '@shared/types/common';
-import { t } from '@main/utils/i18n.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
 import { WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
@@ -42,6 +39,7 @@ import {
     WorkspaceEnvVarsSchema,
     WorkspaceRootPathSchema
 } from '@shared/schemas/service-hardening.schema';
+import { FileSearchResult } from '@shared/types/common';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import type {
     CodeAnnotation,
@@ -57,6 +55,7 @@ import type {
 import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { BrowserWindow } from 'electron';
+import * as protocol from 'vscode-languageserver-protocol';
 
 export type {
     CodeAnnotation,
@@ -75,15 +74,22 @@ interface FileScanResult {
     complete: boolean;
 }
 
+export interface WorkspaceServiceDependencies {
+    lspService?: LspService;
+    utilityProcessService?: UtilityProcessService;
+    cacheService?: CacheService;
+    proxyService?: ProxyService;
+    databaseService?: DatabaseService;
+    codeIntelligenceService?: CodeIntelligenceService;
+    jobSchedulerService?: JobSchedulerService;
+    mainWindowProvider?: () => BrowserWindow | null;
+    allowedFileRoots?: Set<string>;
+}
+
 interface WorkspaceDirectorySizeEntry {
     path: string;
     size: number;
     fileCount: number;
-}
-
-interface StaticIssuesScanResult {
-    issues: WorkspaceIssue[];
-    diagnosticsStatus: WorkspaceDiagnosticsStatus;
 }
 
 interface StaticDiagnosticsCommandResult {
@@ -340,18 +346,27 @@ export class WorkspaceService extends BaseService {
     private workerProcessId: string | null = null;
     private workerDisabled = false;
 
-    constructor(
-        private lspService?: LspService,
-        private utilityProcessService?: UtilityProcessService,
-        private cacheService?: CacheService,
-        private proxyService?: ProxyService,
-        private databaseService?: DatabaseService,
-        private codeIntelligenceService?: CodeIntelligenceService,
-        private jobSchedulerService?: JobSchedulerService,
-        private mainWindowProvider?: () => BrowserWindow | null,
-        private allowedFileRoots?: Set<string>
-    ) {
+    private lspService?: LspService;
+    private utilityProcessService?: UtilityProcessService;
+    private cacheService?: CacheService;
+    private proxyService?: ProxyService;
+    private databaseService?: DatabaseService;
+    private codeIntelligenceService?: CodeIntelligenceService;
+    private jobSchedulerService?: JobSchedulerService;
+    private mainWindowProvider?: () => BrowserWindow | null;
+    private allowedFileRoots?: Set<string>;
+
+    constructor(deps: WorkspaceServiceDependencies = {}) {
         super('WorkspaceService');
+        this.lspService = deps.lspService;
+        this.utilityProcessService = deps.utilityProcessService;
+        this.cacheService = deps.cacheService;
+        this.proxyService = deps.proxyService;
+        this.databaseService = deps.databaseService;
+        this.codeIntelligenceService = deps.codeIntelligenceService;
+        this.jobSchedulerService = deps.jobSchedulerService;
+        this.mainWindowProvider = deps.mainWindowProvider;
+        this.allowedFileRoots = deps.allowedFileRoots;
     }
 
     /**
@@ -590,11 +605,11 @@ export class WorkspaceService extends BaseService {
         filePath: string;
         languageId: string;
     }): Promise<RuntimeValue> {
-        if (!this.lspService) return serializeToIpc(null);
+        if (!this.lspService) {return serializeToIpc(null);}
         const result = await this.lspService.pullDiagnostics(
             payload.workspaceId,
             payload.filePath,
-            payload.languageId as any
+            payload.languageId as WorkspaceServerLanguageId
         );
         return serializeToIpc(result);
     }
@@ -607,11 +622,11 @@ export class WorkspaceService extends BaseService {
         range: protocol.Range;
         diagnostics: protocol.Diagnostic[];
     }): Promise<RuntimeValue> {
-        if (!this.lspService) return serializeToIpc(null);
+        if (!this.lspService) {return serializeToIpc(null);}
         const result = await this.lspService.getCodeActions(
             payload.workspaceId,
             payload.filePath,
-            payload.languageId as any,
+            payload.languageId as WorkspaceServerLanguageId,
             payload.range,
             payload.diagnostics
         );
@@ -1264,7 +1279,7 @@ export class WorkspaceService extends BaseService {
         return undefined;
     }
 
-    private async findAnnotations(rootPath: string, files: string[]): Promise<CodeAnnotation[]> {
+    private async findAnnotations(rootPath: string, _files: string[]): Promise<CodeAnnotation[]> {
         const results: FileSearchResult[] = [];
         const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
         await scanDirForTodos(rootPath, results, ignoreMatcher);
@@ -1273,7 +1288,7 @@ export class WorkspaceService extends BaseService {
             file: res.file,
             line: res.line,
             message: res.text,
-            type: (res.type?.toLowerCase() as any) || 'todo'
+            type: (res.type?.toLowerCase() as 'todo') || 'todo'
         }));
     }
 
@@ -1618,7 +1633,8 @@ export class WorkspaceService extends BaseService {
         // 2. Check local node_modules by walking up directory tree
         const binaryName = process.platform === 'win32' ? `${toolName}.cmd` : toolName;
         let currentDir = rootPath;
-        while (true) {
+        const MAX_DEPTH = 100;
+        for (let depth = 0; depth < MAX_DEPTH; depth++) {
             const binaryPath = path.join(currentDir, 'node_modules', '.bin', binaryName);
             try {
                 await fs.access(binaryPath);
@@ -1672,7 +1688,7 @@ export class WorkspaceService extends BaseService {
 
     private parseBiomeIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
         const issues: WorkspaceIssue[] = [];
-        if (!stdout || stdout.trim() === '') return issues;
+        if (!stdout || stdout.trim() === '') {return issues;}
         try {
             const data = JSON.parse(stdout) as {
                 diagnostics?: Array<{
@@ -1712,7 +1728,7 @@ export class WorkspaceService extends BaseService {
 
     private parseRuffIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
         const issues: WorkspaceIssue[] = [];
-        if (!stdout || stdout.trim() === '') return issues;
+        if (!stdout || stdout.trim() === '') {return issues;}
         try {
             const data = JSON.parse(stdout) as Array<{
                 code?: string;
@@ -1744,7 +1760,7 @@ export class WorkspaceService extends BaseService {
 
     private parseGoIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
         const issues: WorkspaceIssue[] = [];
-        if (!stdout || stdout.trim() === '') return issues;
+        if (!stdout || stdout.trim() === '') {return issues;}
         try {
             const data = JSON.parse(stdout) as {
                 Issues?: Array<{
@@ -1788,7 +1804,7 @@ export class WorkspaceService extends BaseService {
             }
             return [];
         }
-        const jsonContent = output.substring(jsonStartIndex);
+        // const jsonContent = output.substring(jsonStartIndex);
         const report = safeJsonParse<Array<{
             filePath?: string;
             messages?: Array<{

@@ -54,7 +54,10 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
     }, []);
 
     useEffect(() => {
-        void loadData();
+        const timer = window.setTimeout(() => {
+            void loadData();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [loadData]);
 
     const handleToggle = useCallback(async (skill: ProxySkill, enabled: boolean) => {

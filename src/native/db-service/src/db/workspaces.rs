@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
+use crate::db::migrations::legacy_workspace_table;
+use crate::db::Database;
+use crate::types::*;
 use anyhow::{Context, Result};
 use rusqlite::{params, OptionalExtension};
-use crate::db::Database;
-use crate::db::migrations::legacy_workspace_table;
-use crate::types::*;
 
 impl Database {
     pub async fn get_workspaces(&self) -> Result<Vec<Workspace>> {
@@ -212,7 +212,8 @@ impl Database {
         let id = id.to_string();
         self.execute_mut(move |conn| {
             let workspace_table = legacy_workspace_table();
-            let affected = conn.execute(&format!("DELETE FROM {workspace_table} WHERE id = ?"), [id])?;
+            let affected =
+                conn.execute(&format!("DELETE FROM {workspace_table} WHERE id = ?"), [id])?;
             Ok(affected > 0)
         })
         .await

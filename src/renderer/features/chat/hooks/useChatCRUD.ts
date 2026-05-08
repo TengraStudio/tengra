@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
+import { WORKSPACE_AGENT_CHAT_TYPE } from '@shared/types/workspace-agent-session';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { generateId } from '@/lib/utils';
-import { WORKSPACE_AGENT_CHAT_TYPE } from '@shared/types/workspace-agent-session';
 import { getChatSnapshot } from '@/store/chat.store';
 import { Chat, Message } from '@/types';
 import { CachedDatabase } from '@/utils/cached-database.util';

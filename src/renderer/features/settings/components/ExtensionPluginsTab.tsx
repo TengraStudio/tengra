@@ -117,11 +117,11 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
 
     useEffect(() => {
         if (extensions.length === 0) {
-            setSelectedExtensionId(null);
+            void Promise.resolve().then(() => setSelectedExtensionId(null));
             return;
         }
         if (!selectedExtensionId || !extensions.some(extension => extension.manifest.id === selectedExtensionId)) {
-            setSelectedExtensionId(extensions[0]?.manifest.id ?? null);
+            void Promise.resolve().then(() => setSelectedExtensionId(extensions[0]?.manifest.id ?? null));
         }
     }, [extensions, selectedExtensionId]);
 
@@ -130,7 +130,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
             return;
         }
         let active = true;
-        setLoadingConfigId(selectedExtensionId);
+        void Promise.resolve().then(() => setLoadingConfigId(selectedExtensionId));
         void window.electron.extension.getConfig(selectedExtensionId)
             .then(result => {
                 if (!active) {
@@ -255,7 +255,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
         } finally {
             setIsUpdating(null);
         }
-    }, [fetchExtensions, registry?.extensions, t]);
+    }, [fetchExtensions, registry, t]);
 
     const selectedDraft = selectedExtensionId ? (draftByExtensionId[selectedExtensionId] ?? {}) : {};
 

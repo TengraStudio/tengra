@@ -18,20 +18,28 @@
  * @param message - The message to display
  * @returns True if the user confirmed, false otherwise
  */
-export function confirmDialog(message: string): boolean {
-    // Using window.confirm is intentional for terminal interactions
-    // This wrapper centralizes all confirm usage
-    return window.confirm(message);
+export async function confirmDialog(message: string): Promise<boolean> {
+    const result = await window.electron.dialog.showMessageBox({
+        type: 'question',
+        buttons: ['Yes', 'No'],
+        defaultId: 0,
+        cancelId: 1,
+        message,
+    });
+    return result.response === 0;
 }
 
 /**
  * Display an alert dialog to the user
  * @param message - The message to display
  */
-export function alertDialog(message: string): void {
-    // Using window.alert is intentional for terminal interactions
-    // This wrapper centralizes all alert usage
-    window.alert(message);
+export async function alertDialog(message: string): Promise<void> {
+    await window.electron.dialog.showMessageBox({
+        type: 'info',
+        buttons: ['OK'],
+        defaultId: 0,
+        message,
+    });
 }
 
 /**

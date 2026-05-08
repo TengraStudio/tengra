@@ -20,7 +20,6 @@
 
 import { ipc } from '@main/core/ipc-decorators';
 import { BaseService } from '@main/services/base.service';
-import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { BATCH_CHANNELS } from '@shared/constants/ipc-channels';
 import { IpcValue } from '@shared/types/common';
 import { RuntimeValue } from '@shared/types/common';

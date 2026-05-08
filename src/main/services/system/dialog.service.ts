@@ -101,5 +101,17 @@ export class DialogService extends BaseService {
 
         return { success: true, filePath: result.filePath };
     }
+
+    @ipc(DIALOG_CHANNELS.SHOW_MESSAGE_BOX)
+    async showMessageBoxIpc(_event: IpcMainInvokeEvent, options: Electron.MessageBoxOptions) {
+        const win = this.mainWindowProvider();
+        if (!win) {
+            return this.createDialogFailure(
+                DIALOG_ERROR_MESSAGE.WINDOW_NOT_FOUND,
+                DIALOG_MESSAGE_KEY.WINDOW_NOT_FOUND
+            );
+        }
+        return dialog.showMessageBox(win, options);
+    }
 }
 

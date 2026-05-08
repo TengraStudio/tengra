@@ -94,29 +94,29 @@ describe('ThemeService (UI)', () => {
     describe('initialize', () => {
         it('should initialize with default store when no file exists', async () => {
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('light');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
 
         it('should load persisted store from disk', async () => {
             const persisted = JSON.stringify({
-                currentTheme: 'dark',
+                currentTheme: 'tengra-white',
                 customThemes: [],
-                favorites: ['dark'],
-                history: ['dark'],
+                favorites: ['tengra-white'],
+                history: ['tengra-white'],
                 preset: null,
             });
             mockAccess.mockResolvedValue(undefined);
             mockReadFile.mockResolvedValue(persisted);
 
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('dark');
-            expect(service.getFavorites()).toContain('dark');
+            expect(service.getCurrentTheme()).toBe('tengra-white');
+            expect(service.getFavorites()).toContain('tengra-white');
         });
 
         it('should be idempotent – second call is a no-op', async () => {
             await service.initialize();
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('light');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
 
         it('should fall back to defaults when store file is corrupt', async () => {
@@ -124,20 +124,20 @@ describe('ThemeService (UI)', () => {
             mockReadFile.mockResolvedValue('not json!!!');
 
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('light');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
 
         it('should merge partial persisted data with defaults', async () => {
             mockAccess.mockResolvedValue(undefined);
             mockReadFile.mockResolvedValue(
-                JSON.stringify({ currentTheme: 'midnight' }),
+                JSON.stringify({ currentTheme: 'tengra-white' }),
             );
 
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('midnight');
+            expect(service.getCurrentTheme()).toBe('tengra-white');
             // Missing fields should come from defaults
             expect(service.getFavorites()).toEqual([]);
-            expect(service.getHistory()).toEqual(['light']);
+            expect(service.getHistory()).toEqual(['tengra-black']);
         });
 
         it('should handle readFile throwing an error', async () => {
@@ -145,7 +145,7 @@ describe('ThemeService (UI)', () => {
             mockReadFile.mockRejectedValue(new Error('EACCES'));
 
             await service.initialize();
-            expect(service.getCurrentTheme()).toBe('light');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
     });
 
@@ -154,7 +154,7 @@ describe('ThemeService (UI)', () => {
     describe('init (legacy)', () => {
         it('should delegate to initialize', async () => {
             await service.init();
-            expect(service.getCurrentTheme()).toBe('light');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
     });
 
@@ -166,44 +166,44 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should switch to a valid built-in theme', async () => {
-            const result = await service.setTheme('dark');
+            const result = await service.setTheme('tengra-white');
             expect(result).toBe(true);
-            expect(service.getCurrentTheme()).toBe('dark');
+            expect(service.getCurrentTheme()).toBe('tengra-white');
         });
 
         it('should return false for a non-existent theme', async () => {
             const result = await service.setTheme('does-not-exist');
             expect(result).toBe(false);
-            expect(service.getCurrentTheme()).toBe('light');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
 
         it('should add the new theme to history', async () => {
-            await service.setTheme('midnight');
-            expect(service.getHistory()).toContain('midnight');
+            await service.setTheme('tengra-white');
+            expect(service.getHistory()).toContain('tengra-white');
         });
 
         it('should not duplicate history entries', async () => {
-            await service.setTheme('midnight');
-            await service.setTheme('midnight');
-            const occurrences = service.getHistory().filter((id: string) => id === 'midnight').length;
+            await service.setTheme('tengra-white');
+            await service.setTheme('tengra-white');
+            const occurrences = service.getHistory().filter((id: string) => id === 'tengra-white').length;
             expect(occurrences).toBe(1);
         });
 
         it('should cap history at 20 entries', async () => {
             const themes = [
-                'dark', 'midnight', 'deep-forest', 'dracula',
+                'tengra-white', 'tengra-white', 'deep-forest', 'dracula',
                 'cyberpunk', 'matrix', 'synthwave', 'snow',
                 'sand', 'sky', 'minimal', 'paper',
                 'ocean', 'rose', 'coffee',
             ];
 
-            // Initial history has 'light' already
+            // Initial history has 'tengra-black' already
             for (const t of themes) {
                 await service.setTheme(t);
             }
 
             // Add custom themes to go over 20
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 25; i++) {
                 const customTheme = await service.addCustomTheme(themeInput(`Overflow ${i}`));
                 await service.setTheme(customTheme!.id);
             }
@@ -212,7 +212,7 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should persist the store after switching', async () => {
-            await service.setTheme('dark');
+            await service.setTheme('tengra-white');
             expect(mockWriteFile).toHaveBeenCalled();
             expect(mockRename).toHaveBeenCalled();
         });
@@ -236,8 +236,8 @@ describe('ThemeService (UI)', () => {
             const themes = service.getAllThemes();
             expect(themes.length).toBeGreaterThan(0);
             const ids = themes.map((t: { id: string }) => t.id);
-            expect(ids).toContain('light');
-            expect(ids).toContain('dark');
+            expect(ids).toContain('tengra-black');
+            expect(ids).toContain('tengra-white');
         });
 
         it('should include custom themes with isCustom flag', async () => {
@@ -257,7 +257,7 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should return built-in theme with isBuiltIn = true', () => {
-            const details = service.getThemeDetails('light');
+            const details = service.getThemeDetails('tengra-black');
             expect(details).not.toBeNull();
             expect(details!.isBuiltIn).toBe(true);
         });
@@ -363,7 +363,7 @@ describe('ThemeService (UI)', () => {
             expect(service.getCurrentTheme()).toBe(theme!.id);
 
             await service.deleteCustomTheme(theme!.id);
-            expect(service.getCurrentTheme()).toBe('light');
+            expect(service.getCurrentTheme()).toBe('tengra-black');
         });
 
         it('should return false for a non-existent id', async () => {
@@ -395,21 +395,21 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should add a theme to favorites via toggleFavorite', async () => {
-            const isFav = await service.toggleFavorite('dark');
+            const isFav = await service.toggleFavorite('tengra-white');
             expect(isFav).toBe(true);
-            expect(service.isFavorite('dark')).toBe(true);
-            expect(service.getFavorites()).toContain('dark');
+            expect(service.isFavorite('tengra-white')).toBe(true);
+            expect(service.getFavorites()).toContain('tengra-white');
         });
 
         it('should remove a theme from favorites on second toggle', async () => {
-            await service.toggleFavorite('dark');
-            const isFav = await service.toggleFavorite('dark');
+            await service.toggleFavorite('tengra-white');
+            const isFav = await service.toggleFavorite('tengra-white');
             expect(isFav).toBe(false);
-            expect(service.isFavorite('dark')).toBe(false);
+            expect(service.isFavorite('tengra-white')).toBe(false);
         });
 
         it('should persist after toggling', async () => {
-            await service.toggleFavorite('midnight');
+            await service.toggleFavorite('tengra-white');
             expect(mockWriteFile).toHaveBeenCalled();
         });
 
@@ -428,11 +428,11 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should start with light in history', () => {
-            expect(service.getHistory()).toEqual(['light']);
+            expect(service.getHistory()).toEqual(['tengra-black']);
         });
 
         it('should clear history', async () => {
-            await service.setTheme('dark');
+            await service.setTheme('tengra-white');
             await service.clearHistory();
             expect(service.getHistory()).toEqual([]);
         });

@@ -9,7 +9,6 @@
  */
 
 import { type Icon,IconAlertCircle, IconCircleCheck, IconDownload, IconRefresh, IconX } from '@tabler/icons-react';
-import type { IpcRendererEvent } from 'electron';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';

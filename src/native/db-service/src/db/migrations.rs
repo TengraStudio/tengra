@@ -46,17 +46,21 @@ pub(crate) fn run_migrations_internal(conn: &mut Connection) -> Result<()> {
         conn.execute("ALTER TABLE _migrations ADD COLUMN checksum TEXT", [])?;
     }
 
-
     let migrations = get_migrations_static();
 
     for (id, name, sql) in migrations {
         let current_checksum = format!("{:x}", md5::compute(&sql));
-        
+
         let row: Option<(String, String)> = conn
             .query_row(
                 "SELECT name, checksum FROM _migrations WHERE id = ?",
                 [id],
-                |row| Ok((row.get(0)?, row.get::<_, Option<String>>(1)?.unwrap_or_default())),
+                |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                    ))
+                },
             )
             .optional()?;
 
@@ -64,7 +68,10 @@ pub(crate) fn run_migrations_internal(conn: &mut Connection) -> Result<()> {
             if !applied_checksum.is_empty() && applied_checksum != current_checksum {
                 bail!(
                     "Migration integrity check failed for {}: {}. Expected {}, found {}",
-                    id, name, current_checksum, applied_checksum
+                    id,
+                    name,
+                    current_checksum,
+                    applied_checksum
                 );
             }
             continue;
@@ -77,11 +84,13 @@ pub(crate) fn run_migrations_internal(conn: &mut Connection) -> Result<()> {
 
         let mut should_apply = true;
         if id == 9 {
-            let projects_exists: bool = tx.query_row(
-                "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='projects'",
-                [],
-                |row| Ok(row.get::<_, i32>(0)? > 0),
-            ).unwrap_or(false);
+            let projects_exists: bool = tx
+                .query_row(
+                    "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='projects'",
+                    [],
+                    |row| Ok(row.get::<_, i32>(0)? > 0),
+                )
+                .unwrap_or(false);
 
             if !projects_exists {
                 tracing::info!("Table 'projects' not found, skipping rename migration 9");
@@ -95,7 +104,12 @@ pub(crate) fn run_migrations_internal(conn: &mut Connection) -> Result<()> {
 
         tx.execute(
             "INSERT INTO _migrations (id, name, applied_at, checksum) VALUES (?, ?, ?, ?)",
-            params![id, name, chrono::Utc::now().timestamp_millis(), current_checksum],
+            params![
+                id,
+                name,
+                chrono::Utc::now().timestamp_millis(),
+                current_checksum
+            ],
         )?;
 
         tx.commit()?;
@@ -192,8 +206,9 @@ pub(crate) fn ensure_runtime_support_tables_internal(conn: &Connection) -> Resul
             created_at INTEGER,
             updated_at INTEGER
         );
-        "#
-    ).context("Failed to ensure runtime support tables")
+        "#,
+    )
+    .context("Failed to ensure runtime support tables")
 }
 
 fn get_migrations_static() -> Vec<(i32, String, String)> {

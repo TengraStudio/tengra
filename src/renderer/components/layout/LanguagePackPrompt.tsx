@@ -135,7 +135,9 @@ export const LanguagePackPrompt: React.FC = () => {
                     <div className="flex flex-col gap-2 p-4 bg-muted/10 border-t border-border/50">
                         <div className="flex gap-2">
                             <button
-                                onClick={handleInstall}
+                                onClick={() => {
+                                    void handleInstall();
+                                }}
                                 disabled={isInstalling}
                                 className={cn(
                                     "flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all",

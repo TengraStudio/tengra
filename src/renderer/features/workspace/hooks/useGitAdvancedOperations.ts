@@ -10,7 +10,7 @@
 
 import { useCallback, useState } from 'react';
 
-import { GitFileHistoryItem, GitFlowStatus, GitHookInfo, GitHotspot, GitRebasePlanCommit, GitRefComparison, GitRepositoryStats, GitSubmodule } from '../components/git/types';
+import { GitFlowStatus, GitHookInfo, GitRebasePlanCommit, GitRepositoryStats, GitSubmodule } from '../components/git/types';
 
 const DEFAULT_FLOW_STATUS: GitFlowStatus = {
     currentBranch: '',

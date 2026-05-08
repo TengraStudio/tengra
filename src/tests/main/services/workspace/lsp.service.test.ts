@@ -37,6 +37,7 @@ vi.mock('child_process', () => ({
 
 vi.mock('fs', () => ({
     existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
     promises: {
         readFile: vi.fn().mockResolvedValue('const value: string = 1;'),
     },
@@ -106,15 +107,15 @@ describe('LspService', () => {
         expect(mockSpawn).toHaveBeenCalledTimes(1);
     });
 
-    it('spawns Windows cmd-based servers through the shell', async () => {
+    it.runIf(process.platform === 'win32')('spawns Windows cmd-based servers through the shell', async () => {
         vi.stubEnv('PATHEXT', '.COM;.EXE;.BAT;.CMD');
         await lspService.startServer('workspace-1', 'C:/repo', 'typescript');
 
         expect(mockSpawn).toHaveBeenCalledWith(
-            expect.stringMatching(/typescript-language-server\.cmd$/),
-            ['--stdio'],
+            expect.stringMatching(/cmd\.exe$/i),
+            expect.arrayContaining(['/c', expect.stringMatching(/biome\.cmd|typescript-language-server\.cmd/i)]),
             expect.objectContaining({
-                shell: true,
+                shell: false,
                 windowsHide: true,
             })
         );
@@ -188,7 +189,7 @@ describe('LspService', () => {
         expect(support).toEqual([
             expect.objectContaining({
                 languageId: 'typescript',
-                serverId: 'typescript-language-server',
+                serverId: 'biome',
                 status: 'unavailable',
             }),
         ]);

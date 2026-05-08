@@ -11,7 +11,6 @@
 import { IconDeviceFloppy, IconRotate, IconSettings } from '@tabler/icons-react';
 import React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 interface SettingsHeaderProps {

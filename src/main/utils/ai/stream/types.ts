@@ -144,7 +144,7 @@ export type RuntimeValue =
     | RuntimeCallable;
 
 export interface IStreamParserStrategy {
-    parse(json: StreamPayload, state: any, interceptorState: InterceptorState): Generator<StreamChunk>;
+    parse(json: StreamPayload, state: unknown, interceptorState: InterceptorState): Generator<StreamChunk>;
 }
     
 

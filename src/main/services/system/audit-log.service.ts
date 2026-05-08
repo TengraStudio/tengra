@@ -40,7 +40,7 @@ export class AuditLogService extends BaseService {
     async getLogsIpc(_event: IpcMainInvokeEvent, filters: AuditLogFilters = {}): Promise<AuditLogEntry[]> {
         try {
             return await this.getLogs(filters);
-        } catch (error) {
+        } catch {
             return [];
         }
     }

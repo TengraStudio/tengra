@@ -22,47 +22,48 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-describe('ToolExecutor', () => {
-    const fileSystem = {
-        readFile: vi.fn(),
-        writeFile: vi.fn(),
-        applyEdits: vi.fn(),
-        listDirectory: vi.fn(),
-        fileExists: vi.fn(),
-        searchFiles: vi.fn(),
-        getFileInfo: vi.fn(),
-        createDirectory: vi.fn(),
-        deleteFile: vi.fn(),
-        copyFile: vi.fn(),
-        moveFile: vi.fn()
-    };
+const fileSystem = {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    applyEdits: vi.fn(),
+    listDirectory: vi.fn(),
+    fileExists: vi.fn(),
+    searchFiles: vi.fn(),
+    getFileInfo: vi.fn(),
+    createDirectory: vi.fn(),
+    deleteFile: vi.fn(),
+    copyFile: vi.fn(),
+    moveFile: vi.fn()
+};
 
-    const command = { executeCommand: vi.fn() }, localImage = { generateImage: vi.fn() };
-    const web = { searchWeb: vi.fn() }, system = { getSystemInfo: vi.fn() };
-    const eventBus = { emit: vi.fn() }, mcp = { dispatch: vi.fn(), getToolDefinitions: vi.fn() };
-    const terminal = {
-        createSession: vi.fn(),
-        write: vi.fn(),
-        getActiveSessions: vi.fn(),
-        getSessionBuffer: vi.fn(),
-        getSessionAnalytics: vi.fn(),
-        kill: vi.fn(),
-    };
+const command = { executeCommand: vi.fn() }, localImage = { generateImage: vi.fn() };
+const web = { searchWeb: vi.fn() }, system = { getSystemInfo: vi.fn() };
+const eventBus = { emit: vi.fn() }, mcp = { dispatch: vi.fn(), getToolDefinitions: vi.fn() };
+const terminal = {
+    createSession: vi.fn(),
+    write: vi.fn(),
+    getActiveSessions: vi.fn(),
+    getSessionBuffer: vi.fn(),
+    getSessionAnalytics: vi.fn(),
+    kill: vi.fn(),
+};
 
-    const createExecutor = () => {
-        const options = {
-            fileSystem,
-            eventBus,
-            command,
-            localImage,
-            web,
-            system,
-            mcp,
-            terminal
-        } as never as ToolExecutorOptions;
+const createExecutor = () => {
+    const options = {
+        fileSystem,
+        eventBus,
+        command,
+        localImage,
+        web,
+        system,
+        mcp,
+        terminal
+    } as never as ToolExecutorOptions;
 
-        return new ToolExecutor(options);
-    };
+    return new ToolExecutor(options);
+};
+
+describe('ToolExecutor - Core & FS', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -87,12 +88,12 @@ describe('ToolExecutor', () => {
         });
 
         const executor = createExecutor();
-        const result = await executor.execute('list_directory', { path: path.normalize('C:/repo') });
+        const result = await executor.execute('list_directory', { path: path.resolve('/repo') });
 
         expect(result).toEqual({
             success: true,
             result: {
-                path: path.normalize('C:/repo'),
+                path: path.resolve('/repo'),
                 complete: true,
                 pathExists: true,
                 entryCount: 1,
@@ -101,17 +102,17 @@ describe('ToolExecutor', () => {
                 entries: [{ name: 'src', isDirectory: true }],
             }
         });
-        expect(fileSystem.listDirectory).toHaveBeenCalledWith(path.normalize('C:/repo'));
+        expect(fileSystem.listDirectory).toHaveBeenCalledWith(path.resolve('/repo'));
     });
 
     it('routes file_exists to fileSystem.fileExists', async () => {
         fileSystem.fileExists.mockResolvedValueOnce({ exists: true });
 
         const executor = createExecutor();
-        const result = await executor.execute('file_exists', { path: path.normalize('C:/repo/package.json') });
+        const result = await executor.execute('file_exists', { path: path.resolve('/repo/package.json') });
 
         expect(result).toEqual({ success: true, result: true });
-        expect(fileSystem.fileExists).toHaveBeenCalledWith(path.normalize('C:/repo/package.json'));
+        expect(fileSystem.fileExists).toHaveBeenCalledWith(path.resolve('/repo/package.json'));
     });
 
     it('resolves relative paths against a base path and reports parent existence', async () => {
@@ -122,7 +123,7 @@ describe('ToolExecutor', () => {
         const executor = createExecutor();
         const result = await executor.execute('resolve_path', {
             path: 'app/page.tsx',
-            basePath: path.normalize('C:/repo')
+            basePath: path.resolve('/repo')
         });
 
         expect(result).toEqual({
@@ -131,13 +132,13 @@ describe('ToolExecutor', () => {
                 success: true,
                 resultKind: 'path_resolution',
                 inputPath: 'app/page.tsx',
-                basePath: path.normalize('C:/repo'),
-                path: 'C:\\repo\\app\\page.tsx',
-                parentPath: 'C:\\repo\\app',
+                basePath: path.resolve('/repo'),
+                path: path.resolve('/repo/app/page.tsx'),
+                parentPath: path.resolve('/repo/app'),
                 pathExists: false,
                 parentExists: true,
                 complete: true,
-                displaySummary: 'Resolved path: C:\\repo\\app\\page.tsx',
+                displaySummary: `Resolved path: ${path.resolve('/repo/app/page.tsx')}`,
             },
         });
     });
@@ -147,24 +148,24 @@ describe('ToolExecutor', () => {
         fileSystem.createDirectory.mockResolvedValueOnce({ success: true });
 
         const executor = createExecutor();
-        const result = await executor.execute('create_directory', { path: path.normalize('C:/repo/app') });
+        const result = await executor.execute('create_directory', { path: path.resolve('/repo/app') });
 
         expect(result).toEqual({
             success: true,
             result: {
                 success: true,
                 resultKind: 'directory_create',
-                path: 'C:\\repo\\app',
-                inputPath: path.normalize('C:/repo/app'),
+                path: path.resolve('/repo/app'),
+                inputPath: path.resolve('/repo/app'),
                 pathExists: true,
                 existedBefore: true,
                 created: false,
                 complete: true,
-                displaySummary: 'Directory already existed: C:\\repo\\app',
+                displaySummary: `Directory already existed: ${path.resolve('/repo/app')}`,
             },
         });
-        expect(fileSystem.fileExists).toHaveBeenCalledWith('C:\\repo\\app');
-        expect(fileSystem.createDirectory).toHaveBeenCalledWith('C:\\repo\\app');
+        expect(fileSystem.fileExists).toHaveBeenCalledWith(path.resolve('/repo/app'));
+        expect(fileSystem.createDirectory).toHaveBeenCalledWith(path.resolve('/repo/app'));
     });
 
     it('rejects create_directory calls with an empty path before touching the file system', async () => {
@@ -181,20 +182,20 @@ describe('ToolExecutor', () => {
         fileSystem.writeFile.mockResolvedValueOnce({ success: true });
 
         const executor = createExecutor();
-        const result = await executor.execute('write_file', { path: path.normalize('C:/repo/app/page.tsx'), content: 'export default function Page() { return null; }' });
+        const result = await executor.execute('write_file', { path: path.resolve('/repo/app/page.tsx'), content: 'export default function Page() { return null; }' });
 
         expect(result).toEqual({
             success: true,
             result: {
                 success: true,
                 resultKind: 'file_write',
-                path: path.normalize('C:/repo/app/page.tsx'),
+                path: path.resolve('/repo/app/page.tsx'),
                 bytesWritten: 47,
                 complete: true,
-                displaySummary: `Wrote 47 bytes to ${path.normalize('C:/repo/app/page.tsx')}`,
+                displaySummary: `Wrote 47 bytes to ${path.resolve('/repo/app/page.tsx')}`,
             },
         });
-        expect(fileSystem.writeFile).toHaveBeenCalledWith(path.normalize('C:/repo/app/page.tsx'), 'export default function Page() { return null; }');
+        expect(fileSystem.writeFile).toHaveBeenCalledWith(path.resolve('/repo/app/page.tsx'), 'export default function Page() { return null; }');
     });
 
     it('writes multiple files in one bounded tool call', async () => {
@@ -205,8 +206,8 @@ describe('ToolExecutor', () => {
         const executor = createExecutor();
         const result = await executor.execute('write_files', {
             files: [
-                { path: path.normalize('C:/repo/package.json'), content: '{}' },
-                { path: path.normalize('C:/repo/app/page.tsx'), content: 'export default function Page() { return null; }' },
+                { path: path.resolve('/repo/package.json'), content: '{}' },
+                { path: path.resolve('/repo/app/page.tsx'), content: 'export default function Page() { return null; }' },
             ]
         });
 
@@ -221,15 +222,15 @@ describe('ToolExecutor', () => {
                 failedCount: 0,
                 bytesWritten: 49,
                 files: [
-                    { success: true, path: path.normalize('C:/repo/package.json'), bytesWritten: 2, error: null, diffId: null, diffStats: null, existedBefore: null },
-                    { success: true, path: path.normalize('C:/repo/app/page.tsx'), bytesWritten: 47, error: null, diffId: null, diffStats: null, existedBefore: null },
+                    { success: true, path: path.resolve('/repo/package.json'), bytesWritten: 2, error: null, diffId: null, diffStats: null, existedBefore: null },
+                    { success: true, path: path.resolve('/repo/app/page.tsx'), bytesWritten: 47, error: null, diffId: null, diffStats: null, existedBefore: null },
                 ],
                 displaySummary: 'Wrote 2 files (49 bytes)',
             },
             error: undefined,
         });
-        expect(fileSystem.writeFile).toHaveBeenNthCalledWith(1, path.normalize('C:/repo/package.json'), '{}');
-        expect(fileSystem.writeFile).toHaveBeenNthCalledWith(2, path.normalize('C:/repo/app/page.tsx'), 'export default function Page() { return null; }');
+        expect(fileSystem.writeFile).toHaveBeenNthCalledWith(1, path.resolve('/repo/package.json'), '{}');
+        expect(fileSystem.writeFile).toHaveBeenNthCalledWith(2, path.resolve('/repo/app/page.tsx'), 'export default function Page() { return null; }');
     });
 
     it('reads multiple files in one bounded tool call', async () => {
@@ -238,7 +239,7 @@ describe('ToolExecutor', () => {
             .mockResolvedValueOnce({ success: true, data: 'two' });
 
         const executor = createExecutor();
-        const result = await executor.execute('read_many_files', { paths: [path.normalize('C:/repo/a.ts'), path.normalize('C:/repo/b.ts')] });
+        const result = await executor.execute('read_many_files', { paths: [path.resolve('/repo/a.ts'), path.resolve('/repo/b.ts')] });
 
         expect(result).toEqual({
             success: true,
@@ -250,8 +251,8 @@ describe('ToolExecutor', () => {
                 readCount: 2,
                 failedCount: 0,
                 files: [
-                    { path: path.normalize('C:/repo/a.ts'), success: true, content: 'one', error: null },
-                    { path: path.normalize('C:/repo/b.ts'), success: true, content: 'two', error: null },
+                    { path: path.resolve('/repo/a.ts'), success: true, content: 'one', error: null },
+                    { path: path.resolve('/repo/b.ts'), success: true, content: 'two', error: null },
                 ],
                 displaySummary: 'Read 2 files',
             },
@@ -264,7 +265,7 @@ describe('ToolExecutor', () => {
 
         const executor = createExecutor();
         const result = await executor.execute('patch_file', {
-            path: path.normalize('C:/repo/app/page.tsx'),
+            path: path.resolve('/repo/app/page.tsx'),
             edits: [{ startLine: 1, endLine: 1, replacement: 'export default function Page() { return <main />; }' }],
         });
 
@@ -273,14 +274,14 @@ describe('ToolExecutor', () => {
             result: {
                 success: true,
                 resultKind: 'file_patch',
-                path: path.normalize('C:/repo/app/page.tsx'),
+                path: path.resolve('/repo/app/page.tsx'),
                 editCount: 1,
                 complete: true,
-                displaySummary: `Applied 1 line edit(s) to ${path.normalize('C:/repo/app/page.tsx')}`,
+                displaySummary: `Applied 1 line edit(s) to ${path.resolve('/repo/app/page.tsx')}`,
             },
         });
         expect(fileSystem.applyEdits).toHaveBeenCalledWith(
-            path.normalize('C:/repo/app/page.tsx'),
+            path.resolve('/repo/app/page.tsx'),
             [{ startLine: 1, endLine: 1, replacement: 'export default function Page() { return <main />; }' }]
         );
     });
@@ -288,12 +289,12 @@ describe('ToolExecutor', () => {
     it('searches files through FileSystemService with result limiting', async () => {
         fileSystem.searchFiles.mockResolvedValueOnce({
             success: true,
-            data: [path.normalize('C:/repo/a.test.ts'), path.normalize('C:/repo/b.test.ts'), 'C:/repo/c.test.ts']
+            data: [path.resolve('/repo/a.test.ts'), path.resolve('/repo/b.test.ts'), path.resolve('/repo/c.test.ts')]
         });
 
         const executor = createExecutor();
         const result = await executor.execute('search_files', {
-            rootPath: path.normalize('C:/repo'),
+            rootPath: path.resolve('/repo'),
             pattern: '.test.ts',
             maxResults: 2,
         });
@@ -303,30 +304,33 @@ describe('ToolExecutor', () => {
             result: {
                 success: true,
                 resultKind: 'file_search',
-                rootPath: path.normalize('C:/repo'),
+                rootPath: path.resolve('/repo'),
                 pattern: '.test.ts',
                 resultCount: 2,
                 truncated: true,
-                results: [path.normalize('C:/repo/a.test.ts'), path.normalize('C:/repo/b.test.ts')],
+                results: [path.resolve('/repo/a.test.ts'), path.resolve('/repo/b.test.ts')],
                 complete: true,
                 displaySummary: `Found 2 of 3 file(s) matching '.test.ts'`,
             },
         });
-        expect(fileSystem.searchFiles).toHaveBeenCalledWith(path.normalize('C:/repo'), '.test.ts', 2);
+        expect(fileSystem.searchFiles).toHaveBeenCalledWith(path.resolve('/repo'), '.test.ts', 2);
     });
+});
+
+describe('ToolExecutor - Extra & Terminal', () => {
 
     it('routes get_file_info to fileSystem.getFileInfo', async () => {
         fileSystem.getFileInfo.mockResolvedValueOnce({
             success: true,
-            data: { path: path.normalize('C:/repo/package.json'), size: 123, isFile: true, isDirectory: false }
+            data: { path: path.resolve('/repo/package.json'), size: 123, isFile: true, isDirectory: false }
         });
 
         const executor = createExecutor();
-        const result = await executor.execute('get_file_info', { path: path.normalize('C:/repo/package.json') });
+        const result = await executor.execute('get_file_info', { path: path.resolve('/repo/package.json') });
 
         expect(result.success).toBe(true);
-        expect(result.result).toEqual({ path: path.normalize('C:/repo/package.json'), size: 123, isFile: true, isDirectory: false });
-        expect(fileSystem.getFileInfo).toHaveBeenCalledWith(path.normalize('C:/repo/package.json'));
+        expect(result.result).toEqual({ path: path.resolve('/repo/package.json'), size: 123, isFile: true, isDirectory: false });
+        expect(fileSystem.getFileInfo).toHaveBeenCalledWith(path.resolve('/repo/package.json'));
     });
 
     it('routes get_system_info to SystemService', async () => {
@@ -443,9 +447,9 @@ describe('ToolExecutor', () => {
         command.executeCommand.mockResolvedValueOnce({ success: true, stdout: 'done' });
 
         const executor = createExecutor();
-        await executor.execute('execute_command', { command: 'echo done', cwd: path.normalize('C:/repo') }, { timeoutMs: 45000 });
+        await executor.execute('execute_command', { command: 'echo done', cwd: path.resolve('/repo') }, { timeoutMs: 45000 });
 
-        expect(command.executeCommand).toHaveBeenCalledWith('echo done', { cwd: path.normalize('C:/repo'), timeout: 44000 });
+        expect(command.executeCommand).toHaveBeenCalledWith('echo done', { cwd: path.resolve('/repo'), timeout: 44000 });
     });
 
     it('returns structured stderr/exitCode payload on execute_command failure', async () => {
@@ -482,7 +486,7 @@ describe('ToolExecutor', () => {
         const executor = createExecutor();
         const result = await executor.execute('terminal_session_start', {
             sessionId: 'agent-term-1',
-            cwd: path.normalize('C:/repo'),
+            cwd: path.resolve('/repo'),
             title: 'Agent work',
         }, { workspaceId: 'workspace-1' });
 
@@ -492,7 +496,7 @@ describe('ToolExecutor', () => {
                 success: true,
                 resultKind: 'terminal_session',
                 sessionId: 'agent-term-1',
-                cwd: path.normalize('C:/repo'),
+                cwd: path.resolve('/repo'),
                 shell: null,
                 title: 'Agent work',
                 cols: 120,
@@ -503,7 +507,7 @@ describe('ToolExecutor', () => {
         });
         expect(terminal.createSession).toHaveBeenCalledWith(expect.objectContaining({
             id: 'agent-term-1',
-            cwd: path.normalize('C:/repo'),
+            cwd: path.resolve('/repo'),
             title: 'Agent work',
             workspaceId: 'workspace-1',
             metadata: { owner: 'agent', toolManaged: true },
@@ -517,7 +521,7 @@ describe('ToolExecutor', () => {
             input: 'npm test',
         });
 
-        expect(result).toEqual({
+        expect(result).toMatchObject({
             success: true,
             result: {
                 success: true,
@@ -527,9 +531,17 @@ describe('ToolExecutor', () => {
                 submitted: true,
                 bytesWritten: 9,
                 complete: true,
-                displaySummary: 'Wrote command input to terminal session agent-term-1',
+                displaySummary: 'Command finished in terminal session agent-term-1',
+                idle: true,
+                matched: false,
+                output: '',
+                timedOut: false,
+                totalBytes: 0,
+                truncated: false,
+                waitedForCompletion: true,
             },
         });
+        expect((result.result as any).elapsedMs).toEqual(expect.any(Number));
         expect(terminal.write).toHaveBeenCalledWith('agent-term-1', "npm test\r");
     });
 

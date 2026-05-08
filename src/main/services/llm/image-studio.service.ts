@@ -12,7 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { ipc } from '@main/core/ipc-decorators';
-import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import type { LLMService } from '@main/services/llm/llm.service';
 import type { LocalImageService } from '@main/services/llm/local/local-image.service';
@@ -70,13 +70,15 @@ type ImageModelCandidate = {
 
 type ImageModelRecord = ModelProviderInfo & ImageModelCandidate;
 
-export class ImageStudioService {
+export class ImageStudioService extends BaseService {
     constructor(
         private readonly llmService: LLMService,
         private readonly localImageService: LocalImageService,
         private readonly modelRegistryService: ModelRegistryService,
         private readonly imagePersistenceService: ImagePersistenceService
-    ) {}
+    ) {
+        super('ImageStudioService');
+    }
 
     @ipc(IMAGE_STUDIO_CHANNELS.SAVE)
     async saveImage(raw: RuntimeValue): Promise<RuntimeValue> {
@@ -101,106 +103,139 @@ export class ImageStudioService {
 
     @ipc(IMAGE_STUDIO_CHANNELS.GENERATE)
     async generateImage(raw: RuntimeValue): Promise<RuntimeValue> {
-        if (typeof raw !== 'object' || raw === null) {
-            throw new Error('Invalid request payload');
-        }
-
-        const payload = raw as Partial<ImageStudioGenerateRequest>;
-        const prompt = typeof payload.prompt === 'string' ? payload.prompt.trim() : '';
-        const modelId = typeof payload.modelId === 'string' ? payload.modelId.trim() : '';
-        if (!prompt) {
-            throw new Error('Missing prompt');
-        }
-        if (!modelId) {
-            throw new Error('Missing modelId');
-        }
-
-        const count = this.clampInt(payload.count, 1, 1, 8);
-        const width = this.clampInt(payload.width, 1024, 256, 4096);
-        const height = this.clampInt(payload.height, 1024, 256, 4096);
+        const payload = this.validateGenerateRequest(raw);
+        const { prompt, modelId, count, width, height } = payload;
 
         const allModels = await this.modelRegistryService.getAllModels();
         const model = allModels.find((m: { id?: string; provider?: string }) => m.id === modelId);
         const provider = (model?.provider ?? '').toLowerCase();
         const isLocal = this.isLocalImageModel(provider, modelId);
+        
         if (!isLocal && !this.isSupportedRemoteImageModel(model, modelId)) {
             throw new Error('Selected model is not available for image generation. Choose an image-capable model such as gpt-image-1, DALL-E, or a local image model.');
         }
+
         const effectiveModelId = this.normalizeModelId(modelId, provider);
-
         const results: string[] = [];
-
-        const persist = async (image: string): Promise<string> => {
-            return this.imagePersistenceService.saveImage(image, {
-                prompt,
-                width,
-                height,
-                model: modelId,
-            });
-        };
 
         if (isLocal) {
             for (let i = 0; i < count; i += 1) {
                 const imagePath = await this.localImageService.generateImage({ prompt, width, height });
-                results.push(await persist(imagePath));
+                results.push(await this.persistGeneratedImage(imagePath, prompt, width, height, modelId));
             }
             return serializeToIpc(results);
         }
 
+        return this.generateRemoteImages({
+            prompt,
+            effectiveModelId,
+            provider,
+            count,
+            width,
+            height,
+            originalModelId: modelId
+        });
+    }
+
+    private validateGenerateRequest(raw: RuntimeValue) {
+        if (typeof raw !== 'object' || raw === null) {
+            throw new Error('Invalid request payload');
+        }
+        const payload = raw as Partial<ImageStudioGenerateRequest>;
+        const prompt = typeof payload.prompt === 'string' ? payload.prompt.trim() : '';
+        const modelId = typeof payload.modelId === 'string' ? payload.modelId.trim() : '';
+        if (!prompt) { throw new Error('Missing prompt'); }
+        if (!modelId) { throw new Error('Missing modelId'); }
+        
+        return {
+            prompt,
+            modelId,
+            count: this.clampInt(payload.count, 1, 1, 8),
+            width: this.clampInt(payload.width, 1024, 256, 4096),
+            height: this.clampInt(payload.height, 1024, 256, 4096),
+        };
+    }
+
+    private async persistGeneratedImage(image: string, prompt: string, width: number, height: number, modelId: string): Promise<string> {
+        return this.imagePersistenceService.saveImage(image, {
+            prompt,
+            width,
+            height,
+            model: modelId,
+        });
+    }
+
+    private async generateRemoteImages(params: {
+        prompt: string;
+        effectiveModelId: string;
+        provider: string;
+        count: number;
+        width: number;
+        height: number;
+        originalModelId: string;
+    }): Promise<RuntimeValue> {
+        const { prompt, effectiveModelId, provider, count, width, height, originalModelId } = params;
+        const results: string[] = [];
         try {
             while (results.length < count) {
                 const remaining = count - results.length;
-                const isCodexImageStream = provider === 'codex' && effectiveModelId.toLowerCase() === '$imagegen';
-                const images: string[] = [];
-
-                if (isCodexImageStream) {
-                    for await (const chunk of this.llmService.chatStream(
-                        [{ role: 'user', content: prompt }],
-                        effectiveModelId,
-                        [],
-                        provider || undefined,
-                        {
-                            metadata: {
-                                source: 'image_studio',
-                                width,
-                                height,
-                            },
-                        }
-                    )) {
-                        if (Array.isArray(chunk.images) && chunk.images.length > 0) {
-                            images.push(...chunk.images);
-                        }
-                    }
-                } else {
-                    const response = await this.llmService.chat(
-                        [{ role: 'user', content: prompt }],
-                        effectiveModelId,
-                        [],
-                        provider || undefined,
-                        {
-                            n: remaining,
-                            metadata: {
-                                source: 'image_studio',
-                                width,
-                                height,
-                            },
-                        }
-                    );
-                    images.push(...(Array.isArray(response.images) ? response.images : []));
-                }
-
+                const images = await this.fetchRemoteImages({
+                    prompt,
+                    effectiveModelId,
+                    provider,
+                    count: remaining,
+                    width,
+                    height
+                });
+                
                 if (images.length === 0) {
                     throw new Error('Image generation returned no images.');
                 }
 
                 for (const img of images.slice(0, remaining)) {
-                    results.push(await persist(img));
+                    results.push(await this.persistGeneratedImage(img, prompt, width, height, originalModelId));
                 }
             }
             return serializeToIpc(results);
         } catch (error) {
             throw new Error(getErrorMessage(error as Error));
         }
+    }
+
+    private async fetchRemoteImages(params: {
+        prompt: string;
+        effectiveModelId: string;
+        provider: string;
+        count: number;
+        width: number;
+        height: number;
+    }): Promise<string[]> {
+        const { prompt, effectiveModelId, provider, count, width, height } = params;
+        const isCodexImageStream = provider === 'codex' && effectiveModelId.toLowerCase() === '$imagegen';
+        if (isCodexImageStream) {
+            const images: string[] = [];
+            for await (const chunk of this.llmService.chatStream(
+                [{ role: 'user', content: prompt }],
+                effectiveModelId,
+                [],
+                provider || undefined,
+                { metadata: { source: 'image_studio', width, height } }
+            )) {
+                if (Array.isArray(chunk.images) && chunk.images.length > 0) {
+                    images.push(...chunk.images);
+                }
+            }
+            return images;
+        }
+
+        const response = await this.llmService.chat(
+            [{ role: 'user', content: prompt }],
+            effectiveModelId,
+            [],
+            provider || undefined,
+            { n: count, metadata: { source: 'image_studio', width, height } }
+        );
+        return Array.isArray(response.images) ? response.images : [];
     }
 
     @ipc(IMAGE_STUDIO_CHANNELS.EDIT)
@@ -467,7 +502,9 @@ export class ImageStudioService {
             const image = input.startsWith('data:') ? nativeImage.createFromDataURL(input) : nativeImage.createFromPath(this.resolveLocalImagePath(input));
             const size = image.getSize();
             if (size.width > 0 && size.height > 0) { return size; }
-        } catch {}
+        } catch (error) {
+            this.logDebug('Failed to get image size from input', error as Error);
+        }
         return null;
     }
 

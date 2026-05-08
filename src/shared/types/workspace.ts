@@ -64,6 +64,111 @@ export interface WorkspaceEntry {
     initialLine?: number;
 }
 
+export interface WorkspaceEntryRow {
+    id: string;
+    key: string;
+    mountId: string;
+    name: string;
+    path: string;
+    icon: string;
+    isDirectory: boolean;
+    isExpanded: boolean;
+    isUnknown: boolean; // Entry hidden by diagnostics/ignore (no row in VirtualizedTable)
+    depth: number;      // 0 = top-level mount row
+    isTarget?: boolean; // Path shown in breadcrumb
+
+    // Virtualization range: indices in the `displayRows` array (flat list)
+    firstDisplayIndex: number;
+    lastDisplayIndex: number;
+
+    // Computed counts for display
+    visibleFiles: number;
+    visibleDirs: number;
+    visibleBytes: number;
+    totalChildren: number; // Including hidden files (used for expand count)
+    totalVisibleChildren: number; // Only non-hidden children
+}
+
+export interface WorkspaceMountRow extends Omit<WorkspaceEntryRow, 'isDirectory' | 'isExpanded'> {
+    isDirectory: true;
+    isExpanded: boolean;
+}
+
+export interface WorkspaceExplorerProps {
+    workspaceId: string;
+    workspacePath: string;
+    mounts: WorkspaceMount[];
+    refreshSignal: number;
+    activeFilePath?: string;
+    onOpenFile: (...args: Array<{ mountId: string; path: string; name: string; isDirectory: boolean; initialLine?: number }>) => void;
+    onRemoveMount: (mountId: string) => void;
+    selectedEntries?: WorkspaceEntry[] | null;
+    lastSelectedEntry?: WorkspaceEntry | null;
+    onSelectedEntriesChange?: (entries: WorkspaceEntry[]) => void;
+    onLastSelectedEntryChange?: (entry: WorkspaceEntry | null) => void;
+    onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
+    onContextAction?: (action: { type: string; entry: WorkspaceEntry }) => void;
+    onSubmitInlineAction?: (action: { type: string; entry: WorkspaceEntry; draftName: string }) => Promise<boolean>;
+    onCancelInlineAction?: () => void;
+    onSubmitBulkAction?: (type: string, entries: WorkspaceEntry[], draftValue: string) => Promise<boolean>;
+    onRequestBulkDelete?: (entries: WorkspaceEntry[]) => void;
+    onAddMount?: () => void;
+    variant?: 'panel' | 'embedded';
+    language?: string;
+}
+
+export interface WorkspaceExplorerRow {
+    id: string;
+    key: string;
+    mountId: string;
+    name: string;
+    path: string;
+    icon: string;
+    isDirectory: boolean;
+    isExpanded: boolean;
+    isUnknown: boolean; // Entry hidden by diagnostics/ignore (no row in VirtualizedTable)
+    depth: number;      // 0 = top-level mount row
+    isTarget?: boolean; // Path shown in breadcrumb
+
+    // Virtualization range: indices in the `displayRows` array (flat list)
+    firstDisplayIndex: number;
+    lastDisplayIndex: number;
+
+    // Computed counts for display
+    visibleFiles: number;
+    visibleDirs: number;
+    visibleBytes: number;
+    totalChildren: number; // Including hidden files (used for expand count)
+    totalVisibleChildren: number; // Only non-hidden children
+}
+
+export interface ExplorerRowProps {
+    row: WorkspaceEntryRow | WorkspaceMountRow;
+    workspaceId: string;
+    isRenaming: boolean;
+    inlineDraftName: string | null;
+    lastClickTime: number | null;
+    rowRefs: React.RefObject<HTMLDivElement[]>;
+    rowElements: HTMLDivElement[];
+    expandedRows: Set<string>;
+    displayRows: (WorkspaceEntryRow | WorkspaceMountRow)[];
+    selectedRows: Set<string>;
+    mouseOverRef: React.RefObject<HTMLDivElement>;
+    highlightedIndex: number | null;
+    onEntryContextMenu: (e: React.MouseEvent, mountId: string, path: string) => void;
+    setRowRef: (index: number, ref: HTMLDivElement | null) => void;
+    onInlineDraftNameChange: (value: string) => void;
+    onInlineSubmit: (value: string) => Promise<void>;
+    onInlineCancel: () => void;
+}
+
+export interface ExplorerDisplayRow {
+    id: string;
+    row: WorkspaceEntryRow | WorkspaceMountRow;
+    childrenCount: number;
+    displayIndex: number;
+}
+
 export interface EditorTab {
     id: string;
     mountId: string;

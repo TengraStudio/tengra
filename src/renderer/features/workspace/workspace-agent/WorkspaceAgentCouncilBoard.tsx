@@ -435,7 +435,10 @@ function ActivityFeedCard({
         if (participants.some(agent => agent.id === messageAuthorId)) {
             return;
         }
-        setMessageAuthorId(runtime.chairman?.id ?? runtime.subagents[0]?.id ?? '');
+        const timer = window.setTimeout(() => {
+            setMessageAuthorId(runtime.chairman?.id ?? runtime.subagents[0]?.id ?? '');
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [messageAuthorId, participants, runtime.chairman?.id, runtime.subagents]);
 
     const handleSend = React.useCallback(() => {

@@ -176,7 +176,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={fetchGitData}
+                        onClick={() => { void fetchGitData(); }}
                         disabled={gitData.loading}
                         className="h-9 px-4 typo-overline font-bold uppercase bg-background/50 border-border/10 hover:border-primary/20 hover:text-primary transition-all shadow-sm"
                     >
@@ -202,7 +202,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                                 key={commit.hash + idx}
                                 commit={commit}
                                 isSelected={selectedCommit?.hash === commit.hash}
-                                onSelect={handleCommitSelect}
+                                onSelect={(c) => { void handleCommitSelect(c); }}
                                 loadingDiff={loadingDiff}
                                 commitDiff={commitDiff}
                                 isLast={idx === gitData.recentCommits.length - 1 && !hasMoreCommits}
@@ -215,7 +215,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                             {hasMoreCommits ? (
                                 <Button
                                     variant="ghost"
-                                    onClick={handleLoadMoreCommits}
+                                    onClick={() => { void handleLoadMoreCommits(); }}
                                     disabled={isLoadingMore}
                                     className="group h-10 px-6 typo-overline font-bold uppercase text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all w-full md:w-auto"
                                 >

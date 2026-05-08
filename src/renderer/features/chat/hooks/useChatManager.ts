@@ -413,21 +413,18 @@ export function useChatManager(options: UseChatManagerOptions) {
     
     const [searchTerm, setSearchTerm] = useState('');
     const [input, setInput] = useState('');
-    const [contextTokens, setContextTokens] = useState(0);
-    const [contextWindow, setContextWindow] = useState(128000);
     const isSendingRef = useRef(false);
 
-    const [systemMode, setSystemModeState] = useState<'thinking' | 'agent' | 'fast'>(() =>
-        resolveSystemModeFromSettings(appSettings)
-    );
+    const systemMode = resolveSystemModeFromSettings(appSettings);
     const [imageRequestCount, setImageRequestCount] = useState(1);
-    const [permissionPolicy, setPermissionPolicy] = useState<WorkspaceAgentPermissionPolicy>({
+    const permissionPolicyInitial = {
         commandPolicy: 'ask-every-time',
         pathPolicy: 'workspace-root-only',
         allowedCommands: [],
         disallowedCommands: [],
         allowedPaths: []
-    });
+    } satisfies WorkspaceAgentPermissionPolicy;
+    const [permissionPolicy, setPermissionPolicy] = useState<WorkspaceAgentPermissionPolicy>(permissionPolicyInitial);
     const prevChatIdRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -448,14 +445,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         return () => cancelAnimationFrame(rafId);
     }, [appSettings]);
 
-    useEffect(() => {
-        const nextSystemMode = resolveSystemModeFromSettings(appSettings);
-        setSystemModeState(previousMode => (previousMode === nextSystemMode ? previousMode : nextSystemMode));
-    }, [appSettings?.general.chatMode]);
-
     const setSystemMode = useCallback((nextMode: 'thinking' | 'agent' | 'fast') => {
-        setSystemModeState(nextMode);
-
         const currentSettings = getSettingsSnapshot().settings ?? appSettings;
         if (!currentSettings) {
             return;
@@ -540,7 +530,7 @@ export function useChatManager(options: UseChatManagerOptions) {
                 }
             });
         }
-    }, [permissionPolicy, currentChatId, updateChat]); // Removed chats from deps to reduce triggers, updateChat is stable
+    }, [permissionPolicy, chats, currentChatId, updateChat]);
 
     useEffect(() => {
         if (!currentChatId || prevChatIdRef.current === currentChatId) {
@@ -592,36 +582,34 @@ export function useChatManager(options: UseChatManagerOptions) {
         prevChatIdRef.current = currentChatId;
     }, [currentChatId]);
 
-    useEffect(() => {
+    const contextTokens = useMemo(() => {
         const chat = chats.find(c => c.id === currentChatId);
         if (!chat) {
-            setContextTokens(0);
-            return;
+            return 0;
         }
 
-        const total = chat.messages.reduce((acc, msg) => {
+        return chat.messages.reduce((acc, msg) => {
             if (msg.usage?.totalTokens) {return acc + msg.usage.totalTokens;}
             const contentLen = typeof msg.content === 'string' ? msg.content.length : 0;
             return acc + Math.ceil(contentLen / 4);
         }, 0);
-        setContextTokens(total);
+    }, [chats, currentChatId]);
 
+    const contextWindow = useMemo(() => {
         const isOllamaProvider = selectedProvider.toLowerCase() === 'ollama' || selectedModel.toLowerCase().startsWith('ollama/');
         if (isOllamaProvider) {
             const configured = getConfiguredOllamaContextWindow(appSettings, selectedModel);
             if (configured !== null) {
-                setContextWindow(configured);
-                return;
+                return configured;
             }
         }
 
         const activeModelInfo = models.find(m => m.id === selectedModel);
         if (activeModelInfo?.contextWindow !== undefined) {
-            setContextWindow(Number(activeModelInfo.contextWindow));
-            return;
+            return Number(activeModelInfo.contextWindow);
         }
-        setContextWindow(128000);
-    }, [appSettings, currentChatId, chats, models, selectedModel, selectedProvider]);
+        return 128000;
+    }, [appSettings, models, selectedModel, selectedProvider]);
 
     const currentChat = useMemo(() => chats.find(c => c.id === currentChatId), [chats, currentChatId]);
     const currentSessionState = useSessionState(currentChatId);
@@ -764,7 +752,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         } finally {
             isSendingRef.current = false;
         }
-    }, [input, attachments, selectedModel, selectedProvider, options.selectedModels, appSettings, isLoading, currentChatId, generateResponse, imageRequestCount, t, setAttachments]);
+    }, [input, attachments, selectedModel, selectedProvider, options.selectedModels, appSettings, isLoading, currentChatId, generateResponse, imageRequestCount, t, setAttachments, models]);
 
     const regenerateMessage = useCallback(
         async (assistantMessageId: string) => {
@@ -794,7 +782,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, contextWindow,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
-        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, imageRequestCount, regenerateMessage, bulkDeleteChats,
+        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, setSystemMode, imageRequestCount, regenerateMessage, bulkDeleteChats,
         permissionPolicy, setPermissionPolicy, antigravityCreditConfirmation, confirmAntigravityCreditUsage, cancelAntigravityCreditUsage]);
 }
 

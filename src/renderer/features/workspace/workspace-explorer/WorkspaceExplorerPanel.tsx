@@ -13,9 +13,9 @@ import React from 'react';
 
 import type { GitFileHistoryItem } from '@/features/workspace/components/git/types';
 import { WORKSPACE_EXPLORER_WIDTH_PX } from '@/features/workspace/hooks/useTerminalLayout';
-import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
+import { FileOpenEntry, useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 import { useWorkspaceState } from '@/features/workspace/hooks/useWorkspaceState';
-import type { ContextMenuAction } from '@/features/workspace/workspace-explorer/types';
+import type { ContextMenuAction, WorkspaceInlineActionType } from '@/features/workspace/workspace-explorer/types';
 import { WorkspaceExplorer } from '@/features/workspace/workspace-explorer/WorkspaceExplorer';
 import { WorkspaceExplorerGitHistory } from '@/features/workspace/workspace-explorer/WorkspaceExplorerGitHistory';
 import { Language, useTranslation } from '@/i18n';
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import {
     clearWorkspaceInlineAction,
     startWorkspaceInlineCreate,
-    startWorkspaceInlineRename,
+    startWorkspaceInlineRename, 
 } from '@/store/workspace-explorer.store';
 import type { WorkspaceEntry, WorkspaceMount } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
@@ -69,11 +69,11 @@ export const WorkspaceExplorerPanel = React.memo(({
         );
         const hasUsableMount = usableMounts.length > 0;
 
-        appLogger.info('WorkspaceExplorerPanel', 'Calculating effective mounts', { 
-            workspacePath, 
+        appLogger.info('WorkspaceExplorerPanel', 'Calculating effective mounts', {
+            workspacePath,
             mountsCount: wm.mounts.length,
             usableMountsCount: usableMounts.length,
-            hasUsableMount 
+            hasUsableMount
         });
 
         if (hasUsableMount) {
@@ -91,7 +91,7 @@ export const WorkspaceExplorerPanel = React.memo(({
             type: 'local',
             rootPath: workspacePath,
         };
-        
+
         appLogger.info('WorkspaceExplorerPanel', 'Using fallback local mount', { fallbackMount });
         return [fallbackMount];
     }, [wm.mounts, workspaceId, workspacePath]);
@@ -208,8 +208,8 @@ export const WorkspaceExplorerPanel = React.memo(({
                             workspacePath={workspacePath}
                             mounts={effectiveMounts}
                             refreshSignal={wm.refreshSignal}
-                            onOpenFile={(...args) => {
-                                void wm.openFile(...args);
+                            onOpenFile={(...args: FileOpenEntry[]) => {
+                                args.forEach(entry => void wm.openFile(entry));
                             }}
                             selectedEntries={ps.selectedEntries}
                             lastSelectedEntry={ps.lastSelectedEntry}
@@ -220,13 +220,13 @@ export const WorkspaceExplorerPanel = React.memo(({
                                 void wm.persistMounts(effectiveMounts.filter(m => m.id !== id));
                             }}
                             onEnsureMount={wm.ensureMountReady}
-                            onContextAction={action => {
+                            onContextAction={(action: { type: string; entry: WorkspaceEntry; }) => {
                                 if (
                                     action.type === 'stage' ||
                                     action.type === 'unstage' ||
                                     action.type === 'gitHistory'
                                 ) {
-                                    void handleGitContextAction(action);
+                                    void handleGitContextAction(action as ContextMenuAction);
                                     return;
                                 }
 
@@ -236,44 +236,44 @@ export const WorkspaceExplorerPanel = React.memo(({
                                 }
 
                                 if (action.type === 'createFile' || action.type === 'createFolder') {
-                                    startWorkspaceInlineCreate(workspaceId, action.type, action.entry);
+                                    startWorkspaceInlineCreate(workspaceId, action.type as WorkspaceInlineActionType, action.entry);
                                     return;
                                 }
 
                                 clearWorkspaceInlineAction(workspaceId);
-                                ps.setEntryModal({ type: action.type, entry: action.entry });
+                                ps.setEntryModal({ type: action.type as "rename" | "createFile" | "createFolder" | "delete", entry: action.entry });
                             }}
                             variant="embedded"
                             language={language}
                             activeFilePath={activeFilePath}
-                            onSubmitInlineAction={async inlineAction => {
-                                if (!inlineAction.draftName.trim()) {
+                            onSubmitInlineAction={async (action: { type: string; entry: WorkspaceEntry; draftName: string }) => {
+                                if (!action.draftName.trim()) {
                                     return false;
                                 }
 
-                                if (inlineAction.type === 'rename') {
-                                    await wm.renameEntry(inlineAction.entry, inlineAction.draftName.trim());
+                                if (action.type === 'rename') {
+                                    await wm.renameEntry(action.entry, action.draftName.trim());
                                     clearWorkspaceInlineAction(workspaceId);
                                     return true;
                                 }
 
-                                const parentPath = inlineAction.entry.path;
+                                const parentPath = action.entry.path;
                                 const separator = parentPath.includes('\\') ? '\\' : '/';
                                 const nextPath = parentPath
-                                    ? `${parentPath}${separator}${inlineAction.draftName.trim()}`
-                                    : inlineAction.draftName.trim();
+                                    ? `${parentPath}${separator}${action.draftName.trim()}`
+                                    : action.draftName.trim();
                                 const targetMount = wm.mounts.find(
-                                    mount => mount.id === inlineAction.entry.mountId
+                                    mount => mount.id === action.entry.mountId
                                 );
 
-                                if (inlineAction.type === 'createFile') {
+                                if (action.type === 'createFile') {
                                     clearWorkspaceInlineAction(workspaceId);
                                     void (async () => {
                                         await wm.createFile(nextPath, targetMount);
                                         await wm.openFile({
-                                            mountId: inlineAction.entry.mountId,
+                                            mountId: action.entry.mountId,
                                             path: nextPath,
-                                            name: inlineAction.draftName.trim(),
+                                            name: action.draftName.trim(),
                                             isDirectory: false,
                                         });
                                     })();
@@ -286,7 +286,7 @@ export const WorkspaceExplorerPanel = React.memo(({
                             onCancelInlineAction={() => {
                                 clearWorkspaceInlineAction(workspaceId);
                             }}
-                            onSubmitBulkAction={async (type, entries, draftValue) => {
+                            onSubmitBulkAction={async (type: string, entries: WorkspaceEntry[], draftValue: string) => {
                                 const trimmedDraftValue = draftValue.trim();
                                 if (!trimmedDraftValue) {
                                     return false;
@@ -316,7 +316,7 @@ export const WorkspaceExplorerPanel = React.memo(({
 
                                 return await wm.bulkCopyEntries(entries, trimmedDraftValue);
                             }}
-                            onRequestBulkDelete={entries => {
+                            onRequestBulkDelete={(entries: WorkspaceEntry[]) => {
                                 clearWorkspaceInlineAction(workspaceId);
                                 const primaryEntry = entries[0] ?? ps.selectedEntries[0];
                                 if (!primaryEntry) {

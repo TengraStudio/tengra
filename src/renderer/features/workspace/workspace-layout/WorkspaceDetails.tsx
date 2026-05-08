@@ -100,13 +100,10 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     }, [workspacePath]);
 
     React.useEffect(() => {
-        setBranchStateEnabled(false);
-        const animationFrameId = window.requestAnimationFrame(() => {
+        const timer = window.setTimeout(() => {
             setBranchStateEnabled(true);
-        });
-        return () => {
-            window.cancelAnimationFrame(animationFrameId);
-        };
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [workspace.id]);
 
     const { ps, wm, handleUpdateWorkspace, submitEntryModal, entryBusy, t } =

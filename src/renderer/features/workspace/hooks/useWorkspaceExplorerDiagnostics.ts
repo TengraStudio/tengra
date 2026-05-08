@@ -116,7 +116,9 @@ export function useWorkspaceExplorerDiagnostics({
     }, [mounts, workspaceId, workspaceRootPath]);
 
     React.useEffect(() => {
-        void reloadDiagnostics();
+        queueMicrotask(() => {
+            void reloadDiagnostics();
+        });
     }, [reloadDiagnostics]);
 
     React.useEffect(() => {

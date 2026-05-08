@@ -380,7 +380,7 @@ export class ProxyProcessManager {
         const binaryExists = await fs.promises.access(binaryPath, fs.constants.F_OK).then(() => true).catch(() => false);
         
         // Never attempt to rebuild in production (packaged) mode
-        const isPackaged = process.env.NODE_ENV === 'production' || (typeof app !== 'undefined' && app.isPackaged);
+        const isPackaged = process.env.NODE_ENV === 'production' || app?.isPackaged;
         const autoRebuildEnabled = !isPackaged && process.env.TENGRA_PROXY_AUTO_REBUILD === '1';
 
         if (binaryExists && !autoRebuildEnabled) {

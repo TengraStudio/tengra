@@ -12,7 +12,6 @@ import { spawn } from 'child_process';
 import vm from 'vm';
 
 import { ipc } from '@main/core/ipc-decorators';
-import { appLogger } from '@main/logging/logger';
 import { withRetry } from '@main/utils/ipc-retry.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { CODE_SANDBOX_CHANNELS } from '@shared/constants/ipc-channels';
@@ -96,9 +95,7 @@ export class CodeSandboxService {
 
     @ipc(CODE_SANDBOX_CHANNELS.EXECUTE)
     async executeCode(payload: { language: string; code: string; timeoutMs?: number; stdin?: string }): Promise<RuntimeValue> {
-        const startedAt = Date.now();
         const result = await this.executeWithRetryPolicy(payload);
-        const durationMs = Date.now() - startedAt;
 
         if (result.success) {
             this.usageStats.totalCalls++;

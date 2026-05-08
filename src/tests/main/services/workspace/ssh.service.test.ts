@@ -68,7 +68,11 @@ describe('SSHService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        service = new SSHService(storagePath, {} as any, () => null);
+        const mockSecurityService = {
+            encryptSync: vi.fn((val: string) => val),
+            decryptSync: vi.fn((val: string) => val),
+        } as any;
+        service = new SSHService(storagePath, mockSecurityService, () => null);
     });
 
     describe('Profile Management', () => {

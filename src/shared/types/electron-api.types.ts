@@ -155,7 +155,7 @@ export interface ElectronAPI {
     };
 
     // Auth
-    githubLogin: (appId?: 'copilot') => Promise<{
+    copilotLogin: () => Promise<{
         device_code: string;
         user_code: string;
         verification_uri: string;

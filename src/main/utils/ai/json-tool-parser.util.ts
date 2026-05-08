@@ -182,10 +182,10 @@ export class JsonToolParser {
         const nameMatch = buffer.match(/"name"\s*:\s*"([^"]*)"/);
         const idMatch = buffer.match(/"id"\s*:\s*"([^"]*)"/);
 
-        if (nameMatch && nameMatch[1]) {
+        if (nameMatch?.[1]) {
             return {
                 name: nameMatch[1],
-                id: idMatch && idMatch[1] ? idMatch[1] : undefined
+                id: idMatch?.[1]
             };
         }
 

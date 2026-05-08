@@ -47,8 +47,8 @@ Captured from the built app:
 
 ## Documentation
 
-- [Contributing](docs/CONTRIBUTING.md)
-- [Architecture](docs/ARCHITECTURE.md)  
+- [Contributing](CONTRIBUTING.md)
+- [Architecture](ARCHITECTURE.md)  
 
 ## Known Issues
 

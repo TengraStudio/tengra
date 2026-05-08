@@ -81,13 +81,39 @@ const nodeTypes = {
 
 export const MemoryGraphView: React.FC = () => {
     const { t } = useTranslation();
-    const { isLight, theme } = useTheme();
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [allMemories, setAllMemories] = useState<AdvancedSemanticFragment[]>([]);
     const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+
+    const { isLight } = useTheme();
+
+    const loadData = useCallback(async (): Promise<void> => {
+        await Promise.resolve();
+
+        setLoading(true);
+
+        try {
+            const result = await window.electron.advancedMemory.getAllAdvancedMemories();
+
+            if (result.success && result.data) {
+                const memories = result.data
+                    .filter(m => m.status === 'confirmed')
+                    .map(memory => ({
+                        ...memory,
+                        category: coerceMemoryCategory(memory.category)
+                    }));
+
+                setAllMemories(memories);
+            }
+        } catch (error) {
+            appLogger.error('MemoryGraphView', 'Failed to load memory graph data', error as Error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     const filteredMemories = useMemo(
         () => allMemories.filter(memory => {
@@ -105,54 +131,19 @@ export const MemoryGraphView: React.FC = () => {
         }),
         [allMemories, categoryFilter, searchQuery]
     );
-    const neutralEdgeColor = useMemo(
-        () => resolveCssColorVariable('border', 'hsl(215 16% 47%)'),
-        [theme]
-    );
-    const mutedLabelColor = useMemo(
-        () => resolveCssColorVariable('muted-foreground', 'hsl(215 16% 47%)'),
-        [theme]
-    );
-    const destructiveColor = useMemo(
-        () => resolveCssColorVariable('destructive', 'hsl(0 72% 51%)'),
-        [theme]
-    );
-    const memoryNodeColor = useMemo(
-        () => resolveCssColorVariable('memory-graph-node-memory', 'hsl(239 84% 67%)'),
-        [theme]
-    );
-    const defaultNodeColor = useMemo(
-        () => resolveCssColorVariable('memory-graph-node-default', 'hsl(215 20% 65%)'),
-        [theme]
-    );
-    const relationshipGridColor = useMemo(
-        () => resolveCssColorVariable('memory-relationship-grid', 'hsl(215 16% 47% / 0.35)'),
-        [theme]
-    );
-
-    const loadData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const result = await window.electron.advancedMemory.getAllAdvancedMemories();
-            if (result.success && result.data) {
-                const memories = result.data
-                    .filter(m => m.status === 'confirmed')
-                    .map(memory => ({
-                        ...memory,
-                        category: coerceMemoryCategory(memory.category)
-                    }));
-                setAllMemories(memories);
-            }
-        } catch (error) {
-            appLogger.error('MemoryGraphView', 'Failed to load memory graph data', error as Error);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
 
     useEffect(() => {
-        void loadData();
+        queueMicrotask(() => {
+            void loadData();
+        });
     }, [loadData]);
+
+    const neutralEdgeColor = resolveCssColorVariable('border', 'hsl(215 16% 47%)');
+    const mutedLabelColor = resolveCssColorVariable('muted-foreground', 'hsl(215 16% 47%)');
+    const destructiveColor = resolveCssColorVariable('destructive', 'hsl(0 72% 51%)');
+    const memoryNodeColor = resolveCssColorVariable('memory-graph-node-memory', 'hsl(239 84% 67%)');
+    const defaultNodeColor = resolveCssColorVariable('memory-graph-node-default', 'hsl(215 20% 65%)');
+    const relationshipGridColor = resolveCssColorVariable('memory-relationship-grid', 'hsl(215 16% 47% / 0.35)');
 
     useEffect(() => {
         if (filteredMemories.length === 0) {

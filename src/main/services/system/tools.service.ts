@@ -39,12 +39,6 @@ const toolExecuteRequestSchema = z.object({
     workspaceAgentSessionId: z.string().uuid().optional(),
 });
 
-const toolExecuteResponseSchema = z.object({
-    success: z.boolean(),
-    result: z.unknown().optional(),
-    error: z.string().optional(),
-    errorType: z.enum(['timeout', 'limit', 'permission', 'notFound', 'unknown']).optional(),
-});
 
 const DEFAULT_PERMISSION_POLICY: WorkspaceAgentPermissionPolicy = {
     commandPolicy: 'ask-every-time',

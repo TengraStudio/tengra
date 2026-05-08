@@ -153,7 +153,10 @@ export function GalleryView({ language }: GalleryViewProps) {
     }, []);
 
     useEffect(() => {
-        void loadImages();
+        const timer = window.setTimeout(() => {
+            void loadImages();
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [loadImages]);
 
     useEffect(() => {

@@ -43,9 +43,11 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
     }, [connectionId]);
 
     useEffect(() => {
-        if (active && packages.length === 0) {
+        if (!active || packages.length > 0) { return; }
+        const timer = window.setTimeout(() => {
             void loadPackages();
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [active, packages.length, loadPackages]);
 
     const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));

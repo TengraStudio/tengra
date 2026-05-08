@@ -122,6 +122,49 @@ function MonacoToggleRow({
     );
 }
 
+const DEFAULT_EDITOR_SETTINGS = {
+    fontSize: 14,
+    fontFamily: '',
+    fontWeight: 'normal',
+    letterSpacing: 0,
+    lineHeight: 1.6,
+    minimap: true,
+    minimapSide: 'right' as const,
+    wordWrap: 'off' as const,
+    lineNumbers: 'on' as const,
+    tabSize: 4,
+    cursorBlinking: 'smooth' as const,
+    cursorStyle: 'line' as const,
+    cursorWidth: 2,
+    fontLigatures: true,
+    formatOnPaste: true,
+    formatOnType: true,
+    smoothScrolling: true,
+    folding: true,
+    showFoldingControls: 'mouseover' as const,
+    codeLens: true,
+    inlayHints: true,
+    renderWhitespace: 'selection' as const,
+    renderLineHighlight: 'line' as const,
+    renderControlCharacters: false,
+    roundedSelection: true,
+    scrollBeyondLastLine: true,
+    cursorSmoothCaretAnimation: 'on' as const,
+    wordBasedSuggestions: 'matchingDocuments' as const,
+    acceptSuggestionOnEnter: 'on' as const,
+    suggestFontSize: 0,
+    suggestLineHeight: 0,
+    stickyScroll: true,
+    bracketPairColorization: true,
+    guidesIndentation: true,
+    mouseWheelZoom: false,
+    multiCursorModifier: 'alt' as const,
+    occurrenceHighlight: true,
+    selectionHighlight: true,
+    renderFinalNewline: 'on' as const,
+    minimapRenderCharacters: false,
+};
+
 export const EditorTab: React.FC<EditorTabProps> = ({
     settings,
     updateEditor,
@@ -130,64 +173,26 @@ export const EditorTab: React.FC<EditorTabProps> = ({
     const [previewLanguage, setPreviewLanguage] = useState<'typescript' | 'python' | 'javascript'>('typescript');
 
     const editorSettings = useMemo(() => {
-        if (!settings) {return null;}
+        if (!settings) { return null; }
+        const current = settings.editor || {};
         return {
-            fontSize: settings.editor?.fontSize ?? 14,
-        fontFamily: settings.editor?.fontFamily ?? '',
-        fontWeight: settings.editor?.fontWeight ?? 'normal',
-        letterSpacing: settings.editor?.letterSpacing ?? 0,
-        lineHeight: settings.editor?.lineHeight ?? 1.6,
-        minimap: settings.editor?.minimap ?? true,
-        minimapSide: settings.editor?.minimapSide ?? 'right',
-        wordWrap: settings.editor?.wordWrap ?? 'off',
-        lineNumbers: settings.editor?.lineNumbers ?? 'on',
-        tabSize: settings.editor?.tabSize ?? 4,
-        cursorBlinking: settings.editor?.cursorBlinking ?? 'smooth',
-        cursorStyle: settings.editor?.cursorStyle ?? 'line',
-        cursorWidth: settings.editor?.cursorWidth ?? 2,
-        fontLigatures: settings.editor?.fontLigatures ?? true,
-        formatOnPaste: settings.editor?.formatOnPaste ?? true,
-        formatOnType: settings.editor?.formatOnType ?? true,
-        smoothScrolling: settings.editor?.smoothScrolling ?? true,
-        folding: settings.editor?.folding ?? true,
-        showFoldingControls: settings.editor?.showFoldingControls ?? 'mouseover',
-        codeLens: settings.editor?.codeLens ?? true,
-        inlayHints: settings.editor?.inlayHints ?? true,
-        renderWhitespace: settings.editor?.renderWhitespace ?? 'selection',
-        renderLineHighlight: settings.editor?.renderLineHighlight ?? 'line',
-        renderControlCharacters: settings.editor?.renderControlCharacters ?? false,
-        roundedSelection: settings.editor?.roundedSelection ?? true,
-        scrollBeyondLastLine: settings.editor?.scrollBeyondLastLine ?? true,
-        cursorSmoothCaretAnimation:
-            settings.editor?.cursorSmoothCaretAnimation ?? 'on',
-        wordBasedSuggestions:
-            settings.editor?.wordBasedSuggestions ?? 'matchingDocuments',
-        acceptSuggestionOnEnter: settings.editor?.acceptSuggestionOnEnter ?? 'on',
-        suggestFontSize: settings.editor?.suggestFontSize ?? 0,
-        suggestLineHeight: settings.editor?.suggestLineHeight ?? 0,
-        stickyScroll: settings.editor?.stickyScroll ?? true,
-        bracketPairColorization:
-            settings.editor?.bracketPairColorization ?? true,
-        guidesIndentation: settings.editor?.guidesIndentation ?? true,
-        mouseWheelZoom: settings.editor?.mouseWheelZoom ?? false,
-        multiCursorModifier: settings.editor?.multiCursorModifier ?? 'alt',
-        occurrenceHighlight: settings.editor?.occurrenceHighlight ?? true,
-        selectionHighlight: settings.editor?.selectionHighlight ?? true,
-        renderFinalNewline: settings.editor?.renderFinalNewline ?? 'on',
-        minimapRenderCharacters:
-            settings.editor?.minimapRenderCharacters ?? false,
-        additionalOptionsString: settings.editor?.additionalOptions
-            ? JSON.stringify(settings.editor.additionalOptions, null, 2)
-            : '',
-        additionalOptions: settings.editor?.additionalOptions ?? {},
+            ...DEFAULT_EDITOR_SETTINGS,
+            ...current,
+            additionalOptionsString: current.additionalOptions
+                ? JSON.stringify(current.additionalOptions, null, 2)
+                : '',
+            additionalOptions: current.additionalOptions ?? {},
         };
     }, [settings]);
 
-    const [additionalOptionsDraft, setAdditionalOptionsDraft] = useState('');
+    const [additionalOptionsDraft, setAdditionalOptionsDraft] = useState(editorSettings?.additionalOptionsString ?? '');
 
-    React.useEffect(() => {
+    // Synchronize draft with settings if settings change externally
+    const [lastExternalOptions, setLastExternalOptions] = useState(editorSettings?.additionalOptionsString);
+    if (editorSettings?.additionalOptionsString !== lastExternalOptions) {
+        setLastExternalOptions(editorSettings?.additionalOptionsString);
         setAdditionalOptionsDraft(editorSettings?.additionalOptionsString ?? '');
-    }, [editorSettings?.additionalOptionsString]);
+    }
 
     if (!settings || !editorSettings) {
         return null;
@@ -230,7 +235,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                         min={10} 
                                         max={32} 
                                         step={1}
-                                        onValueChange={([val]) => updateEditor({ fontSize: val })}
+                                        onValueChange={([val]) => { void updateEditor({ fontSize: val }); }}
                                         className="flex-1"
                                     />
                                     <span className="w-10 text-center typo-body font-mono font-bold text-primary">
@@ -249,7 +254,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                         min={1} 
                                         max={3} 
                                         step={0.1}
-                                        onValueChange={([val]) => updateEditor({ lineHeight: val })}
+                                        onValueChange={([val]) => { void updateEditor({ lineHeight: val }); }}
                                         className="flex-1"
                                     />
                                     <span className="w-10 text-center typo-body font-mono font-bold text-primary">
@@ -261,7 +266,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                              <SettingsField label={t('frontend.settings.editor.option.fontFamily')}>
                                 <Select
                                     value={editorSettings.fontFamily || 'default'}
-                                    onValueChange={val => updateEditor({ fontFamily: val === 'default' ? '' : val })}
+                                    onValueChange={val => { void updateEditor({ fontFamily: val === 'default' ? '' : val }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -279,7 +284,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                             <SettingsField label={t('frontend.settings.editor.option.fontWeight')}>
                                 <Select
                                     value={editorSettings.fontWeight}
-                                    onValueChange={val => updateEditor({ fontWeight: val })}
+                                    onValueChange={val => { void updateEditor({ fontWeight: val }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -305,7 +310,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                             <SettingsField label={t('frontend.settings.editor.option.tabSize')}>
                                 <Select
                                     value={editorSettings.tabSize.toString()}
-                                    onValueChange={val => updateEditor({ tabSize: parseInt(val, 10) })}
+                                    onValueChange={val => { void updateEditor({ tabSize: parseInt(val, 10) }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -323,7 +328,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                             <SettingsField label={t('frontend.settings.editor.option.lineNumbers')}>
                                 <Select
                                     value={editorSettings.lineNumbers}
-                                    onValueChange={value => updateEditor({ lineNumbers: value as typeof LINE_NUMBER_OPTIONS[number] })}
+                                    onValueChange={value => { void updateEditor({ lineNumbers: value as typeof LINE_NUMBER_OPTIONS[number] }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -341,7 +346,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                              <SettingsField label={t('frontend.settings.editor.option.minimapSide')}>
                                 <Select
                                     value={editorSettings.minimapSide}
-                                    onValueChange={value => updateEditor({ minimapSide: value as typeof MINIMAP_SIDE_OPTIONS[number] })}
+                                    onValueChange={value => { void updateEditor({ minimapSide: value as typeof MINIMAP_SIDE_OPTIONS[number] }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -357,7 +362,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                              <SettingsField label={t('frontend.settings.editor.option.renderLineHighlight')}>
                                 <Select
                                     value={editorSettings.renderLineHighlight}
-                                    onValueChange={value => updateEditor({ renderLineHighlight: value as typeof RENDER_LINE_HIGHLIGHT_OPTIONS[number] })}
+                                    onValueChange={value => { void updateEditor({ renderLineHighlight: value as typeof RENDER_LINE_HIGHLIGHT_OPTIONS[number] }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -373,7 +378,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                              <SettingsField label={t('frontend.settings.editor.option.showFoldingControls')}>
                                 <Select
                                     value={editorSettings.showFoldingControls}
-                                    onValueChange={value => updateEditor({ showFoldingControls: value as typeof FOLDING_CONTROLS_OPTIONS[number] })}
+                                    onValueChange={value => { void updateEditor({ showFoldingControls: value as typeof FOLDING_CONTROLS_OPTIONS[number] }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -389,7 +394,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                              <SettingsField label={t('frontend.settings.editor.option.renderFinalNewline')}>
                                 <Select
                                     value={editorSettings.renderFinalNewline}
-                                    onValueChange={value => updateEditor({ renderFinalNewline: value as typeof FINAL_NEWLINE_OPTIONS[number] })}
+                                    onValueChange={value => { void updateEditor({ renderFinalNewline: value as typeof FINAL_NEWLINE_OPTIONS[number] }); }}
                                 >
                                     <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                         <SelectValue />
@@ -417,70 +422,70 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 description="High-level code overview"
                                 checked={editorSettings.minimap}
                                 icon={IconEye}
-                                onCheckedChange={checked => updateEditor({ minimap: checked })}
+                                onCheckedChange={checked => { void updateEditor({ minimap: checked }); }}
                             />
                             <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.wordWrap')}
                                 description="Wrap long lines automatically"
                                 checked={editorSettings.wordWrap !== 'off'}
                                 icon={IconAlignLeft}
-                                onCheckedChange={checked => updateEditor({ wordWrap: checked ? 'on' : 'off' })}
+                                onCheckedChange={checked => { void updateEditor({ wordWrap: checked ? 'on' : 'off' }); }}
                             />
                             <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.bracketPairColorization')}
                                 description="Highlight matching brackets"
                                 checked={editorSettings.bracketPairColorization}
                                 icon={IconSparkles}
-                                onCheckedChange={checked => updateEditor({ bracketPairColorization: checked })}
+                                onCheckedChange={checked => { void updateEditor({ bracketPairColorization: checked }); }}
                             />
                             <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.stickyScroll')}
                                 description="Pin scope headers during scroll"
                                 checked={editorSettings.stickyScroll}
                                 icon={IconLayersLinked}
-                                onCheckedChange={checked => updateEditor({ stickyScroll: checked })}
+                                onCheckedChange={checked => { void updateEditor({ stickyScroll: checked }); }}
                             />
                              <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.scrollBeyondLastLine')}
                                 description="Scroll past final line"
                                 checked={editorSettings.scrollBeyondLastLine}
                                 icon={IconPointer}
-                                onCheckedChange={checked => updateEditor({ scrollBeyondLastLine: checked })}
+                                onCheckedChange={checked => { void updateEditor({ scrollBeyondLastLine: checked }); }}
                             />
                              <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.smoothScrolling')}
                                 description="Fluid editor movement"
                                 checked={editorSettings.smoothScrolling}
                                 icon={IconActivity}
-                                onCheckedChange={checked => updateEditor({ smoothScrolling: checked })}
+                                onCheckedChange={checked => { void updateEditor({ smoothScrolling: checked }); }}
                             />
                              <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.fontLigatures')}
                                 description="Combine characters into symbols"
                                 checked={editorSettings.fontLigatures}
                                 icon={IconSettings2}
-                                onCheckedChange={checked => updateEditor({ fontLigatures: checked })}
+                                onCheckedChange={checked => { void updateEditor({ fontLigatures: checked }); }}
                             />
                              <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.renderControlCharacters')}
                                 description="Show non-printable symbols"
                                 checked={editorSettings.renderControlCharacters}
                                 icon={IconCode}
-                                onCheckedChange={checked => updateEditor({ renderControlCharacters: checked })}
+                                onCheckedChange={checked => { void updateEditor({ renderControlCharacters: checked }); }}
                             />
                              <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.roundedSelection')}
                                 description="Use rounded selection corners"
                                 checked={editorSettings.roundedSelection}
                                 icon={IconSparkles}
-                                onCheckedChange={checked => updateEditor({ roundedSelection: checked })}
+                                onCheckedChange={checked => { void updateEditor({ roundedSelection: checked }); }}
                             />
                              <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.occurrenceHighlight')}
                                 description="Highlight occurrences of symbols"
                                 checked={editorSettings.occurrenceHighlight}
                                 icon={IconActivity}
-                                onCheckedChange={checked => updateEditor({ occurrenceHighlight: checked })}
+                                onCheckedChange={checked => { void updateEditor({ occurrenceHighlight: checked }); }}
                             />
                         </div>
                     </SettingsPanel>
@@ -497,7 +502,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 <SettingsField label={t('frontend.settings.editor.option.cursorStyle')}>
                                     <Select
                                         value={editorSettings.cursorStyle}
-                                        onValueChange={value => updateEditor({ cursorStyle: value as typeof CURSOR_STYLE_OPTIONS[number] })}
+                                        onValueChange={value => { void updateEditor({ cursorStyle: value as typeof CURSOR_STYLE_OPTIONS[number] }); }}
                                     >
                                         <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                             <SelectValue />
@@ -513,7 +518,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 <SettingsField label={t('frontend.settings.editor.option.cursorBlinking')}>
                                     <Select
                                         value={editorSettings.cursorBlinking}
-                                        onValueChange={value => updateEditor({ cursorBlinking: value as typeof CURSOR_BLINK_OPTIONS[number] })}
+                                        onValueChange={value => { void updateEditor({ cursorBlinking: value as typeof CURSOR_BLINK_OPTIONS[number] }); }}
                                     >
                                         <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                             <SelectValue />
@@ -531,7 +536,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 <SettingsField label={t('frontend.settings.editor.option.renderWhitespace')}>
                                     <Select
                                         value={editorSettings.renderWhitespace}
-                                        onValueChange={value => updateEditor({ renderWhitespace: value as typeof RENDER_WHITESPACE_OPTIONS[number] })}
+                                        onValueChange={value => { void updateEditor({ renderWhitespace: value as typeof RENDER_WHITESPACE_OPTIONS[number] }); }}
                                     >
                                         <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                             <SelectValue />
@@ -549,7 +554,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 <SettingsField label={t('frontend.settings.editor.option.acceptSuggestionOnEnter')}>
                                     <Select
                                         value={editorSettings.acceptSuggestionOnEnter}
-                                        onValueChange={value => updateEditor({ acceptSuggestionOnEnter: value as typeof ACCEPT_SUGGESTION_OPTIONS[number] })}
+                                        onValueChange={value => { void updateEditor({ acceptSuggestionOnEnter: value as typeof ACCEPT_SUGGESTION_OPTIONS[number] }); }}
                                     >
                                         <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                             <SelectValue />
@@ -565,7 +570,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                  <SettingsField label={t('frontend.settings.editor.option.multiCursorModifier')}>
                                     <Select
                                         value={editorSettings.multiCursorModifier}
-                                        onValueChange={value => updateEditor({ multiCursorModifier: value as typeof MULTI_CURSOR_MODIFIER_OPTIONS[number] })}
+                                        onValueChange={value => { void updateEditor({ multiCursorModifier: value as typeof MULTI_CURSOR_MODIFIER_OPTIONS[number] }); }}
                                     >
                                         <SelectTrigger className="h-11 w-full rounded-2xl bg-background/50">
                                             <SelectValue />

@@ -106,12 +106,12 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
             post(crate::proxy::handlers::embeddings::handle_embeddings),
         )
         .route(
-            "/v0/auth/github/login",
-            get(crate::proxy::handlers::management::handle_github_login),
+            "/v0/auth/copilot/login",
+            get(crate::proxy::handlers::management::handle_copilot_login),
         )
         .route(
-            "/v0/auth/github/poll",
-            get(crate::proxy::handlers::management::handle_github_poll),
+            "/v0/auth/copilot/poll",
+            get(crate::proxy::handlers::management::handle_copilot_poll),
         )
         .route(
             "/v0/management/accounts",

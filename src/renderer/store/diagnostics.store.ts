@@ -60,7 +60,7 @@ export function clearWorkspaceDiagnostics(workspaceId: string): void {
 }
 
 export function setAnalyzing(workspaceId: string, isAnalyzing: boolean): void {
-    if (analyzingState.get(workspaceId) === isAnalyzing) return;
+    if (analyzingState.get(workspaceId) === isAnalyzing) {return;}
     analyzingState.set(workspaceId, isAnalyzing);
     emit();
 }
@@ -103,7 +103,7 @@ export function useWorkspaceDiagnostics(workspaceId: string | undefined): Map<st
 export function useAnalyzing(workspaceId: string | undefined): boolean {
     const subscribe = useCallback((listener: () => void) => subscribeDiagnosticsStore(listener), []);
     const getSnapshot = useCallback(() => {
-        if (!workspaceId) return false;
+        if (!workspaceId) {return false;}
         return analyzingState.get(workspaceId) ?? false;
     }, [workspaceId]);
     return useSyncExternalStore(subscribe, getSnapshot);
@@ -111,7 +111,7 @@ export function useAnalyzing(workspaceId: string | undefined): boolean {
 
 export function useWorkspaceDiagnosticCounts(workspaceId: string | undefined): { errors: number; warnings: number } {
     const diagnostics = useWorkspaceDiagnostics(workspaceId);
-    if (!diagnostics) return { errors: 0, warnings: 0 };
+    if (!diagnostics) {return { errors: 0, warnings: 0 };}
 
     let errors = 0;
     let warnings = 0;

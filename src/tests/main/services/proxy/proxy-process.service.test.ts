@@ -9,6 +9,7 @@
  */
 
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -316,16 +317,21 @@ describe('ProxyProcessManager runtime launch configuration', () => {
 
     it('falls back to the local cargo binary when available', () => {
         vi.unstubAllEnvs();
-        vi.stubEnv('USERPROFILE', 'C:\\Users\\mockuser');
-        const normalizeSlashes = (value: string): string => value.split('/').join('\\');
-        vi.mocked(fs.existsSync).mockImplementation((target) =>
-            normalizeSlashes(String(target)) === 'C:\\Users\\mockuser\\.cargo\\bin\\cargo.exe'
+        const homeDir = process.env.USERPROFILE ?? process.env.HOME ?? 'C:\\Users\\mockuser';
+        vi.stubEnv(process.platform === 'win32' ? 'USERPROFILE' : 'HOME', homeDir);
+        
+        const localCargo = process.platform === 'win32'
+            ? path.join(homeDir, '.cargo', 'bin', 'cargo.exe')
+            : path.join(homeDir, '.cargo', 'bin', 'cargo');
+
+        vi.mocked(fs.existsSync).mockImplementation((target) => 
+            path.resolve(String(target)) === path.resolve(localCargo)
         );
 
         const resolveCargoCommand = Reflect.get(service, 'resolveCargoCommand') as (() => string) | undefined;
         expect(resolveCargoCommand).toBeTypeOf('function');
         const resolved = resolveCargoCommand?.call(service);
-        expect(resolved ? normalizeSlashes(resolved) : resolved).toBe('"C:\\Users\\mockuser\\.cargo\\bin\\cargo.exe"');
+        expect(resolved).toBe(`"${localCargo}"`);
     });
 });
 

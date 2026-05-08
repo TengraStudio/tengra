@@ -9,7 +9,6 @@
  */
 
 import { Message, SystemMode, ToolDefinition } from '@shared/types/chat';
-import { JsonObject } from '@shared/types/common';
 import { sanitizeString } from '@shared/utils/sanitize.util';
 
 import { sanitizeConversationTools } from './session-prompt-builder';

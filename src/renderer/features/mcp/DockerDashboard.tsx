@@ -219,15 +219,19 @@ export function DockerDashboard({
     );
 
     useEffect(() => {
-        if (isOpen) {
+        if (!isOpen) { return; }
+        const timer = window.setTimeout(() => {
             void loadContainers();
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [isOpen, loadContainers]);
 
     useEffect(() => {
-        if (selectedContainer) {
+        if (!selectedContainer) { return; }
+        const timer = window.setTimeout(() => {
             void loadLogs(selectedContainer);
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [selectedContainer, loadLogs]);
 
     const handleAction = useCallback(

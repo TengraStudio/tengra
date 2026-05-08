@@ -15,7 +15,7 @@ describe('API Contract', () => {
         const fs = await vi.importActual<typeof import('node:fs')>('node:fs');
         const path = await vi.importActual<typeof import('node:path')>('node:path');
         const ROOT = process.cwd();
-        const OPENAPI_FILE = path.join(ROOT, 'tengra-api.openapi.yaml');
+        const OPENAPI_FILE = path.join(ROOT, 'docs', 'tengra-api.openapi.yaml');
         expect(fs.existsSync(OPENAPI_FILE)).toBe(true);
         const content = fs.readFileSync(OPENAPI_FILE, 'utf8');
         expect(content).toContain('openapi:');

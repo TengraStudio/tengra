@@ -228,11 +228,15 @@ export function useVoice() {
     useEffect(() => {
         const SpeechRecognitionClass = getSpeechRecognition();
         if (!SpeechRecognitionClass) {
-            setIsSupported(false);
+            queueMicrotask(() => {
+                setIsSupported(false);
+            });
             return;
         }
 
-        setIsSupported(true);
+        queueMicrotask(() => {
+            setIsSupported(true);
+        });
         const recognition = new SpeechRecognitionClass();
         recognition.continuous = true;
         recognition.interimResults = true;

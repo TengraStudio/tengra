@@ -59,7 +59,10 @@ describe('AuthService (New Multi-Account System)', () => {
         } as never as DatabaseService;
 
         mockEventBusService = {
-            emit: vi.fn()
+            emit: vi.fn(),
+            on: vi.fn(),
+            emitCustom: vi.fn(),
+            onCustom: vi.fn(),
         } as never as EventBusService;
 
         authService = new AuthService(

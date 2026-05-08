@@ -14,14 +14,24 @@ import React from 'react';
 
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
-import { WorkspaceEntry } from '@/types';
 import { useFileDiagnostics } from '@/store/diagnostics.store';
+import { WorkspaceEntry } from '@/types';
 
 import {
-    WorkspaceEntryRow,
+    WorkspaceEntryRow as BaseWorkspaceEntryRow,
     WorkspaceExplorerRow,
     WorkspaceMountRow,
 } from '../hooks/useWorkspaceExplorerTree';
+import { WorkspaceExplorerDiagnosticCounts } from '../utils/workspace-explorer-diagnostics';
+
+interface ExplorerDiagnostics extends WorkspaceExplorerDiagnosticCounts {
+    realtimeErrors?: number;
+    realtimeWarnings?: number;
+}
+
+type WorkspaceEntryRow = Omit<BaseWorkspaceEntryRow, 'diagnostics'> & {
+    diagnostics?: ExplorerDiagnostics;
+};
 
 interface WorkspaceExplorerRowProps {
     row: WorkspaceExplorerRow;
@@ -95,7 +105,7 @@ function getIgnoredEntryClassName(isIgnored?: boolean): string {
 function WorkspaceExplorerDiagnosticsBadges({
     diagnostics,
 }: {
-    diagnostics?: WorkspaceEntryRow['diagnostics'] | WorkspaceMountRow['diagnostics'];
+    diagnostics?: ExplorerDiagnostics;
 }): React.ReactElement | null {
     if (!diagnostics || diagnostics.total === 0) {
         return null;
@@ -128,14 +138,14 @@ function WorkspaceExplorerDiagnosticsBadges({
                 </span>
             )}
             {/* Real-time LSP Diagnostics */}
-            {(diagnostics as any).realtimeErrors > 0 && (
+            {diagnostics.realtimeErrors !== undefined && diagnostics.realtimeErrors > 0 && (
                 <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground">
-                    {(diagnostics as any).realtimeErrors}
+                    {diagnostics.realtimeErrors}
                 </span>
             )}
-            {(diagnostics as any).realtimeWarnings > 0 && (diagnostics as any).realtimeErrors === 0 && (
+            {diagnostics.realtimeWarnings !== undefined && diagnostics.realtimeWarnings > 0 && diagnostics.realtimeErrors === 0 && (
                 <span className="flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-warning text-[8px] font-bold text-warning-foreground">
-                    {(diagnostics as any).realtimeWarnings}
+                    {diagnostics.realtimeWarnings}
                 </span>
             )}
         </div>
@@ -204,7 +214,7 @@ const EntryRowView: React.FC<{
 }) => {
         // Diagnostic tracking
         const uri = React.useMemo(() => {
-            if (!row.entry.path) return undefined;
+            if (!row.entry.path) {return undefined;}
             const slashPath = row.entry.path.replace(/\\/g, '/').replace(/\/+/g, '/');
             if (/^[A-Za-z]:\//.test(slashPath)) {
                 return `file:///${slashPath}`;
@@ -335,7 +345,7 @@ const EntryRowView: React.FC<{
                 </div>
 
                 <div className="ml-auto flex items-center gap-1.5 pl-2 shrink-0 pr-1" style={{ zIndex: 'var(--tengra-z-1)' }}>
-                    <WorkspaceExplorerDiagnosticsBadges diagnostics={mergedDiagnostics as any} />
+                    <WorkspaceExplorerDiagnosticsBadges diagnostics={mergedDiagnostics} />
                     {row.gitStatus && (
                         <GitStatusIndicator status={row.gitStatus} rawStatus={row.gitRawStatus} />
                     )}

@@ -99,7 +99,7 @@ pub struct AuthUrlResponse {
     pub account_id: String,
 }
 
-pub async fn handle_github_login(
+pub async fn handle_copilot_login(
     _state: State<Arc<AppState>>,
 ) -> Result<Json<LoginResponse>, (axum::http::StatusCode, String)> {
     let client = CopilotClient::new();
@@ -117,7 +117,7 @@ pub async fn handle_github_login(
     }))
 }
 
-pub async fn handle_github_poll(
+pub async fn handle_copilot_poll(
     _state: State<Arc<AppState>>,
     Query(query): Query<PollQuery>,
 ) -> Result<Json<PollResponse>, (axum::http::StatusCode, String)> {
@@ -156,7 +156,7 @@ pub async fn handle_github_poll(
                 }));
             };
 
-            let provider = query.provider.as_deref().unwrap_or("github");
+            let provider = query.provider.as_deref().unwrap_or("copilot");
             let is_copilot = provider.eq_ignore_ascii_case("copilot");
             if !is_copilot {
                 return Ok(Json(PollResponse {
@@ -285,7 +285,7 @@ pub async fn handle_get_quota(
 
     match crate::quota::check_quota(&query.provider, &decrypted_token).await {
         Ok(mut res) => {
-            if query.provider == "copilot" || query.provider == "github" {
+            if query.provider == "copilot" {
                 if let Some(account_id) = query.account_id.as_deref() {
                     let cache = state.copilot_usage_cache.lock().await;
                     if let Some(usage) = cache.get(account_id) {
@@ -357,14 +357,7 @@ async fn build_quota_snapshot(state: Arc<AppState>) -> anyhow::Result<Value> {
         }
         if !matches!(
             provider_raw.as_str(),
-            "antigravity"
-                | "google"
-                | "codex"
-                | "openai"
-                | "claude"
-                | "anthropic"
-                | "copilot"
-                | "github"
+            "antigravity" | "google" | "codex" | "openai" | "claude" | "anthropic" | "copilot"
         ) {
             return None;
         }

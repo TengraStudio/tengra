@@ -83,37 +83,13 @@ function getPresetValue(modes: WorkspaceAgentSessionModes): WorkspaceAgentCompos
     }
     return 'default-agent';
 }
-
-function modeLabel(value: WorkspaceAgentComposerPreset): string {
-    switch (value) {
-        case 'plan':
-            return 'Plan';
-        case 'agent':
-            return 'Agent';
-        default:
-            return 'Ask';
-    }
-}
-
-function deliveryModeLabel(value: WorkspaceAgentDeliveryMode): string {
-    switch (value) {
-        case 'queue':
-            return 'Queue';
-        case 'steer':
-            return 'Steer';
-        default:
-            return 'Send';
-    }
-}
-
+ 
 export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
     currentSession,
     currentModes,
     currentPermissionPolicy,
     composerValue,
-    setComposerValue,
-    deliveryMode,
-    setDeliveryMode,
+    setComposerValue, 
     queuedMessageCount,
     onSend,
     onStop,

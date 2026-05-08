@@ -97,7 +97,9 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
         if (!isOpen) {
             return;
         }
-        setSavedChains(loadJumpHostChains());
+        queueMicrotask(() => {
+            setSavedChains(loadJumpHostChains());
+        });
     }, [isOpen]);
 
     const handleConnectClick = () => {

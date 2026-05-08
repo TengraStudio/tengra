@@ -26,10 +26,7 @@ import { cn } from '@/lib/utils';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
-
-/* Batch-02: Extracted Long Classes */
-const C_WORKSPACECARD_1 = "w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shadow-inner border border-border/50";
-
+ 
 interface WorkspaceCardSurfaceContextValue {
     activeMenuId: string | null
     setActiveMenuId: (id: string | null) => void
@@ -212,30 +209,7 @@ const WorkspaceLogo: React.FC<{ workspace: Workspace; className?: string }> = ({
         />
     );
 };
-
-const WorkspaceBackgroundLogo: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
-    const [error, setError] = React.useState(false);
-    const baseLogoUrl = toSafeFileUrl(workspace.logo);
-    const logoUrl = baseLogoUrl && !error ? (baseLogoUrl.startsWith('data:') ? baseLogoUrl : `${baseLogoUrl}?v=${workspace.updatedAt}`) : null;
-
-    if (!logoUrl) {
-        return (
-            <div className="absolute -right-4 -bottom-4 opacity-02 text-foreground pointer-events-none select-none rotate-12 z-0">
-                <IconTerminal size={140} stroke={1} />
-            </div>
-        );
-    }
-
-    return (
-        <img
-            src={logoUrl}
-            alt=""
-            className="absolute -right-8 -bottom-8 w-48 h-48 opacity-04 grayscale brightness-0 invert pointer-events-none select-none rotate-12 z-0 object-contain transition-all duration-700 blur-1 group-hover:scale-110 group-hover:rotate-6"
-            onError={() => setError(true)}
-        />
-    );
-};
-
+ 
 const cardContainerClassName =
     "group bg-card/30 border border-border/10 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:bg-muted/30 hover:border-border/30 flex flex-col gap-5 relative overflow-hidden ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 

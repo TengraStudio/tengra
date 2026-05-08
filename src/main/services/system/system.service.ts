@@ -321,10 +321,10 @@ Add-Type -TypeDefinition $code
     }>> {
         try {
             const [gpuInfo, featureStatus] = await Promise.all([
-                app.getGPUInfo('complete') as Promise<any>,
-                Promise.resolve(app.getGPUFeatureStatus()) as Promise<any>,
+                app.getGPUInfo('complete') as Promise<unknown>,
+                Promise.resolve(app.getGPUFeatureStatus()) as Promise<unknown>,
             ]);
-            const parsed = this.parseGpuInfo(gpuInfo, featureStatus);
+            const parsed = this.parseGpuInfo(gpuInfo as RuntimeValue, featureStatus as RuntimeValue);
             return { success: true, data: parsed };
         } catch (error) {
             this.logError('Failed to get GPU info', error);

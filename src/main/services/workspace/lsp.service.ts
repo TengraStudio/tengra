@@ -14,12 +14,11 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 
 import { BaseService } from '@main/services/base.service';
+import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
 import * as rpc from 'vscode-jsonrpc/node';
 import * as protocol from 'vscode-languageserver-protocol';
 
-import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
-
-type WorkspaceServerLanguageId =
+export type WorkspaceServerLanguageId =
     | 'typescript'
     | 'javascript'
     | 'python'
@@ -624,10 +623,10 @@ export class LspService extends BaseService {
         languageId: WorkspaceServerLanguageId
     ): Promise<protocol.Diagnostic[] | null> {
         const definition = this.resolveDefinitionForFile(filePath, languageId);
-        if (!definition) return null;
+        if (!definition) {return null;}
 
         const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
-        if (!instance || !instance.diagnosticProvider) return null;
+        if (!instance?.diagnosticProvider) {return null;}
 
         const normalizedFilePath = path.resolve(filePath);
         const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
@@ -639,8 +638,8 @@ export class LspService extends BaseService {
                 textDocument: { uri }
             }) as protocol.DocumentDiagnosticReport;
 
-            if (result && typeof result === 'object' && 'items' in (result as any)) {
-                const diagnostics = (result as any).items as protocol.Diagnostic[];
+            if (result && typeof result === 'object' && 'items' in (result as unknown as protocol.FullDocumentDiagnosticReport)) {
+                const diagnostics = (result as unknown as protocol.FullDocumentDiagnosticReport).items as protocol.Diagnostic[];
                 // Update local cache
                 this.handleDiagnostics(this.toInstanceKey(workspaceId, definition.id), {
                     uri,
@@ -663,10 +662,10 @@ export class LspService extends BaseService {
         diagnostics: protocol.Diagnostic[]
     ): Promise<(protocol.Command | protocol.CodeAction)[] | null> {
         const definition = this.resolveDefinitionForFile(filePath, languageId);
-        if (!definition) return null;
+        if (!definition) {return null;}
 
         const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
-        if (!instance || !instance.codeActionProvider) return null;
+        if (!instance?.codeActionProvider) {return null;}
 
         const normalizedFilePath = path.resolve(filePath);
         const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
@@ -1150,7 +1149,7 @@ export class LspService extends BaseService {
     private triggeredInstalls = new Set<string>();
 
     private triggerManagedInstall(componentId: string) {
-        if (!this.runtimeBootstrapService || this.triggeredInstalls.has(componentId)) return;
+        if (!this.runtimeBootstrapService || this.triggeredInstalls.has(componentId)) {return;}
         this.triggeredInstalls.add(componentId);
         this.logInfo(`Triggering background installation for missing managed dependency: ${componentId}`);
         this.runtimeBootstrapService.runComponentAction(componentId).catch(err => {
@@ -1172,7 +1171,7 @@ export class LspService extends BaseService {
 
     private resolveDefinition(languageId: WorkspaceServerLanguageId): LspServerDefinition | null {
         const matches = LSP_SERVER_DEFINITIONS.filter(definition => definition.languageId === languageId);
-        if (matches.length === 0) return null;
+        if (matches.length === 0) {return null;}
         
         const preferred = matches[0];
         if ((preferred.id === 'biome' || preferred.id === 'ruff') && !this.hasRunnableCandidate(preferred)) {
@@ -1195,7 +1194,7 @@ export class LspService extends BaseService {
             return this.resolveDefinition(fallbackLanguageId);
         }
         const matches = LSP_SERVER_DEFINITIONS.filter(definition => this.matchesDefinition(definition, filePath));
-        if (matches.length === 0) return null;
+        if (matches.length === 0) {return null;}
         
         const preferred = matches[0];
         if ((preferred.id === 'biome' || preferred.id === 'ruff') && !this.hasRunnableCandidate(preferred)) {

@@ -10,6 +10,8 @@
 
 import * as fsModule from 'fs';
 import { promises as fs } from 'fs';
+import path from 'path';
+import { pathToFileURL } from 'url';
 
 import type { LspService } from '@main/services/workspace/lsp.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
@@ -53,7 +55,7 @@ const mockDirent = (name: string, isDirectory: boolean) => ({
 function initializeWorkspaceServiceTestState(): void {
     vi.resetAllMocks();
     clearWorkspaceIgnoreMatcherCache();
-    workspaceService = new WorkspaceService();
+    workspaceService = new WorkspaceService({});
     vi.mocked(fs.access).mockRejectedValue(new Error('ENOENT'));
     vi.mocked(fs.readFile).mockImplementation(async (filePath: Parameters<typeof fs.readFile>[0]) => {
         const normalizedPath = String(filePath).replace(/\\/g, '/');
@@ -67,6 +69,7 @@ function initializeWorkspaceServiceTestState(): void {
         }
         return '';
     });
+    vi.mocked(fs.readdir).mockResolvedValue([] as never);
     vi.mocked(fsModule.watch).mockReturnValue({
         close: vi.fn(),
         on: vi.fn(),
@@ -80,12 +83,6 @@ describe('WorkspaceService core behavior', () => {
 
     it('should analyze a workspace correctly', async () => {
         const mockDirPath = '/mock/workspace';
-
-        // Mock readdir for scanFiles
-        vi.mocked(fs.readdir).mockResolvedValue([
-            mockDirent('src', true),
-            mockDirent('package.json', false)
-        ] as never);
 
         // Mock readdir for nested src
         vi.mocked(fs.readdir).mockResolvedValueOnce([
@@ -336,9 +333,9 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
     });
 
     it('weights language distribution by file size and recognizes special filenames', async () => {
-        vi.mocked(fs.stat).mockImplementation(async (filePath: import('fs').PathLike) => {
-            const normalizedPath = String(filePath);
-            const sizeMap: Record<string, number> = {
+        vi.mocked(fs.readFile).mockImplementation(async (filePath: Parameters<typeof fs.readFile>[0]) => {
+            const normalizedPath = String(filePath).replace(/\\/g, '/');
+            const linesMap: Record<string, number> = {
                 '/mock/workspace/src/app.ts': 400,
                 '/mock/workspace/src/view.tsx': 600,
                 '/mock/workspace/Dockerfile': 50,
@@ -350,12 +347,9 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 '/mock/workspace/native/project.vcxproj': 1200,
             };
 
-            return {
-                size: sizeMap[normalizedPath] ?? 1,
-                mtimeMs: Date.now(),
-                isDirectory: () => false,
-                isFile: () => true,
-            } as never as import('fs').Stats;
+            const key = Object.keys(linesMap).find(k => normalizedPath.endsWith(k));
+            const numLines = key ? linesMap[key] : 1;
+            return '\n'.repeat(numLines - 1);
         });
 
         const languageMap = await (
@@ -552,7 +546,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             ]),
             getDiagnostics: vi.fn().mockReturnValue([
                 {
-                    uri: 'file:///C:/mock/workspace/src/index.ts',
+                    uri: pathToFileURL(path.resolve('/mock/workspace/src/index.ts')).toString(),
                     diagnostics: [
                         {
                             severity: 1,
@@ -568,7 +562,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 },
             ]),
         } as never as LspService;
-        workspaceService = new WorkspaceService(mockLspService);
+        workspaceService = new WorkspaceService({ lspService: mockLspService });
 
         vi.mocked(fs.readdir).mockResolvedValueOnce([
             mockDirent('src', true),
@@ -590,8 +584,8 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         const analysis = await workspaceService.analyzeWorkspace('/mock/workspace');
 
         expect(vi.mocked(mockLspService.startWorkspaceServers)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace',
-            'C:\\mock\\workspace',
+            path.resolve('/mock/workspace'),
+            path.resolve('/mock/workspace'),
             expect.arrayContaining([
                 expect.stringMatching(/index\.ts$/),
             ])
@@ -600,7 +594,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             {
                 severity: 'error',
                 message: 'Type error',
-                file: 'src\\index.ts',
+                file: path.join('src', 'index.ts'),
                 line: 2,
                 column: 5,
                 source: 'typescript',
@@ -622,10 +616,10 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         const mockLspService = {
             getLanguageIdForFile: vi.fn().mockReturnValue('typescript'),
             startServer: vi.fn().mockResolvedValue(undefined),
-            openDocument: vi.fn().mockResolvedValue(undefined),
+            openDocument: vi.fn().mockResolvedValue(undefined), 
             getDiagnostics: vi.fn().mockReturnValue([
                 {
-                    uri: 'file:///C:/mock/workspace/packages/app/src/index.tsx',
+                    uri: pathToFileURL(path.resolve('/mock/workspace/packages/app/src/index.tsx')).toString(),
                     diagnostics: [
                         {
                             severity: 1,
@@ -641,7 +635,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 },
             ]),
         } as never as LspService;
-        workspaceService = new WorkspaceService(mockLspService);
+        workspaceService = new WorkspaceService({ lspService: mockLspService });
         vi.mocked(fs.access).mockImplementation(async (filePath: fsModule.PathLike) => {
             const normalizedPath = String(filePath).replace(/\\/g, '/');
             if (normalizedPath.endsWith('/packages/app/tsconfig.json')) {
@@ -657,13 +651,13 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         );
 
         expect(vi.mocked(mockLspService.startServer)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app'),
             'typescript'
         );
         expect(vi.mocked(mockLspService.openDocument)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app\\src\\index.tsx',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app/src/index.tsx'),
             'typescript',
             'export const value: string = 1;'
         );
@@ -671,7 +665,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             {
                 severity: 'error',
                 message: 'Type mismatch',
-                file: 'packages\\app\\src\\index.tsx',
+                file: path.join('packages', 'app', 'src', 'index.tsx'),
                 line: 5,
                 column: 7,
                 source: 'typescript',
@@ -687,13 +681,13 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
             openDocument: vi.fn().mockResolvedValue(undefined),
             getDefinition: vi.fn().mockResolvedValue([
                 {
-                    uri: 'file:///C:/mock/workspace/packages/app/src/components/Popover.tsx',
+                    uri: `file:///${path.resolve('/mock/workspace/packages/app/src/components/Popover.tsx').replace(/\\/g, '/')}`,
                     line: 12,
                     column: 1,
                 },
             ]),
         } as never as LspService;
-        workspaceService = new WorkspaceService(mockLspService);
+        workspaceService = new WorkspaceService({ lspService: mockLspService });
         vi.mocked(fs.access).mockImplementation(async (filePath: fsModule.PathLike) => {
             const normalizedPath = String(filePath).replace(/\\/g, '/');
             if (normalizedPath.endsWith('/packages/app/tsconfig.json')) {
@@ -711,20 +705,20 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         );
 
         expect(vi.mocked(mockLspService.startServer)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app'),
             'typescript'
         );
         expect(vi.mocked(mockLspService.getDefinition)).toHaveBeenCalledWith(
-            'C:\\mock\\workspace\\packages\\app',
-            'C:\\mock\\workspace\\packages\\app\\src\\index.tsx',
+            path.resolve('/mock/workspace/packages/app'),
+            path.resolve('/mock/workspace/packages/app/src/index.tsx'),
             'typescript',
             1,
             26
         );
         expect(definitions).toEqual([
             {
-                file: 'C:\\mock\\workspace\\packages\\app\\src\\components\\Popover.tsx',
+                file: path.resolve('/mock/workspace/packages/app/src/components/Popover.tsx'),
                 line: 12,
                 column: 1,
             },

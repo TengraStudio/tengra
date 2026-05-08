@@ -154,10 +154,7 @@ fn translate_codex(payload: &ChatCompletionRequest) -> Value {
                 tool_map.insert("size".to_string(), Value::String(size));
             }
         }
-        body.insert(
-            "tools".to_string(),
-            Value::Array(vec![tool]),
-        );
+        body.insert("tools".to_string(), Value::Array(vec![tool]));
     } else if let Some(tools) = payload.tools.as_ref() {
         body.insert(
             "tools".to_string(),
@@ -280,7 +277,8 @@ fn translate_gemini(payload: &ChatCompletionRequest) -> Value {
 fn translate_antigravity(payload: &ChatCompletionRequest) -> Value {
     let mut request = translate_gemini(payload);
     let upstream_model = upstream_model_name(&payload.model);
-    let is_gemini_three = upstream_model.contains("gemini-3-") || upstream_model.contains("gemini-3.");
+    let is_gemini_three =
+        upstream_model.contains("gemini-3-") || upstream_model.contains("gemini-3.");
     let is_claude_model = upstream_model.contains("claude");
     if let Some(request_map) = request.as_object_mut() {
         request_map.remove("safetySettings");

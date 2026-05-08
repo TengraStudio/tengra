@@ -80,7 +80,10 @@ export function MarketplaceInfoPanel({
     const pageSize = 10;
 
     React.useEffect(() => {
-        setCurrentPage(1);
+        const timer = window.setTimeout(() => {
+            setCurrentPage(1);
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [item?.id]);
 
     if (!item) {

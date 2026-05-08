@@ -121,8 +121,8 @@ function hasHealthyNvidiaCoverage(
 function mergePreservedProviderModels(
     previousModels: ModelInfo[],
     fetchedModels: ModelInfo[],
-    settings: AppSettings | null,
-    linkedProviders: ReadonlySet<string>
+    _settings: AppSettings | null,
+    _linkedProviders: ReadonlySet<string>
 ): ModelInfo[] {
     return fetchedModels;
 }
@@ -252,13 +252,16 @@ export function useModelManager(
     }, []);
 
     useEffect(() => {
-        void refreshLinkedProviders();
+        const timeoutId = window.setTimeout(() => {
+            void refreshLinkedProviders();
+        }, 0);
 
         const removeListener = window.electron.auth.onAccountChanged(() => {
             void refreshLinkedProviders();
         });
 
         return () => {
+            window.clearTimeout(timeoutId);
             removeListener();
         };
     }, [refreshLinkedProviders]);
@@ -345,11 +348,16 @@ export function useModelManager(
         const hasCopilot = linkedProviderSet.has('copilot') || appSettings?.copilot?.connected === true;
 
         if (hasNvidia || hasOpenAI || hasAnthropic || hasGroq || hasAntigravity || hasCodex || hasCopilot) {
-            void refreshModels(true);
+            const timeoutId = window.setTimeout(() => {
+                void refreshModels(true);
+            }, 0);
+            return () => window.clearTimeout(timeoutId);
         }
+        return;
     }, [
         refreshModels,
         linkedProviderSignature,
+        linkedProviderSet,
         appSettings?.antigravity?.connected,
         appSettings?.codex?.connected,
         appSettings?.copilot?.connected

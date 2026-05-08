@@ -121,7 +121,7 @@ interface VirtualizedRowProps {
     mount: WorkspaceMount;
     refreshSignal: number;
     onOpenFile: (entry: WorkspaceEntry) => void;
-    onSelectEntry: (entry: WorkspaceEntry, e?: React.MouseEvent) => void;
+    onSelect: (node: WorkspaceEntry) => void;
     selectedEntries?: WorkspaceEntry[] | null;
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
     onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry) => void;
@@ -138,7 +138,7 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
     mount,
     refreshSignal,
     onOpenFile,
-    onSelectEntry,
+    onSelect,
     selectedEntries,
     onEnsureMount,
     onContextMenu,
@@ -156,12 +156,12 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
                 node={node}
                 mount={mount}
                 level={0}
-                refreshSignal={refreshSignal}
+                onSelect={onSelect}
                 onOpenFile={onOpenFile}
-                onSelectEntry={onSelectEntry}
-                selectedEntries={selectedEntries}
-                onEnsureMount={onEnsureMount}
                 onContextMenu={onContextMenu}
+                refreshSignal={refreshSignal}
+                selectedEntries={selectedEntries || []}
+                onEnsureMount={onEnsureMount}
                 expandedTreeNodes={expandedTreeNodes}
                 onExpandedTreeNodeChange={onExpandedTreeNodeChange}
                 t={t}
@@ -210,7 +210,7 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
             mount,
             refreshSignal,
             onOpenFile,
-            onSelectEntry,
+            onSelect: onSelectEntry,
             selectedEntries,
             onEnsureMount,
             onContextMenu: onTreeItemContextMenu,
@@ -300,9 +300,9 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                                 mount={mount}
                                 level={0}
                                 refreshSignal={refreshSignal}
+                                onSelect={onSelectEntry}
                                 onOpenFile={onOpenFile}
-                                onSelectEntry={onSelectEntry}
-                                selectedEntries={selectedEntries}
+                                selectedEntries={selectedEntries || []}
                                 onEnsureMount={onEnsureMount}
                                 onContextMenu={onTreeItemContextMenu}
                                 expandedTreeNodes={expandedTreeNodes}

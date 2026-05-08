@@ -146,9 +146,11 @@ const ModelSelectorQuotaBanner: React.FC<{
     const [quotaCache, setQuotaCache] = useState<Record<string, typeof items>>({});
 
     useEffect(() => {
-        if (items.length > 0) {
+        if (items.length === 0) { return; }
+        const timer = window.setTimeout(() => {
             setQuotaCache(prev => ({ ...prev, [activeCategory.id]: items }));
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [items, activeCategory.id]);
 
     const effectiveItems = items.length > 0 ? items : (quotaCache[activeCategory.id] || []);

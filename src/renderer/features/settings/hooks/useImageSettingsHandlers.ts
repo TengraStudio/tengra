@@ -115,7 +115,9 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
 
     /** Subscribe to SD-CPP status and progress events on mount. */
     useEffect(() => {
-        void Promise.all([checkStatus(), refreshImageData()]);
+        const timer = window.setTimeout(() => {
+            void Promise.all([checkStatus(), refreshImageData()]);
+        }, 0);
 
         const removeStatusListener = window.electron.onSdCppStatus((data: RendererDataValue) => {
             setSdCppStatus((data as { state: string }).state);
@@ -126,6 +128,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
         });
 
         return () => {
+            window.clearTimeout(timer);
             removeStatusListener();
             removeProgressListener();
         };

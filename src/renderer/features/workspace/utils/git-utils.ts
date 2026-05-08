@@ -226,7 +226,7 @@ export async function fetchFullGitData(workspacePath: string): Promise<FullGitDa
 
 export async function fetchGitHubData(workspacePath: string, remotes: Remote[], type: 'pulls' | 'issues') {
     const origin = remotes.find(r => r.name === 'origin') || remotes[0];
-    if (!origin || !origin.url.includes('github.com')) {
+    if (!origin?.url.includes('github.com')) {
         return { success: false, error: 'No GitHub remote found' };
     }
 
@@ -240,7 +240,7 @@ export async function fetchGitHubData(workspacePath: string, remotes: Remote[], 
 
 export async function fetchGitHubPrDetails(workspacePath: string, remotes: Remote[], prNumber: number) {
     const origin = remotes.find(r => r.name === 'origin') || remotes[0];
-    if (!origin || !origin.url.includes('github.com')) {
+    if (!origin?.url.includes('github.com')) {
         return { success: false, error: 'No GitHub remote found' };
     }
 
@@ -254,7 +254,7 @@ export async function fetchGitHubPrDetails(workspacePath: string, remotes: Remot
 
 export async function updateGitHubPrState(workspacePath: string, remotes: Remote[], prNumber: number, state: 'open' | 'closed') {
     const origin = remotes.find(r => r.name === 'origin') || remotes[0];
-    if (!origin || !origin.url.includes('github.com')) {
+    if (!origin?.url.includes('github.com')) {
         return { success: false, error: 'No GitHub remote found' };
     }
 

@@ -17,10 +17,9 @@ import {
     useState,
 } from 'react';
 
-import { MarkdownPreview } from '@/features/workspace/workspace-explorer/MarkdownPreview';
-
 import { LazyWorkspaceEditor, LoadingSpinner } from '@/components/lazy';
 import { EditorTabs } from '@/features/workspace/workspace-explorer/EditorTabs';
+import { MarkdownPreview } from '@/features/workspace/workspace-explorer/MarkdownPreview';
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { EditorTab, Workspace, WorkspaceDashboardTab } from '@/types';
@@ -129,9 +128,13 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
 
     // Close preview if tab changes to a non-markdown file
     useEffect(() => {
-        if (showMarkdownPreview && (!activeTab || !activeTab.name.toLowerCase().endsWith('.md'))) {
-            setShowMarkdownPreview(false);
+        if (!showMarkdownPreview || activeTab?.name.toLowerCase().endsWith('.md')) {
+            return;
         }
+        const timer = window.setTimeout(() => {
+            setShowMarkdownPreview(false);
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [activeTab, showMarkdownPreview]);
 
     return (

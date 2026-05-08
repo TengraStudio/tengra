@@ -150,8 +150,12 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
     React.useEffect(() => {
         const reference = refs.domReference.current;
         if (isOpen && reference) {
-            setWidth((reference as HTMLElement).offsetWidth);
+            const timer = window.setTimeout(() => {
+                setWidth((reference as HTMLElement).offsetWidth);
+            }, 0);
+            return () => window.clearTimeout(timer);
         }
+        return undefined;
     }, [isOpen, refs.domReference]);
 
     return (

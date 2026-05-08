@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-export const RUNTIME_PLATFORM_VALUES = ['win32', 'darwin', 'linux'] as const;
+export const RUNTIME_PLATFORM_VALUES = ['win32', 'darwin', 'linux', 'aix', 'freebsd', 'openbsd', 'sunos'] as const;
 export const RUNTIME_ARCH_VALUES = ['x64', 'arm64'] as const;
 export const RUNTIME_COMPONENT_SOURCE_VALUES = ['managed', 'external'] as const;
 export const RUNTIME_COMPONENT_REQUIREMENT_VALUES = ['required', 'optional', 'user-managed'] as const;

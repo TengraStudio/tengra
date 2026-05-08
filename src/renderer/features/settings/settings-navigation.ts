@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { type Icon,IconChartBar, IconColumns, IconDatabase, IconDeviceDesktopCog, IconPalette, IconPhoto, IconPuzzle, IconRobot, IconRocket, IconSettings, IconShare2, IconSparkles, IconTrendingUp, IconUser, IconUsers } from '@tabler/icons-react';
+import { type Icon,IconChartBar, IconColumns, IconDatabase, IconDeviceDesktopCog, IconPalette, IconPhoto, IconPuzzle, IconRobot, IconRocket, IconSettings, IconShare2, IconSparkles, IconTrendingUp, IconUser } from '@tabler/icons-react';
 
 import type { SettingsCategory } from '@/features/settings/types';
 

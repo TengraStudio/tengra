@@ -331,14 +331,14 @@ export class RuntimeBootstrapService extends BaseService {
         }
     }
 
-    private async loadCachedOrFallbackManifest<T>(
+    private async loadCachedOrFallbackManifest(
         cachedManifestPath: string,
         allowEmptyFallback: boolean,
-        originalError: T
+        originalError: unknown
     ): Promise<RuntimeManifest> {
         try {
             this.logWarn(
-                `Falling back to cached runtime manifest at ${cachedManifestPath}; reason=${this.describeManifestLoadError(originalError as any)}`
+                `Falling back to cached runtime manifest at ${cachedManifestPath}; reason=${this.describeManifestLoadError(originalError)}`
             );
             const cachedManifestText = await fsPromises.readFile(cachedManifestPath, 'utf8');
             return this.runtimeManifestService.parseManifest(
@@ -356,7 +356,7 @@ export class RuntimeBootstrapService extends BaseService {
         }
     }
 
-    private describeManifestLoadError(error: Error | string | { code?: string; message?: string }): string {
+    private describeManifestLoadError(error: unknown): string {
         if (!(error instanceof Error)) {
             return 'unknown';
         }
@@ -472,8 +472,8 @@ export class RuntimeBootstrapService extends BaseService {
     private async removePathIfPresent(targetPath: string): Promise<void> {
         try {
             await fsPromises.rm(targetPath, { recursive: true, force: true });
-        } catch (error: any) {
-            if (this.isIgnorableCleanupError(error)) {
+        } catch (error) {
+            if (this.isIgnorableCleanupError(error as Error)) {
                 this.logDebug(`Skipping managed app-data cleanup for locked artifact at ${targetPath}`);
                 return;
             }
@@ -585,61 +585,7 @@ export class RuntimeBootstrapService extends BaseService {
             }
             
             const totalBytes = Number(response.headers.get('content-length')) || 0;
-            let downloadedBytes = 0;
-            const chunks: Uint8Array[] = [];
-            
-            if (response.body) {
-                let lastLogTime = Date.now();
-                const bodyAny = response.body as any;
-
-                if (typeof bodyAny.getReader === 'function') {
-                    const reader = bodyAny.getReader();
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        if (value) {
-                            chunks.push(value);
-                            downloadedBytes += value.length;
-                            
-                            const now = Date.now();
-                            if (now - lastLogTime > 2000) {
-                                if (totalBytes > 0) {
-                                    const percent = Math.round((downloadedBytes / totalBytes) * 100);
-                                    this.logInfo(`Downloading ${target.assetName}: ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(2)} MB / ${(totalBytes / 1024 / 1024).toFixed(2)} MB)`);
-                                } else {
-                                    this.logInfo(`Downloading ${target.assetName}: ${(downloadedBytes / 1024 / 1024).toFixed(2)} MB`);
-                                }
-                                lastLogTime = now;
-                            }
-                        }
-                    }
-                } else if (typeof bodyAny[Symbol.asyncIterator] === 'function') {
-                    for await (const chunk of bodyAny) {
-                        if (chunk) {
-                            const chunkBuf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-                            chunks.push(chunkBuf);
-                            downloadedBytes += chunkBuf.length;
-                            
-                            const now = Date.now();
-                            if (now - lastLogTime > 2000) {
-                                if (totalBytes > 0) {
-                                    const percent = Math.round((downloadedBytes / totalBytes) * 100);
-                                    this.logInfo(`Downloading ${target.assetName}: ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(2)} MB / ${(totalBytes / 1024 / 1024).toFixed(2)} MB)`);
-                                } else {
-                                    this.logInfo(`Downloading ${target.assetName}: ${(downloadedBytes / 1024 / 1024).toFixed(2)} MB`);
-                                }
-                                lastLogTime = now;
-                            }
-                        }
-                    }
-                } else {
-                    const arrayBuffer = await response.arrayBuffer();
-                    chunks.push(new Uint8Array(arrayBuffer));
-                }
-            } else {
-                const arrayBuffer = await response.arrayBuffer();
-                chunks.push(new Uint8Array(arrayBuffer));
-            }
+            const chunks = await this.readResponseStream(response, target.assetName, totalBytes);
             
             this.logInfo(`Download complete for ${target.assetName}`);
             const buffer = Buffer.concat(chunks);
@@ -781,6 +727,54 @@ export class RuntimeBootstrapService extends BaseService {
             },
             health,
         };
+    }
+
+    private async readResponseStream(
+        response: Response,
+        assetName: string,
+        totalBytes: number
+    ): Promise<Uint8Array[]> {
+        const chunks: Uint8Array[] = [];
+        if (!response.body) {
+            const arrayBuffer = await response.arrayBuffer();
+            chunks.push(new Uint8Array(arrayBuffer));
+            return chunks;
+        }
+
+        let downloadedBytes = 0;
+        let lastLogTime = Date.now();
+        const reader = response.body.getReader();
+
+        // NASA Rule 2: Limit unbounded loops
+        const MAX_CHUNKS = 1000000;
+        for (let i = 0; i < MAX_CHUNKS; i++) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            if (value) {
+                chunks.push(value);
+                downloadedBytes += value.length;
+
+                const now = Date.now();
+                if (now - lastLogTime > 2000) {
+                    this.logDownloadProgress(assetName, downloadedBytes, totalBytes);
+                    lastLogTime = now;
+                }
+            }
+        }
+        return chunks;
+    }
+
+    private logDownloadProgress(assetName: string, downloadedBytes: number, totalBytes: number): void {
+        const downloadedMb = (downloadedBytes / 1024 / 1024).toFixed(2);
+        if (totalBytes > 0) {
+            const percent = Math.round((downloadedBytes / totalBytes) * 100);
+            const totalMb = (totalBytes / 1024 / 1024).toFixed(2);
+            this.logInfo(`Downloading ${assetName}: ${percent}% (${downloadedMb} MB / ${totalMb} MB)`);
+        } else {
+            this.logInfo(`Downloading ${assetName}: ${downloadedMb} MB`);
+        }
     }
 
     private resolveInstallPath(target: RuntimeManifestTarget): string {

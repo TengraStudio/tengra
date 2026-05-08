@@ -208,14 +208,14 @@ export interface ElectronApiWorkspaceSystemDomain {
             workspaceId: string;
             filePath: string;
             languageId: string;
-        }) => Promise<any[] | null>;
+        }) => Promise<WorkspaceIssue[] | null>;
         getCodeActions: (payload: {
             workspaceId: string;
             filePath: string;
             languageId: string;
-            range: any;
-            diagnostics: any[];
-        }) => Promise<any[] | null>;
+            range: unknown;
+            diagnostics: WorkspaceIssue[];
+        }) => Promise<unknown[] | null>;
     };
 
     process: {
@@ -426,12 +426,12 @@ export interface ElectronApiWorkspaceSystemDomain {
         generatePrSummary: (cwd: string, base: string, head: string) => Promise<{ success: boolean; summary?: string; error?: string }>;
         compareRefs: (cwd: string, base: string, head: string) => Promise<GitRefComparison>;
         getHotspots: (cwd: string, limit?: number, days?: number) => Promise<{ success: boolean; hotspots: GitHotspot[]; error?: string }>;
-        getGitHubData: (repoUrl: string, type: 'pulls' | 'issues') => Promise<{ success: boolean; data?: any[]; error?: string }>;
-        getGitHubPrDetails: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: { pr: any; files: any[]; comments: any[]; reviews: any[]; checks: any[] }; error?: string }>;
-        updateGitHubPrState: (repoUrl: string, prNumber: number, state: 'open' | 'closed') => Promise<{ success: boolean; data?: any; error?: string }>;
-        mergeGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: any; error?: string }>;
-        approveGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: any; error?: string }>;
-        getTreeStatusPreview: (cwd: string, directoryPath: string) => Promise<any>;
+        getGitHubData: (repoUrl: string, type: 'pulls' | 'issues') => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
+        getGitHubPrDetails: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: { pr: unknown; files: unknown[]; comments: unknown[]; reviews: unknown[]; checks: unknown[] }; error?: string }>;
+        updateGitHubPrState: (repoUrl: string, prNumber: number, state: 'open' | 'closed') => Promise<{ success: boolean; data?: unknown; error?: string }>;
+        mergeGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+        approveGitHubPr: (repoUrl: string, prNumber: number) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+        getTreeStatusPreview: (cwd: string, directoryPath: string) => Promise<unknown>;
     };
 
     // LLM chat

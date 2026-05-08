@@ -323,7 +323,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                     | { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> }
                     | Array<{ name: string; isDirectory: boolean }>;
 
-                appLogger.debug("FileExplorer.tsx", "Response: " + response)
+                appLogger.debug("FileExplorer.tsx", "Response: " + response);
 
 
                 // CLEAN-002-1: Check if still mounted after async operation

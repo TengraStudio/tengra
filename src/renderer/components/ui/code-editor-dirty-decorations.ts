@@ -12,7 +12,6 @@ import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import React from 'react';
 
-import { useTheme } from '@/hooks/useTheme';
 import { resolveCssColorVariable } from '@/lib/theme-css';
 
 interface UseCodeEditorDirtyDecorationsOptions {
@@ -63,10 +62,9 @@ export function useCodeEditorDirtyDecorations({
     savedValue,
 }: UseCodeEditorDirtyDecorationsOptions): void {
     const decorationIdsRef = React.useRef<string[]>([]);
-    const { theme } = useTheme();
     const dirtyDecorationColor = React.useMemo(
         () => resolveCssColorVariable('editor-dirty-decoration', 'hsl(38 92% 50%)'),
-        [theme]
+        []
     );
 
     React.useEffect(() => {

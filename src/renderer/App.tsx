@@ -358,7 +358,7 @@ const SelectionPersistenceConnector: React.FC<{
         } else if (!selectedWorkspace) {
             lastWorkspaceId.current = null;
         }
-    }, [selectedWorkspace?.id, setIsSidebarCollapsed]);
+    }, [selectedWorkspace, setIsSidebarCollapsed]);
 
     return null;
 };

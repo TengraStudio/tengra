@@ -10,43 +10,27 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-function getAllIpcFiles(
-    fs: typeof import('node:fs'),
-    path: typeof import('node:path'),
-    dir: string
-): string[] {
-    const files: string[] = [];
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            files.push(...getAllIpcFiles(fs, path, full));
-        } else if (entry.isFile() && entry.name.endsWith('.ts')) {
-            files.push(full);
+async function collectIpcChannels(): Promise<string[]> {
+    const fs = await vi.importActual<typeof import('node:fs')>('node:fs');
+    const path = await vi.importActual<typeof import('node:path')>('node:path');
+    const ipcFile = path.join(process.cwd(), 'src', 'shared', 'constants', 'ipc-channels.ts');
+    const channels: string[] = [];
+    const re = /:\s*['"`]([A-Za-z0-9-]+:[A-Za-z0-9-]+)['"`]/g;
+
+    const content = fs.readFileSync(ipcFile, 'utf8');
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(content)) !== null) {
+        if (match[1]) {
+            channels.push(match[1]);
         }
     }
-    return files;
+
+    return channels;
 }
 
 describe('IPC Contract', () => {
     it('keeps channel naming pattern namespace:action', async () => {
-        const fs = await vi.importActual<typeof import('node:fs')>('node:fs');
-        const path = await vi.importActual<typeof import('node:path')>('node:path');
-        const ipcDir = path.join(process.cwd(), 'src', 'main', 'ipc');
-        const files = getAllIpcFiles(fs, path, ipcDir);
-
-        const channels: string[] = [];
-        const re = /ipcMain\.handle\(\s*['"`]([^'"`]+)['"`]/g;
-
-        for (const file of files) {
-            const content = fs.readFileSync(file, 'utf8');
-            let match: RegExpExecArray | null;
-            while ((match = re.exec(content)) !== null) {
-                if (match[1]) {
-                    channels.push(match[1]);
-                }
-            }
-        }
-
+        const channels = await collectIpcChannels();
         expect(channels.length).toBeGreaterThan(30);
         for (const channel of channels) {
             expect(channel).toMatch(/^[A-Za-z0-9-]+:[A-Za-z0-9-]+/);

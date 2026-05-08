@@ -14,7 +14,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { getManagedRuntimeRoot, getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -132,15 +131,11 @@ export class SdCppManager {
         const args = this.buildArgs(runtime, options, outputPath, extraArgs);
 
         appLogger.info('SdCppManager', `Running stable-diffusion.cpp with binary "${runtime.binaryPath}"`);
-        try {
-            await this.runProcess(runtime.binaryPath, args);
-            if (!fs.existsSync(outputPath)) {
-                throw new Error('stable-diffusion.cpp finished but did not produce an output file.');
-            }
-            return outputPath;
-        } catch (error) {
-            throw error;
+        await this.runProcess(runtime.binaryPath, args);
+        if (!fs.existsSync(outputPath)) {
+            throw new Error('stable-diffusion.cpp finished but did not produce an output file.');
         }
+        return outputPath;
     }
 
     /** Edit an image using the SD-CPP binary when img2img/inpaint CLI support is available. */
@@ -176,15 +171,11 @@ export class SdCppManager {
         }
 
         appLogger.info('SdCppManager', `Running stable-diffusion.cpp edit with binary "${runtime.binaryPath}"`);
-        try {
-            await this.runProcess(runtime.binaryPath, args);
-            if (!fs.existsSync(outputPath)) {
-                throw new Error('stable-diffusion.cpp finished but did not produce an edited output file.');
-            }
-            return outputPath;
-        } catch (error) {
-            throw error;
+        await this.runProcess(runtime.binaryPath, args);
+        if (!fs.existsSync(outputPath)) {
+            throw new Error('stable-diffusion.cpp finished but did not produce an edited output file.');
         }
+        return outputPath;
     }
 
 

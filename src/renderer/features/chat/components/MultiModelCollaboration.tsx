@@ -16,8 +16,8 @@
  * useCallback, and stabilized the presence interval via useRef.
  */
 
-import { IconAlertTriangle, IconCircleCheck, IconCircleX,IconCopy, IconLoader2, IconRefresh, IconSparkles } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { IconAlertTriangle, IconCircleCheck, IconCircleX, IconCopy, IconLoader2, IconRefresh, IconSparkles } from '@tabler/icons-react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer';
 import { Button } from '@/components/ui/button';
@@ -357,13 +357,19 @@ function useCollaborationState(
     const [recordedEvents, setRecordedEvents] = useState<string[]>([]);
     const [shareLink, setShareLink] = useState('');
     const [allowGuests, setAllowGuests] = useState(true);
-    const sessionId = useMemo(() => `collab-${Date.now().toString(36)}`, []);
+    const sessionId = useId();
 
     // Refs for stable callbacks that read frequently-changing values
     const sessionRecordingRef = useRef(sessionRecording);
-    sessionRecordingRef.current = sessionRecording;
     const allowGuestsRef = useRef(allowGuests);
-    allowGuestsRef.current = allowGuests;
+
+    useEffect(() => {
+        sessionRecordingRef.current = sessionRecording;
+    }, [sessionRecording]);
+
+    useEffect(() => {
+        allowGuestsRef.current = allowGuests;
+    }, [allowGuests]);
 
     // Memoized presence updater – reads allowGuests via ref so the
     // interval never needs to be torn down and re-created.

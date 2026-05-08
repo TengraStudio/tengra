@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconBrain, IconCode, IconDatabase, IconFolderOpen, IconGitBranch, IconInfoCircle, IconPlayerPlay, IconRobot, IconTerminal } from '@tabler/icons-react';
+import { IconBrain, IconFolderOpen, IconGitBranch, IconInfoCircle, IconRobot, IconTerminal } from '@tabler/icons-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';

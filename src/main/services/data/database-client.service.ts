@@ -259,7 +259,7 @@ export class DatabaseClientService extends BaseService {
         try {
             await this.waitForHealth();
             return this.servicePort;
-        } catch (e) {
+        } catch {
             this.logError('Timed out waiting for db-service to become healthy on port 42000');
             return null;
         }

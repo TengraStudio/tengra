@@ -29,7 +29,10 @@ interface BulkDeleteModalProps {
 
 export const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({ isOpen, count, onClose, onSubmit, t }) => {
     const [deleteFiles, setDeleteFiles] = React.useState(false);
-    React.useEffect(() => { if (!isOpen) { setDeleteFiles(false); } }, [isOpen]);
+    // Reset state when modal is closed to ensure it starts fresh next time
+    if (!isOpen && deleteFiles) {
+        setDeleteFiles(false);
+    }
 
     return (
         <AnimatePresence>

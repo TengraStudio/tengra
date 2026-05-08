@@ -335,21 +335,21 @@ export class AuthService extends BaseService {
 
     // --- Provider Methods ---
 
-    @ipc(AUTH_CHANNELS.GITHUB_LOGIN)
-    async githubLogin(appId: 'copilot' = 'copilot') {
+    @ipc(AUTH_CHANNELS.COPILOT_LOGIN)
+    async copilotLogin() {
         if (!this.proxyService) {
             throw new Error('ProxyService not initialized in AuthService');
         }
-        return await this.proxyService.initiateGitHubAuth(appId);
+        return await this.proxyService.initiateCopilotAuth();
     }
 
     @ipc(AUTH_CHANNELS.POLL_TOKEN)
-    async pollToken(deviceCode: string, interval: number, appId: 'copilot' = 'copilot') {
+    async pollToken(deviceCode: string, interval: number) {
         try {
             if (!this.proxyService) {
                 throw new Error('ProxyService not initialized in AuthService');
             }
-            const response = await this.proxyService.waitForGitHubToken(deviceCode, interval, appId);
+            const response = await this.proxyService.waitForCopilotToken(deviceCode, interval);
             const token = response.access_token;
             const provider = 'copilot';
 
@@ -2066,13 +2066,13 @@ export class AuthService extends BaseService {
             if (!this.proxyService) {
                 throw new Error('ProxyService not available in AuthService');
             }
-            const profile = await this.proxyService.fetchGitHubProfile(token);
+            const profile = await this.proxyService.fetchCopilotProfile(token);
             displayName = profile.displayName;
             avatarUrl = profile.avatarUrl;
             email = profile.email;
 
             if (!email) {
-                email = await this.proxyService.fetchGitHubEmails(token);
+                email = await this.proxyService.fetchCopilotEmails(token);
             }
 
             if (!email && profile.login) {

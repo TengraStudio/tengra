@@ -170,9 +170,9 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
                 } else if (Array.isArray(proxyResponse)) {
                     addModels(proxyResponse, 'proxy-root');
                 }
-            } catch (_e) {
-                // Error ignored as this is a fallback source
-            }
+        } catch {
+            // Error ignored as this is a fallback source
+        }
         }
     } catch (error) {
         appLogger.error('ModelFetcher', 'Aggregation failed', error as Error);
