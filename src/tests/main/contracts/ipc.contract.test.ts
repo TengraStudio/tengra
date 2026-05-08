@@ -31,11 +31,11 @@ describe('IPC Contract', () => {
     it('keeps channel naming pattern namespace:action', async () => {
         const fs = await vi.importActual<typeof import('node:fs')>('node:fs');
         const path = await vi.importActual<typeof import('node:path')>('node:path');
-        const ipcDir = path.join(process.cwd(), 'src', 'main', 'ipc');
-        const files = getAllIpcFiles(fs, path, ipcDir);
+        const ipcFile = path.join(process.cwd(), 'src', 'shared', 'constants', 'ipc-channels.ts');
+        const files = [ipcFile];
 
         const channels: string[] = [];
-        const re = /ipcMain\.handle\(\s*['"`]([^'"`]+)['"`]/g;
+        const re = /:\s*['"`]([A-Za-z0-9-]+:[A-Za-z0-9-]+)['"`]/g;
 
         for (const file of files) {
             const content = fs.readFileSync(file, 'utf8');

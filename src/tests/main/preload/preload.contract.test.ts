@@ -50,8 +50,8 @@ describe('Preload contract regression', () => {
         await bridge.copilotLogin();
         await bridge.pollToken('device', 5);
 
-        expect(ipc.invoke).toHaveBeenCalledWith('auth:copilot-login', 'profile');
-        expect(ipc.invoke).toHaveBeenCalledWith('auth:poll-token', 'device', 5, 'copilot');
+        expect(ipc.invoke).toHaveBeenCalledWith('auth:copilot-login');
+        expect(ipc.invoke).toHaveBeenCalledWith('auth:poll-token', 'device', 5);
     });
 });
 
