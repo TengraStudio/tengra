@@ -23,6 +23,7 @@ import {
     Chat,
     ClaudeQuota,
     CopilotQuota,
+    CursorQuota,
     EntityKnowledge,
     EpisodicMemory,
     FileSearchResult,
@@ -239,10 +240,12 @@ export interface ElectronAPI {
         ollamaLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
         ollamaSignout?: (accountId?: string) => Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }>;
         claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+        cursorSeamlessLogin: () => Promise<{ success: boolean; accountId?: string; error?: string }>;
+        completeCursorAuth: (session: string) => Promise<{ success: boolean; error?: string }>;
         claudeBrowserLogin: () => Promise<{ sessionKey?: string; status?: string; error?: string }>;
         anthropicLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
         codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-        cancelAuth: (provider: 'antigravity' | 'claude' | 'codex' | 'ollama', state: string, accountId: string) => Promise<boolean>;
+        cancelAuth: (provider: 'antigravity' | 'claude' | 'codex' | 'ollama' | 'cursor', state: string, accountId: string) => Promise<boolean>;
         getBrowserAuthStatus: (provider: string, state: string, accountId: string) => Promise<{
             status: string;
             error?: string;
@@ -252,7 +255,7 @@ export interface ElectronAPI {
             account_id?: string;
             account?: Record<string, IpcValue>;
         }>;
-        verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex' | 'ollama') => Promise<{
+        verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex' | 'ollama' | 'cursor') => Promise<{
             status: string;
             provider: string;
             readiness?: IpcValue;
@@ -269,9 +272,14 @@ export interface ElectronAPI {
             accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
         }>;
         getClaudeQuota: () => Promise<{ accounts: Array<ClaudeQuota> }>;
+        getCursorQuota: () => Promise<{ accounts: Array<CursorQuota> }>;
         forceRefreshQuota: () => Promise<boolean>;
         saveClaudeSession: (
             sessionKey: string,
+            accountId?: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        saveCursorSession: (
+            session: string,
             accountId?: string
         ) => Promise<{ success: boolean; error?: string }>;
         triggerClaudeSessionCapture: () => Promise<{ success: boolean; error?: string }>;
@@ -363,6 +371,7 @@ export interface ElectronAPI {
         createAccount: (name: string) => Promise<{ success: boolean; error?: string }>;
         switchAccount: (id: string) => Promise<{ success: boolean; error?: string }>;
         onAccountChanged: (callback: () => void) => () => void;
+        onQuotaUpdate: (callback: (payload: unknown) => void) => () => void;
     };
 
     dialog: {

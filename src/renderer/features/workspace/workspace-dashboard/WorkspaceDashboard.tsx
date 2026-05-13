@@ -44,6 +44,12 @@ const WorkspaceSearchTab = React.lazy(() =>
     }))
 );
 
+const WorkspaceFileHistoryTab = React.lazy(() =>
+    import('./WorkspaceFileHistoryTab').then(m => ({
+        default: m.WorkspaceFileHistoryTab,
+    }))
+);
+
 const WorkspaceSettingsPanel = React.lazy(() =>
     import('./WorkspaceSettingsPanel').then(m => ({
         default: m.WorkspaceSettingsPanel,
@@ -166,7 +172,24 @@ export const WorkspaceDashboard = ({
             <WorkspaceSearchTab
                 searchQuery={state.searchQuery}
                 setSearchQuery={actions.setSearchQuery}
+                replaceQuery={state.replaceQuery}
+                setReplaceQuery={actions.setReplaceQuery}
+                isRegex={state.isRegex}
+                setIsRegex={actions.setIsRegex}
+                matchCase={state.matchCase}
+                setMatchCase={actions.setMatchCase}
+                matchWholeWord={state.matchWholeWord}
+                setMatchWholeWord={actions.setMatchWholeWord}
+                includeGlob={state.includeGlob}
+                setIncludeGlob={actions.setIncludeGlob}
+                excludeGlob={state.excludeGlob}
+                setExcludeGlob={actions.setExcludeGlob}
+                replaceExpanded={state.replaceExpanded}
+                setReplaceExpanded={actions.setReplaceExpanded}
+                filtersExpanded={state.filtersExpanded}
+                setFiltersExpanded={actions.setFiltersExpanded}
                 handleSearch={actions.handleSearch}
+                handleReplaceAll={actions.handleReplaceAll}
                 isSearching={state.isSearching}
                 searchResults={state.searchResults}
                 workspaceRoot={state.workspaceRoot}
@@ -203,6 +226,9 @@ export const WorkspaceDashboard = ({
         },
         git: () => renderLazyPanel(
             <WorkspaceGitTab workspace={workspace} t={t} activeTab={state.activeTab} />
+        ),
+        file_history: () => renderLazyPanel(
+            <WorkspaceFileHistoryTab workspace={workspace} t={t} activeTab={state.activeTab} />
         ),
         files: () => renderLazyPanel(
             <WorkspaceFilesTab

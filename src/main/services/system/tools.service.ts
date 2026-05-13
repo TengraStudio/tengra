@@ -52,6 +52,8 @@ const URI_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i;
 const WINDOWS_ENV_PATTERN = /%([^%]+)%/g;
 
 export class ToolsService extends BaseService {
+    static readonly serviceName = 'toolsService';
+    static readonly dependencies = ['toolExecutor', 'commandService', 'databaseService', 'advancedMemoryService'] as const;
     private readonly memoryContextService: MemoryContextService;
 
     constructor(

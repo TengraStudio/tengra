@@ -23,6 +23,7 @@ export type WorkspaceDashboardTab =
     | 'environment'
     | 'settings'
     | 'chat'
+    | 'file_history'
     | 'editor';
 
 export interface WorkspaceFilesPageMeta {
@@ -295,8 +296,7 @@ export interface WorkspaceAnalysis {
         packages: string[];
     };
     todos: string[];
-    issues?: WorkspaceIssue[];
-    annotations?: CodeAnnotation[];
+    issues?: WorkspaceIssue[]; 
     lspDiagnostics?: WorkspaceIssue[];
     lspServers?: WorkspaceLspServerSupport[];
     diagnosticsStatus?: WorkspaceDiagnosticsStatus;

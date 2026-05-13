@@ -29,6 +29,8 @@ interface SubscriptionOptions {
 type EventBusListener = (payload: RuntimeValue) => void
 
 export class EventBusService extends BaseService {
+    static readonly serviceName = 'eventBusService';
+    static readonly dependencies = [] as const;
     private bus: EventEmitter;
     private eventHistory: { event: string; payload: RuntimeValue; timestamp: number; id: string }[] = [];
     private subscriptions = new Map<string, { event: string; listener: EventBusListener }>();

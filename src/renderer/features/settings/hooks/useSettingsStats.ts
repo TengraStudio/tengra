@@ -21,6 +21,7 @@ type QuotaPushPayload = {
     copilotQuota?: Awaited<ReturnType<Window['electron']['auth']['getCopilotQuota']>> | null;
     codexUsage?: Awaited<ReturnType<Window['electron']['auth']['getCodexUsage']>> | null;
     claudeQuota?: Awaited<ReturnType<Window['electron']['auth']['getClaudeQuota']>> | null;
+    cursorQuota?: Awaited<ReturnType<Window['electron']['auth']['getCursorQuota']>> | null;
     error?: string;
 };
 
@@ -60,6 +61,7 @@ export function useSettingsStats(): {
     copilotQuota: Awaited<ReturnType<Window['electron']['auth']['getCopilotQuota']>> | null;
     codexUsage: Awaited<ReturnType<Window['electron']['auth']['getCodexUsage']>> | null;
     claudeQuota: Awaited<ReturnType<Window['electron']['auth']['getClaudeQuota']>> | null;
+    cursorQuota: Awaited<ReturnType<Window['electron']['auth']['getCursorQuota']>> | null;
     setReloadTrigger: Dispatch<SetStateAction<number>>;
 } {
     const [statsLoading, setStatsLoading] = useState(false);
@@ -71,18 +73,21 @@ export function useSettingsStats(): {
         quotaData: null as Awaited<ReturnType<Window['electron']['auth']['getQuota']>> | null,
         copilotQuota: null as Awaited<ReturnType<Window['electron']['auth']['getCopilotQuota']>> | null,
         codexUsage: null as Awaited<ReturnType<Window['electron']['auth']['getCodexUsage']>> | null,
-        claudeQuota: null as Awaited<ReturnType<Window['electron']['auth']['getClaudeQuota']>> | null
+        claudeQuota: null as Awaited<ReturnType<Window['electron']['auth']['getClaudeQuota']>> | null,
+        cursorQuota: null as Awaited<ReturnType<Window['electron']['auth']['getCursorQuota']>> | null
     });
     const quotaCacheRef = useRef<{
         quotaHash: string;
         copilotHash: string;
         codexHash: string;
         claudeHash: string;
+        cursorHash: string;
     }>({
         quotaHash: '',
         copilotHash: '',
         codexHash: '',
         claudeHash: '',
+        cursorHash: '',
     });
 
     const loadStats = useCallback(async () => {
@@ -99,7 +104,8 @@ export function useSettingsStats(): {
                 quotaData: batchedData.quota ?? null,
                 copilotQuota: batchedData.copilotQuota ?? null,
                 codexUsage: batchedData.codexUsage ?? null,
-                claudeQuota: batchedData.claudeQuota ?? null
+                claudeQuota: batchedData.claudeQuota ?? null,
+                cursorQuota: batchedData.cursorQuota ?? null
             });
         } catch (error) {
             appLogger.error('useSettingsStats', 'Failed to load stats', error as Error);
@@ -180,6 +186,15 @@ export function useSettingsStats(): {
                     }
                 }
 
+                if (payload.cursorQuota) {
+                    const nextHash = safeJsonStringify(payload.cursorQuota);
+                    if (nextHash && nextHash !== quotaCacheRef.current.cursorHash) {
+                        quotaCacheRef.current.cursorHash = nextHash;
+                        next.cursorQuota = payload.cursorQuota;
+                        changed = true;
+                    }
+                }
+
                 return changed ? next : previous;
             });
         });
@@ -196,4 +211,3 @@ export function useSettingsStats(): {
         setReloadTrigger
     }), [statsLoading, statsPeriod, data]);
 }
-

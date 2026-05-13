@@ -32,9 +32,6 @@ const C_SKILLSTAB_3 = "h-9 w-9 rounded-xl border-destructive/20 text-destructive
 
 type SkillsTabProps = Pick<SettingsSharedProps, 't'>;
 
-function normalizeTranslation(value: string, fallback: string): string {
-    return value.includes('.') ? fallback : value;
-}
 
 export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
     const [skills, setSkills] = useState<ProxySkill[]>([]);
@@ -103,38 +100,27 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
     }, [loadData, registry?.skills, t]);
 
     return (
-        <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-10">
-            <header className="space-y-2 px-1">
-                <h2 className="text-2xl font-semibold ">
-                    {normalizeTranslation(t('frontend.settings.tabs.skills'), 'Skills')}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                    {normalizeTranslation(t('frontend.settings.skills.description'), 'Manage installed skills. Install new ones from Marketplace > Skills.')}
-                </p>
-            </header>
-
+        <div className="flex flex-col gap-6 pb-10">
             <SettingsPanel
-                title={normalizeTranslation(t('frontend.settings.skills.libraryTitle'), 'Installed Skills')}
-                description={normalizeTranslation(t('frontend.settings.skills.libraryDescription'), 'Enable, disable, or uninstall installed skills.')}
-                icon={IconSparkles}
+                className='px-6 py-2'
             >
                 {loading ? (
                     <div className="py-4 typo-caption text-muted-foreground">
-                        {normalizeTranslation(t('common.loading'), 'Loading...')}
+                        {t('common.loading')}
                     </div>
                 ) : skills.length === 0 ? (
-                    <div className="rounded-xl border border-border/25 bg-background/40 p-3 typo-caption text-muted-foreground">
-                        {normalizeTranslation(t('frontend.settings.skills.empty'), 'No installed skills yet.')}
+                    <div className="p-3 typo-caption text-muted-foreground">
+                        {t('frontend.settings.skills.empty')}
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 px-6 py-2">
                         {skills.map(skill => {
                             const isRemoving = removingId === skill.id;
                             const isActive = skill.enabled;
-                            
+
                             return (
-                                <div 
-                                    key={skill.id} 
+                                <div
+                                    key={skill.id}
                                     className={cn(
                                         "group relative flex items-center justify-between gap-5 rounded-2xl border p-5 transition-all duration-300",
                                         isActive
@@ -151,7 +137,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                         )}>
                                             <IconSparkles className="h-6 w-6" />
                                         </div>
-                                        
+
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-3">
                                                 <h3 className="font-bold text-foreground leading-none">{skill.name}</h3>
@@ -163,7 +149,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                                 </Badge>
                                             </div>
                                             <p className="mt-2 text-sm font-medium text-muted-foreground/70 line-clamp-1 leading-relaxed">
-                                                {skill.description || normalizeTranslation(t('frontend.settings.skills.noDescription'), 'No description')}
+                                                {skill.description || t('frontend.settings.skills.noDescription')}
                                             </p>
                                         </div>
                                     </div>
@@ -213,7 +199,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                             </Button>
                                         </div>
                                     </div>
-                                    
+
                                     {isActive && (
                                         <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary rounded-r-full shadow-edge-primary" />
                                     )}

@@ -8,11 +8,10 @@
  * (at your option) any later version.
  */
 
-import { IconLayersLinked, IconRefresh, IconShieldExclamation } from '@tabler/icons-react';
+import { IconLayersLinked, IconShieldExclamation } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
 import type { LinkedAccountInfo } from '@/electron';
-import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
 
 import type { SettingsSharedProps } from '../types';
@@ -21,17 +20,15 @@ import { AntigravityCard } from './statistics/AntigravityCard';
 import { ClaudeCard } from './statistics/ClaudeCard';
 import { CodexCard } from './statistics/CodexCard';
 import { CopilotCard } from './statistics/CopilotCard';
+import { CursorCard } from './statistics/CursorCard';
 import {
     SettingsPanel,
-    SettingsStatCard,
-    SettingsStatGrid,
-    SettingsTabHeader,
     SettingsTabLayout,
 } from './SettingsPrimitives';
 
 type QuotasTabProps = Pick<
     SettingsSharedProps,
-    'settings' | 'quotaData' | 'copilotQuota' | 'codexUsage' | 'claudeQuota' | 't' | 'setReloadTrigger'
+    'settings' | 'quotaData' | 'copilotQuota' | 'codexUsage' | 'claudeQuota' | 'cursorQuota' | 't' | 'setReloadTrigger'
 >;
 
 export const QuotasTab: React.FC<QuotasTabProps> = ({
@@ -40,13 +37,11 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
     copilotQuota,
     codexUsage,
     claudeQuota,
-    setReloadTrigger,
+    cursorQuota,
     t,
 }) => {
-    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-    const [isRefreshing, setIsRefreshing] = useState(false);
     const [hasDecryptionError, setHasDecryptionError] = useState(false);
-    const [activeAntigravityAccount, setActiveAntigravityAccount] = useState<{ id?: string; email?: string } | null>(null);
+    const [activeAccounts, setActiveAccounts] = useState<Record<string, { id?: string; email?: string } | null>>({});
 
     useEffect(() => {
         const loadStatus = async () => {
@@ -56,69 +51,26 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                 const anyError = accounts.some((acc: LinkedAccountInfo & { decryptionError?: boolean }) => acc.decryptionError);
                 setHasDecryptionError(anyError);
 
-                const account = await window.electron.auth.getActiveLinkedAccount('antigravity')
-                    .catch(() => window.electron.auth.getActiveLinkedAccount('google')); 
-                setActiveAntigravityAccount(account ? { id: account.id, email: account.email } : null);
-                setLastUpdated(new Date());
+                const providers = ['antigravity', 'google', 'copilot', 'codex', 'claude', 'cursor'] as const;
+                const resolved = await Promise.all(
+                    providers.map(async provider => {
+                        const account = await window.electron.auth.getActiveLinkedAccount(provider).catch(() => null);
+                        return [provider, account ? { id: account.id, email: account.email } : null] as const;
+                    })
+                );
+                setActiveAccounts(Object.fromEntries(resolved));
             } catch (error) {
                 appLogger.error('QuotasTab', 'Failed to load accounts status', error as Error);
             }
         };
 
         void loadStatus();
-    }, [quotaData, copilotQuota, claudeQuota, codexUsage]);
-
-    const handleRefresh = async () => {
-        setIsRefreshing(true);
-        try {
-            await window.electron.auth.forceRefreshQuota();
-            // Trigger a reload of the stats data
-            setReloadTrigger(prev => prev + 1);
-            setLastUpdated(new Date());
-        } catch (error) {
-            appLogger.error('QuotasTab', 'Failed to refresh quotas', error as Error);
-        } finally {
-            setIsRefreshing(false);
-        }
-    };
+    }, [quotaData, copilotQuota, claudeQuota, codexUsage, cursorQuota]);
 
     const locale = settings?.general.language ?? 'en-US';
-    const totalServices = [quotaData, claudeQuota, copilotQuota, codexUsage].filter(Boolean).length;
-    const errorServices = [quotaData, claudeQuota, copilotQuota, codexUsage].filter(s => s?.accounts?.some((a: { error?: string, success?: boolean }) => a.error || a.success === false)).length;
 
     return (
         <SettingsTabLayout>
-            <SettingsTabHeader
-                title={t('frontend.statistics.connectedAppsUsage')}
-                description={t('frontend.statistics.usageStatistics')}
-                icon={IconLayersLinked}
-                actions={(
-                    <div className="flex flex-col items-start gap-2 md:items-end">
-                        <button
-                            onClick={() => { void handleRefresh(); }}
-                            disabled={isRefreshing}
-                            className={cn(
-                                'flex items-center gap-2 rounded-xl border border-border/20 bg-muted/10 px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted/20',
-                                isRefreshing && 'opacity-50'
-                            )}
-                        >
-                            <IconRefresh className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
-                            {isRefreshing ? t('common.refreshing') : t('common.refresh')}
-                        </button>
-                        <span className="text-xs font-medium text-muted-foreground/55 tabular-nums">
-                            {t('frontend.statistics.lastUpdated')}: {lastUpdated.toLocaleTimeString(locale)}
-                        </span>
-                    </div>
-                )}
-            />
-
-            <SettingsStatGrid>
-                <SettingsStatCard label={t('frontend.statistics.services')} value={totalServices} />
-                <SettingsStatCard label={t('frontend.statistics.active')} value={totalServices - errorServices} tone="success" />
-                <SettingsStatCard label={t('frontend.statistics.errors')} value={errorServices} tone="destructive" />
-                <SettingsStatCard label={t('frontend.statistics.health')} value={`${Math.round(((totalServices - errorServices) / Math.max(1, totalServices)) * 100)}%`} tone="primary" />
-            </SettingsStatGrid>
-
             {hasDecryptionError && (
                 <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-5 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="flex items-start gap-4">
@@ -141,16 +93,31 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                         t={t}
                         quotaData={quotaData}
                         locale={locale}
-                        activeAccountId={activeAntigravityAccount?.id ?? null}
-                        activeAccountEmail={activeAntigravityAccount?.email ?? null}
+                        activeAccountId={activeAccounts.antigravity?.id ?? null}
+                        activeAccountEmail={activeAccounts.antigravity?.email ?? null}
                     />
                 </SettingsPanel>
 
                 <SettingsPanel title={t('frontend.statistics.active')} icon={IconLayersLinked}>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <ClaudeCard claudeQuota={claudeQuota} locale={locale} />
-                        <CopilotCard copilotQuota={copilotQuota} />
-                        <CodexCard codexUsage={codexUsage} locale={locale} />
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 px-6 py-2">
+                        <ClaudeCard
+                            claudeQuota={claudeQuota}
+                            locale={locale}
+                            activeAccountId={activeAccounts.claude?.id ?? null}
+                            activeAccountEmail={activeAccounts.claude?.email ?? null}
+                        />
+                        <CopilotCard
+                            copilotQuota={copilotQuota}
+                            activeAccountId={activeAccounts.copilot?.id ?? null}
+                            activeAccountEmail={activeAccounts.copilot?.email ?? null}
+                        />
+                        <CodexCard
+                            codexUsage={codexUsage}
+                            locale={locale}
+                            activeAccountId={activeAccounts.codex?.id ?? null}
+                            activeAccountEmail={activeAccounts.codex?.email ?? null}
+                        />
+                        <CursorCard cursorQuota={cursorQuota} locale={locale} />
                     </div>
                 </SettingsPanel>
             </div>

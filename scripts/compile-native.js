@@ -12,15 +12,26 @@ const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const { getAssetsBinDir, getExecutableName, getManagedRuntimeBinDir, getNativeTargetReleaseDir } = require('./build-runtime-paths');
+const { getAssetsBinDir, getExecutableName, getManagedRuntimeBinDir } = require('./build-runtime-paths');
 
 const SERVICES_DIR = path.join(__dirname, '../src/native');
-const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
-const STAMP_FILE = path.join(SERVICES_DIR, 'target', 'native-build-stamp.json');
 const BIN_DIR = getManagedRuntimeBinDir();
 const ASSETS_BIN_DIR = getAssetsBinDir();
 const SERVICE_BASENAMES = ['db-service', 'memory-service', 'proxy'];
 const ALLOW_LOCKED_NATIVE_SKIP = process.env.CI !== 'true' && process.env.TENGRA_ALLOW_LOCKED_NATIVE_SKIP !== 'false';
+const FAST_NATIVE_BUILD = process.env.TENGRA_BUILD_FAST === 'true' || process.env.TENGRA_NATIVE_FAST === 'true';
+
+function getNativeProfileName() {
+    return FAST_NATIVE_BUILD ? 'fast-release' : 'release';
+}
+
+function getTargetDir() {
+    return path.join(SERVICES_DIR, 'target', getNativeProfileName());
+}
+
+function getStampFile() {
+    return path.join(SERVICES_DIR, 'target', `native-build-stamp.${getNativeProfileName()}.json`);
+}
 
 function writeStdout(message) {
     process.stdout.write(`${message}\n`);
@@ -155,16 +166,18 @@ function computeNativeBuildStamp() {
 }
 
 function hasCurrentNativeBuildOutputs(mappings) {
-    return mappings.every(mapping => fs.existsSync(path.join(TARGET_DIR, mapping.output)));
+    const targetDir = getTargetDir();
+    return mappings.every(mapping => fs.existsSync(path.join(targetDir, mapping.output)));
 }
 
 function shouldSkipNativeBuild(mappings) {
-    if (!fs.existsSync(STAMP_FILE) || !hasCurrentNativeBuildOutputs(mappings)) {
+    const stampFile = getStampFile();
+    if (!fs.existsSync(stampFile) || !hasCurrentNativeBuildOutputs(mappings)) {
         return false;
     }
 
     try {
-        const stored = JSON.parse(fs.readFileSync(STAMP_FILE, 'utf8'));
+        const stored = JSON.parse(fs.readFileSync(stampFile, 'utf8'));
         return stored.stamp === computeNativeBuildStamp();
     } catch {
         return false;
@@ -172,9 +185,10 @@ function shouldSkipNativeBuild(mappings) {
 }
 
 function persistNativeBuildStamp() {
-    fs.mkdirSync(path.dirname(STAMP_FILE), { recursive: true });
+    const stampFile = getStampFile();
+    fs.mkdirSync(path.dirname(stampFile), { recursive: true });
     fs.writeFileSync(
-        STAMP_FILE,
+        stampFile,
         JSON.stringify({ stamp: computeNativeBuildStamp() }, null, 2),
         'utf8'
     );
@@ -184,11 +198,12 @@ async function copyNativeBinariesFromTarget() {
     ensureBinDir();
     ensureAssetsBinDir();
     const mappings = getNativeBinaryMappings();
+    const targetDir = getTargetDir();
     const missingBinaries = [];
 
     const copyTasks = mappings.map(async (mapping) => {
-        const src = path.join(TARGET_DIR, mapping.output);
-        const dest = path.join(BIN_DIR, mapping.output); 
+        const src = path.join(targetDir, mapping.output);
+        const dest = path.join(BIN_DIR, mapping.output);
         const assetDest = path.join(ASSETS_BIN_DIR, mapping.output);
 
         if (!fs.existsSync(src)) {
@@ -318,7 +333,8 @@ async function buildNative() {
         writeStdout('Compiling Rust binaries...');
 
         // Prepare command
-        let buildCmd = `${cargoCommand} build --release`;
+        const cargoProfileArgs = FAST_NATIVE_BUILD ? '--profile fast-release' : '--release';
+        let buildCmd = `${cargoCommand} build ${cargoProfileArgs}`;
         let env = { ...process.env };
 
         if (process.platform === 'win32') {
@@ -330,7 +346,7 @@ async function buildNative() {
                 const vcvarsPath = findVcvarsPath();
                 if (vcvarsPath) {
                     writeStdout(`Found vcvarsall.bat at: ${vcvarsPath}`);
-                    buildCmd = `call "${vcvarsPath}" x64 && ${cargoCommand} build --release`;
+                    buildCmd = `call "${vcvarsPath}" x64 && ${cargoCommand} build ${cargoProfileArgs}`;
                     delete env.CC;
                     delete env.CXX;
                 } else {

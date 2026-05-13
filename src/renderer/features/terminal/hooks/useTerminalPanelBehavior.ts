@@ -232,7 +232,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
         backdropFilter: `blur(${core.terminalAppearance.surfaceBlur}px)`,
     };
 
-    const selectedRecordingText = recording.selectedRecording
+    const selectedRecordingText = (recording.selectedRecording && recording.selectedRecording.events)
         ? recording.selectedRecording.events
             .filter(event => event.type === 'data')
             .map(event => event.data)

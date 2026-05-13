@@ -76,6 +76,8 @@ export interface ContextRetrievalHealthSnapshot {
 }
 
 export class ContextRetrievalService {
+    static readonly serviceName = 'contextRetrievalService';
+    static readonly dependencies = ['db', 'embedding'] as const;
     private analytics = {
         totalRequests: 0,
         failedRequests: 0,

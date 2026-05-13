@@ -19,6 +19,8 @@ interface MemoryCacheEntry<T> {
 }
 
 export class CacheService extends BaseService {
+    static readonly serviceName = 'cacheService';
+    static readonly dependencies = ['dbService', 'eventBus'] as const;
     private repository!: CacheRepository;
     private memoryCache = new Map<string, Map<string, MemoryCacheEntry<unknown>>>();
     private cleanupInterval: NodeJS.Timeout | null = null;

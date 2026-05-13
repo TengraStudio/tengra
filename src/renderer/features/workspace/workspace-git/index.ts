@@ -15,7 +15,6 @@ export * from '@/features/workspace/components/git/GitCommitCard';
 export * from '@/features/workspace/components/git/GitCommitDiffView';
 export * from '@/features/workspace/components/git/GitCommitHistory';
 export * from '@/features/workspace/components/git/GitCommitSection';
-export * from '@/features/workspace/components/git/GitDiffLine';
 export * from '@/features/workspace/components/git/GitQuickActions';
 export * from '@/features/workspace/components/git/GitRemotes';
 export * from '@/features/workspace/components/git/GitStatusHeader';

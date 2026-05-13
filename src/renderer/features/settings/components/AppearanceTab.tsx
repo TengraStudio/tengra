@@ -10,19 +10,14 @@
 
 import { BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import type { ThemeManifest } from '@shared/types/theme';
-import { IconAccessible, IconDeviceDesktop, IconLuggage, IconMaximize, IconPalette, IconPointer, IconRefresh, IconTerminal, IconTypography } from '@tabler/icons-react';
+import { IconAccessible, IconChevronDown, IconColumns, IconDeviceDesktop, IconLuggage, IconMaximize, IconPalette, IconPlus, IconPointer, IconRefresh, IconTerminal, IconTrash, IconTypography, IconX } from '@tabler/icons-react';
 import React, { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import {
     Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import {
     clamp,
@@ -41,8 +36,18 @@ import { useA11ySettings } from '@/utils/accessibility';
 
 import type { SettingsSharedProps } from '../types';
 
-const APPEARANCE_ROW_CLASS = UI_PRIMITIVES.SETTINGS_ROW;
-const SECTION_CONTAINER_CLASS = UI_PRIMITIVES.SECTION_CARD;
+import {
+    SettingsField,
+    SettingsInput,
+    SettingsPanel,
+    SettingsSelectContent,
+    SettingsSelectItem,
+    SettingsSelectTrigger,
+    SettingsSwitch,
+    SettingsTabHeader,
+    SettingsTabLayout,
+    SettingsToggleRow,
+} from './SettingsPrimitives';
 
 type AppearanceTabProps = Pick<
     SettingsSharedProps,
@@ -65,69 +70,90 @@ function TerminalPreview({
     theme,
 }: TerminalPreviewProps): JSX.Element {
     return (
-        <div className="group relative h-72 w-full overflow-hidden rounded-2xl border border-border/40 bg-[#0c0c0c] shadow-2xl transition-all hover:border-border/60">
-            {/* Terminal Window Header */}
-            <div className="flex h-11 items-center border-b border-white/5 bg-white/[0.03] px-4">
-                <div className="flex gap-2">
-                    <div className="h-3 w-3 rounded-full bg-[#ff5f56] opacity-80 hover:opacity-100" />
-                    <div className="h-3 w-3 rounded-full bg-[#ffbd2e] opacity-80 hover:opacity-100" />
-                    <div className="h-3 w-3 rounded-full bg-[#27c93f] opacity-80 hover:opacity-100" />
+        <div className="group relative h-80 w-full overflow-hidden rounded-xl border border-border/40 bg-[#0c0c0c] shadow-2xl transition-all hover:border-border/60">
+            {/* VS Code Style Header */}
+            <div className="flex h-9 items-center justify-between border-b border-white/5 bg-white/[0.02] px-3">
+                <div className="flex h-full items-center">
+                    <div className="flex h-full items-center border-b-2 border-primary px-3 text-[11px] font-bold tracking-wider text-foreground">
+                        TERMINAL
+                    </div>
+                    <div className="flex h-full items-center px-3 text-[11px] font-medium text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer">
+                        OUTPUT
+                    </div>
+                    <div className="flex h-full items-center px-3 text-[11px] font-medium text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer">
+                        DEBUG CONSOLE
+                    </div>
                 </div>
-                <div className="ml-4 flex items-center gap-2 text-sm font-bold text-white/20 uppercase ">
-                    <IconTerminal className="h-3 w-3" />
-                    <span>zsh — tengra-terminal</span>
+
+                <div className="flex items-center gap-3 pr-1 text-muted-foreground/40">
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors cursor-pointer">
+                        <span className="text-[10px] font-mono opacity-60">1: zsh</span>
+                        <IconChevronDown className="h-3 w-3" />
+                    </div>
+                    <div className="h-3 w-[1px] bg-white/5" />
+                    <div className="flex items-center gap-2">
+                        <IconPlus className="h-3.5 w-3.5 hover:text-foreground transition-colors cursor-pointer" />
+                        <IconColumns className="h-3.5 w-3.5 hover:text-foreground transition-colors cursor-pointer" />
+                        <IconTrash className="h-3.5 w-3.5 hover:text-foreground transition-colors cursor-pointer" />
+                        <IconX className="h-3.5 w-3.5 hover:text-foreground transition-colors cursor-pointer" />
+                    </div>
                 </div>
             </div>
 
             {/* Terminal Body */}
             <div
-                className="h-full overflow-y-auto p-6 font-mono selection:bg-primary/30"
+                className="h-full overflow-y-auto p-4 font-mono selection:bg-primary/30 custom-scrollbar"
                 style={{
                     color: theme.foreground,
+                    backgroundColor: theme.background,
                     fontFamily,
                     fontSize: `${fontSize}px`,
                     lineHeight,
                 }}
             >
-                <div className="space-y-2 opacity-90">
-                    <div className="flex flex-wrap items-center gap-x-2">
+                <div className="space-y-1.5 opacity-90">
+                    <div className="flex flex-wrap items-center gap-x-2 pb-1">
                         <span style={{ color: theme.cyan }}>➜</span>
                         <span style={{ color: theme.green }}>~</span>
                         <span style={{ color: theme.blue }}>projects/tengra</span>
-                        <span className="text-white/30 font-light text-[0.9em]">git:(<span style={{ color: theme.red }}>main</span>)</span>
+                        <span className="text-white/30 font-light text-[0.85em]">git:(<span style={{ color: theme.red }}>main</span>)</span>
+                        <span className="text-white/60">npm start</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="text-[0.9em] leading-relaxed">
+                        <span className="text-white/40">[{new Date().toLocaleTimeString()}]</span>
+                        <span className="ml-2" style={{ color: theme.yellow }}>[info]</span>
+                        <span className="ml-2">Initializing Tengra Core v1.2.0...</span>
+                    </div>
+
+                    <div className="text-[0.9em] leading-relaxed">
+                        <span className="text-white/40">[{new Date().toLocaleTimeString()}]</span>
+                        <span className="ml-2" style={{ color: theme.blue }}>[debug]</span>
+                        <span className="ml-2">Loading model registry (34 models found)</span>
+                    </div>
+
+                    <div className="pt-1 flex items-center gap-3">
+                        <div className="h-1.5 w-32 rounded-full bg-white/5 overflow-hidden">
+                            <div className="h-full w-2/3 bg-primary animate-[terminal-progress_2s_ease-in-out_infinite]" />
+                        </div>
+                        <span className="text-[0.85em] text-white/30">Optimizing JIT clusters...</span>
+                    </div>
+
+                    <div className="pt-2 flex flex-wrap items-center gap-2">
+                        <span style={{ color: theme.green }}>SUCCESS</span>
+                        <span className="text-white/70">Build completed in 1.4s</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
                         <span style={{ color: theme.cyan }}>➜</span>
-                        <span className="text-white/90">npm run dev</span>
-                    </div>
-
-                    <div className="pt-2 text-white/30 text-[0.95em]">
-                        {`> tengra@1.0.46 dev`}
-                        <br />
-                        {`> vite --config vite.config.ts`}
-                    </div>
-
-                    <div className="pt-2 flex items-center gap-2">
-                        <span style={{ color: theme.green }}>✓</span>
-                        <span className="text-white/80">VITE v8.0.10 ready in 432ms</span>
-                    </div>
-
-                    <div className="text-white/50 text-[0.9em]">
-                        <span className="opacity-40">  ➜  </span>
-                        <span className="font-bold text-white/70">Local:</span>
-                        <span className="text-primary/80 underline ml-2 decoration-primary/30">http://localhost:5173/</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-3">
-                        <span style={{ color: theme.cyan }}>➜</span>
+                        <span style={{ color: theme.green }}>~</span>
                         <div
                             className={cn(
-                                'bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]',
-                                cursorStyle === 'block' && 'h-[1.2em] w-[0.6em]',
-                                cursorStyle === 'underline' && 'mt-[1em] h-[2px] w-[0.6em]',
-                                cursorStyle === 'bar' && 'h-[1.2em] w-[2px]',
-                                'animate-[terminal-blink_1.2s_step-end_infinite]'
+                                'shadow-[0_0_12px_rgba(var(--primary-rgb),0.6)]',
+                                cursorStyle === 'block' && 'h-[1.1em] w-[0.55em] bg-primary',
+                                cursorStyle === 'underline' && 'mt-[0.9em] h-[2px] w-[0.6em] bg-primary',
+                                cursorStyle === 'bar' && 'h-[1.1em] w-[2px] bg-primary',
+                                'animate-[terminal-blink_1s_step-end_infinite]'
                             )}
                         />
                     </div>
@@ -140,100 +166,12 @@ function TerminalPreview({
                     from, to { opacity: 1; }
                     50% { opacity: 0; }
                 }
+                @keyframes terminal-progress {
+                    0% { transform: translateX(-100%); }
+                    50% { transform: translateX(0); }
+                    100% { transform: translateX(100%); }
+                }
             `}} />
-        </div>
-    );
-}
-
-function LiveAppPreview({
-    font,
-    fontSize,
-    t
-}: {
-    font: { display: string; sans: string };
-    fontSize: number;
-    t: (key: string) => string
-}) {
-    return (
-        <div className="group relative h-72 w-full overflow-hidden rounded-2xl border border-border/40 bg-background shadow-2xl transition-all hover:border-border/60">
-            {/* App Header */}
-            <div className="flex h-11 items-center border-b border-border/10 bg-muted/20 px-4">
-                <div className="flex gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-border/20" />
-                    <div className="h-2.5 w-2.5 rounded-full bg-border/20" />
-                    <div className="h-2.5 w-2.5 rounded-full bg-border/20" />
-                </div>
-                <div className="mx-auto text-sm font-bold text-muted-foreground/30 uppercase  select-none">
-                    {t('frontend.app.name')}
-                </div>
-                <div className="w-10" /> {/* Spacer */}
-            </div>
-
-            {/* App Body (Mini Chat View) */}
-            <div className="p-6 space-y-5">
-                <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10 shadow-sm">
-                        <div className="h-4 w-4 rounded-sm bg-primary/30 animate-pulse" />
-                    </div>
-                    <div className="space-y-2.5 flex-1 pt-1.5">
-                        <div className="h-2 w-3/4 rounded-full bg-foreground/10" />
-                        <div className="h-2 w-1/2 rounded-full bg-foreground/5" />
-                    </div>
-                </div>
-
-                <div className="flex flex-row-reverse items-start gap-4 pt-1">
-                    <div className="h-9 w-9 rounded-xl bg-foreground/5 flex items-center justify-center shrink-0 border border-border/10 shadow-sm" />
-                    <div className="space-y-2.5 flex-1 pt-1.5 items-end flex flex-col">
-                        <div className="h-2 w-2/3 rounded-full bg-primary/15" />
-                        <div className="h-2 w-1/3 rounded-full bg-primary/5" />
-                    </div>
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-border/15 bg-muted/30 p-5 shadow-inner transition-colors group-hover:bg-muted/40">
-                    <div
-                        className="text-2xl font-bold text-foreground mb-2 leading-none"
-                        style={{ fontFamily: font.display }}
-                    >
-                        {t('frontend.settings.previewHeading')}
-                    </div>
-                    <div
-                        className="text-sm text-muted-foreground/80 leading-relaxed"
-                        style={{
-                            fontFamily: font.sans,
-                            fontSize: `${fontSize}px`
-                        }}
-                    >
-                        {t('frontend.settings.previewBody')}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function AppearanceRow({
-    title,
-    description,
-    control,
-    icon,
-}: {
-    title: string
-    description: string
-    control: React.ReactNode
-    icon: React.ReactNode
-}): JSX.Element {
-    return (
-        <div className={APPEARANCE_ROW_CLASS}>
-            <div className="min-w-0 space-y-1">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    {icon}
-                    {title}
-                </div>
-                <div className="max-w-lg typo-caption leading-relaxed text-muted-foreground/70">
-                    {description}
-                </div>
-            </div>
-            <div className="w-full sm:w-auto">{control}</div>
         </div>
     );
 }
@@ -320,7 +258,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
     ];
 
     return (
-        <div className="space-y-8 pb-16 lg:space-y-10 animate-in fade-in duration-500">
+        <SettingsTabLayout className="animate-in fade-in duration-500">
             <input
                 ref={themeImportInputRef}
                 type="file"
@@ -330,384 +268,303 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     void handleImportTheme(event);
                 }}
             />
-            <div className="px-1">
-                <div className="mb-3 flex items-center gap-4">
-                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
-                        <IconPalette className="h-7 w-7" />
-                    </div>
-                    <div>
-                        <h3 className="text-2xl font-bold text-foreground">
-                            {t('frontend.settings.appearanceTitle')}
-                        </h3>
-                    </div>
-                </div>
-                <p className="max-w-2xl px-1 text-sm leading-relaxed text-muted-foreground/70">
-                    {t('frontend.settings.appearanceDescription')}
-                </p>
-            </div>
 
-            <div className="grid grid-cols-1 gap-6 2xl:grid-cols-balance-95-105">
-                <div className={SECTION_CONTAINER_CLASS}>
-                    <div className="flex items-center gap-2 px-1">
-                        <IconDeviceDesktop className="h-4 w-4 text-primary/80" />
-                        <h4 className="text-sm font-bold uppercase text-muted-foreground/80">
-                            {t('frontend.settings.interfaceConfiguration')}
-                        </h4>
-                    </div>
+            <SettingsPanel
+                title={t('frontend.settings.interfaceConfiguration')}
+                icon={IconDeviceDesktop}
+            >
+                <div className="px-6 py-2 space-y-4">
+                    <SettingsField label={t('frontend.settings.theme')}>
+                        <Select
+                            value={settings?.general.theme ?? 'tengra-black'}
+                            onValueChange={value => {
+                                void updateGeneral({ theme: value });
+                            }}
+                        >
+                            <SettingsSelectTrigger>
+                                <SelectValue />
+                            </SettingsSelectTrigger>
+                            <SettingsSelectContent>
+                                {themeOptions.map(opt => (
+                                    <SettingsSelectItem key={opt.value} value={opt.value}>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-medium">{opt.label}</span>
+                                            <Badge variant="outline" className={cn(UI_PRIMITIVES.BADGE_MUTED, 'uppercase')}>
+                                                {opt.type}
+                                            </Badge>
+                                        </div>
+                                    </SettingsSelectItem>
+                                ))}
+                            </SettingsSelectContent>
+                        </Select>
+                    </SettingsField>
 
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                {t('frontend.settings.theme')}
-                            </label>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                        <SettingsField label={t('frontend.settings.baseFontSize')}>
+                            <SettingsInput
+                                type="number"
+                                min={12}
+                                max={18}
+                                value={settings?.general.fontSize ?? 14}
+                                onChange={event => {
+                                    const parsed = Number.parseInt(event.target.value, 10);
+                                    const nextValue = Number.isNaN(parsed) ? 14 : clamp(parsed, 12, 18);
+                                    void updateGeneral({ fontSize: nextValue });
+                                }}
+                            />
+                        </SettingsField>
+                        <SettingsField label={t('frontend.settings.typographyScale')}>
                             <Select
-                                value={settings?.general.theme ?? 'tengra-black'}
+                                value={settings?.general.typographyScale ?? 'balanced'}
                                 onValueChange={value => {
-                                    void updateGeneral({ theme: value });
+                                    void updateGeneral({
+                                        typographyScale: value as 'compact' | 'balanced' | 'comfortable',
+                                    });
                                 }}
                             >
-                                <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
+                                <SettingsSelectTrigger>
                                     <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
-                                    {themeOptions.map(opt => (
-                                        <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-medium">{opt.label}</span>
-                                                <Badge variant="outline" className={cn(UI_PRIMITIVES.BADGE_MUTED, "uppercase")}>
-                                                    {opt.type}
-                                                </Badge>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-                            <div className="space-y-2">
-                                <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                    {t('frontend.settings.baseFontSize')}
-                                </label>
-                                <Input
-                                    type="number"
-                                    min={12}
-                                    max={18}
-                                    value={settings?.general.fontSize ?? 14}
-                                    onChange={event => {
-                                        const parsed = Number.parseInt(event.target.value, 10);
-                                        const nextValue = Number.isNaN(parsed) ? 14 : clamp(parsed, 12, 18);
-                                        void updateGeneral({ fontSize: nextValue });
-                                    }}
-                                    className={UI_PRIMITIVES.CONTROL_INPUT}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                    {t('frontend.settings.typographyScale')}
-                                </label>
-                                <Select
-                                    value={settings?.general.typographyScale ?? 'balanced'}
-                                    onValueChange={value => {
-                                        void updateGeneral({
-                                            typographyScale: value as 'compact' | 'balanced' | 'comfortable',
-                                        });
-                                    }}
-                                >
-                                    <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
-                                        {typographyScaleOptions.map(opt => (
-                                            <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                                                {opt.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className={cn(SECTION_CONTAINER_CLASS, "flex flex-col")}>
-                    <div className="mb-6 flex items-center gap-2 px-1">
-                        <IconTypography className="h-4 w-4 text-primary/80" />
-                        <h4 className="text-sm font-bold uppercase text-muted-foreground/80">
-                            {t('frontend.settings.livePreview')}
-                        </h4>
-                    </div>
-
-                    <div className="flex-1 flex flex-col justify-center min-w-0">
-                        <LiveAppPreview
-                            font={resolvedAppFont}
-                            fontSize={settings?.general.fontSize ?? 14}
-                            t={t}
-                        />
-                    </div>
-
-                    <div className="mt-8 flex flex-col gap-3 border-t border-border/10 px-1 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 font-mono text-sm uppercase  text-muted-foreground/50">
-                            <span className="text-primary/70 font-bold">
-                                {themeOptions.find(option => option.value === (settings?.general.theme ?? 'tengra-black'))?.label}
-                            </span>
-                            <div className="h-1 w-1 rounded-full bg-border/40" />
-                            <span>{resolvedAppFont.label}</span>
-                        </div>
-                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 font-mono text-sm font-bold text-muted-foreground/60">
-                            {settings?.general.fontSize}PX
-                        </Badge>
-                    </div>
-                </div>
-            </div>
-
-            {/* Window Configuration Section */}
-            <div className={cn(SECTION_CONTAINER_CLASS, "space-y-8")}>
-                <div className="flex items-center gap-4">
-                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
-                        <IconMaximize className="h-7 w-7" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            {t('frontend.settings.windowConfigurationTitle')}
-                        </h3>
-                        <p className="mt-1 text-sm text-muted-foreground/70">
-                            {t('frontend.settings.windowConfigurationDesc')}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-8 xl:grid-cols-balance-95-105 xl:gap-10">
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="px-1 text-sm font-semibold text-muted-foreground">
-                                {t('frontend.settings.windowResolution')}
-                            </label>
-                            <Select
-                                value={settings?.general.resolution ?? 'auto'}
-                                onValueChange={value => {
-                                    void updateGeneral({ resolution: value });
-                                }}
-                            >
-                                <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
-                                    {resolutionOptions.map(opt => (
-                                        <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                </SettingsSelectTrigger>
+                                <SettingsSelectContent>
+                                    {typographyScaleOptions.map(opt => (
+                                        <SettingsSelectItem key={opt.value} value={opt.value}>
                                             {opt.label}
-                                        </SelectItem>
+                                        </SettingsSelectItem>
                                     ))}
-                                </SelectContent>
+                                </SettingsSelectContent>
                             </Select>
-                        </div>
+                        </SettingsField>
                     </div>
                 </div>
-            </div>
+            </SettingsPanel>
 
-            {/* Terminal Appearance Section */}
-            <div className={cn(SECTION_CONTAINER_CLASS, "space-y-8")}>
-                <div className="flex items-center gap-4">
-                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
-                        <IconTerminal className="h-7 w-7" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            {t('frontend.settings.terminalAppearanceTitle')}
-                        </h3>
-                        <p className="mt-1 text-sm text-muted-foreground/70">
-                            {t('frontend.settings.appearanceDescription')}
-                        </p>
-                    </div>
+            <SettingsPanel
+                title={t('frontend.settings.windowConfigurationTitle')}
+                description={t('frontend.settings.windowConfigurationDesc')}
+                icon={IconMaximize}
+            >
+                <div className="px-6 py-2 space-y-4">
+                    <SettingsField label={t('frontend.settings.windowResolution')}>
+                    <Select
+                        value={settings?.general.resolution ?? 'auto'}
+                        onValueChange={value => {
+                            void updateGeneral({ resolution: value });
+                        }}
+                    >
+                        <SettingsSelectTrigger>
+                            <SelectValue />
+                        </SettingsSelectTrigger>
+                        <SettingsSelectContent>
+                            {resolutionOptions.map(opt => (
+                                <SettingsSelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </SettingsSelectItem>
+                            ))}
+                        </SettingsSelectContent>
+                    </Select>
+                </SettingsField>
+                </div>
+                
+            </SettingsPanel>
+
+            <SettingsPanel
+                title={t('frontend.settings.terminalAppearanceTitle')}
+                description={t('frontend.settings.appearanceDescription')}
+                icon={IconTerminal}
+            >
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 px-6 py-2">
+                    <SettingsField label={t('frontend.terminal.theme')}>
+                        <Select
+                            value={terminalAppearance.themePresetId}
+                            onValueChange={value => {
+                                setTerminalAppearance(p => ({ ...p, themePresetId: value }));
+                            }}
+                        >
+                            <SettingsSelectTrigger>
+                                <SelectValue />
+                            </SettingsSelectTrigger>
+                            <SettingsSelectContent>
+                                {terminalThemeOptions.map(opt => (
+                                    <SettingsSelectItem key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </SettingsSelectItem>
+                                ))}
+                            </SettingsSelectContent>
+                        </Select>
+                    </SettingsField>
+
+                    <SettingsField label={t('frontend.terminal.cursorStyle')}>
+                        <Select
+                            value={terminalAppearance.cursorStyle}
+                            onValueChange={value => {
+                                setTerminalAppearance(p => ({
+                                    ...p,
+                                    cursorStyle: value as typeof p.cursorStyle
+                                }));
+                            }}
+                        >
+                            <SettingsSelectTrigger>
+                                <SelectValue />
+                            </SettingsSelectTrigger>
+                            <SettingsSelectContent>
+                                {terminalCursorOptions.map(opt => (
+                                    <SettingsSelectItem key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </SettingsSelectItem>
+                                ))}
+                            </SettingsSelectContent>
+                        </Select>
+                    </SettingsField>
+
+                    <SettingsField label={t('frontend.settings.terminalFontSize')}>
+                        <SettingsInput
+                            type="number"
+                            min={8}
+                            max={32}
+                            value={terminalAppearance.fontSize}
+                            onChange={event => {
+                                const p = Number(event.target.value);
+                                setTerminalAppearance(prev => ({ ...prev, fontSize: clamp(Number.isFinite(p) ? p : 13, 8, 32) }));
+                            }}
+                        />
+                    </SettingsField>
+
+                    <SettingsField label={t('frontend.terminal.lineHeight')}>
+                        <SettingsInput
+                            type="number"
+                            min={1}
+                            max={2}
+                            step={0.1}
+                            value={terminalAppearance.lineHeight}
+                            onChange={event => {
+                                const p = Number(event.target.value);
+                                setTerminalAppearance(prev => ({ ...prev, lineHeight: clamp(Number.isFinite(p) ? p : 1.2, 1, 2) }));
+                            }}
+                        />
+                    </SettingsField>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 xl:grid-cols-balance-95-105 xl:gap-10">
-                    <div className="space-y-8">
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.terminal.theme')}</label>
-                                    <Select
-                                        value={terminalAppearance.themePresetId}
-                                        onValueChange={value => {
-                                            setTerminalAppearance(p => ({ ...p, themePresetId: value }));
-                                        }}
-                                    >
-                                        <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
-                                            {terminalThemeOptions.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.terminal.cursorStyle')}</label>
-                                    <Select
-                                        value={terminalAppearance.cursorStyle}
-                                        onValueChange={value => {
-                                            setTerminalAppearance(p => ({
-                                                ...p,
-                                                cursorStyle: value as typeof p.cursorStyle
-                                            }));
-                                        }}
-                                    >
-                                        <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
-                                            {terminalCursorOptions.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.settings.terminalFontSize')}</label>
-                                    <Input
-                                        type="number"
-                                        min={8}
-                                        max={32}
-                                        value={terminalAppearance.fontSize}
-                                        onChange={event => {
-                                            const p = Number(event.target.value);
-                                            setTerminalAppearance(prev => ({ ...prev, fontSize: clamp(Number.isFinite(p) ? p : 13, 8, 32) }));
-                                        }}
-                                        className={UI_PRIMITIVES.CONTROL_INPUT}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="px-1 text-sm font-semibold text-muted-foreground">{t('frontend.terminal.lineHeight')}</label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={2}
-                                        step={0.1}
-                                        value={terminalAppearance.lineHeight}
-                                        onChange={event => {
-                                            const p = Number(event.target.value);
-                                            setTerminalAppearance(prev => ({ ...prev, lineHeight: clamp(Number.isFinite(p) ? p : 1.2, 1, 2) }));
-                                        }}
-                                        className={UI_PRIMITIVES.CONTROL_INPUT}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 border-t border-border/10 pt-6">
-                            <AppearanceRow
-                                title={t('frontend.terminal.fontLigatures')}
-                                description={t('frontend.settings.previewBody')}
-                                control={(
-                                    <Switch
-                                        checked={terminalAppearance.ligatures}
-                                        onCheckedChange={checked => setTerminalAppearance(prev => ({ ...prev, ligatures: checked }))}
-                                    />
-                                )}
-                                icon={<IconLuggage className="h-3.5 w-3.5 text-primary opacity-60" />}
+                <div className="px-6 py-2 space-y-3 border-t border-border/10 pt-4">
+                    <SettingsToggleRow
+                        title={t('frontend.terminal.fontLigatures')}
+                        description={t('frontend.settings.previewBody')}
+                        control={(
+                            <SettingsSwitch
+                                checked={terminalAppearance.ligatures}
+                                onCheckedChange={checked => setTerminalAppearance(prev => ({ ...prev, ligatures: checked }))}
                             />
-                            <AppearanceRow
-                                title={t('frontend.terminal.cursorBlink')}
-                                description={t('frontend.settings.terminalAppearanceTitle')}
-                                control={(
-                                    <Switch
-                                        checked={terminalAppearance.cursorBlink}
-                                        onCheckedChange={checked => setTerminalAppearance(prev => ({ ...prev, cursorBlink: checked }))}
-                                    />
-                                )}
-                                icon={<IconRefresh className="h-3.5 w-3.5 text-primary opacity-60" />}
+                        )}
+                        icon={IconLuggage}
+                    />
+                    <SettingsToggleRow
+                        title={t('frontend.terminal.cursorBlink')}
+                        description={t('frontend.settings.terminalAppearanceTitle')}
+                        control={(
+                            <SettingsSwitch
+                                checked={terminalAppearance.cursorBlink}
+                                onCheckedChange={checked => setTerminalAppearance(prev => ({ ...prev, cursorBlink: checked }))}
                             />
-                        </div>
-                    </div>
-
-                    <div className="min-w-0">
-                        <TerminalPreview
-                            cursorStyle={terminalAppearance.cursorStyle}
-                            fontFamily={resolvedTerminalAppearance.fontFamily}
-                            fontSize={resolvedTerminalAppearance.fontSize}
-                            lineHeight={resolvedTerminalAppearance.lineHeight}
-                            theme={resolvedTerminalAppearance.theme}
-                        />
-                    </div>
+                        )}
+                        icon={IconRefresh}
+                    />
+                    <SettingsToggleRow
+                        title={t('frontend.terminal.bellEnabled')}
+                        description={t('frontend.terminal.bellEnabledDesc')}
+                        control={(
+                            <SettingsSwitch
+                                checked={terminalAppearance.bellEnabled}
+                                onCheckedChange={checked => setTerminalAppearance(prev => ({ ...prev, bellEnabled: checked }))}
+                            />
+                        )}
+                        icon={IconTerminal}
+                    />
+                    {terminalAppearance.bellEnabled && (
+                        <SettingsField label={t('frontend.terminal.bellStyle')}>
+                            <Select
+                                value={terminalAppearance.bellStyle}
+                                onValueChange={value => {
+                                    setTerminalAppearance(p => ({
+                                        ...p,
+                                        bellStyle: value as 'none' | 'sound' | 'visual' | 'both'
+                                    }));
+                                }}
+                            >
+                                <SettingsSelectTrigger className="w-[180px]">
+                                    <SelectValue />
+                                </SettingsSelectTrigger>
+                                <SettingsSelectContent>
+                                    <SettingsSelectItem value="none">None</SettingsSelectItem>
+                                    <SettingsSelectItem value="sound">Sound</SettingsSelectItem>
+                                    <SettingsSelectItem value="visual">Visual</SettingsSelectItem>
+                                    <SettingsSelectItem value="both">Both</SettingsSelectItem>
+                                </SettingsSelectContent>
+                            </Select>
+                        </SettingsField>
+                    )}
                 </div>
-            </div>
 
-            {/* Accessibility Section */}
-            <div className={cn(SECTION_CONTAINER_CLASS, "space-y-8")}>
-                <div className="flex items-center gap-4 px-1">
-                    <div className={cn(UI_PRIMITIVES.ICON_WRAPPER, "bg-success/10 text-success shadow-success/10")}>
-                        <IconAccessible className="h-7 w-7" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-foreground">
-                            {t('frontend.settings.accessibility.title')}
-                        </h3>
-                    </div>
+                <div className="min-w-0 py-2 px-6">
+                    <TerminalPreview
+                        cursorStyle={terminalAppearance.cursorStyle}
+                        fontFamily={resolvedTerminalAppearance.fontFamily}
+                        fontSize={resolvedTerminalAppearance.fontSize}
+                        lineHeight={resolvedTerminalAppearance.lineHeight}
+                        theme={resolvedTerminalAppearance.theme}
+                    />
                 </div>
+            </SettingsPanel>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-x-10 xl:gap-y-6">
-                    <div className="space-y-4">
-                        <AppearanceRow
-                            title={t('frontend.settings.accessibility.highContrast')}
-                            description={t('frontend.settings.accessibility.highContrastDesc')}
-                            control={(
-                                <Switch
-                                    checked={a11ySettings.highContrast}
-                                    onCheckedChange={checked => updateSettings({ highContrast: checked })}
-                                />
-                            )}
-                            icon={<IconLuggage className="h-3.5 w-3.5 text-success opacity-60" />}
-                        />
-                        <AppearanceRow
-                            title={t('frontend.settings.accessibility.reducedMotion')}
-                            description={t('frontend.settings.accessibility.reducedMotionDesc')}
-                            control={(
-                                <Switch
-                                    checked={a11ySettings.reducedMotion}
-                                    onCheckedChange={checked => updateSettings({ reducedMotion: checked })}
-                                />
-                            )}
-                            icon={<IconRefresh className="h-3.5 w-3.5 text-success opacity-60" />}
-                        />
-                    </div>
-
-                    <div className="space-y-4">
-                        <AppearanceRow
-                            title={t('frontend.settings.accessibility.enhancedFocus')}
-                            description={t('frontend.settings.accessibility.enhancedFocusDesc')}
-                            control={(
-                                <Switch
-                                    checked={a11ySettings.enhancedFocusIndicators}
-                                    onCheckedChange={checked => updateSettings({ enhancedFocusIndicators: checked })}
-                                />
-                            )}
-                            icon={<IconPointer className="h-3.5 w-3.5 text-success opacity-60" />}
-                        />
-                        <AppearanceRow
-                            title={t('frontend.settings.accessibility.screenReader')}
-                            description={t('frontend.settings.accessibility.screenReaderDesc')}
-                            control={(
-                                <Switch
-                                    checked={a11ySettings.screenReaderAnnouncements}
-                                    onCheckedChange={checked => updateSettings({ screenReaderAnnouncements: checked })}
-                                />
-                            )}
-                            icon={<IconRefresh className="h-3.5 w-3.5 text-success opacity-60" />}
-                        />
-                    </div>
+            <SettingsPanel
+                title={t('frontend.settings.accessibility.title')}
+                icon={IconAccessible}
+            >
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 px-6 py-2">
+                    <SettingsToggleRow
+                        title={t('frontend.settings.accessibility.highContrast')}
+                        description={t('frontend.settings.accessibility.highContrastDesc')}
+                        control={(
+                            <SettingsSwitch
+                                checked={a11ySettings.highContrast}
+                                onCheckedChange={checked => updateSettings({ highContrast: checked })}
+                            />
+                        )}
+                        icon={IconLuggage}
+                    />
+                    <SettingsToggleRow
+                        title={t('frontend.settings.accessibility.reducedMotion')}
+                        description={t('frontend.settings.accessibility.reducedMotionDesc')}
+                        control={(
+                            <SettingsSwitch
+                                checked={a11ySettings.reducedMotion}
+                                onCheckedChange={checked => updateSettings({ reducedMotion: checked })}
+                            />
+                        )}
+                        icon={IconRefresh}
+                    />
+                    <SettingsToggleRow
+                        title={t('frontend.settings.accessibility.enhancedFocus')}
+                        description={t('frontend.settings.accessibility.enhancedFocusDesc')}
+                        control={(
+                            <SettingsSwitch
+                                checked={a11ySettings.enhancedFocusIndicators}
+                                onCheckedChange={checked => updateSettings({ enhancedFocusIndicators: checked })}
+                            />
+                        )}
+                        icon={IconPointer}
+                    />
+                    <SettingsToggleRow
+                        title={t('frontend.settings.accessibility.screenReader')}
+                        description={t('frontend.settings.accessibility.screenReaderDesc')}
+                        control={(
+                            <SettingsSwitch
+                                checked={a11ySettings.screenReaderAnnouncements}
+                                onCheckedChange={checked => updateSettings({ screenReaderAnnouncements: checked })}
+                            />
+                        )}
+                        icon={IconRefresh}
+                    />
                 </div>
-            </div>
-        </div>
+            </SettingsPanel>
+        </SettingsTabLayout>
     );
 };
-

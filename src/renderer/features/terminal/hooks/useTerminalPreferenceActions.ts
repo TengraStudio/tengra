@@ -68,6 +68,8 @@ export function useTerminalPreferenceActions({
             cursorBlink: patch.cursorBlink ?? prev.cursorBlink,
             fontSize: clamp(patch.fontSize ?? prev.fontSize, 8, 32),
             lineHeight: clamp(patch.lineHeight ?? prev.lineHeight, 1, 2),
+            bellEnabled: patch.bellEnabled ?? prev.bellEnabled,
+            bellStyle: patch.bellStyle ?? prev.bellStyle,
             customTheme: patch.customTheme !== undefined ? patch.customTheme : prev.customTheme,
         }));
     }, [setTerminalAppearance]);

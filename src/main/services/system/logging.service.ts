@@ -18,6 +18,8 @@ import { JsonValue } from '@shared/types/common';
 import { BrowserWindow, IpcMainEvent } from 'electron';
 
 export class LoggingService extends BaseService {
+    static readonly serviceName = 'loggingService';
+    static readonly dependencies = [] as const;
     private logBuffer: Array<{
         id: string
         timestamp: Date

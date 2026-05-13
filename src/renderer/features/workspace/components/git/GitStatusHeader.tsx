@@ -30,7 +30,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
     return (
         <div className="space-y-6">
             <div className="space-y-3">
-                <span className="typo-overline font-bold text-muted-foreground/60 uppercase px-1">{t('frontend.workspaceDashboard.gitSectionStatus')}</span>
+                <span className="text-[10px] font-medium text-muted-foreground/60 px-1">{t('frontend.workspaceDashboard.gitSectionStatus')}</span>
 
                 <div className="p-4 rounded-xl bg-card border border-border/40 space-y-5">
                     {/* Primary Status */}
@@ -48,7 +48,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                                  <span className="cursor-help border-b border-dotted border-amber-500/50" title="Dirty status means you have uncommitted changes in your workspace.">{t('frontend.workspaceDashboard.dirty')}</span>}
                             </span>
                         </div>
-                        <span className="typo-overline font-bold text-muted-foreground/40 bg-muted/50 px-2 py-0.5 rounded uppercase ">
+                        <span className="text-[10px] font-medium text-muted-foreground/40 bg-muted/50 px-2 py-0.5 rounded">
                             {gitData.branch || '...'}
                         </span>
                     </div>
@@ -58,7 +58,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                     {/* Detailed Reason (Why it's dirty) */}
                     {gitData.isClean === false ? (
                         <div className="grid grid-cols-1 gap-3">
-                            <div className="typo-overline font-bold text-muted-foreground/30 uppercase mb-1 px-1">{t('frontend.workspaceDashboard.status')}</div>
+                            <div className="text-[10px] font-medium text-muted-foreground/30 mb-1 px-1">{t('frontend.workspaceDashboard.status')}</div>
                             <div className="space-y-2.5">
                                 {addedCount > 0 && (
                                     <div className="flex items-center justify-between text-sm px-1">

@@ -94,6 +94,13 @@ export class Container {
         }
     }
 
+    /**
+     * Get all registered service names.
+     */
+    public getRegisteredNames(): string[] {
+        return Array.from(this.services.keys());
+    }
+
     private initPromises: Map<string, Promise<void>> = new Map();
 
     /**

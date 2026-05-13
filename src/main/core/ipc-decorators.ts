@@ -6,15 +6,15 @@ import type { RuntimeValue as SharedRuntimeValue } from '@shared/types/common';
 import type { IpcMainInvokeEvent } from 'electron';
 import type { ZodTypeAny } from 'zod';
 
-import { IPC_METADATA_KEY, type IpcMethod } from './ipc-metadata';
+import type { IpcMethod } from './ipc-metadata';
 
 type ValidatedHandlerOptions = NonNullable<Parameters<typeof createValidatedIpcHandler>[2]>;
-export { IPC_METADATA_KEY };
+export const IPC_METADATA_KEY = '_ipc_methods';
 export type { IpcMethod };
 
 type IpcMethodHandler = (...args: (RuntimeValue | IpcMainInvokeEvent)[]) => RuntimeValue | Promise<RuntimeValue> | object | Promise<object>;
 type IpcService = {
-    constructor: { [IPC_METADATA_KEY]?: IpcMethod[]; name?: string };
+    constructor: Record<string, IpcMethod[] | undefined> & { name?: string };
     name?: string;
 } & Record<string | symbol, RuntimeValue | IpcMethodHandler>;
 
@@ -25,6 +25,7 @@ interface IpcChannelOptions {
     isBatchable?: boolean;
     argsSchema?: ZodTypeAny;
     defaultValue?: RuntimeValue;
+    wrapResponse?: boolean;
 }
 
 export function getIpcMethodsForService(service: object): IpcMethod[] {
@@ -33,7 +34,7 @@ export function getIpcMethodsForService(service: object): IpcMethod[] {
     }
     const serviceRecord = service as IpcService;
     const constructor = serviceRecord.constructor;
-    return constructor?.[IPC_METADATA_KEY] || [];
+    return constructor?.['_ipc_methods'] || [];
 }
 
 /**
@@ -77,12 +78,17 @@ export function ipc(channelOrOptions?: string | IpcChannelOptions): MethodDecora
     };
 }
 
+
 /**
  * Automatically registers all @ipc decorated methods for a service instance.
  * @param service - The service instance to register
  * @param validateSender - Optional validator for the IPC sender
  */
-export function registerServiceIpc(service: object, validateSender?: SenderValidator): void {
+export function registerServiceIpc(
+    service: object,
+    validateSender?: SenderValidator,
+    options: { wrapResponse?: boolean } = {}
+): void {
     if (!service) {
         appLogger.warn('IPC', 'Attempted to register IPC for an undefined service');
         return;
@@ -95,7 +101,7 @@ export function registerServiceIpc(service: object, validateSender?: SenderValid
     const methods: IpcMethod[] = getIpcMethodsForService(service);
     
     if (methods.length === 0) {
-        appLogger.warn('IPC', `No @ipc methods found for service: ${serviceName}`);
+        appLogger.debug('IPC', `No @ipc methods found for service: ${serviceName}`);
         return;
     }
 
@@ -137,7 +143,7 @@ export function registerServiceIpc(service: object, validateSender?: SenderValid
                     argsSchema: method.argsSchema as ValidatedHandlerOptions['argsSchema'],
                     defaultValue: method.defaultValue
                 })
-                : createIpcHandler(channel, finalHandler);
+                : createIpcHandler(channel, finalHandler, { wrapResponse: options.wrapResponse });
 
             safeHandle(channel, wrappedHandler);
             if (isBatchable) {

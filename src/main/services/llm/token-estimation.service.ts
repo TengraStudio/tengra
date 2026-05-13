@@ -29,6 +29,8 @@ export interface TokenEstimate {
  * Token Estimation Service
  */
 export class TokenEstimationService {
+    static readonly serviceName = 'tokenEstimationService';
+    static readonly dependencies = [] as const;
     private dynamicLimits = new Map<string, number>();
     private tokenizers = new Map<string, Tiktoken>();
 

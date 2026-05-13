@@ -75,6 +75,8 @@ export interface TaskProcess {
 }
 
 export class ProcessService extends BaseService {
+    static readonly serviceName = 'processService';
+    static readonly dependencies = ['mainWindowProvider'] as const;
     private processes: Map<string, TaskProcess> = new Map();
     private shell: string;
     private shellArgsPrefix: string[];

@@ -152,7 +152,7 @@ export interface Toast {
     type: 'info' | 'success' | 'error' | 'warning'
 }
 
-export type SystemMode = 'thinking' | 'agent' | 'fast' | 'architect';
+export type SystemMode = 'instant' | 'ask' | 'thinking' | 'agent' | 'fast' | 'architect';
 
 export interface ChatRequest {
     messages: Message[]

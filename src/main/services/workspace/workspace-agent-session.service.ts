@@ -353,6 +353,8 @@ export interface WorkspaceAgentSessionDependencies {
 }
 
 export class WorkspaceAgentSessionService extends BaseService {
+    static readonly serviceName = 'workspaceAgentSessionService';
+    static readonly dependencies = ['deps'] as const;
     private readonly databaseService: DatabaseService;
     private readonly modelRegistryService?: ModelRegistryService;
     private readonly memoryContextService: MemoryContextService;

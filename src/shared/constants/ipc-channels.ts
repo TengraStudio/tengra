@@ -158,6 +158,8 @@ export const AUTH_CHANNELS = {
   TOUCH_SESSION: 'auth:touch-session',
   UNLINK_ACCOUNT: 'auth:unlink-account',
   UNLINK_PROVIDER: 'auth:unlink-provider',
+  CURSOR_SEAMLESS_LOGIN: 'auth:cursor-seamless-login',
+  CURSOR_COMPLETE_AUTH: 'auth:cursor-complete-auth',
   ACCOUNT_CHANGED_EVENT: 'auth:account-changed',
 } as const;
 
@@ -1093,6 +1095,8 @@ export const PROXY_CHANNELS = {
   INSTALL_MARKETPLACE_SKILL: 'proxy:installMarketplaceSkill',
   OLLAMA_LOGIN: 'proxy:ollamaLogin',
   OLLAMA_SIGNOUT: 'proxy:ollamaSignout',
+  COMPLETE_CURSOR_AUTH: 'proxy:completeCursorAuth',
+  GET_CURSOR_QUOTA: 'proxy:getCursorQuota',
 } as const;
 
 /** Proxy embed channels */
@@ -1264,6 +1268,8 @@ export const CODE_CHANNELS = {
   QUERY_SYMBOLS: 'code:querySymbols',
   SCAN_TODOS: 'code:scanTodos',
   SEARCH_FILES: 'code:searchFiles',
+  SEARCH_FILES_STREAM: 'code:searchFilesStream',
+  SEARCH_FILES_CANCEL: 'code:searchFilesCancel',
 } as const;
 
 /** Code sandbox execution channels */
@@ -1305,6 +1311,18 @@ export const SHARED_PROMPTS_CHANNELS = {
   LIST: 'shared-prompts:list',
   UPDATE: 'shared-prompts:update',
 } as const;
+
+/** LSP (Language Server Protocol) channels */
+export const LSP_CHANNELS = {
+  GET_HOVER: 'lsp:getHover',
+  GET_REFERENCES: 'lsp:getReferences',
+  RENAME: 'lsp:rename',
+  FORMAT: 'lsp:format',
+  GET_SIGNATURE_HELP: 'lsp:getSignatureHelp',
+  GET_INLAY_HINTS: 'lsp:getInlayHints',
+  GET_WORKSPACE_SYMBOLS: 'lsp:getWorkspaceSymbols',
+} as const;
+
 
 // ---------------------------------------------------------------------------
 // Tools
@@ -1381,6 +1399,7 @@ export const CHANNELS = {
   files: FILES_CHANNELS,
   gallery: GALLERY_CHANNELS,
   git: GIT_CHANNELS,
+  lsp: LSP_CHANNELS,
   health: HEALTH_CHANNELS,
   hf: HF_CHANNELS,
   hfFinetune: HF_FINETUNE_CHANNELS,
@@ -1458,6 +1477,7 @@ export const IPC_CHANNELS = {
   HF_VERSIONS: HF_VERSIONS_CHANNELS,
   HF_WATCHLIST: HF_WATCHLIST_CHANNELS,
   LLAMA: LLAMA_CHANNELS,
+  LSP: LSP_CHANNELS,
   KEY_ROTATION: KEY_ROTATION_CHANNELS,
   LAZY: LAZY_CHANNELS,
   LOG: LOG_CHANNELS,

@@ -37,6 +37,8 @@ const CONTRACT_INFO: IpcContractVersionInfo = {
 };
 
 export class SystemService extends BaseService implements ISystemService {
+    static readonly serviceName = 'systemService';
+    static readonly dependencies = [] as const;
     private systemInfo?: SystemInfo;
 
     constructor() {

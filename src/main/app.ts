@@ -11,6 +11,7 @@
 import * as path from 'path';
 
 import { appLogger, LogLevel } from '@main/logging/logger';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -167,6 +168,72 @@ if (process.platform === 'win32') {
 
 // Security: Pre-register schemes before app is ready
 preRegisterProtocols();
+
+// Deep Linking & Single Instance Handling
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', (_event, commandLine) => {
+        // Someone tried to run a second instance, we should focus our window.
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) {mainWindow.restore();}
+            mainWindow.focus();
+        }
+        
+        // Protocol handler for Windows
+        // argv: [executable, ..., url]
+        const url = commandLine.find(arg => arg.startsWith('cursor://'));
+        if (url) {
+            handleDeepLink(url);
+        }
+    });
+
+    // Protocol handler for macOS
+    app.on('open-url', (event, url) => {
+        event.preventDefault();
+        handleDeepLink(url);
+    });
+}
+
+function handleDeepLink(url: string) {
+    appLogger.info('Main', `Handling deep link: ${url}`);
+    // Forward to ProxyService or handle directly
+    void import('@main/startup/services').then(({ container }) => {
+        try {
+            const proxyService = container.resolve<ProxyService>('proxyService');
+            if (proxyService && url.startsWith('cursor://')) {
+                const rawUrl = url.replace('cursor://', 'https://');
+                const parsed = new URL(rawUrl);
+                
+                let session = parsed.searchParams.get('session');
+                
+                // Fallback 1: Check fragment (hash)
+                if (!session && parsed.hash) {
+                    const fragment = new URLSearchParams(parsed.hash.substring(1));
+                    session = fragment.get('session');
+                }
+                
+                // Fallback 2: Check raw string if URL parsing missed it (e.g. cursor://session=XXX)
+                if (!session && url.includes('session=')) {
+                    session = url.split('session=')[1].split('&')[0].split('#')[0];
+                }
+
+                if (session) {
+                    proxyService.completeCursorAuth(decodeURIComponent(session))
+                        .then((res: { success: boolean; error?: string }) => appLogger.info('Main', `Seamless auth result: ${JSON.stringify(res)}`))
+                        .catch((err: Error) => appLogger.error('Main', `Seamless auth failed: ${err}`));
+                } else {
+                    appLogger.warn('Main', `No session found in deep link: ${url}`);
+                }
+            }
+        } catch (err) {
+            appLogger.error('Main', `Failed to process deep link: ${err}`);
+        }
+    });
+}
 
 app.whenReady().then(async () => {
     // 0. Initialize Logger IMMEDIATELY

@@ -90,6 +90,7 @@ export function useSessionConversationStream(
                         intent: intentClassification,
                         isStreaming: true,
                         language,
+                        systemMode: 'agent',
                     }),
                 },
             ];

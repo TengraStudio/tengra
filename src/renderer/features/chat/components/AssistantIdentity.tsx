@@ -8,15 +8,9 @@
  * (at your option) any later version.
  */
 
-import LogoAntigravity from '@assets/antigravity.svg?url';
-import LogoOpenAI from '@assets/chatgpt.svg?url';
-import LogoClaude from '@assets/claude.svg?url';
-import LogoCopilot from '@assets/copilot.svg?url';
-import LogoOllama from '@assets/ollama.svg?url';
 import React from 'react';
 
-import { useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils';
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 
 interface AssistantIdentityProps {
     model?: string
@@ -24,92 +18,14 @@ interface AssistantIdentityProps {
     backend?: string
 }
 
-interface BrandConfig {
-    bgClass: string
-    borderClass: string
-    titleKey: string
-    content: (label: string) => React.ReactNode
-    extraImgClass?: string
-}
-
-type ProviderKey = 'openai' | 'anthropic' | 'antigravity' | 'copilot' | 'groq' | 'ollama';
-type ModelKey = 'llama' | 'mistral' | 'deepseek' | 'qwen' | 'phi';
-
-const PROVIDER_CONFIGS: Record<ProviderKey, BrandConfig> = {
-    openai: { bgClass: 'bg-success/10', borderClass: 'border-success/10', titleKey: 'assistantIdentity.openai', content: (label) => <img src={LogoOpenAI} className="w-full h-full opacity-70 theme-logo-invert" alt={label} /> },
-    anthropic: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.anthropic', content: (label) => <img src={LogoClaude} className="w-full h-full opacity-70 theme-logo-invert" alt={label} /> },
-    antigravity: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.antigravity', content: (label) => <img src={LogoAntigravity} className="w-full h-full opacity-70" alt={label} /> },
-    copilot: { bgClass: 'bg-background', borderClass: 'border-border/50', titleKey: 'assistantIdentity.copilot', content: (label) => <img src={LogoCopilot} className="w-full h-full opacity-70 theme-logo-invert" alt={label} /> },
-    groq: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.groq', content: () => <span className="font-bold text-warning text-sm">G</span> },
-    ollama: { bgClass: 'bg-muted/30', borderClass: 'border-border/50', titleKey: 'assistantIdentity.ollama', content: (label) => <img src={LogoOllama} className="w-full h-full opacity-50 theme-logo-invert" alt={label} /> },
-};
-
-const MODEL_CONFIGS: Record<ModelKey, BrandConfig> = {
-    llama: { bgClass: 'bg-primary/10', borderClass: 'border-primary/10', titleKey: 'assistantIdentity.llama', content: () => <span className="font-bold text-primary text-sm">LL</span> },
-    mistral: { bgClass: 'bg-warning/20', borderClass: 'border-warning/40', titleKey: 'assistantIdentity.mistral', content: () => <span className="font-bold text-warning text-sm">M</span> },
-    deepseek: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.deepseek', content: () => <span className="font-bold text-info text-sm">DS</span> },
-    qwen: { bgClass: 'bg-accent/20', borderClass: 'border-accent/40', titleKey: 'assistantIdentity.qwen', content: () => <span className="font-bold text-accent text-sm">Q</span> },
-    phi: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.phi', content: () => <span className="font-bold text-info text-sm">Φ</span> },
-};
-
-const PROVIDER_MATCHERS: { keywords: string[]; key: ProviderKey }[] = [
-    { keywords: ['openai', 'codex', 'gpt'], key: 'openai' },
-    { keywords: ['anthropic', 'claude'], key: 'anthropic' },
-    { keywords: ['antigravity'], key: 'antigravity' },
-    { keywords: ['github', 'copilot'], key: 'copilot' },
-    { keywords: ['groq'], key: 'groq' },
-];
-
-const MODEL_MATCHERS: { keywords: string[]; key: ModelKey }[] = [
-    { keywords: ['llama'], key: 'llama' },
-    { keywords: ['mistral', 'mixtral'], key: 'mistral' },
-    { keywords: ['deepseek'], key: 'deepseek' },
-    { keywords: ['qwen'], key: 'qwen' },
-    { keywords: ['phi'], key: 'phi' },
-];
-
-function inferProvider(modelName: string): string {
-    if (modelName.startsWith('gpt-') || modelName.startsWith('o1-')) { return 'openai'; }
-    if (modelName.startsWith('claude-')) { return 'anthropic'; }
-    if (modelName.startsWith('grok-')) { return 'groq'; }
-    if (modelName.startsWith('antigravity-')) { return 'antigravity'; }
-    return '';
-}
-
-function findConfig(provider: string, modelName: string): BrandConfig {
-    for (const m of PROVIDER_MATCHERS) {
-        if (m.keywords.some(k => provider.includes(k))) { return PROVIDER_CONFIGS[m.key]; }
-    }
-    for (const m of MODEL_MATCHERS) {
-        if (m.keywords.some(k => modelName.includes(k))) { return MODEL_CONFIGS[m.key]; }
-    }
-    return PROVIDER_CONFIGS.ollama;
-}
-
-const BrandIcon: React.FC<{ config: BrandConfig }> = ({ config }) => {
-    const { t } = useTranslation();
-    const label = t(config.titleKey);
-
+export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, provider, backend }) => {
     return (
-        <div 
-            className={cn(
-                'w-6 h-6 rounded-md border flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1',
-                config.bgClass,
-                config.borderClass
-            )} 
-            title={label}
-        >
-            {config.content(label)}
-        </div>
+        <ProviderIcon 
+            model={model}
+            provider={provider}
+            backend={backend}
+            variant="minimal"
+            containerClassName="mt-1.5 w-6 h-6"
+        />
     );
 };
-
-export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, provider, backend }) => {
-    const modelName = (model ?? '').toLowerCase();
-    const inferred = inferProvider(modelName);
-    const p = (provider ?? backend ?? (inferred !== '' ? inferred : 'ollama')).toLowerCase();
-    const config = findConfig(p, modelName);
-
-    return <BrandIcon config={config} />;
-};
-

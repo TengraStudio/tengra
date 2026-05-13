@@ -30,6 +30,8 @@ interface ExternalDependencyAssessment {
 }
 
 export class ExternalRuntimeDependencyService extends BaseService {
+    static readonly serviceName = 'externalRuntimeDependencyService';
+    static readonly dependencies = [] as const;
     private static readonly MESSAGE_KEY = {
         OLLAMA_NOT_INSTALLED: 'runtime.health.ollama.notInstalled',
         OLLAMA_NOT_RUNNING: 'runtime.health.ollama.notRunning',

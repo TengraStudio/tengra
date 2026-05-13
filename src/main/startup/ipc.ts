@@ -68,7 +68,6 @@ export function registerIpcHandlers(
         { name: 'gitService', service: services.gitService },
         { name: 'terminalService', service: services.terminalService },
         { name: 'terminalProfileService', service: services.terminalProfileService },
-        { name: 'terminalSmartService', service: services.terminalSmartService },
         { name: 'dockerService', service: container.resolve<DockerService>('dockerService') },
         { name: 'ollamaService', service: services.ollamaService },
         { name: 'ollamaHealthService', service: services.ollamaHealthService },
@@ -108,11 +107,13 @@ export function registerIpcHandlers(
         if (service) { 
             const ipcMethods = getIpcMethodsForService(service);
             if (ipcMethods.length === 0) {
-                appLogger.warn('IPC', `Skipping IPC registration for service without @ipc methods: ${name}`);
+                appLogger.debug('IPC', `Skipping IPC registration for service without @ipc methods: ${name}`);
                 continue;
             }
             if (name === 'proxyService' || name === 'keyRotationService' || name === 'agentService' || name === 'databaseService' || name === 'embeddingService' || name === 'llamaService' || name === 'ollamaService' || name === 'ollamaHealthService' || name === 'multiModelComparisonService' || name === 'modelCollaborationService' || name === 'toolsService' || name === 'mcpPluginService') {
                 registerServiceIpc(service, createMainWindowSenderValidator(getMainWindow, `${name} operation`));
+            } else if (name === 'advancedMemoryService') {
+                registerServiceIpc(service, undefined, { wrapResponse: true });
             } else if (name === 'extensionService') {
                 registerServiceIpc(service, getMainWindow);
             } else {
@@ -178,17 +179,17 @@ export function registerPostStartupIpcHandlers(
     if (getIpcMethodsForService(services.exportService).length > 0) {
         registerServiceIpc(services.exportService, createMainWindowSenderValidator(getMainWindow, 'export operation'));
     } else {
-        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: exportService');
+        appLogger.debug('IPC', 'Skipping IPC registration for service without @ipc methods: exportService');
     }
     if (getIpcMethodsForService(services.promptTemplatesService).length > 0) {
         registerServiceIpc(services.promptTemplatesService, createMainWindowSenderValidator(getMainWindow, 'prompt-templates operation'));
     } else {
-        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: promptTemplatesService');
+        appLogger.debug('IPC', 'Skipping IPC registration for service without @ipc methods: promptTemplatesService');
     }
     if (getIpcMethodsForService(services.galleryService).length > 0) {
         registerServiceIpc(services.galleryService);
     } else {
-        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: galleryService');
+        appLogger.debug('IPC', 'Skipping IPC registration for service without @ipc methods: galleryService');
     }
 }
 
@@ -199,7 +200,7 @@ export function registerPostInteractiveIpcHandlers(
     if (getIpcMethodsForService(services.voiceService).length > 0) {
         registerServiceIpc(services.voiceService);
     } else {
-        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: voiceService');
+        appLogger.debug('IPC', 'Skipping IPC registration for service without @ipc methods: voiceService');
     }
 }
 
@@ -211,7 +212,7 @@ export async function registerDeferredIpcHandlers(
     if (getIpcMethodsForService(sshService).length > 0) {
         registerServiceIpc(sshService, createMainWindowSenderValidator(getMainWindow, 'ssh operation'));
     } else {
-        appLogger.warn('IPC', 'Skipping IPC registration for service without @ipc methods: sshService');
+        appLogger.debug('IPC', 'Skipping IPC registration for service without @ipc methods: sshService');
     }
 }
 

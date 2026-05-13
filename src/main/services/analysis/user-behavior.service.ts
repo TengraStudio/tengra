@@ -22,6 +22,8 @@ import { SystemEvents } from '@shared/types/events';
  * Part of FEAT-05: User behavior learning.
  */
 export class UserBehaviorService extends BaseService {
+    static readonly serviceName = 'userBehaviorService';
+    static readonly dependencies = ['database', 'eventBus'] as const;
     constructor(
         private database: DatabaseService,
         private eventBus: EventBusService

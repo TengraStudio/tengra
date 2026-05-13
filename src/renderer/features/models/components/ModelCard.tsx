@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { IconDownload, IconSparkles, IconStar } from '@tabler/icons-react';
+import { IconCircleCheck, IconDownload, IconSparkles, IconStar } from '@tabler/icons-react';
 import React, { memo } from 'react';
 
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 import { HFModel, OllamaLibraryModel, UnifiedModel } from '@/features/models/types';
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
@@ -84,11 +85,24 @@ interface ModelHeaderProps {
 const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeContent, t }) => (
     <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-2">
-            <div className={cn('text-sm font-bold px-3 py-1.5 rounded-xl shadow-sm', isOllama ? 'bg-warning/20 text-warning border border-warning/40' : 'bg-warning/20 text-warning-foreground border border-warning/40')}>
-                {isOllama ? 'OLLAMA' : 'HUGGINGFACE'}
+            <div className={cn(
+                'flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl shadow-sm border transition-all',
+                isOllama 
+                    ? 'bg-warning/10 text-warning border-warning/30 group-hover:bg-warning/20' 
+                    : 'bg-primary/5 text-primary border-primary/20 group-hover:bg-primary/10'
+            )}>
+                <ProviderIcon 
+                    provider={isOllama ? 'ollama' : 'huggingface'} 
+                    variant="minimal" 
+                    size={14} 
+                    className="opacity-80" 
+                    containerClassName="bg-transparent border-none p-0 h-auto w-auto"
+                />
+                <span className="tracking-wider uppercase">{isOllama ? 'OLLAMA' : 'HUGGINGFACE'}</span>
             </div>
             {isInstalled && (
-                <div className="text-sm font-bold px-3 py-1.5 rounded-xl bg-success/20 text-success border border-success/20 shadow-sm">
+                <div className="text-sm font-bold px-3 py-1.5 rounded-xl bg-success/20 text-success border border-success/20 shadow-sm flex items-center gap-1.5">
+                    <IconCircleCheck className="w-3.5 h-3.5" />
                     {t('frontend.modelExplorer.pulled')}
                 </div>
             )}

@@ -98,6 +98,8 @@ export interface SessionConversationDependencies {
 }
 
 export class SessionConversationService extends BaseService {
+    static readonly serviceName = 'sessionConversationService';
+    static readonly dependencies = ['deps'] as const;
     private readonly chatSessionRegistryService: ChatSessionRegistryService;
     private readonly memoryContextService: MemoryContextService;
     private readonly brainService: BrainService;
@@ -204,19 +206,6 @@ export class SessionConversationService extends BaseService {
         finalMessages: Message[],
         sources: string[]
     ) {
-        if (sanitized.provider === 'opencode') {
-            const res = await this.deps.llmService.chatOpenCode(finalMessages, sanitized.model, sanitized.tools);
-            await this.recordTokens(sanitized, res, finalMessages);
-            return {
-                content: res.content,
-                reasoning: res.reasoning_content,
-                images: res.images,
-                toolCalls: res.tool_calls,
-                role: 'assistant' as const,
-                sources,
-            };
-        }
-
         const res = await this.deps.llmService.chat(finalMessages, sanitized.model, sanitized.tools, sanitized.provider, {
             workspaceRoot: sanitized.workspaceId ? undefined : path.join(app.getPath('userData'), 'runtime', 'sessions', sanitized.chatId ?? 'default')
         });
@@ -313,37 +302,22 @@ export class SessionConversationService extends BaseService {
 
         try {
             await this.chatSessionRegistryService.markStreaming(sanitized.chatId);
-            if (sanitized.provider === 'opencode') {
-                await this.handleOpencodeStream({
-                    messages: finalMessages,
-                    originalMessages: sanitized.messages,
-                    model: sanitized.model,
-                    tools: sanitized.tools,
-                    chatId: sanitized.chatId,
-                    event,
-                    signal,
-                    systemMode: sanitized.systemMode,
-                    assistantId: sanitized.assistantId,
-                    streamId: sanitized.streamId,
-                });
-            } else {
-                await this.handleProxyStream({
-                    messages: finalMessages,
-                    originalMessages: sanitized.messages,
-                    model: sanitized.model,
-                    tools: sanitized.tools,
-                    provider: sanitized.provider,
-                    chatId: sanitized.chatId,
-                    event,
-                    systemMode: sanitized.systemMode,
-                    workspaceId: sanitized.workspaceId,
-                    signal,
-                    reasoningEffort,
-                    accountId,
-                    assistantId: sanitized.assistantId,
-                    streamId: sanitized.streamId,
-                });
-            }
+            await this.handleProxyStream({
+                messages: finalMessages,
+                originalMessages: sanitized.messages,
+                model: sanitized.model,
+                tools: sanitized.tools,
+                provider: sanitized.provider,
+                chatId: sanitized.chatId,
+                event,
+                systemMode: sanitized.systemMode,
+                workspaceId: sanitized.workspaceId,
+                signal,
+                reasoningEffort,
+                accountId,
+                assistantId: sanitized.assistantId,
+                streamId: sanitized.streamId,
+            });
         } catch (error) {
             if ((error as Error).name === 'AbortError') {
                 appLogger.info('Chat', `[ChatStream] Stream aborted by user: ${sanitized.chatId}`);
@@ -498,81 +472,6 @@ export class SessionConversationService extends BaseService {
     private shouldInjectRAGContext(provider: string): boolean {
         const normalized = provider.trim().toLowerCase();
         return normalized === 'ollama' || normalized === 'opencode' || normalized === 'local-ai';
-    }
-
-    private async handleOpencodeStream(params: {
-        messages: Message[],
-        originalMessages: Message[],
-        model: string,
-        tools: ToolDefinition[] | undefined,
-        chatId: string,
-        event: IpcMainInvokeEvent,
-        signal?: AbortSignal,
-        systemMode?: SystemMode,
-        assistantId?: string,
-        streamId?: string,
-    }) {
-        const { messages, originalMessages, model, tools, chatId, event, signal, systemMode, assistantId, streamId } = params;
-        const evidence = createSessionStreamEvidenceState();
-        let streamChunkCount = 0;
-        let forwardedChunkCount = 0;
-
-        try {
-            appLogger.info(
-                'Chat',
-                `[ChatStream:OpenCode] stream-start chatId=${chatId} model=${model} messages=${messages.length} tools=${tools?.length ?? 0}`
-            );
-            for await (const chunk of this.deps.llmService.chatOpenCodeStream(messages, model, tools, signal)) {
-                streamChunkCount++;
-                applySessionStreamChunk(evidence, chunk);
-                if (!safeSendConversationChunk(event.sender, { ...chunk, chatId, streamId, provider: 'opencode', model })) {
-                    appLogger.warn(
-                        'Chat',
-                        `[ChatStream:OpenCode] sender dropped chunk chatId=${chatId} chunk=${streamChunkCount}`
-                    );
-                    break;
-                }
-                forwardedChunkCount++;
-            }
-        } finally {
-            appLogger.info(
-                'Chat',
-                `[ChatStream:OpenCode] stream-end chatId=${chatId} chunks=${streamChunkCount} forwarded=${forwardedChunkCount} contentLen=${evidence.fullContent.length} reasoningLen=${evidence.fullReasoning.length} toolCalls=${evidence.toolCalls.length}`
-            );
-            // Save partial response if aborted or finished
-            if (evidence.fullContent || evidence.fullReasoning) {
-                await this.persistStreamedAssistantMessage({
-                    chatId,
-                    workspaceId: undefined,
-                    messages: originalMessages,
-                    systemMode,
-                    content: evidence.fullContent,
-                    reasoning: evidence.fullReasoning,
-                    toolCalls: evidence.toolCalls,
-                    toolResults: undefined, // Tools not yet executed in stream finally
-                    model,
-                    provider: 'opencode',
-                    assistantId,
-                });
-            }
-
-            // Fallback estimation
-            if (evidence.totalCompletion === 0 && evidence.fullContent.length > 0) {
-                evidence.totalCompletion = estimateTokens(evidence.fullContent);
-            }
-
-            if (evidence.totalPrompt > 0 || evidence.totalCompletion > 0) {
-                await recordConversationTokens({
-                    databaseService: this.deps.databaseService,
-                    chatId,
-                    provider: 'opencode',
-                    model,
-                    promptTokens: evidence.totalPrompt,
-                    completionTokens: evidence.totalCompletion,
-                    messages: originalMessages,
-                });
-            }
-        }
     }
 
     private async handleProxyStream(params: {
@@ -814,22 +713,41 @@ export class SessionConversationService extends BaseService {
         assistantContent: string;
         reasoning?: string;
         toolCalls?: ToolCall[];
-    }): void {
-        this.memoryContextService.captureConversation(params);
+    }) {
+        const { chatId, workspaceId, provider, model, messages, assistantContent, reasoning, toolCalls } = params;
+        
+        // Background ingestion
+        setImmediate(async () => {
+            try {
+                const userQuery = this.getLastUserMessageText(messages);
+                if (userQuery) {
+                    await this.deps.advancedMemoryService.extractAndStageFromMessage(
+                        userQuery,
+                        chatId ?? 'default',
+                        workspaceId
+                    );
+                }
+            } catch (err) {
+                appLogger.warn('Memory', `Background memory ingestion failed: ${getErrorMessage(err as Error)}`);
+            }
+        });
     }
 
-    private scheduleBrainExtraction(messages: Message[]): void {
+    private scheduleBrainExtraction(messages: Message[]) {
         if (!this.brainService) {
             return;
         }
-        const userText = this.getLastUserMessageText(messages);
-        if (userText.length < 16) {
+        const userQuery = this.getLastUserMessageText(messages);
+        if (!userQuery) {
             return;
         }
-        void this.brainService.extractUserFactsFromMessage(userText).catch(() => undefined);
+        
+        setImmediate(async () => {
+            try {
+                await this.brainService.extractUserFactsFromMessage(userQuery);
+            } catch (err) {
+                appLogger.warn('Brain', `Background brain extraction failed: ${getErrorMessage(err as Error)}`);
+            }
+        });
     }
 }
-
-
-
-

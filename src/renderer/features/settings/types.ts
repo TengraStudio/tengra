@@ -27,11 +27,12 @@ export type SettingsCategory =
     | 'extensions-mcp'
     | 'extensions-skills'
     | 'usage-limits'
-    | 'social-media';
+    | 'social-media'
+    | 'ai-instructions';
 
 export type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
-export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; ollama: boolean; copilot?: boolean }
-export type BrowserOAuthProvider = 'codex' | 'claude' | 'antigravity' | 'ollama'
+export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; ollama: boolean; cursor: boolean; copilot?: boolean }
+export type BrowserOAuthProvider = 'codex' | 'claude' | 'antigravity' | 'ollama' | 'cursor'
 export type DeviceAuthProvider = 'copilot'
 export type SettingsAuthProvider = BrowserOAuthProvider | DeviceAuthProvider
 export interface AuthBusyState {

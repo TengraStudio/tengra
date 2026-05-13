@@ -135,10 +135,7 @@ const DEFAULT_WEB_SETTINGS: AppSettings = {
     nvidia: { model: 'nvidia/llama3-chatqa-1.5-70b' },
     huggingface: { model: 'Qwen/Qwen2.5-7B-Instruct' },
     gemini: { model: 'gemini-2.5-flash' },
-    mistral: { model: 'mistral-large-latest' },
-    together: { model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo' },
-    perplexity: { model: 'sonar' },
-    cohere: { model: 'command-r-plus' },
+    mistral: { model: 'mistral-large-latest' }, 
     xai: { model: 'grok-2-latest' },
     deepseek: { model: 'deepseek-chat' },
     openrouter: { model: 'openai/gpt-4o' },
@@ -280,6 +277,7 @@ export const webElectronMock: ElectronAPI = {
         // Legacy/Core Auth
         createAccount: async () => ({ success: true }),
         switchAccount: async () => ({ success: true }),
+        cursorLogin: async () => ({ success: true }),
         onAccountChanged: () => () => { },
     },
 

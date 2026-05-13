@@ -65,6 +65,8 @@ import type {
  * Delegates to domain-focused sub-services for generation, history, presets, scheduling, and SD-CPP management.
  */
 export class LocalImageService extends BaseService {
+    static readonly serviceName = 'localImageService';
+    static readonly dependencies = ['deps'] as const;
     private static readonly ERROR_CODES = {
         SDCPP_FALLBACK_TRIGGERED: 'LOCAL_IMAGE_SDCPP_FALLBACK_TRIGGERED',
     } as const;

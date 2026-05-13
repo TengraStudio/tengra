@@ -15,7 +15,7 @@
  */
 
 import { PendingMemory } from '@shared/types/advanced-memory';
-import { IconBulb, IconCheck, IconChevronDown, IconClock, IconGauge, IconSparkles, IconTag, IconX } from '@tabler/icons-react';
+import { IconCheck, IconClock, IconX } from '@tabler/icons-react';
 import { formatDistanceToNow } from 'date-fns';
 import React, { useState } from 'react';
 
@@ -28,10 +28,6 @@ import { cn } from '@/lib/utils';
 
 import { CATEGORY_CONFIG } from './constants';
 import { EmptyState } from './EmptyState';
-
-/* Batch-02: Extracted Long Classes */
-const C_PENDINGMEMORIESLIST_1 = "group p-4 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all hover:border-warning/40 relative overflow-hidden sm:p-5 lg:p-6";
-
 
 interface PendingMemoriesListProps {
     memories: PendingMemory[];
@@ -52,7 +48,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
 }) => {
     const { t } = useTranslation();
     return (
-        <div className="flex flex-col gap-4 h-full">
+        <div className="flex h-full min-h-0 flex-col gap-4">
             {/* Bulk actions */}
             {memories.length > 0 && (
                 <div className="flex gap-2">
@@ -80,7 +76,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
             )}
 
             {/* List */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
                 <div className="grid grid-cols-1 gap-4 pb-6">
                     {memories.length === 0 ? (
                         <EmptyState
@@ -112,39 +108,27 @@ interface PendingMemoryCardProps {
 
 const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm, onReject }) => {
     const { t } = useTranslation();
-    const [expanded, setExpanded] = useState(false);
     const config = CATEGORY_CONFIG[memory.suggestedCategory];
+    const sourceLabel = t(`frontend.memory.sources.${memory.source}`);
+    const extractedLabel = t('frontend.memory.storedAgo', {
+        time: formatDistanceToNow(new Date(memory.extractedAt)),
+    });
 
     return (
-        <Card className={C_PENDINGMEMORIESLIST_1}>
-            {/* Confidence indicator */}
-            <div
-                className="absolute left-0 top-0 bottom-0 w-1"
-                style={{
-                    background: `linear-gradient(to top,
-            hsl(${memory.extractionConfidence * 120}, 70%, 50%) 0%,
-            hsl(${memory.extractionConfidence * 120}, 70%, 50%) ${memory.extractionConfidence * 100}%,
-            transparent ${memory.extractionConfidence * 100}%)`,
-                }}
-            />
-
-            <div className="flex flex-col gap-3 pl-3">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Badge
-                            className={cn('border-none text-sm font-bold', config.color)}
-                        >
-                            <config.icon className="w-3 h-3 mr-1" />
+        <Card className={cn(
+            'rounded-xl border border-border/30 bg-card p-4 transition-colors hover:border-border/40'
+        )}>
+            <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className={cn('text-xs font-medium', config.color)}>
+                            <config.icon className="mr-1 h-3 w-3" />
                             {t(config.labelKey)}
                         </Badge>
                         {memory.requiresUserValidation && (
-                            <Badge
-                                variant="outline"
-                                className="border-warning/40 text-warning text-sm"
-                            >
+                            <span className="text-xs text-muted-foreground">
                                 {t('frontend.memory.needsReview')}
-                            </Badge>
+                            </span>
                         )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -152,9 +136,10 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                             variant="ghost"
                             size="sm"
                             onClick={onReject}
-                            className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-8 px-2 text-destructive hover:text-destructive"
                         >
-                            <IconX className="w-4 h-4" />
+                            <IconX className="h-4 w-4" />
+                            <span className="sr-only">{t('frontend.memory.reject')}</span>
                         </Button>
                         <Button
                             variant="default"
@@ -162,113 +147,20 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                             onClick={onConfirm}
                             className="h-8 px-3 gap-1"
                         >
-                            <IconCheck className="w-4 h-4" />
+                            <IconCheck className="h-4 w-4" />
                             {t('frontend.memory.confirm')}
                         </Button>
                     </div>
                 </div>
 
-                {/* Content */}
-                <p className="text-sm leading-relaxed">{memory.content}</p>
+                <p className="text-sm leading-6 text-foreground/90">{memory.content}</p>
 
-                {/* Scores */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                        <IconGauge className="w-3 h-3" />
-                        {t('frontend.memory.confidence', {
-                            percent: (memory.extractionConfidence * 100).toFixed(0),
-                        })}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full border border-border/30 bg-muted/20 px-2 py-1">
+                        {t('frontend.memory.source')}: {sourceLabel}
                     </span>
-                    <span className="flex items-center gap-1">
-                        <IconSparkles className="w-3 h-3" />
-                        {t('frontend.memory.relevance', {
-                            percent: (memory.relevanceScore * 100).toFixed(0),
-                        })}
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <IconBulb className="w-3 h-3" />
-                        {t('frontend.memory.novelty', { percent: (memory.noveltyScore * 100).toFixed(0) })}
-                    </span>
-                </div>
-
-                {/* Expandable details */}
-                {(memory.potentialContradictions.length > 0 ||
-                    memory.similarMemories.length > 0) && (
-                    <button
-                        onClick={() => setExpanded(!expanded)}
-                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <IconChevronDown
-                            className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')}
-                        />
-                        {memory.potentialContradictions.length > 0 && (
-                            <span className="text-warning">
-                                {memory.potentialContradictions.length === 1
-                                    ? t('frontend.memory.potentialContradiction', {
-                                          count: memory.potentialContradictions.length,
-                                      })
-                                    : t('frontend.memory.potentialContradictions', {
-                                          count: memory.potentialContradictions.length,
-                                      })}
-                            </span>
-                        )}
-                        {memory.similarMemories.length > 0 && (
-                            <span className="text-primary">
-                                {memory.similarMemories.length === 1
-                                    ? t('frontend.memory.similarMemory', {
-                                          count: memory.similarMemories.length,
-                                      })
-                                    : t('frontend.memory.similarMemories', {
-                                          count: memory.similarMemories.length,
-                                      })}
-                            </span>
-                        )}
-                    </button>
-                )}
-
-                {expanded && (
-                    <div className="space-y-2 pt-2 border-t border-border/40">
-                        {memory.potentialContradictions.map((c, i) => (
-                            <div key={i} className="p-2 rounded bg-warning/10 text-sm">
-                                <span className="text-warning font-bold">
-                                    {t('frontend.memory.contradictionLabel')}
-                                </span>
-                                <span className="text-muted-foreground">{c.existingContent}</span>
-                                <p className="mt-1 text-warning-light/70">
-                                    {c.conflictExplanation}
-                                </p>
-                            </div>
-                        ))}
-                        {memory.similarMemories.map((s, i) => (
-                            <div key={i} className="p-2 rounded bg-primary/10 text-sm">
-                                <span className="text-primary font-bold">
-                                    {t('frontend.memory.similarLabel', {
-                                        percent: (s.similarityScore * 100).toFixed(0),
-                                    })}{' '}
-                                </span>
-                                <span className="text-muted-foreground">{s.content}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Tags & Meta */}
-                <div className="flex items-center justify-between">
-                    <div className="flex flex-wrap gap-1">
-                        {memory.suggestedTags.map(tag => (
-                            <span
-                                key={tag}
-                                className="flex items-center gap-1 text-sm bg-muted/30 px-2 py-0.5 rounded-full text-muted-foreground"
-                            >
-                                <IconTag className="w-3 h-3" />
-                                {tag}
-                            </span>
-                        ))}
-                    </div>
-                    <span className="text-sm text-muted-foreground/50">
-                        {t('frontend.memory.timeAgo', {
-                            time: formatDistanceToNow(new Date(memory.extractedAt)),
-                        })}
+                    <span className="rounded-full border border-border/30 bg-muted/20 px-2 py-1">
+                        {extractedLabel}
                     </span>
                 </div>
             </div>

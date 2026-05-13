@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ipc } from '@main/core/ipc-decorators';
+import { getIpcMethodsForService, ipc, registerServiceIpc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { LAZY_CHANNELS } from '@shared/constants/ipc-channels';
 
@@ -72,20 +72,19 @@ class LazyServiceRegistry {
 
     private async loadService<T extends object>(name: string, factory: LazyServiceFactory<T>): Promise<T> {
         const startTime = Date.now();
-        const { getIpcMethodsForService, registerServiceIpc } = await import('@main/core/ipc-decorators');
 
         try {
             const service = await factory();
             
             const ipcMethods = getIpcMethodsForService(service);
             if (ipcMethods.length === 0) {
-                appLogger.warn('IPC', `Skipping IPC registration for lazy service without @ipc methods: ${name}`);
+                appLogger.debug('IPC', `Skipping IPC registration for lazy service without @ipc methods: ${name}`);
             } else {
                 registerServiceIpc(service);
             }
 
             const loadTime = Date.now() - startTime;
-            appLogger.info('LazyServices', `Loaded service '${name}' in ${loadTime}ms`);
+            appLogger.debug('LazyServices', `Loaded service '${name}' in ${loadTime}ms`);
             return service;
         } catch (error) {
             appLogger.error('LazyServices', `Failed to load service '${name}': ${error}`);

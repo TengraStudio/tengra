@@ -35,6 +35,8 @@ const SENSITIVE_HEADER_NAMES = new Set([
 ]);
 
 export class HttpService extends BaseService {
+    static readonly serviceName = 'httpService';
+    static readonly dependencies = [] as const;
     private pendingRequests: Map<string, PendingRequest> = new Map();
     private readonly DEDUPLICATION_WINDOW_MS = 1000; // 1 second window
     private cleanupInterval: NodeJS.Timeout | null = null;

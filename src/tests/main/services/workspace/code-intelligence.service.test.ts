@@ -102,8 +102,7 @@ import {
     generateWorkspaceDocumentation,
     getFileOutline,
 } from '@main/services/workspace/code-intelligence/documentation-generator.util';
-import {
-    scanDirForTodos,
+import { 
     scanDirRecursively,
 } from '@main/services/workspace/code-intelligence/file-scanner.util';
 import { renameSymbol } from '@main/services/workspace/code-intelligence/rename-symbol.util';
@@ -118,7 +117,7 @@ import {
 import { parseFileSymbols } from '@main/services/workspace/code-intelligence/symbol-parser.util';
 import type { CodeSymbol } from '@main/services/workspace/code-intelligence/types';
 import { getWorkspaceIgnoreMatcher } from '@main/services/workspace/workspace-ignore.util';
-import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants'; 
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { BrowserWindow } from 'electron';
 
 function createMockDb(): {
@@ -158,7 +157,8 @@ describe('CodeIntelligenceService', () => {
         mockEmbedding = createMockEmbedding();
         service = new CodeIntelligenceService(
             mockDb as never as DatabaseService,
-            mockEmbedding as never as EmbeddingService
+            mockEmbedding as never as EmbeddingService,
+            () => null
         );
     });
 
@@ -561,42 +561,8 @@ describe('CodeIntelligenceService', () => {
             expect(searchFiles).toHaveBeenCalledWith(mockDb, '/root', 'query', 'proj-1', false);
             expect(results).toEqual([]);
         });
-    });
-
-    describe('scanTodos', () => {
-        it('should return todos from file scanner', async () => {
-            vi.mocked(scanDirForTodos).mockImplementation(async (_root: string, todos: TestValue[]) => {
-                (todos as Array<{ file: string; line: number; text: string }>).push(
-                    { file: '/root/a.ts', line: 10, text: 'TODO: fix this' }
-                );
-            });
-            const results = await service.scanTodos('/root');
-            expect(results).toHaveLength(1);
-            expect(results[0].text).toBe('TODO: fix this');
-        });
-    });
-
-    describe('scanWorkspaceTodos', () => {
-        it('should group todos by file with relative paths', async () => {
-            vi.mocked(scanDirForTodos).mockImplementation(async (_root: string, todos: TestValue[]) => {
-                const arr = todos as Array<{ file: string; line: number; text: string }>;
-                arr.push(
-                    { file: '/root/src/a.ts', line: 5, text: 'TODO: first' },
-                    { file: '/root/src/a.ts', line: 12, text: 'TODO: second' },
-                    { file: '/root/src/b.ts', line: 1, text: 'FIXME: bug' }
-                );
-            });
-
-            const results = await service.scanWorkspaceTodos('/root');
-
-            expect(results).toHaveLength(2);
-            const fileA = results.find(r => r.path === '/root/src/a.ts');
-            expect(fileA).toBeDefined();
-            expect(fileA!.items).toHaveLength(2);
-            expect(fileA!.relativePath).toBe('src/a.ts');
-        });
-    });
-
+    }); 
+ 
     describe('getFileOutline', () => {
         it('should delegate to documentation-generator util', async () => {
             vi.mocked(getFileOutline).mockResolvedValue([

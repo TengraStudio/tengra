@@ -10,8 +10,7 @@
 
 import {
     IconArrowLeft,
-    IconFilePlus,
-    IconFilter,
+    IconFilePlus, 
     IconFolderPlus,
     IconPlus,
     IconRefresh,
@@ -19,14 +18,13 @@ import {
     IconX,
 } from '@tabler/icons-react';
 import React from 'react';
-import { List, ListRowProps as RowComponentProps } from 'react-virtualized';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import {
-    clearWorkspaceExplorerFilterQuery,
+import { 
     setWorkspaceExplorerFilterQuery,
     setWorkspaceExplorerFocusedRowKey,
     setWorkspaceInlineDraftName,
@@ -45,7 +43,7 @@ import {
     useWorkspaceExplorerKeyboard,
     useWorkspaceInlineActionControls,
 } from '../hooks/useWorkspaceExplorerLogic';
-import { 
+import {
     useWorkspaceExplorerTree,
     type WorkspaceEntryRow,
     type WorkspaceExplorerRow,
@@ -70,7 +68,7 @@ import {
 import { WorkspaceExplorerInlineRow } from './WorkspaceExplorerInlineRow';
 import { WorkspaceExplorerRowView } from './WorkspaceExplorerRow';
 
-type ExplorerListRef = List;
+type ExplorerListRef = VirtuosoHandle;
 
 interface ExplorerRowProps {
     rows: ExplorerDisplayRow[];
@@ -164,7 +162,6 @@ function StaticExplorerRows(args: {
 
 function VirtualizedExplorerRow({
     index,
-    style,
     rows,
     selectedEntries,
     focusedRowKey,
@@ -180,7 +177,7 @@ function VirtualizedExplorerRow({
     onInlineDraftNameChange,
     onInlineSubmit,
     onInlineCancel,
-}: RowComponentProps & ExplorerRowProps): React.ReactElement | null {
+}: ExplorerRowProps & { index: number }): React.ReactElement | null {
     const row = rows[index];
     if (!row) {
         return null;
@@ -188,20 +185,18 @@ function VirtualizedExplorerRow({
 
     if (row.type === 'inline') {
         return (
-            <div style={style}>
-                <WorkspaceExplorerInlineRow
-                    rowKey={row.key}
-                    depth={row.depth}
-                    draftName={row.draftName}
-                    actionType={row.actionType}
-                    placeholder={inlinePlaceholder}
-                    isFocused={focusedRowKey === row.key}
-                    setRowRef={setRowRef}
-                    onDraftNameChange={onInlineDraftNameChange}
-                    onSubmit={onInlineSubmit}
-                    onCancel={onInlineCancel}
-                />
-            </div>
+            <WorkspaceExplorerInlineRow
+                rowKey={row.key}
+                depth={row.depth}
+                draftName={row.draftName}
+                actionType={row.actionType}
+                placeholder={inlinePlaceholder}
+                isFocused={focusedRowKey === row.key}
+                setRowRef={setRowRef}
+                onDraftNameChange={onInlineDraftNameChange}
+                onSubmit={onInlineSubmit}
+                onCancel={onInlineCancel}
+            />
         );
     }
 
@@ -215,21 +210,19 @@ function VirtualizedExplorerRow({
             : false;
 
     return (
-        <div style={style}>
-            <WorkspaceExplorerRowView
-                row={row}
-                isSelected={isSelected}
-                isFocused={focusedRowKey === row.key}
-                onOpenFile={onOpenFile}
-                onSelectEntry={onSelectEntry}
-                onToggleMount={onToggleMount}
-                onToggleNode={onToggleNode}
-                onRemoveMount={onRemoveMount}
-                onMountContextMenu={onMountContextMenu}
-                onEntryContextMenu={onEntryContextMenu}
-                setRowRef={setRowRef}
-            />
-        </div>
+        <WorkspaceExplorerRowView
+            row={row}
+            isSelected={isSelected}
+            isFocused={focusedRowKey === row.key}
+            onOpenFile={onOpenFile}
+            onSelectEntry={onSelectEntry}
+            onToggleMount={onToggleMount}
+            onToggleNode={onToggleNode}
+            onRemoveMount={onRemoveMount}
+            onMountContextMenu={onMountContextMenu}
+            onEntryContextMenu={onEntryContextMenu}
+            setRowRef={setRowRef}
+        />
     );
 }
 
@@ -289,6 +282,8 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         storageKey,
     });
     const [viewportHeight, setViewportHeight] = React.useState(() => window.innerHeight);
+    const [containerHeight, setContainerHeight] = React.useState(0);
+    const containerRef = React.useRef<HTMLDivElement>(null);
     const diagnosticsSnapshot = useWorkspaceExplorerDiagnostics({
         workspaceId,
         workspaceRootPath: workspacePath,
@@ -341,17 +336,36 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     const isExplorerBlank = hasMounts && effectiveDisplayRows.length === 0 && !isAnyMountLoading && !fallbackLoading;
     const listHeight = React.useMemo(() => {
         const contentHeight = effectiveDisplayRows.length * EXPLORER_ROW_HEIGHT;
+
+        if (variant === 'panel' || variant === 'embedded') {
+            return containerHeight || 400; // Fallback to 400 if not yet measured
+        }
+
         const maxHeight =
             mounts.length <= 1
                 ? Math.max(800, viewportHeight - 220)
                 : EXPLORER_MULTI_MOUNT_MAX_HEIGHT;
         return Math.min(contentHeight, maxHeight);
-    }, [effectiveDisplayRows.length, mounts.length, viewportHeight]);
+    }, [effectiveDisplayRows.length, mounts.length, viewportHeight, variant, containerHeight]);
 
     React.useEffect(() => {
         const handleResize = () => setViewportHeight(window.innerHeight);
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setContainerHeight(entry.contentRect.height);
+            }
+        });
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            observer.disconnect();
+        };
     }, []);
 
     React.useEffect(() => {
@@ -397,7 +411,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             setWorkspaceExplorerFocusedRowKey(workspaceId, rowKey);
             const rowIndex = effectiveDisplayRows.findIndex(row => row.key === rowKey);
             if (rowIndex >= 0) {
-                listRef.current?.scrollToRow(rowIndex);
+                listRef.current?.scrollToIndex(rowIndex);
             }
             window.requestAnimationFrame(() => {
                 rowRefs.current[rowKey]?.focus();
@@ -568,7 +582,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         <div
             className={cn(
                 'flex h-full flex-col bg-background select-none outline-none',
-                variant === 'panel' ? 'border-r border-border/30' : 'rounded-3xl border border-border/40 shadow-2xl'
+                (variant === 'panel' || variant === 'embedded') ? 'border-r border-border/30' : 'rounded-3xl border border-border/40 shadow-2xl'
             )}
             tabIndex={0}
             onKeyDown={handleKeyDown}
@@ -576,7 +590,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             <div className="flex shrink-0 items-center justify-between gap-1 px-3 py-2 border-b border-border/10">
                 <div className="flex items-center gap-2">
                     <span className="typo-overline text-muted-foreground/75 tracking-wider uppercase">
-                        {t('frontend.workspace.explorer')}
+                        {t('frontend.workspace.explorer.title')}
                     </span>
                     {isAnyMountLoading && (
                         <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
@@ -622,28 +636,10 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 </div>
             </div>
 
-            <div className="shrink-0 p-2">
-                <div className="relative group">
-                    <IconFilter className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary/60 transition-colors" />
-                    <Input
-                        value={filterQuery}
-                        onChange={e => setWorkspaceExplorerFilterQuery(workspaceId, e.target.value)}
-                        placeholder={t('frontend.workspace.placeholders.filter')}
-                        className="h-8 pl-8 pr-8 rounded-lg bg-muted/30 border-transparent focus:bg-background focus:border-primary/20 transition-all text-xs"
-                    />
-                    {filterQuery && (
-                        <button
-                            type="button"
-                            onClick={() => clearWorkspaceExplorerFilterQuery(workspaceId)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-sm hover:bg-muted/60 text-muted-foreground/50 hover:text-foreground transition-colors"
-                        >
-                            <IconX className="h-3 w-3" />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+            <div
+                ref={containerRef}
+                className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar pb-4"
+            >
                 {isExplorerBlank ? (
                     <div className="flex flex-col items-center justify-center h-48 px-6 text-center">
                         <div className="p-3 rounded-2xl bg-muted/30 mb-3">
@@ -654,34 +650,32 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                     </div>
                 ) : (
                     shouldVirtualize ? (
-                                    <List
-                            ref={listRef as unknown as React.Ref<List>}
-                            width={280}
-                            height={listHeight}
-                                        rowCount={effectiveDisplayRows.length}
-                                        rowHeight={EXPLORER_ROW_HEIGHT}
-                            rowRenderer={props => (
-                                            <VirtualizedExplorerRow
-                                                {...props}
-                                                rows={effectiveDisplayRows}
-                                                selectedEntries={selectedEntries}
-                                                focusedRowKey={focusedRowKey}
-                                                onOpenFile={onOpenFile}
-                                                onSelectEntry={handleEntrySelect}
-                                                onToggleMount={toggleMount}
-                                                onToggleNode={toggleNode}
-                                                onRemoveMount={onRemoveMount}
-                                                onMountContextMenu={handleMountContextMenu}
-                                                onEntryContextMenu={handleContextMenu}
-                                                setRowRef={setRowRef}
-                                                inlinePlaceholder={t('frontend.workspace.placeholders.name')}
-                                                onInlineDraftNameChange={(value: string) => setWorkspaceInlineDraftName(workspaceId, value)}
-                                                onInlineSubmit={handleInlineSubmit}
-                                                onInlineCancel={handleInlineCancel}
-                                            />
-                                        )}
-                                        className="outline-none"
-                                    />
+                        <Virtuoso
+                            ref={listRef}
+                            style={{ height: listHeight, width: 280 }}
+                            totalCount={effectiveDisplayRows.length}
+                            itemContent={(index) => (
+                                <VirtualizedExplorerRow
+                                    index={index}
+                                    rows={effectiveDisplayRows}
+                                    selectedEntries={selectedEntries}
+                                    focusedRowKey={focusedRowKey}
+                                    onOpenFile={onOpenFile}
+                                    onSelectEntry={handleEntrySelect}
+                                    onToggleMount={toggleMount}
+                                    onToggleNode={toggleNode}
+                                    onRemoveMount={onRemoveMount}
+                                    onMountContextMenu={handleMountContextMenu}
+                                    onEntryContextMenu={handleContextMenu}
+                                    setRowRef={setRowRef}
+                                    inlinePlaceholder={t('frontend.workspace.placeholders.name')}
+                                    onInlineDraftNameChange={(value: string) => setWorkspaceInlineDraftName(workspaceId, value)}
+                                    onInlineSubmit={handleInlineSubmit}
+                                    onInlineCancel={handleInlineCancel}
+                                />
+                            )}
+                            className="outline-none"
+                        />
                     ) : (
                         <div className="flex flex-col">
                             <StaticExplorerRows

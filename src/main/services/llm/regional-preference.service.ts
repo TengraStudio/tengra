@@ -35,6 +35,8 @@ const REGIONAL_PREFERENCES: Record<string, RegExp[]> = {
  * Service to adjust model ranking based on user locale.
  */
 export class RegionalPreferenceService {
+    static readonly serviceName = 'regionalPreferenceService';
+    static readonly dependencies = [] as const;
     /**
      * Re-sorts the models array to boost models preferred for the given locale.
      * Preferred models appear at the top, maintaining their relative order.

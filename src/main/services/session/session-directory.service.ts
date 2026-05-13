@@ -62,6 +62,8 @@ function clampSessionMessageContent(value: string): string {
 }
 
 export class SessionDirectoryService extends BaseService {
+    static readonly serviceName = 'sessionDirectoryService';
+    static readonly dependencies = [] as const;
     private readonly registries = new Map<string, SessionRegistryReader>();
 
     constructor() {

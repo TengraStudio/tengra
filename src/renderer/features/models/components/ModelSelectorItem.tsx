@@ -1,6 +1,7 @@
 import { IconBolt,IconBrain, IconCheck, IconInfoCircle, IconPhotoScan, IconStar } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { ModelQuotaItem, QuotaResponse } from '@/types/quota';
@@ -239,10 +240,21 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                     disabled={model.disabled}
                 >
                     <div className={cn(
-                        "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center bg-muted/50 border border-border/10 transition-colors",
+                        "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center bg-muted/50 border border-border/10 transition-colors overflow-hidden",
                         isSelected ? "border-primary/40 bg-primary/5" : "group-hover:bg-muted"
                     )}>
-                        {model.type === 'image' ? <IconPhotoScan className="w-4 h-4 text-success/70" /> : <IconBolt className={cn("w-4 h-4", isSelected ? "text-primary" : "text-muted-foreground/40")} />}
+                        {model.type === 'image' ? (
+                            <IconPhotoScan className="w-4 h-4 text-success/70" />
+                        ) : (
+                            <ProviderIcon 
+                                provider={model.provider} 
+                                model={model.id}
+                                variant="minimal"
+                                size={18}
+                                className={cn(isSelected ? "text-primary" : "text-muted-foreground/60")} 
+                                containerClassName="border-none bg-transparent h-auto w-auto p-0"
+                            />
+                        )}
                     </div>
 
                     <div className="min-w-0 flex-1 flex flex-col">

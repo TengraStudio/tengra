@@ -46,6 +46,8 @@ export interface MemoryReport {
 }
 
 export class MemoryProfilingService extends BaseService {
+    static readonly serviceName = 'memoryProfilingService';
+    static readonly dependencies = ['dataService'] as const;
     private snapshots: MemorySnapshot[] = [];
     private intervalId: NodeJS.Timeout | null = null;
     private readonly maxSnapshots = 100;

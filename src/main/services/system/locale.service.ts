@@ -23,16 +23,32 @@ import { app } from 'electron';
 const LOCALE_FILE_SUFFIX = '.locale.json';
 
 export class LocaleService extends BaseService {
+    static readonly serviceName = 'localeService';
+    static readonly dependencies = ['dataService'] as const;
     private readonly localesDir: string;
     private readonly installedLocales = new Map<string, LocalePack>();
 
     constructor(private readonly dataService: DataService) {
         super('LocaleService');
-        const userDataPath = path.dirname(this.dataService.getPath('db'));
-        this.localesDir = path.join(userDataPath, 'runtime', 'locales');
+        
+        const isDev = process.env.NODE_ENV === 'development';
+        if (isDev) {
+            // In development, point directly to the source folder to allow instant HMR
+            this.localesDir = path.resolve(__dirname, '../../src/renderer/i18n/locales');
+        } else {
+            const userDataPath = path.dirname(this.dataService.getPath('db'));
+            this.localesDir = path.join(userDataPath, 'runtime', 'locales');
+        }
     }
 
     override async initialize(): Promise<void> {
+        const isDev = process.env.NODE_ENV === 'development';
+        if (isDev) {
+            this.logInfo(`Running in development mode, using direct locale source: ${this.localesDir}`);
+            await this.loadLocales();
+            return;
+        }
+
         await fs.mkdir(this.localesDir, { recursive: true });
         await this.syncLocalesFromSource();
         await this.loadLocales();

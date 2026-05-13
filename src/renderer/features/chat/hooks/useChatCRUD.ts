@@ -42,6 +42,7 @@ export const useChatCRUD = (props: UseChatCRUDProps): {
     toggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
     bulkUpdateChats: (updates: Array<{ id: string; updates: Partial<Chat> }>) => Promise<void>;
     bulkDeleteChats: (chatIds: string[]) => Promise<void>;
+    deleteAllChats: () => Promise<void>;
 } => {
     const { currentChatId, setCurrentChatId, setChats, setInput, baseDeleteFolder } = props;
 
@@ -199,6 +200,21 @@ export const useChatCRUD = (props: UseChatCRUDProps): {
         }
     };
 
+    const deleteAllChats = async () => {
+        try {
+            const result = await window.electron.db.deleteAllChats();
+            if (!result) {
+                throw new Error('Failed to delete all chats');
+            }
+            CachedDatabase.clearAllCaches();
+            setChats([]);
+            setCurrentChatId(null);
+            setInput('');
+        } catch (error) {
+            appLogger.error('useChatCRUD', 'Failed to delete all chats', error as Error);
+        }
+    };
+
     return {
         createNewChat,
         deleteChat,
@@ -210,7 +226,8 @@ export const useChatCRUD = (props: UseChatCRUDProps): {
         togglePin,
         toggleFavorite,
         bulkUpdateChats,
-        bulkDeleteChats
+        bulkDeleteChats,
+        deleteAllChats
     };
 };
 

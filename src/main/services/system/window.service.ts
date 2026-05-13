@@ -56,6 +56,8 @@ const WINDOW_ERROR_MESSAGE = {
 } as const;
 
 export class WindowService extends BaseService {
+    static readonly serviceName = 'windowService';
+    static readonly dependencies = ['getMainWindow', 'allowedRoots', 'settingsService'] as const;
     constructor(
         private readonly getMainWindow: () => BrowserWindow | null,
         private readonly allowedRoots: Set<string>,

@@ -55,6 +55,8 @@ type UpdaterStatus = {
 };
 
 export class UpdateService extends BaseService {
+    static readonly serviceName = 'updateService';
+    static readonly dependencies = ['settingsService'] as const;
     private settingsService: SettingsService;
     private window: BrowserWindow | null = null;
     private isSupported = true;

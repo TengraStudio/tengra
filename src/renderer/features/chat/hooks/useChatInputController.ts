@@ -209,7 +209,7 @@ export function useChatInputController() {
 
     const getFallbackModel = useCallback(() => {
         const cpModels = groupedModels?.copilot.models ?? [];
-        if (cpModels.length > 0) { return { model: cpModels[0].id ?? 'gpt-4o-mini', provider: 'copilot' }; }
+        if (cpModels.length > 0) { return { model: cpModels[0].id ?? '', provider: 'copilot' }; }
         const agModels = groupedModels?.antigravity.models ?? [];
         if (agModels.length > 0) { return { model: agModels[0].id ?? '', provider: 'antigravity' }; }
         return { model: selectedModel, provider: selectedProvider };

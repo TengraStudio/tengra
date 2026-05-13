@@ -55,8 +55,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     return (
         <div
             className={cn(
-                'border-l border-border/30 bg-background/40 backdrop-blur-xl shrink-0 transition-all duration-300 relative',
-                showAgentPanel ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'
+                'border-l border-border/30 bg-background shrink-0 transition-all duration-300 overflow-hidden',
+                showAgentPanel ? 'opacity-100' : 'w-0 opacity-0'
             )}
             style={{ width: showAgentPanel ? agentPanelWidth : 0 }}
         >
@@ -81,4 +81,3 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         </div>
     );
 };
-

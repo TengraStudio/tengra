@@ -23,6 +23,8 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
  * without needing to write temporary JSON files.
  */
 export class AuthAPIService extends BaseService {
+    static readonly serviceName = 'authAPIService';
+    static readonly dependencies = ['authService'] as const;
     private server: http.Server | null = null;
     private port: number = 0;
     private apiKey: string = '';

@@ -24,9 +24,11 @@ type UnsafeValue = ReturnType<typeof JSON.parse>;
 interface ClaudeCardProps {
     claudeQuota: AccountWrapper<ClaudeQuota> | null
     locale?: string
+    activeAccountId?: string | null
+    activeAccountEmail?: string | null
 }
 
-export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'en-US' }) => {
+export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'en-US', activeAccountId, activeAccountEmail }) => {
     const { t } = useTranslation();
     if (!claudeQuota?.accounts || claudeQuota.accounts.length === 0) { return null; }
 
@@ -35,6 +37,11 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
             {claudeQuota.accounts.map((acc, idx: number) => {
                 const status = acc.error ? 'error' : 'active';
                 const statusText = acc.error ? t('common.error') : t('frontend.statistics.active');
+                const isActiveAccount = (
+                    (activeAccountId && acc.accountId === activeAccountId) ||
+                    (activeAccountEmail && acc.email === activeAccountEmail) ||
+                    acc.isActive === true
+                );
 
                 return (
                     <div key={acc.accountId ?? idx} className="overflow-hidden rounded-2xl border border-border/15 bg-background shadow-sm">
@@ -44,7 +51,13 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                     {acc.email ?? t('frontend.statistics.claudeAccount')}
                                 </span>
                             </div>
-                            <StatusBadge status={status} text={statusText} />
+                            {isActiveAccount ? (
+                                <StatusBadge status={status} text={statusText} />
+                            ) : (
+                                <span className="text-sm font-medium text-muted-foreground/60">
+                                    {t('frontend.statistics.inactive')}
+                                </span>
+                            )}
                         </div>
 
                         {!acc.error && (

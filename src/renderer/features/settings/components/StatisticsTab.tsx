@@ -63,7 +63,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = memo(
                         {isActive && (
                             <div className="absolute inset-0 bg-primary/10 animate-in fade-in zoom-in duration-500" />
                         )}
-                        <span className="relative z-10">{t(`statistics.${value}`)}</span>
+                        <span className="relative z-10">{t(`frontend.statistics.${value}`)}</span>
                         {isActive && (
                             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary rounded-full" />
                         )}
@@ -93,9 +93,6 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
         return (
             <SettingsTabLayout className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <SettingsTabHeader
-                    title={t('frontend.statistics.title')}
-                    description={t('frontend.statistics.visualizeTokenConsumption')}
-                    icon={IconChartBar}
                     actions={(
                         <div className="flex flex-col gap-3">
                             <div className="flex items-center gap-2 px-1">
@@ -111,40 +108,23 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                     )}
                 />
 
-                <SettingsPanel
-                    title={t('frontend.statistics.consumptionMatrix')}
-                    icon={IconActivity}
-                    actions={<Badge variant="outline" className="h-5 border-primary/20 px-2 text-xs font-medium text-primary">{t('frontend.statistics.liveFeed')}</Badge>}
-                >
-                    <OverviewCards t={t} statsData={statsData} />
-                </SettingsPanel>
+                <OverviewCards t={t} statsData={statsData} />
 
-                <SettingsPanel
-                    title={t('frontend.statistics.propagationCurve')}
-                    icon={IconTrendingUp}
-                    actions={(
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground/65">
-                            <IconClock className="h-3 w-3" />
-                            <span>{t('frontend.statistics.realtimeTracking')}</span>
+                <div className="min-h-80 overflow-hidden">
+                    {statsLoading ? (
+                        <div className="flex h-80 items-center justify-center">
+                            <IconLoader2 className="h-6 w-6 animate-spin text-primary/40" />
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-border/15 bg-muted/10 p-4 sm:p-6">
+                            <TokenUsageChart
+                                tokenTimeline={statsData?.tokenTimeline ?? []}
+                                t={t}
+                                period={statsPeriod}
+                            />
                         </div>
                     )}
-                >
-                    <div className="min-h-80">
-                        {statsLoading ? (
-                            <div className="flex h-80 items-center justify-center">
-                                <IconLoader2 className="h-6 w-6 animate-spin text-primary/40" />
-                            </div>
-                        ) : (
-                            <div className="rounded-2xl border border-border/15 bg-muted/10 p-4 sm:p-6">
-                                <TokenUsageChart
-                                    tokenTimeline={statsData?.tokenTimeline ?? []}
-                                    t={t}
-                                    period={statsPeriod}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </SettingsPanel>
+                </div>
             </SettingsTabLayout>
         );
     }

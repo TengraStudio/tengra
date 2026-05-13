@@ -26,6 +26,8 @@ export interface OllamaStatus {
 }
 
 export class OllamaHealthService extends BaseService {
+    static readonly serviceName = 'ollamaHealthService';
+    static readonly dependencies = ['baseUrl'] as const;
     private intervalId: NodeJS.Timeout | null = null;
     private status: OllamaStatus = { online: false, lastCheck: new Date() };
     private baseUrl: string = 'http://127.0.0.1:11434';

@@ -12,9 +12,7 @@ import { Resizable } from 're-resizable';
 import React from 'react';
 
 import { TerminalPanel } from '@/features/terminal/TerminalPanel';
-import {
-    COLLAPSED_EXPLORER_LEFT_INSET_PX,
-    EXPANDED_EXPLORER_LEFT_INSET_PX,
+import { 
     MIN_RESIZABLE_TERMINAL_HEIGHT,
 } from '@/features/workspace/hooks/useTerminalLayout';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
@@ -29,8 +27,6 @@ interface WorkspaceTerminalLayerProps {
     isResizingTerminal: boolean;
     sidebarCollapsed: boolean;
     terminalHeight: number; 
-    dockedTerminalRightInsetPx: number;
-    dockedTerminalBottomOffsetPx: number;
     lastExpandedTerminalHeightRef: React.MutableRefObject<number>;
     setShowTerminal: (show: boolean) => void;
     setIsMaximizedTerminal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -41,6 +37,7 @@ interface WorkspaceTerminalLayerProps {
     activeFilePath?: string;
     activeFileContent?: string;
     activeFileType?: 'code' | 'image' | 'diff';
+    activeFileDiff?: { oldValue: string; newValue: string };
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;
@@ -49,14 +46,12 @@ interface WorkspaceTerminalLayerProps {
 }
 
 /** Renders the terminal panel with resizable support. */
-export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
+export const WorkspaceTerminalLayer: React.FC<Omit<WorkspaceTerminalLayerProps, 'dockedTerminalBottomOffsetPx'>> = ({
     showTerminal, 
     isMaximizedTerminal,
     isResizingTerminal,
-    sidebarCollapsed,
+    sidebarCollapsed: _sidebarCollapsed,
     terminalHeight,
-    dockedTerminalRightInsetPx,
-    dockedTerminalBottomOffsetPx,
     lastExpandedTerminalHeightRef,
     setShowTerminal,
     setIsMaximizedTerminal,
@@ -67,15 +62,13 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
     activeFilePath,
     activeFileContent,
     activeFileType,
+    activeFileDiff,
     tabs,
     activeTabId,
     setTabs,
     setActiveTabId,
     onOpenFile,
 }) => {
-    const leftInsetPx = sidebarCollapsed
-        ? COLLAPSED_EXPLORER_LEFT_INSET_PX
-        : EXPANDED_EXPLORER_LEFT_INSET_PX;
 
     return (
         <AnimatePresence>
@@ -86,15 +79,9 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                 transition={{ type: 'spring', stiffness: 340, damping: 30, mass: 0.85 }}
                 exit={{ opacity: 0, y: 10, scaleY: 0.99, transition: { duration: 0.14 } }}
                 className={cn(
-                    'absolute z-30'
+                    'relative z-30 shrink-0'
                 )}
-                style={
-                    {
-                        left: `${leftInsetPx}px`,
-                        right: `${dockedTerminalRightInsetPx}px`,
-                        bottom: `${dockedTerminalBottomOffsetPx}px`,
-                    }
-                }
+                style={{}}
             >
                 <Resizable
                     size={{
@@ -153,8 +140,7 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                         },
                     }}
                     className={cn(
-                        'border border-border/70 flex flex-col overflow-hidden',
-                        'border-x-0 border-b-0 shadow-none',
+                        'border-t border-border/70 flex flex-col overflow-hidden',
                         isResizingTerminal && 'transition-none'
                     )}
                 >
@@ -169,6 +155,7 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                             activeFilePath={activeFilePath}
                             activeFileContent={activeFileContent}
                             activeFileType={activeFileType}
+                            activeFileDiff={activeFileDiff}
                             tabs={tabs}
                             activeTabId={activeTabId}
                             setTabs={setTabs}

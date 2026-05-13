@@ -14,7 +14,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import type { Language } from '@/i18n';
 import { useTranslation } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { AppSettings, ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@/types';
+import { AppSettings, ClaudeQuota, CodexUsage, CopilotQuota, CursorQuota, QuotaResponse } from '@/types';
 
 import { useModelCategories } from '../hooks/useModelCategories';
 import { useModelSelectorLogic } from '../hooks/useModelSelectorLogic';
@@ -90,6 +90,9 @@ export const ModelSelector = memo(({
     const [resolvedAntigravityQuota, setResolvedAntigravityQuota] = useState(quotas);
     const [activeClaudeAccountId, setActiveClaudeAccountId] = useState<string | null>(null);
     const [activeClaudeAccountEmail, setActiveClaudeAccountEmail] = useState<string | null>(null);
+    const [resolvedCursorQuota, setResolvedCursorQuota] = useState<{ accounts: CursorQuota[] } | null>(null);
+    const [activeCursorAccountId, setActiveCursorAccountId] = useState<string | null>(null);
+    const [activeCursorAccountEmail, setActiveCursorAccountEmail] = useState<string | null>(null);
     const [activeCodexAccountId, setActiveCodexAccountId] = useState<string | null>(null);
     const [activeCodexAccountEmail, setActiveCodexAccountEmail] = useState<string | null>(null);
     const [activeAntigravityAccountId, setActiveAntigravityAccountId] = useState<string | null>(null);
@@ -168,11 +171,13 @@ export const ModelSelector = memo(({
             const [
                 copilotQuotaResult,
                 claudeQuotaResult,
+                cursorQuotaResult,
                 codexUsageResult,
                 antigravityQuotaResult,
                 copilotAccount,
                 claudeAccount,
                 anthropicAccount,
+                cursorAccount,
                 codexAccount,
                 openaiAccount,
                 antigravityAccount,
@@ -181,11 +186,13 @@ export const ModelSelector = memo(({
             ] = await Promise.all([
                 window.electron.auth.getCopilotQuota().catch(() => ({ accounts: [] })),
                 window.electron.auth.getClaudeQuota().catch(() => ({ accounts: [] })),
+                window.electron.auth.getCursorQuota().catch(() => ({ accounts: [] })),
                 window.electron.auth.getCodexUsage().catch(() => ({ accounts: [] })),
                 window.electron.auth.getQuota().catch(() => null),
                 window.electron.auth.getActiveLinkedAccount('copilot').catch(() => null),
                 window.electron.auth.getActiveLinkedAccount('claude').catch(() => null),
                 window.electron.auth.getActiveLinkedAccount('anthropic').catch(() => null),
+                window.electron.auth.getActiveLinkedAccount('cursor').catch(() => null),
                 window.electron.auth.getActiveLinkedAccount('codex').catch(() => null),
                 window.electron.auth.getActiveLinkedAccount('openai').catch(() => null),
                 window.electron.auth.getActiveLinkedAccount('antigravity').catch(() => null),
@@ -195,18 +202,22 @@ export const ModelSelector = memo(({
 
             const activeCopilotAccount = copilotAccount;
             const activeClaudeAccount = claudeAccount ?? anthropicAccount;
+            const activeCursorAccount = cursorAccount;
             const activeCodexAccount = codexAccount ?? openaiAccount;
             const activeAntigravityAccount = antigravityAccount ?? googleAccount;
             const activeOpencodeAccount = opencodeAccount;
 
             setResolvedCopilotQuota(copilotQuotaResult);
             setResolvedClaudeQuota(claudeQuotaResult);
+            setResolvedCursorQuota(cursorQuotaResult);
             setResolvedCodexUsage(codexUsageResult);
             setResolvedAntigravityQuota(antigravityQuotaResult);
             setActiveCopilotAccountId(activeCopilotAccount?.id ?? null);
             setActiveCopilotAccountEmail(activeCopilotAccount?.email?.toLowerCase() ?? null);
             setActiveClaudeAccountId(activeClaudeAccount?.id ?? null);
             setActiveClaudeAccountEmail(activeClaudeAccount?.email?.toLowerCase() ?? null);
+            setActiveCursorAccountId(activeCursorAccount?.id ?? null);
+            setActiveCursorAccountEmail(activeCursorAccount?.email?.toLowerCase() ?? null);
             setActiveCodexAccountId(activeCodexAccount?.id ?? null);
             setActiveCodexAccountEmail(activeCodexAccount?.email?.toLowerCase() ?? null);
             setActiveAntigravityAccountId(activeAntigravityAccount?.id ?? null);
@@ -219,6 +230,26 @@ export const ModelSelector = memo(({
             setResolvedCodexUsage(codexUsage);
             setResolvedAntigravityQuota(quotas);
         });
+
+        // Listen for real-time quota updates from the proxy service
+        const unsubscribe = window.electron.auth.onQuotaUpdate((payload: unknown) => {
+            const data = payload as { 
+                copilotQuota?: typeof resolvedCopilotQuota,
+                claudeQuota?: typeof resolvedClaudeQuota,
+                cursorQuota?: typeof resolvedCursorQuota,
+                codexUsage?: typeof resolvedCodexUsage,
+                quotaData?: typeof resolvedAntigravityQuota
+            };
+            if (data.copilotQuota) { setResolvedCopilotQuota(data.copilotQuota); }
+            if (data.claudeQuota) { setResolvedClaudeQuota(data.claudeQuota); }
+            if (data.cursorQuota) { setResolvedCursorQuota(data.cursorQuota); }
+            if (data.codexUsage) { setResolvedCodexUsage(data.codexUsage); }
+            if (data.quotaData) { setResolvedAntigravityQuota(data.quotaData); }
+        });
+
+        return () => {
+            unsubscribe();
+        };
     }, [isOpen, copilotQuota, claudeQuota, codexUsage, quotas]);
 
     const activeClaudeQuota = useMemo(() => {
@@ -275,7 +306,8 @@ export const ModelSelector = memo(({
         activeCodexUsage,
         activeClaudeQuota,
         activeCopilotQuota,
-        activeAntigravityQuota
+        activeAntigravityQuota,
+        activeCursorQuota: resolvedCursorQuota?.accounts?.[0]
     });
     const categories = useModelCategories({ groupedModels, debouncedSearchQuery, settings, selectedModel, isModelDisabled, t });
     const currentCat = categories.find(category => category.models.some(model =>
@@ -332,12 +364,13 @@ export const ModelSelector = memo(({
             if (['ollama', 'local', 'lm_studio', 'custom', 'opencode'].includes(cat.id)) {return true;}
             if (cat.id === 'copilot') {return !!activeCopilotAccountId;}
             if (cat.id === 'claude') {return !!activeClaudeAccountId;}
+            if (cat.id === 'cursor') {return !!activeCursorAccountId;}
             if (cat.id === 'codex') {return !!activeCodexAccountId;}
             if (cat.id === 'antigravity') {return !!activeAntigravityAccountId || (resolvedAntigravityQuota?.accounts && resolvedAntigravityQuota.accounts.length > 0);}
             if (cat.id === 'opencode') {return !!activeOpencodeAccountId || cat.models.length > 0;}
             return cat.models.length > 0;
         });
-    }, [categories, activeCopilotAccountId, activeClaudeAccountId, activeCodexAccountId, activeAntigravityAccountId, activeOpencodeAccountId, resolvedAntigravityQuota]);
+    }, [categories, activeCopilotAccountId, activeClaudeAccountId, activeCursorAccountId, activeCodexAccountId, activeAntigravityAccountId, activeOpencodeAccountId, resolvedAntigravityQuota]);
 
     return (
         <div className="relative">
@@ -383,6 +416,7 @@ export const ModelSelector = memo(({
                 activeCopilotAccountId={activeCopilotAccountId}
                 activeCopilotAccountEmail={activeCopilotAccountEmail}
                 activeClaudeQuota={activeClaudeQuota}
+                activeCursorQuota={resolvedCursorQuota?.accounts?.[0]}
                 activeCodexUsage={activeCodexUsage}
                 activeAntigravityQuota={activeAntigravityQuota}
                 permissionPolicy={permissionPolicy}
@@ -392,5 +426,3 @@ export const ModelSelector = memo(({
     );
 });
 ModelSelector.displayName = 'ModelSelector';
-
-

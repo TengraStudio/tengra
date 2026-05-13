@@ -59,6 +59,8 @@ function interpolateMessage(
 }
 
 export class McpPluginService extends BaseService {
+    static readonly serviceName = 'mcpPluginService';
+    static readonly dependencies = ['settingsService', 'mcpDeps'] as const;
     private plugins = new Map<string, IMcpPlugin>();
     private dispatchMetrics = new Map<string, { count: number; errors: number; totalDurationMs: number; lastDurationMs: number; lastError?: string }>();
 

@@ -37,8 +37,7 @@ out/
 **/*.obj
 **/*.so
 **/*.dylib
-**/*.dll
-**/*.exe
+**/*.dll 
 **/*.tmp
 !src/native/bin/*.exe
 

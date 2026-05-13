@@ -2,16 +2,43 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const path = require('path');
 
+const SHA256_HEX_RE = /^[a-fA-F0-9]{64}$/;
+const DUMMY_SHA256 = '0000000000000000000000000000000000000000000000000000000000000000';
+
+function validateRuntimeManifestForPublish(manifestPath) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+    if (manifest.schemaVersion !== 1) {
+        throw new Error('runtime-manifest.json schemaVersion must be 1');
+    }
+
+    if (!Array.isArray(manifest.components)) {
+        throw new Error('runtime-manifest.json components must be an array');
+    }
+
+    for (const [componentIndex, component] of manifest.components.entries()) {
+        for (const [targetIndex, target] of (component.targets ?? []).entries()) {
+            const value = String(target.sha256 ?? '');
+
+            if (!SHA256_HEX_RE.test(value) || value === DUMMY_SHA256) {
+                throw new Error(
+                    `Refusing to publish invalid runtime manifest: components[${componentIndex}] ${component.id} targets[${targetIndex}] has invalid/dummy sha256: ${JSON.stringify(target.sha256)}`
+                );
+            }
+        }
+    }
+}
+
 async function run() {
     const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
     if (!token) {
         console.error("GH_TOKEN is not set!");
         process.exit(1);
     }
-    
+
     console.log("Generating runtime-manifest.json...");
     execSync('node scripts/dump-manifest.js', { stdio: 'inherit' });
-    
+
     // Fetch latest release
     console.log("Fetching latest release from GitHub...");
     const releasesResponse = await fetch('https://api.github.com/repos/TengraStudio/tengra/releases', {
@@ -21,22 +48,22 @@ async function run() {
             'Accept': 'application/vnd.github.v3+json'
         }
     });
-    
+
     if (!releasesResponse.ok) {
         console.error("Failed to fetch releases:", releasesResponse.status, await releasesResponse.text());
         process.exit(1);
     }
-    
+
     const releases = await releasesResponse.json();
     if (releases.length === 0) {
         console.error("No releases found.");
         process.exit(1);
     }
-    
+
     // We will upload to the latest release
     const latestRelease = releases[0];
     console.log(`Uploading to release: ${latestRelease.name} (${latestRelease.tag_name}), ID: ${latestRelease.id}`);
-    
+
     // Check if runtime-manifest.json already exists as an asset and delete it if so
     const existingAsset = latestRelease.assets.find(a => a.name === 'runtime-manifest.json');
     if (existingAsset) {
@@ -49,14 +76,16 @@ async function run() {
             }
         });
     }
-    
+
     const manifestPath = path.resolve(__dirname, '..', 'runtime-manifest.json');
+    validateRuntimeManifestForPublish(manifestPath);
+
     const fileStats = fs.statSync(manifestPath);
     const fileBuffer = fs.readFileSync(manifestPath);
-    
+
     console.log(`Uploading runtime-manifest.json (${fileStats.size} bytes)...`);
     const uploadUrl = latestRelease.upload_url.split('{')[0] + '?name=runtime-manifest.json';
-    
+
     const uploadResponse = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
@@ -67,12 +96,12 @@ async function run() {
         },
         body: fileBuffer
     });
-    
+
     if (!uploadResponse.ok) {
         console.error("Failed to upload:", uploadResponse.status, await uploadResponse.text());
         process.exit(1);
     }
-    
+
     console.log("Upload successful!");
 }
 run().catch(err => {

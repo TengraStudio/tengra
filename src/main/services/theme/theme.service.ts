@@ -116,6 +116,8 @@ const themeMetrics = new ThemeMetricsStore();
 export { themeMetrics };
 
 export class ThemeService extends BaseService {
+    static readonly serviceName = 'themeService';
+    static readonly dependencies = ['dataService', 'mainWindowProvider'] as const;
     private themesDir: string;
     private installedThemes: Map<string, ThemeManifest> = new Map();
 

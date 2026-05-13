@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import CodexIcon from '@assets/chatgpt.svg?url';
 import React from 'react';
 
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 import { useTranslation } from '@/i18n';
 import { formatReset } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -23,9 +23,11 @@ import { getQuotaColor, HorizontalProgressBar } from './SharedComponents';
 interface CodexCardProps {
     codexUsage: AccountWrapper<{ usage: CodexUsage }> | null
     locale?: string
+    activeAccountId?: string | null
+    activeAccountEmail?: string | null
 }
 
-export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-US' }) => {
+export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-US', activeAccountId, activeAccountEmail }) => {
     const { t } = useTranslation();
     if (!codexUsage?.accounts || codexUsage.accounts.length === 0) { return null; }
 
@@ -34,6 +36,11 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
             {codexUsage.accounts.map((acc, idx: number) => {
                 const usage = acc.usage as CodexUsage & { error?: string };
                 const usageError = typeof usage?.error === 'string' ? usage.error : null;
+                const isActiveAccount = (
+                    (activeAccountId && acc.accountId === activeAccountId) ||
+                    (activeAccountEmail && acc.email === activeAccountEmail) ||
+                    acc.isActive === true
+                );
                 const percentFromRequests =
                     typeof usage?.remainingRequests === 'number'
                         && typeof usage?.totalRequests === 'number'
@@ -51,15 +58,16 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                 return (
                     <div key={acc.accountId ?? idx} className="overflow-hidden rounded-2xl border border-border/15 bg-background shadow-sm">
                         <div className="flex items-center justify-between border-b border-border/10 bg-muted/5 px-4 py-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                                <img src={CodexIcon} alt="Codex Icon" className="w-6 h-6 invert" />
-                            </div>
-                            <div className="flex items-center gap-3 min-w-0">
-                                <span className="truncate text-sm font-semibold text-foreground">
-                                    {acc.email ?? t('frontend.statistics.codexAccount')}
-                                </span>
-                            </div>
-                            <span>{acc.isActive ? t('frontend.statistics.active') : ""}</span>
+                            <ProviderIcon
+                                provider="openai"
+                                variant="minimal"
+                                size="100%"
+                                containerClassName="w-8 h-8 p-1"
+                            />
+                            <span className="truncate text-sm font-semibold text-foreground">
+                                {acc.email ?? t('frontend.statistics.codexAccount')}
+                            </span>
+                            <span>{isActiveAccount ? t('frontend.statistics.active') : ""}</span>
                         </div>
 
                         {!usageError && usage && (
@@ -106,5 +114,3 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
         </div>
     );
 };
-
-

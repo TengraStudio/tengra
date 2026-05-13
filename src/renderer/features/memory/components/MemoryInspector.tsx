@@ -21,16 +21,11 @@
 
 import { AdvancedSemanticFragment, MemoryCategory, MemoryVersion, PendingMemory } from '@shared/types/advanced-memory';
 import { appLogger } from '@system/utils/renderer-logger';
-import { IconAlertTriangle, IconBrain, IconChartBar, IconDatabase, IconListCheck, IconSearch } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Card } from '@/components/ui/card';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { LoadingState } from '@/components/ui/LoadingState';
-import {
-    SettingsTabHeader,
-    SettingsTabLayout,
-} from '@/features/settings/components/SettingsPrimitives';
+import { SettingsTabLayout } from '@/features/settings/components/SettingsPrimitives';
 import { useTranslation } from '@/i18n';
 import { useMemoryInspectorHealthStore } from '@/store/memory-inspector-health.store';
 
@@ -81,8 +76,12 @@ function buildFallbackStats(
     };
 
     for (const memory of allMemories) {
-        byCategory[memory.category] += 1;
-        bySource[memory.source] += 1;
+        if (memory.category in byCategory) {
+            byCategory[memory.category] += 1;
+        }
+        if (memory.source in bySource) {
+            bySource[memory.source] += 1;
+        }
     }
 
     const averageConfidence = allMemories.length > 0
@@ -100,10 +99,10 @@ function buildFallbackStats(
         averageConfidence,
         averageImportance,
         pendingValidation: pendingMemories.length,
-        contradictions: allMemories.reduce((sum, memory) => sum + memory.contradictsIds.length, 0),
+        contradictions: allMemories.reduce((sum, memory) => sum + (Array.isArray(memory.contradictsIds) ? memory.contradictsIds.length : 0), 0),
         recentlyAccessed: allMemories.filter(memory => Date.now() - memory.lastAccessedAt < 86_400_000).length,
         recentlyCreated: allMemories.filter(memory => Date.now() - memory.createdAt < 86_400_000).length,
-        totalEmbeddingSize: allMemories.reduce((sum, memory) => sum + memory.embedding.length, 0),
+        totalEmbeddingSize: allMemories.reduce((sum, memory) => sum + (Array.isArray(memory.embedding) ? memory.embedding.length : 0), 0),
     };
 }
 
@@ -366,7 +365,7 @@ function useMemoryInspectorLogic(
 
 export const MemoryInspector: React.FC = () => {
     const { t } = useTranslation();
-    const [activeTab, setActiveTab] = useState<TabType>('pending');
+    const [activeTab, setActiveTab] = useState<TabType>('confirmed');
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
     const [replaceOnImport, setReplaceOnImport] = useState(false);
@@ -401,23 +400,6 @@ export const MemoryInspector: React.FC = () => {
         () => memoryData.stats ?? buildFallbackStats(memoryData.pendingMemories, memoryData.confirmedMemories),
         [memoryData.confirmedMemories, memoryData.pendingMemories, memoryData.stats]
     );
-    const quickGuide = useMemo(() => ([
-        {
-            icon: IconListCheck,
-            title: 'Review queue',
-            description: 'New memories appear here first. Confirm the useful ones and reject the noisy ones.',
-        },
-        {
-            icon: IconDatabase,
-            title: 'Saved memory',
-            description: 'Confirmed memories are what Tengra can bring back later during chats and tasks.',
-        },
-        {
-            icon: IconSearch,
-            title: 'Search and inspect',
-            description: 'Use search to check what is already stored before deciding whether memory is working correctly.',
-        },
-    ]), []);
 
     const handleFileImport = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -441,12 +423,7 @@ export const MemoryInspector: React.FC = () => {
     }
 
     return (
-        <SettingsTabLayout className="bg-[radial-gradient(circle_at_top_left,rgba(var(--primary-rgb),0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-            <SettingsTabHeader
-                title={t('frontend.settings.tabs.memory')}
-                description="Review pending memories, inspect saved knowledge, and check whether memory retrieval is healthy."
-                icon={IconBrain}
-            />
+        <SettingsTabLayout className="gap-5">
             <MemoryHeader
                 isLoading={memoryData.isLoading}
                 healthStatus={memoryHealthStatus}
@@ -471,78 +448,7 @@ export const MemoryInspector: React.FC = () => {
             />
 
             {memoryData.error && <ErrorDisplay error={memoryData.error} />}
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
-                <div className="space-y-4">
-                    <StatsOverview stats={effectiveStats} />
-                    <Card className="border-border/40 bg-background/70 p-5">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                            <IconBrain className="w-4 h-4 text-primary" />
-                            <span>How this page works</span>
-                        </div>
-                        <div className="mt-4 grid gap-3 md:grid-cols-3">
-                            {quickGuide.map(item => (
-                                <div key={item.title} className="rounded-xl border border-border/30 bg-muted/20 p-4">
-                                    <item.icon className="h-5 w-5 text-primary" />
-                                    <h3 className="mt-3 text-sm font-semibold">{item.title}</h3>
-                                    <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                </div>
-                <Card className="border-border/40 bg-background/70 p-5">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                            <IconChartBar className="w-4 h-4 text-primary" />
-                            <span>{t('frontend.memory.contextUsage')}</span>
-                        </div>
-                        {showReplaceImport && (
-                            <label className="flex items-center gap-2 typo-caption text-muted-foreground">
-                                <input
-                                    type="checkbox"
-                                    checked={replaceOnImport}
-                                    onChange={(event) => setReplaceOnImport(event.target.checked)}
-                                    className="h-4 w-4 rounded border-border/40"
-                                />
-                                {t('frontend.memory.replaceOnImport')}
-                            </label>
-                        )}
-                    </div>
-                    <div className="mt-4 space-y-3">
-                        <div className="rounded-xl border border-border/30 bg-muted/20 p-4">
-                            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{t('frontend.memory.contextPreviewCount')}</p>
-                            <p className="mt-1 text-2xl font-semibold">{memoryData.contextPreview.length}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">Memories currently ready to be inserted into chat context.</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="rounded-xl border border-border/30 bg-muted/20 p-4">
-                                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{t('frontend.memory.totalSearchQueries')}</p>
-                                <p className="mt-1 text-xl font-semibold">{memoryData.searchAnalytics?.totalQueries ?? 0}</p>
-                            </div>
-                            <div className="rounded-xl border border-border/30 bg-muted/20 p-4">
-                                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{t('frontend.memory.hybridSearchQueries')}</p>
-                                <p className="mt-1 text-xl font-semibold">{memoryData.searchAnalytics?.hybridQueries ?? 0}</p>
-                            </div>
-                        </div>
-                        <div className="rounded-xl border border-border/30 bg-muted/20 p-4">
-                            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{t('frontend.memory.avgSearchResults')}</p>
-                            <p className="mt-1 text-2xl font-semibold">{(memoryData.searchAnalytics?.averageResults ?? 0).toFixed(1)}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">Average number of memories returned when Tengra searches past knowledge.</p>
-                        </div>
-                        {memoryHealthStatus === 'degraded' && (
-                            <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-                                <div className="flex items-center gap-2 font-semibold">
-                                    <IconAlertTriangle className="h-4 w-4" />
-                                    <span>Memory needs attention</span>
-                                </div>
-                                <p className="mt-2 text-warning/90">
-                                    Some memory requests failed or returned partial data. You can still review stored items below, but diagnostics may be incomplete until the service recovers.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </Card>
-            </div>
+            <StatsOverview stats={effectiveStats} />
 
             <MemorySearchFilter
                 searchQuery={searchQuery}
@@ -552,19 +458,29 @@ export const MemoryInspector: React.FC = () => {
                 onSearch={handleSearch}
             />
 
-            <div className="flex-1 flex flex-col gap-4 min-h-0">
-                <div className="flex items-center justify-between">
-                    <TabNavigation
-                        activeTab={activeTab}
-                        onTabChange={setActiveTab}
-                        pendingCount={memoryData.pendingMemories.length}
-                        confirmedCount={effectiveStats.byStatus.confirmed}
-                        archivedCount={effectiveStats.byStatus.archived}
-                    />
-                </div>
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+                {showReplaceImport && (
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <input
+                            type="checkbox"
+                            checked={replaceOnImport}
+                            onChange={(event) => setReplaceOnImport(event.target.checked)}
+                            className="h-4 w-4 rounded border-border/40"
+                        />
+                        {t('frontend.memory.replaceExisting')}
+                    </label>
+                )}
 
-                <div className="flex-1 min-h-0 flex gap-4">
-                    <div className="flex-1 min-h-0">
+                <TabNavigation
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    pendingCount={memoryData.pendingMemories.length}
+                    confirmedCount={effectiveStats.byStatus.confirmed}
+                    archivedCount={effectiveStats.byStatus.archived}
+                />
+
+                <div className="flex min-h-0 flex-1 gap-4">
+                    <div className="min-h-0 flex-1">
                         <TabContent
                             activeTab={activeTab}
                             memoryData={memoryData}

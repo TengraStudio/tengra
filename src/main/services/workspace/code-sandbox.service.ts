@@ -76,6 +76,8 @@ const SHELL_BLOCKED_PATTERNS = [
 ];
 
 export class CodeSandboxService {
+    static readonly serviceName = 'codeSandboxService';
+    static readonly dependencies = [] as const;
     private usageStats = {
         totalCalls: 0,
         totalFailures: 0,

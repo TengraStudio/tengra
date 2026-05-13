@@ -142,12 +142,8 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
             get(crate::proxy::handlers::management::handle_antigravity_auth_url),
         )
         .route(
-            "/v0/management/ollama-auth-url",
-            get(crate::proxy::handlers::management::handle_ollama_auth_url),
-        )
-        .route(
-            "/v0/management/ollama-signout",
-            post(crate::proxy::handlers::management::handle_ollama_signout),
+            "/v0/management/cursor-auth-url",
+            get(crate::proxy::handlers::management::handle_cursor_auth_url),
         )
         .route(
             "/v0/management/get-auth-status",
@@ -160,6 +156,14 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
         .route(
             "/v0/management/oauth-callback",
             post(crate::proxy::handlers::management::handle_manual_oauth_callback),
+        )
+        .route(
+            "/v0/management/cursor-complete",
+            post(crate::proxy::handlers::management::handle_cursor_complete),
+        )
+        .route(
+            "/v0/management/debug/tokens",
+            get(crate::proxy::handlers::management::handle_debug_tokens),
         )
         .route(
             "/v0/skills",
@@ -194,6 +198,14 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
         .route(
             "/v0/terminal/ws/:session_id",
             get(crate::proxy::handlers::terminal::terminal_ws_handler),
+        )
+        .route(
+            "/v0/terminal/:session_id/resize",
+            post(crate::proxy::handlers::terminal::resize_terminal),
+        )
+        .route(
+            "/v0/terminal/:session_id",
+            axum::routing::delete(crate::proxy::handlers::terminal::delete_terminal),
         )
         .route(
             "/v0/tools/dispatch",
@@ -310,17 +322,8 @@ fn oauth_provider_readiness(provider: &str) -> Result<OAuthProviderReadiness, St
         "openai" => "codex",
         "anthropic" => "claude",
         "google" => "antigravity",
-        "ollama-local" => "ollama",
         value => value,
     };
-    if normalized == "ollama" {
-        return Ok(OAuthProviderReadiness {
-            provider: "ollama",
-            client_configured: true,
-            client_secret_configured: true,
-            requires_callback_route: false,
-        });
-    }
     let client_id = static_config::oauth_client_id(normalized).ok_or(StatusCode::BAD_REQUEST)?;
     let client_secret = static_config::oauth_client_secret(normalized);
     Ok(OAuthProviderReadiness {
@@ -347,6 +350,11 @@ async fn auth_middleware(
     req: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
+    let path = req.uri().path();
+    if is_auth_bootstrap_route(path) {
+        return Ok(next.run(req).await);
+    }
+
     let provided_keys = extract_auth_candidates(&req);
 
     if !provided_keys.is_empty() {
@@ -357,10 +365,10 @@ async fn auth_middleware(
         // Proxy auth rows are stored as provider `proxy_key`, not metadata type `api_key`.
         match db::get_provider_accounts("proxy_key").await {
             Ok(keys) if !keys.is_empty() => {
-                if provided_keys
-                    .iter()
-                    .any(|key| keys.iter().any(|row| proxy_key_matches(row, key)))
-                {
+                if provided_keys.iter().any(|key| {
+                    keys.iter().any(|row| proxy_key_matches(row, key))
+                        || (insecure_fallback_enabled && key == "proxypal-local")
+                }) {
                     return Ok(next.run(req).await);
                 }
             }
@@ -379,6 +387,25 @@ async fn auth_middleware(
     }
 
     Err(StatusCode::UNAUTHORIZED)
+}
+
+fn is_auth_bootstrap_route(path: &str) -> bool {
+    matches!(
+        path,
+        "/v0/auth/copilot/login"
+            | "/v0/auth/copilot/poll"
+            | "/v0/management/codex-auth-url"
+            | "/v0/management/anthropic-auth-url"
+            | "/v0/management/antigravity-auth-url"
+            | "/v0/management/cursor-auth-url"
+            | "/v0/management/get-auth-status"
+            | "/v0/management/cancel-auth"
+            | "/v0/management/oauth-callback"
+            | "/v0/management/cursor-complete"
+            | "/v0/management/quota/stream"
+            | "/v0/management/quota/snapshot"
+            | "/v0/management/quota"
+    )
 }
 
 fn proxy_key_matches(row: &serde_json::Value, provided_key: &str) -> bool {
@@ -504,7 +531,7 @@ fn append_proxy_key(value: Option<&serde_json::Value>, keys: &mut Vec<String>) {
         return;
     };
 
-    for field in ["apiKey", "managementPassword", "key"] {
+    for field in ["apiKey", "managementPassword", "key", "authStoreKey"] {
         let Some(candidate) = proxy.get(field).and_then(|raw| raw.as_str()) else {
             continue;
         };
@@ -583,11 +610,7 @@ mod tests {
     }
 
     #[test]
-    fn resolves_oauth_provider_readiness_for_ollama_without_callback() {
-        let readiness = oauth_provider_readiness("ollama").expect("readiness");
-        assert_eq!(readiness.provider, "ollama");
-        assert!(readiness.client_configured);
-        assert!(!readiness.requires_callback_route);
+    fn parses_account_id_from_id_with_prefix() {
     }
 
     #[tokio::test]

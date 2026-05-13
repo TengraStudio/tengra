@@ -23,6 +23,8 @@ export interface UsageRecord {
 }
 
 export class UsageService extends BaseService {
+    static readonly serviceName = 'usageService';
+    static readonly dependencies = ['settingsService'] as const;
     private usageRecords: UsageRecord[] = [];
     private readonly MAX_USAGE_RECORDS = 2000;
 

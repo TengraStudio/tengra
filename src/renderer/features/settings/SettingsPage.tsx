@@ -85,11 +85,11 @@ export function SettingsPage({
     const {
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
-        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
+        connectCopilot, connectCursor, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
+        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, cursorQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
-        manualSessionModal, setManualSessionModal, handleSaveClaudeSession, reloadSettings, updateWindow
+        manualSessionModal, setManualSessionModal, handleSaveClaudeSession, handleSaveCursorSession, reloadSettings, updateWindow
     } = useSettingsLogic(onRefreshModels);
 
     const { t } = useTranslation(settings?.general?.language ?? 'en');
@@ -180,16 +180,17 @@ export function SettingsPage({
         setStatusMessage: (m: string) => { setStatusMessage(m); },
         authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
+        connectCopilot, connectCursor, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod,
         setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => { setStatsPeriod(p); },
-        statsData, quotaData, copilotQuota, codexUsage, claudeQuota,
+        statsData, quotaData, copilotQuota, codexUsage, claudeQuota, cursorQuota,
         setReloadTrigger: (trigger: number | ((prev: number) => number)) => { setReloadTrigger(trigger); },
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal,
         setManualSessionModal: (m: ManualSessionModalState) => { setManualSessionModal(m); },
         handleSaveClaudeSession,
+        handleSaveCursorSession,
         t,
         onRefreshModels: (bypassCache?: boolean) => { onRefreshModels?.(bypassCache); },
         loadSettings: reloadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset,
@@ -197,8 +198,8 @@ export function SettingsPage({
     }), [
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, updateWindow, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
-        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
+        connectCopilot, connectCursor, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
+        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, cursorQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
@@ -368,7 +369,7 @@ export function SettingsPage({
             <ManualSessionModal
                 {...manualSessionModal}
                 onClose={() => { setManualSessionModal({ ...manualSessionModal, isOpen: false }); }}
-                onSave={handleSaveClaudeSession}
+                onSave={manualSessionModal.provider === 'cursor' ? handleSaveCursorSession : handleSaveClaudeSession}
             />
         </div>
     );

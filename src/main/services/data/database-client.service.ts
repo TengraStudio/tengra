@@ -78,7 +78,7 @@ const PORT_FILE_CACHE_TTL_MS = 5_000;
 const WORKSPACE_LIST_CACHE_TTL_MS = 5_000;
 
 const SERVICE_NAME = 'db-service';
-const MAX_HEALTH_RETRIES = 40; // Increased for slower startups under load
+const MAX_HEALTH_RETRIES = 10; // Fail faster to avoid blocking dependent services like the terminal
 const HEALTH_RETRY_DELAY_MS = 800;
 const WORKSPACE_COMPAT_PATH_FIELD = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 const DB_SERVICE_TOKEN_ENV = 'TENGRA_DB_SERVICE_TOKEN';
@@ -97,11 +97,14 @@ const HTTP_AGENT_CONFIG = {
  * Database Client Service - communicates with the standalone Rust database service
  */
 export class DatabaseClientService extends BaseService {
+    static readonly serviceName = 'databaseClientService';
+    static readonly dependencies = ['eventBus', 'processManager', 'dataService'] as const;
     private apiClient: AxiosInstance;
     private servicePort: number | null = null;
     private isReady = false;
     private isInitializing = false;
     private initPromise: Promise<void> | null = null;
+    private readyPromise: Promise<void> | null = null;
     private httpAgent: http.Agent;
     private pendingRequests = 0;
     private maxPendingRequests = 200;
@@ -182,7 +185,16 @@ export class DatabaseClientService extends BaseService {
                 throw new Error('Failed to discover or start db-service');
             }
 
-            // discoverOrStartService validates health before returning.
+            this.readyPromise = this.waitForHealth()
+                .then(() => {
+                    this.isReady = true;
+                })
+                .catch(error => {
+                    this.logError('db-service did not become healthy in time', error as Error);
+                    throw error;
+                });
+
+            // Health is now awaited lazily by API calls via readyPromise.
 
             // Listen for service restarts
             this.processManager.on(`${SERVICE_NAME}:ready`, (newPort: number) => {
@@ -191,7 +203,6 @@ export class DatabaseClientService extends BaseService {
                 this.isReady = true;
             });
 
-            this.isReady = true;
             this.eventBus.emit('db:ready', { timestamp: Date.now() });
             this.logInfo(`Connected to db-service on port ${this.servicePort}`);
         } catch (error) {
@@ -255,14 +266,7 @@ export class DatabaseClientService extends BaseService {
             return null;
         }
 
-        // Wait for health check (max 10s)
-        try {
-            await this.waitForHealth();
-            return this.servicePort;
-        } catch {
-            this.logError('Timed out waiting for db-service to become healthy on port 42000');
-            return null;
-        }
+        return this.servicePort;
     }
 
     private isCompatibleHealthyResponse(response: DbApiResponse<DbHealthResponse>): boolean {
@@ -441,9 +445,13 @@ export class DatabaseClientService extends BaseService {
         const MAX_RETRIES = 5;
         const INITIAL_RETRY_DELAY_MS = 500;
 
-        // Wait for initialization if in progress, but NOT if we are the one initializing
-        if (!this.isReady && this.initPromise && !this.isInitializing) {
-            await this.initPromise;
+        // Wait for initialization if in progress, but NOT if we are the one initializing.
+        if (!this.isReady) {
+            if (this.readyPromise) {
+                await this.readyPromise;
+            } else if (this.initPromise && !this.isInitializing) {
+                await this.initPromise;
+            }
         }
 
         if (!this.servicePort) {
@@ -880,7 +888,7 @@ export class DatabaseClientService extends BaseService {
      * Check if the service is ready
      */
     isConnected(): boolean {
-        return this.isReady && this.servicePort !== null;
+        return this.servicePort !== null;
     }
 
     /**

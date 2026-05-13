@@ -43,6 +43,8 @@ const MASTER_KEY_BACKUP_SCRYPT_OPTIONS: crypto.ScryptOptions = {
 };
 
 export class SecurityService extends BaseService implements ISecurityService {
+    static readonly serviceName = 'securityService';
+    static readonly dependencies = ['dataService'] as const;
     private masterKey: Buffer | null = null;
     private readonly keyPath: string;
 

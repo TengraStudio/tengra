@@ -141,6 +141,9 @@ export interface AdvancedMemoryDeps {
 }
 
 export class AdvancedMemoryService {
+    static readonly serviceName = 'advancedMemoryService';
+    static readonly category = 'lazy';
+    static readonly dependencies = ['databaseService', 'embeddingService', 'llmService', 'settingsService', 'backgroundModelResolver'] as const;
     private config: AdvancedMemoryConfig;
     private stagingBuffer: Map<string, PendingMemory> = new Map();
     private sharedNamespaces = new Map<string, SharedMemoryNamespace>();
@@ -184,14 +187,18 @@ export class AdvancedMemoryService {
     private readonly backgroundModelResolver?: BackgroundModelResolver;
 
     constructor(
-        deps: AdvancedMemoryDeps,
+        db: DatabaseService,
+        embedding: EmbeddingService,
+        llmService: LLMService,
+        settings: SettingsService,
+        backgroundModelResolver?: BackgroundModelResolver,
         config?: Partial<AdvancedMemoryConfig>
     ) {
-        this.db = deps.db;
-        this.embedding = deps.embedding;
-        this.llmService = deps.llmService;
-        this.settings = deps.settings;
-        this.backgroundModelResolver = deps.backgroundModelResolver;
+        this.db = db;
+        this.embedding = embedding;
+        this.llmService = llmService;
+        this.settings = settings;
+        this.backgroundModelResolver = backgroundModelResolver;
         this.config = { ...DEFAULT_MEMORY_CONFIG, ...config };
         this.normalizationAdapter = new AdvancedMemoryNormalizationAdapter({
             generateId: this.generateId.bind(this)
@@ -246,9 +253,8 @@ export class AdvancedMemoryService {
         this.initializationPromise = (async () => {
             try {
                 void this.loadPendingMemories().then(() => {
-                    void this.runDecayMaintenance().catch(error => {
-                        appLogger.debug(SERVICE_NAME, `Background memory decay maintenance failed: ${String(error)}`);
-                    });
+                    // Decay maintenance is intentionally not run on startup.
+                    // It is expensive and should only run when the memory UI or an explicit action requests it.
                     this.warmMemorySnapshot();
                 }).catch(error => {
                     appLogger.debug(SERVICE_NAME, `Background pending memory load failed: ${String(error)}`);
@@ -1142,6 +1148,7 @@ ${transcript}`;
         return await this.db.searchEpisodicMemories(queryEmbedding, limit);
     }
 
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_ALL_EPISODES)
     async getAllEpisodes(): Promise<EpisodicMemory[]> {
         return await this.db.knowledge.getAllEpisodicMemories();
     }
@@ -1170,6 +1177,7 @@ ${transcript}`;
         return await this.db.getEntityKnowledge(entityName);
     }
 
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_ALL_ENTITY_KNOWLEDGE)
     async getAllEntityFacts(): Promise<EntityKnowledge[]> {
         return await this.db.knowledge.getAllEntityKnowledge();
     }
@@ -1603,6 +1611,7 @@ If no facts worth remembering, return [].`;
         return this.persistenceAdapter.getMemoryById(id);
     }
 
+    @ipc(ADVANCED_MEMORY_CHANNELS.GET_ALL)
     public async getAllAdvancedMemories(): Promise<AdvancedSemanticFragment[]> {
         return this.persistenceAdapter.getAllAdvancedMemories();
     }

@@ -57,6 +57,9 @@ export interface OpenFile {
     content: string;
     isDirty: boolean;
     initialLine?: number;
+    gitStatus?: string;
+    gitRawStatus?: string;
+    originalContent?: string;
     diff?: {
         oldValue: string;
         newValue: string;
@@ -81,8 +84,7 @@ function normalizeWorkspaceAnalysis(value: WorkspaceAnalysis): WorkspaceAnalysis
             value.languages && typeof value.languages === 'object' ? value.languages : {},
         files: Array.isArray(value.files) ? value.files : [],
         todos: Array.isArray(value.todos) ? value.todos : [],
-        issues: Array.isArray(value.issues) ? value.issues : [],
-        annotations: Array.isArray(value.annotations) ? value.annotations : [],
+        issues: Array.isArray(value.issues) ? value.issues : [], 
     };
 }
 
@@ -102,12 +104,40 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
     const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [editName, setEditName] = useState(workspace.title);
     const [editDesc, setEditDesc] = useState(workspace.description || '');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<FileSearchResult[]>([]);
+    const searchPersistenceKey = `search_v2:${workspace.id}`;
+    const getSaved = () => {
+        try {
+            const saved = localStorage.getItem(searchPersistenceKey);
+            return saved ? JSON.parse(saved) : {};
+        } catch { return {}; }
+    };
+    const savedState = getSaved();
+
+    const [searchQuery, setSearchQuery] = useState(savedState.searchQuery || '');
+    const [replaceQuery, setReplaceQuery] = useState(savedState.replaceQuery || '');
+    const [isRegex, setIsRegex] = useState(savedState.isRegex ?? false);
+    const [matchCase, setMatchCase] = useState(savedState.matchCase ?? false);
+    const [matchWholeWord, setMatchWholeWord] = useState(savedState.matchWholeWord ?? false);
+    const [includeGlob, setIncludeGlob] = useState(savedState.includeGlob || '');
+    const [excludeGlob, setExcludeGlob] = useState(savedState.excludeGlob || '');
+    const [replaceExpanded, setReplaceExpanded] = useState(savedState.replaceExpanded ?? false);
+    const [filtersExpanded, setFiltersExpanded] = useState(savedState.filtersExpanded ?? false);
+    const [searchResults, setSearchResults] = useState<FileSearchResult[]>(savedState.searchResults || []);
     const [isSearching, setIsSearching] = useState(false);
     const analysisRef = useRef<WorkspaceAnalysis | null>(null);
+    const activeSearchRequestIdRef = useRef<string | null>(null);
 
     const summaryCacheKey = `${workspace.id}:${workspace.path}`;
+
+
+    // Save search state to localStorage
+    useEffect(() => {
+        const stateToSave = {
+            searchQuery, replaceQuery, isRegex, matchCase, matchWholeWord,
+            includeGlob, excludeGlob, replaceExpanded, filtersExpanded, searchResults
+        };
+        localStorage.setItem(searchPersistenceKey, JSON.stringify(stateToSave));
+    }, [searchQuery, replaceQuery, isRegex, matchCase, matchWholeWord, includeGlob, excludeGlob, replaceExpanded, filtersExpanded, searchResults, workspace.id]);
 
     // Reset state when workspace changes
     const [prevWorkspaceId, setPrevWorkspaceId] = useState(workspace.id);
@@ -138,19 +168,122 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         setSelectedFolder(selectedEntry?.isDirectory ? selectedEntry.path : null);
     }
 
-    const handleSearch = async () => {
-        if (searchQuery.trim().length < 2) { return; }
+    const handleSearch = useCallback(async (options?: { isRegex?: boolean, matchCase?: boolean, matchWholeWord?: boolean }) => {
+        const trimmed = searchQuery.trim();
+        if (trimmed.length < 2) { 
+            setSearchResults([]);
+            return; 
+        }
+
+        // Cancel previous search
+        if (activeSearchRequestIdRef.current) {
+            void window.electron.code.searchFilesCancel(activeSearchRequestIdRef.current);
+        }
+
+        const requestId = Math.random().toString(36).substring(2, 15);
+        activeSearchRequestIdRef.current = requestId;
+
+        setIsSearching(true);
+        setSearchResults([]); // Clear results for new search
+
+        try {
+            await window.electron.code.searchFilesStream(
+                workspaceRoot, 
+                searchQuery, 
+                requestId,
+                {
+                    isRegex: options?.isRegex ?? isRegex,
+                    matchCase: options?.matchCase ?? matchCase,
+                    matchWholeWord: options?.matchWholeWord ?? matchWholeWord,
+                    includeGlob: includeGlob,
+                    excludeGlob: excludeGlob
+                }
+            );
+        } catch (error) {
+            appLogger.error('WorkspaceDashboard', 'Search failed', error as Error);
+            setIsSearching(false);
+        }
+    }, [searchQuery, workspaceRoot, isRegex, matchCase, matchWholeWord, includeGlob, excludeGlob]);
+
+    useEffect(() => {
+        const handleResultsChunk = (_event: unknown, data: { requestId: string; results: FileSearchResult[] }) => {
+            if (data.requestId !== activeSearchRequestIdRef.current) {return;}
+            
+            setSearchResults(prev => {
+                // Avoid duplicates if chunks somehow overlap (though they shouldn't)
+                const existingPaths = new Set(prev.map(p => `${p.file}:${p.line}:${p.column}`));
+                const newResults = data.results.filter(r => !existingPaths.has(`${r.file}:${r.line}:${r.column}`));
+                return [...prev, ...newResults];
+            });
+        };
+
+        const handleSearchComplete = (_event: unknown, data: { requestId: string }) => {
+            if (data.requestId !== activeSearchRequestIdRef.current) {return;}
+            setIsSearching(false);
+        };
+
+        const removeResultsListener = window.electron.ipcRenderer.on('code:search-results-chunk', handleResultsChunk);
+        const removeCompleteListener = window.electron.ipcRenderer.on('code:search-complete', handleSearchComplete);
+
+        return () => {
+            removeResultsListener();
+            removeCompleteListener();
+        };
+    }, []);
+
+    const handleReplaceAll = useCallback(async (options?: { isRegex?: boolean, matchCase?: boolean, matchWholeWord?: boolean }) => {
+        if (!searchQuery || !replaceQuery) {return;}
+        
+        const confirmResult = await window.electron.dialog.showMessageBox({
+            type: 'warning',
+            title: t('common.confirm'),
+            message: t('frontend.workspaceDashboard.replaceAllConfirm', { 
+                count: searchResults.length,
+                query: searchQuery,
+                replace: replaceQuery
+            }),
+            buttons: [t('common.cancel'), t('frontend.workspaceDashboard.replaceAll')]
+        });
+
+        if (confirmResult.response !== 1) {return;}
+
         setIsSearching(true);
         try {
-            const results = await window.electron.code.searchFiles(workspaceRoot, searchQuery, workspace.id);
-            setSearchResults(normalizeSearchResults(results));
+            const fileGroups = new Map<string, number[]>();
+            searchResults.forEach(r => {
+                const lines = fileGroups.get(r.file) || [];
+                lines.push(r.line);
+                fileGroups.set(r.file, lines);
+            });
+
+            const flags = options?.matchCase ? 'g' : 'gi';
+            let pattern = searchQuery;
+            if (!options?.isRegex) {
+                pattern = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+            if (options?.matchWholeWord && !options?.isRegex) {
+                pattern = `\\b${pattern}\\b`;
+            }
+            const regex = new RegExp(pattern, flags);
+
+            for (const [filePath, _lines] of fileGroups) {
+                const readRes = await window.electron.files.readFile(filePath);
+                if (readRes.success && readRes.content) {
+                    const newContent = readRes.content.replace(regex, replaceQuery);
+                    await window.electron.files.writeFile(filePath, newContent, {
+                        aiSystem: 'SearchReplace',
+                        changeReason: `Replaced "${searchQuery}" with "${replaceQuery}"`
+                    });
+                }
+            }
+            
+            await handleSearch(options);
         } catch (error) {
-            setSearchResults([]);
-            appLogger.error('WorkspaceDashboard', 'Search failed', error as Error);
+            appLogger.error('WorkspaceDashboard', 'Replace all failed', error as Error);
         } finally {
             setIsSearching(false);
         }
-    };
+    }, [searchQuery, replaceQuery, searchResults, t, handleSearch]);
 
     const loadWorkspaceSummary = useCallback(async () => {
         const shouldShowLoading = analysisRef.current === null;
@@ -299,8 +432,17 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
 
     return {
         t,
-        state: { stats, analysis, loading, activeTab, workspaceRoot, openFiles, activeFile, selectedFolder, searchQuery, searchResults, isSearching, activeFileObj },
-        actions: { setActiveTab, setOpenFiles, setActiveFile, setSearchQuery, handleSearch, analyzeWorkspace, loadWorkspaceSummary, handleFileSelect, closeFile },
+        state: { 
+            stats, analysis, loading, activeTab, workspaceRoot, openFiles, activeFile, selectedFolder, 
+            searchQuery, replaceQuery, isRegex, matchCase, matchWholeWord, includeGlob, excludeGlob, 
+            replaceExpanded, filtersExpanded, searchResults, isSearching, activeFileObj 
+        },
+        actions: { 
+            setActiveTab, setOpenFiles, setActiveFile, setSearchQuery, setReplaceQuery, 
+            setIsRegex, setMatchCase, setMatchWholeWord, setIncludeGlob, setExcludeGlob,
+            setReplaceExpanded, setFiltersExpanded,
+            handleSearch, handleReplaceAll, analyzeWorkspace, loadWorkspaceSummary, handleFileSelect, closeFile 
+        },
         editing: { isEditingName, setIsEditingName, editName, setEditName, handleSaveName, isEditingDesc, setIsEditingDesc, editDesc, setEditDesc, handleSaveDesc }
     };
 }

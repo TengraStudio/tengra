@@ -112,7 +112,8 @@ const PROVIDER_ACCOUNT_ALIASES: Record<BrowserOAuthProvider, string[]> = {
     codex: ['codex', 'openai'],
     claude: ['claude', 'anthropic'],
     antigravity: ['antigravity', 'google', 'gemini'],
-    ollama: ['ollama']
+    ollama: ['ollama'],
+    cursor: ['cursor']
 };
 
 const PROVIDER_SETTINGS_UPDATERS: Record<ProviderType, (settings: AppSettings) => AppSettings> = {
@@ -129,21 +130,26 @@ const PROVIDER_SETTINGS_UPDATERS: Record<ProviderType, (settings: AppSettings) =
     ollama: settings => ({
         ...settings,
         ollama: { ...settings.ollama }
-    })
+    }),
+    cursor: settings => ({ ...settings })
 };
 
 function isBrowserOAuthProvider(provider: string | null | undefined): provider is BrowserOAuthProvider {
-    return provider === 'codex' || provider === 'claude' || provider === 'antigravity' || provider === 'ollama';
+    return provider === 'codex' || provider === 'claude' || provider === 'antigravity' || provider === 'ollama' || provider === 'cursor';
 }
 
 function toBrowserAuthRequest(authBusy: AuthBusyState | null): BrowserAuthRequest | null {
-    if (!authBusy || !isBrowserOAuthProvider(authBusy.provider) || !authBusy.state || !authBusy.accountId) {
+    if (!authBusy || !isBrowserOAuthProvider(authBusy.provider)) {
+        return null;
+    }
+    const isCursor = authBusy.provider === 'cursor';
+    if (!isCursor && (!authBusy.state || !authBusy.accountId)) {
         return null;
     }
     return {
         provider: authBusy.provider,
-        state: authBusy.state,
-        accountId: authBusy.accountId,
+        state: authBusy.state ?? 'cursor-auth-state',
+        accountId: authBusy.accountId ?? 'cursor-auth-account',
         initialAccountIds: authBusy.initialAccountIds ?? [],
         startedAt: authBusy.startedAt
     };
@@ -162,6 +168,7 @@ function buildAuthStatus(accounts: UseLinkedAccountsResult['accounts']): AuthSta
         claude: hasProvider(PROVIDER_ACCOUNT_ALIASES.claude),
         antigravity: hasProvider(PROVIDER_ACCOUNT_ALIASES.antigravity),
         ollama: hasProvider(PROVIDER_ACCOUNT_ALIASES.ollama),
+        cursor: hasProvider(PROVIDER_ACCOUNT_ALIASES.cursor),
         copilot: hasProvider(['copilot', 'copilot_token'])
     };
 }
@@ -581,7 +588,34 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 return;
             }
 
-            appLogger.debug('BrowserAuth', `[${provider}] Step 2: Calling ${provider}Login (initialAccounts=${initialAccountIds.length})`);
+            if (provider === 'cursor') {
+                appLogger.debug('BrowserAuth', '[cursor] Triggering window.electron.auth.cursorSeamlessLogin');
+                const result = await withTimeout(
+                    window.electron.auth.cursorSeamlessLogin() as Promise<{ success: boolean; accountId?: string; error?: string }>,
+                    BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS,
+                    'cursor seamless auth'
+                );
+
+                if (requestId !== activeRequestRef.current) {return;}
+
+                if (result.success && result.accountId) {
+                    const request: BrowserAuthRequest = {
+                        provider,
+                        state: 'cursor-seamless',
+                        accountId: result.accountId,
+                        initialAccountIds,
+                        startedAt: Date.now()
+                    };
+                    pendingBrowserAuthRef.current = request;
+                    setAuthBusy(request);
+                    setAuthNotice(t('frontend.auth.connecting'));
+                    pollConnection(request);
+                } else {
+                    resetBrowserAuthState(result.error || t('frontend.auth.failedUrlForProvider', { provider }));
+                }
+                return;
+            }
+
             const loginRequest = provider === 'codex'
                 ? window.electron.auth.codexLogin()
                 : provider === 'claude'
@@ -589,7 +623,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     : window.electron.auth.antigravityLogin();
 
             const response = await withTimeout(
-                loginRequest,
+                loginRequest as Promise<{ url?: string; state?: string; accountId?: string; success: boolean; error?: string }>,
                 BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS,
                 `${provider} auth initialization`
             );
@@ -607,8 +641,8 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
             const request: BrowserAuthRequest = {
                 provider,
-                state: response.state,
-                accountId: response.accountId,
+                state: response.state ?? 'cursor-auth-state',
+                accountId: response.accountId ?? 'cursor-auth-account',
                 initialAccountIds,
                 startedAt: Date.now()
             };
@@ -620,8 +654,12 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             pendingBrowserAuthRef.current = request;
             sawProviderAuthUpdateRef.current = false;
             setAuthBusy(request);
-            appLogger.debug('BrowserAuth', `[${provider}] Step 4: Opening browser with URL`);
-            window.electron.openExternal(response.url);
+            
+            if (response.url) {
+                appLogger.debug('BrowserAuth', `[${provider}] Step 4: Opening browser with URL`);
+                window.electron.openExternal(response.url);
+            }
+            
             setAuthNotice(t('frontend.auth.connecting'));
             pollConnection(request);
         } catch (error) {
@@ -652,6 +690,28 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         setAuthNotice(t('frontend.auth.savingSession'));
         try {
             const result = await window.electron.auth.saveClaudeSession(key.trim(), id);
+            if (!result.success) {
+                const errorMessage = result.error ?? t('common.unknownError');
+                setAuthNotice(t('frontend.auth.failedWithReason', { reason: errorMessage }));
+                return { success: false, error: errorMessage };
+            }
+
+            setAuthNotice(t('common.success'));
+            await linkedAccounts.refreshAccounts();
+            return { success: true };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setAuthNotice(t('frontend.auth.failedWithReason', { reason: message }));
+            return { success: false, error: message };
+        } finally {
+            setAuthBusy(null);
+        }
+    }, [linkedAccounts, setAuthBusy, setAuthNotice, t]);
+
+    const handleSaveCursorSession = useCallback(async (session: string, id?: string) => {
+        setAuthNotice(t('frontend.auth.savingSession'));
+        try {
+            const result = await window.electron.auth.saveCursorSession(session.trim(), id);
             if (!result.success) {
                 const errorMessage = result.error ?? t('common.unknownError');
                 setAuthNotice(t('frontend.auth.failedWithReason', { reason: errorMessage }));
@@ -712,7 +772,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         cancelBrowserAuth,
         cancelBrowserAuthForAccount,
         handleSaveClaudeSession,
+        handleSaveCursorSession,
         disconnectProvider
     };
 }
-

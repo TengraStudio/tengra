@@ -51,7 +51,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
             <div className="space-y-4">
                 {(['daily', 'weekly'] as const).map(period => {
                     const periodLimit = codexLimits?.[period] ?? { enabled: false, percentage: 50 };
-                    const periodLabel = t(`settings.usageLimits.periods.${period}`);
+                    const periodLabel = t(`frontend.settings.usageLimits.periods.${period}`);
 
                     return (
                         <div

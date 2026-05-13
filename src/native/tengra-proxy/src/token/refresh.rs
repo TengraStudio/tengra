@@ -58,6 +58,8 @@ pub async fn execute_refresh(
         "https://auth.openai.com/oauth/token"
     } else if token.provider.contains("claude") || token.provider.contains("anthropic") {
         "https://api.anthropic.com/v1/oauth/token"
+    } else if token.provider.contains("cursor") {
+        "https://api2.cursor.sh/oauth/token"
     } else {
         return RefreshResponse {
             success: false,
@@ -90,6 +92,12 @@ pub async fn execute_refresh(
             )
             .header("x-anthropic-additional-protection", "true")
             .form(&params);
+    } else if token.provider.contains("cursor") {
+        request_builder = request_builder.json(&serde_json::json!({
+            "refresh_token": params.get("refresh_token").cloned().unwrap_or_default(),
+            "grant_type": "refresh_token",
+            "client_id": params.get("client_id").cloned().unwrap_or_else(|| "KTiMj4aOmB5xHnJFVJnwzssPnOxzUACx".to_string())
+        }));
     } else {
         request_builder = request_builder.form(&params);
     }
@@ -122,18 +130,31 @@ pub async fn execute_refresh(
     #[derive(Deserialize)]
     struct OAuthResponse {
         access_token: String,
-        expires_in: i64,
+        expires_in: Option<i64>,
         refresh_token: Option<String>,
+        #[serde(rename = "shouldLogout")]
+        should_logout: Option<bool>,
     }
 
     match res.json::<OAuthResponse>().await {
         Ok(data) => {
+            if data.should_logout == Some(true) {
+                return RefreshResponse {
+                    success: false,
+                    token: None,
+                    error: Some("Refresh token revoked (shouldLogout=true)".into()),
+                    invalidate_account: true,
+                };
+            }
+
             token.access_token = Some(data.access_token);
             if let Some(new_rt) = data.refresh_token {
                 token.refresh_token = Some(new_rt);
             }
-            token.expires_at =
-                Some(chrono::Utc::now().timestamp_millis() + (data.expires_in * 1000));
+            if let Some(expires_in) = data.expires_in {
+                token.expires_at =
+                    Some(chrono::Utc::now().timestamp_millis() + (expires_in * 1000));
+            }
             RefreshResponse {
                 success: true,
                 token: Some(token),

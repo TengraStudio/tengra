@@ -255,6 +255,8 @@ export interface WorkspaceIgnoreMatcher {
 export interface WorkspaceIgnoreOptions {
     defaultPatterns?: readonly string[];
     extraPatterns?: readonly string[];
+    includeGlob?: string;
+    excludeGlob?: string;
 }
 
 const workspaceIgnoreCache = new Map<string, WorkspaceIgnoreCacheEntry>();
@@ -433,10 +435,32 @@ async function loadWorkspaceIgnorePatterns(
         )
     );
 
+    const extraPatterns = [...(options.extraPatterns ?? [])];
+
+    if (options.excludeGlob) {
+        const excludes = options.excludeGlob.split(',').map(p => p.trim()).filter(Boolean);
+        extraPatterns.push(...excludes);
+    }
+
+    // Include is tricky because gitignore is "everything is included by default, unless ignored".
+    // "Only include X" means "ignore everything except X".
+    // In gitignore syntax: 
+    // *
+    // !X
+    if (options.includeGlob) {
+        const includes = options.includeGlob.split(',').map(p => p.trim()).filter(Boolean);
+        if (includes.length > 0) {
+            extraPatterns.push('*'); // Ignore everything
+            includes.forEach(inc => {
+                extraPatterns.push(`!${inc}`); // except these
+            });
+        }
+    }
+
     return [
         ...(options.defaultPatterns ?? []),
         ...ignoreFilePatterns.flat(),
-        ...(options.extraPatterns ?? []),
+        ...extraPatterns,
     ];
 }
 
@@ -445,6 +469,8 @@ function buildCacheKey(rootPath: string, options: WorkspaceIgnoreOptions): strin
         rootPath: normalizeRootPath(rootPath),
         defaultPatterns: [...(options.defaultPatterns ?? [])],
         extraPatterns: [...(options.extraPatterns ?? [])],
+        includeGlob: options.includeGlob,
+        excludeGlob: options.excludeGlob,
     });
 }
 

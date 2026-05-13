@@ -84,6 +84,8 @@ const AMBIGUOUS_PRONOUN_PATTERN = /^(it|they|this|that|these|those)\s/i;
  * All analysis is performed without LLM calls using heuristic rules.
  */
 export class PromptOptimizerService extends BaseService {
+    static readonly serviceName = 'promptOptimizerService';
+    static readonly dependencies = [] as const;
     constructor() {
         super('PromptOptimizerService');
     }

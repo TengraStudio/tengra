@@ -36,7 +36,6 @@ const CODEX_CALLBACK_PORT: u16 = 1455;
 const CLAUDE_CALLBACK_PORT: u16 = 54545;
 const ANTIGRAVITY_CALLBACK_PORT: u16 = 51121;
 const CALLBACK_LATENCY_SAMPLE_LIMIT: usize = 512;
-const OLLAMA_SINGLE_ACCOUNT_ID: &str = "ollama_default";
 
 static OAUTH_SESSIONS: OnceLock<RwLock<HashMap<String, OAuthSession>>> = OnceLock::new();
 static CALLBACK_SERVERS: OnceLock<RwLock<HashSet<&'static str>>> = OnceLock::new();
@@ -164,10 +163,6 @@ pub async fn create_session(
 }
 
 fn resolve_session_account_id(provider: &str, account_id: Option<&str>) -> String {
-    if provider.eq_ignore_ascii_case("ollama") {
-        return OLLAMA_SINGLE_ACCOUNT_ID.to_string();
-    }
-
     account_id
         .map(str::trim)
         .filter(|value| !value.is_empty())
@@ -321,6 +316,90 @@ async fn complete_session(
         "antigravity" => exchange_antigravity(session, code).await,
         _ => Err(anyhow!("Unsupported provider for callback: {}", provider)),
     }
+}
+
+pub async fn complete_cursor_session(
+    session_json: &str,
+    account_id: &str,
+    machine_id: &str,
+    mac_machine_id: &str,
+) -> Result<SessionStatus> {
+    let data: serde_json::Value = serde_json::from_str(session_json)?;
+
+    let access_token = data
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| anyhow!("Missing access_token"))?
+        .to_string();
+    let email_from_payload = data
+        .get("user")
+        .and_then(|u| u.get("email"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    let mut storage = data.clone();
+    if let Some(obj) = storage.as_object_mut() {
+        obj.insert("provider".to_string(), serde_json::json!("cursor"));
+        if let Some(ref e) = email_from_payload {
+            obj.insert("email".to_string(), serde_json::json!(e));
+        }
+
+        // Add machine IDs to metadata for checksum generation
+        let mut metadata = obj
+            .get("metadata")
+            .and_then(|m| m.as_object())
+            .cloned()
+            .unwrap_or_default();
+        metadata.insert("machineId".to_string(), serde_json::json!(machine_id));
+        metadata.insert(
+            "macMachineId".to_string(),
+            serde_json::json!(mac_machine_id),
+        );
+        obj.insert("metadata".to_string(), serde_json::Value::Object(metadata));
+    }
+
+    crate::db::save_token_with_retry(storage, account_id, "cursor", 3).await?;
+
+    // Fetch the real email from Cursor's API and update the database record.
+    // We await this so that the email is available immediately when the frontend refreshes.
+    if let Err(e) = fetch_and_persist_cursor_user_info(&access_token, account_id).await {
+        eprintln!(
+            "[WARN] Failed to fetch Cursor user info during completion: {}",
+            e
+        );
+    }
+
+    Ok(SessionStatus {
+        state: "direct".to_string(),
+        provider: "cursor".to_string(),
+        account_id: account_id.to_string(),
+        status: "ok".to_string(),
+        error: None,
+        created_at: now_ts(),
+        updated_at: now_ts(),
+    })
+}
+
+/// Fetches the user's email from Cursor's API and persists it into the linked_accounts metadata.
+async fn fetch_and_persist_cursor_user_info(access_token: &str, account_id: &str) -> Result<()> {
+    use crate::auth::cursor::client::CursorClient;
+
+    let client = CursorClient::new();
+    let email = client.fetch_user_email(access_token).await?;
+
+    if let Some(email) = email {
+        eprintln!("[INFO] Cursor user email resolved: {}", email);
+
+        // Persist email into the metadata of the linked account
+        let patch = serde_json::json!({
+            "email": email
+        });
+        crate::db::merge_metadata_patch(account_id, "cursor", patch).await?;
+    } else {
+        eprintln!("[WARN] Could not resolve Cursor user email, account will show without email");
+    }
+
+    Ok(())
 }
 
 async fn exchange_codex(session: OAuthSession, code: &str) -> Result<SessionStatus> {
@@ -699,8 +778,8 @@ pub async fn callback_bridge_usage_stats_snapshot() -> CallbackBridgeusageStatsS
 }
 
 #[cfg(test)]
-async fn reset_callback_bridge_usageStats_for_tests() {
-    let mut usage_stats = callback_bridge_usageStats().write().await;
+async fn reset_callback_bridge_usage_stats_for_tests() {
+    let mut usage_stats = callback_bridge_usage_stats().write().await;
     usage_stats.redirect_count = 0;
     usage_stats.error_count = 0;
     usage_stats.latency_samples_ms.clear();
@@ -709,10 +788,10 @@ async fn reset_callback_bridge_usageStats_for_tests() {
 #[cfg(test)]
 mod tests {
     use super::{
-        callback_bridge_usageStats_snapshot, callback_config, cancel_session,
+        callback_bridge_usage_stats_snapshot, callback_config, cancel_session,
         complete_external_session, create_session, extract_codex_profile_claims,
         get_session_status_for, normalize_error, record_callback_bridge_event,
-        reset_callback_bridge_usageStats_for_tests, ManualOAuthCallback,
+        reset_callback_bridge_usage_stats_for_tests, ManualOAuthCallback,
     };
     use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 
@@ -756,31 +835,6 @@ mod tests {
         assert!(get_session_status_for("antigravity", &state, &account_id)
             .await
             .is_none());
-    }
-
-    #[tokio::test]
-    async fn completes_external_session_without_callback() {
-        let (state, account_id, _) = create_session("ollama", Some("ollama_test"), false)
-            .await
-            .expect("session");
-        let status = complete_external_session("ollama", &state, &account_id)
-            .await
-            .expect("status");
-        assert_eq!(status.status, "ok");
-        assert_eq!(status.provider, "ollama");
-    }
-
-    #[tokio::test]
-    async fn enforces_single_ollama_account_id() {
-        let (_state_a, account_a, _) = create_session("ollama", None, false)
-            .await
-            .expect("ollama session without account id");
-        let (_state_b, account_b, _) = create_session("ollama", Some("ollama_custom"), false)
-            .await
-            .expect("ollama session with custom account id");
-
-        assert_eq!(account_a, "ollama_default");
-        assert_eq!(account_b, "ollama_default");
     }
 
     #[test]
@@ -831,15 +885,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn tracks_callback_bridge_usageStats_percentiles() {
-        reset_callback_bridge_usageStats_for_tests().await;
+    async fn tracks_callback_bridge_usage_stats_percentiles() {
+        reset_callback_bridge_usage_stats_for_tests().await;
         record_callback_bridge_event(true, false, 10).await;
         record_callback_bridge_event(true, false, 20).await;
         record_callback_bridge_event(true, true, 30).await;
         record_callback_bridge_event(true, false, 40).await;
         record_callback_bridge_event(true, true, 100).await;
 
-        let snapshot = callback_bridge_usageStats_snapshot().await;
+        let snapshot = callback_bridge_usage_stats_snapshot().await;
         assert_eq!(snapshot.redirect_count, 5);
         assert_eq!(snapshot.error_count, 2);
         assert_eq!(snapshot.latency_ms.sample_count, 5);

@@ -10,7 +10,9 @@
 
 import React from 'react';
 
-import { useCommandStripResize } from './useCommandStripResize';
+import type { TerminalTab } from '@/types';
+
+import { useWorkspaceFooterResize } from './useWorkspaceFooterResize';
 
 const MIN_TERMINAL_HEIGHT = 150;
 const FLOATING_TERMINAL_MAX_WIDTH_PX = 980;
@@ -36,7 +38,9 @@ interface UseTerminalLayoutParams {
     }) => void;
     showAgentPanel: boolean;
     sidebarCollapsed: boolean;
-    tabsCount: number;
+    tabs: TerminalTab[];
+    activeTabId: string | null;
+    setActiveTabId: (id: string | null) => void;
 }
 
 /**
@@ -51,7 +55,9 @@ export function useTerminalLayout({
     onTerminalLayoutStateChange,
     showAgentPanel,
     sidebarCollapsed,
-    tabsCount: _tabsCount,
+    tabs,
+    activeTabId,
+    setActiveTabId,
 }: UseTerminalLayoutParams) {
     const [isMaximizedTerminal, setIsMaximizedTerminal] = React.useState(initialMaximizedTerminal);
     const [isResizingTerminal, setIsResizingTerminal] = React.useState(false); 
@@ -66,7 +72,7 @@ export function useTerminalLayout({
         return Math.min(Math.max(minHeight, window.innerHeight - clientY - 32), maxHeight);
     }, []);
 
-    const { stopCommandStripResize, handleCommandStripResizeStart } = useCommandStripResize({
+    const { stopWorkspaceFooterResize, handleWorkspaceFooterResizeStart } = useWorkspaceFooterResize({
         showTerminal,
         setShowTerminal,
         setIsMaximizedTerminal, 
@@ -74,6 +80,9 @@ export function useTerminalLayout({
         setTerminalHeight,
         calculateTerminalHeight,
         lastExpandedTerminalHeightRef,
+        activeTabId,
+        setActiveTabId,
+        tabs,
     });
 
     const dockedTerminalRightInsetPx = React.useMemo(() => {
@@ -113,9 +122,9 @@ export function useTerminalLayout({
 
     React.useEffect(() => {
         if (!showTerminal) {
-            stopCommandStripResize();
+            stopWorkspaceFooterResize();
         }
-    }, [showTerminal, stopCommandStripResize]);
+    }, [showTerminal, stopWorkspaceFooterResize]);
 
     // Keep last expanded height in sync
     React.useEffect(() => {
@@ -127,9 +136,9 @@ export function useTerminalLayout({
     // Cleanup on unmount
     React.useEffect(() => {
         return () => {
-            stopCommandStripResize();
+            stopWorkspaceFooterResize();
         };
-    }, [stopCommandStripResize]);
+    }, [stopWorkspaceFooterResize]);
 
     // Track viewport width for floating layout
     React.useEffect(() => {
@@ -141,7 +150,7 @@ export function useTerminalLayout({
             window.removeEventListener('resize', onResize);
         };
     }, []);
- 
+  
     React.useEffect(() => {
         onTerminalLayoutStateChange({ 
             terminalMaximized: isMaximizedTerminal,
@@ -159,7 +168,7 @@ export function useTerminalLayout({
         lastExpandedTerminalHeightRef,
         dockedTerminalRightInsetPx,
         floatingTerminalLayout,
-        handleCommandStripResizeStart,
+        handleWorkspaceFooterResizeStart,
     };
 }
 

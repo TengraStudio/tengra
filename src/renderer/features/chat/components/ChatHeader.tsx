@@ -14,8 +14,8 @@ import { memo, useEffect } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 
 /* Batch-02: Extracted Long Classes */
-const C_CHATHEADER_1 = "inline-flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-2.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground";
-const C_CHATHEADER_2 = "w-full bg-foreground/5 border border-border/10 rounded-xl pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/30";
+const C_CHATHEADER_1 = "inline-flex h-7 items-center gap-1.5 rounded border border-border px-2 typo-caption font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground";
+const C_CHATHEADER_2 = "w-full rounded border border-border bg-background pl-9 pr-7 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50";
 
 
 interface ChatHeaderProps {
@@ -57,46 +57,10 @@ export const ChatHeader = memo(({
     }, [debouncedSearchTerm, onSearchChange]);
 
     return (
-        <div className="border-b border-border/50 bg-background/30 px-6 py-3 backdrop-blur-md shrink-0">
-            <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                    <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex items-center justify-between gap-3">
-                            <span className="truncate typo-body font-semibold text-muted-foreground/80">
-                                Context Window
-                            </span>
-                            <span className="typo-body font-bold text-foreground/80">
-                                {normalizedUsedTokens.toLocaleString()} / {normalizedWindow.toLocaleString()}
-                            </span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/45">
-                            <div
-                                className="h-full rounded-full bg-primary/80 transition-all duration-300"
-                                style={{ width: `${usagePercent}%` }}
-                            />
-                        </div>
-                    </div>
-                    <button
-                        onClick={onClearMessages}
-                        className={C_CHATHEADER_1}
-                        title={t('frontend.chat.clear')}
-                        aria-label={t('frontend.chat.clear')}
-                    >
-                        <IconEraser className="h-3.5 w-3.5" />
-                        <span>{t('frontend.chat.clear')}</span>
-                    </button>
-                    {onExport && (
-                        <button
-                            onClick={onExport}
-                            className="text-muted-foreground/50 hover:text-foreground transition-colors p-2"
-                            title={t('frontend.chat.exportChat')}
-                        >
-                            <IconDownload className="w-5 h-5" />
-                        </button>
-                    )}
-                </div>
-                <div className="relative w-full">
-                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+        <div className="shrink-0 border-b border-border bg-background px-4 py-2.5">
+            <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                    <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70" />
                     <input
                         type="text"
                         placeholder={t('frontend.chat.searchMessages')}
@@ -108,13 +72,39 @@ export const ChatHeader = memo(({
                     {searchTerm && (
                         <button
                             onClick={() => setSearchTerm('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-foreground text-muted-foreground/40"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground"
                             aria-label={t('common.clear')}
                         >
-                            <IconX className="w-3.5 h-3.5" />
+                            <IconX className="h-3.5 w-3.5" />
                         </button>
                     )}
                 </div>
+                <button
+                    onClick={onClearMessages}
+                    className={C_CHATHEADER_1}
+                    title={t('frontend.chat.clear')}
+                    aria-label={t('frontend.chat.clear')}
+                >
+                    <IconEraser className="h-3.5 w-3.5" />
+                    <span>{t('frontend.chat.clear')}</span>
+                </button>
+                {onExport && (
+                    <button
+                        onClick={onExport}
+                        className={C_CHATHEADER_1}
+                        title={t('frontend.chat.exportChat')}
+                        aria-label={t('frontend.chat.exportChat')}
+                    >
+                        <IconDownload className="h-3.5 w-3.5" />
+                        <span>{t('frontend.chat.exportChat')}</span>
+                    </button>
+                )}
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground/80">
+                <span>Context</span>
+                <span>
+                    {normalizedUsedTokens.toLocaleString()} / {normalizedWindow.toLocaleString()} ({usagePercent}%)
+                </span>
             </div>
         </div>
     );

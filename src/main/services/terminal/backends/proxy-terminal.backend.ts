@@ -9,6 +9,7 @@
  */
 
 import { appLogger } from '@main/logging/logger';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import axios from 'axios';
 import { WebSocket } from 'ws';
@@ -24,12 +25,20 @@ export class ProxyTerminalBackend implements ITerminalBackend {
     private readonly proxyUrl = 'http://127.0.0.1:8317';
     private readonly wsUrl = 'ws://127.0.0.1:8317';
 
-    constructor(private readonly authService: AuthService) {}
+    constructor(
+        private readonly authService: AuthService,
+        private readonly proxyService?: ProxyService
+    ) {}
 
     public async isAvailable(): Promise<boolean> {
+        // If we have the proxy service, we consider it available because we can start it on demand
+        if (this.proxyService) {
+            return true;
+        }
+
         try {
-            // Simple health check to see if proxy is alive
-            const response = await axios.get(`${this.proxyUrl}/health`, { timeout: 1000 });
+            // Fallback health check for cases where proxyService isn't provided but proxy might be running
+            const response = await axios.get(`${this.proxyUrl}/health`, { timeout: 200 });
             return response.status === 200;
         } catch {
             return false;
@@ -39,9 +48,17 @@ export class ProxyTerminalBackend implements ITerminalBackend {
     public async create(options: TerminalCreateOptions): Promise<ITerminalProcess> {
         appLogger.info('ProxyTerminalBackend', `Requesting PTY from proxy: ${options.shell} in ${options.cwd}`);
 
+        // Ensure proxy is running before attempting to create session
+        if (this.proxyService) {
+            const ready = await this.proxyService.ensureEmbeddedProxyReady();
+            if (!ready) {
+                throw new Error('Failed to start terminal proxy');
+            }
+        }
+
         const apiKey = await this.getProxyApiKey();
 
-        // 1. Create session via REST API
+        // 1. Create session via REST API with explicit timeout
         const createResponse = await axios.post(`${this.proxyUrl}/v0/terminal`, {
             cwd: options.cwd,
             shell: options.shell,
@@ -52,7 +69,8 @@ export class ProxyTerminalBackend implements ITerminalBackend {
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: 10000 // 10s timeout to avoid "stuck" terminals
         });
 
         const sessionId = createResponse.data.id;
@@ -60,27 +78,34 @@ export class ProxyTerminalBackend implements ITerminalBackend {
             throw new Error('Failed to create terminal session in proxy');
         }
 
+        const wsUrl = `${this.wsUrl}/v0/terminal/ws/${sessionId}`;
+        appLogger.info('ProxyTerminalBackend', `Connecting WebSocket to ${wsUrl} (Key: ${apiKey.slice(0, 8)}***)`);
+
         // 2. Connect WebSocket for data streaming
-        const socket = new WebSocket(`${this.wsUrl}/v0/terminal/ws/${sessionId}`, {
+        const socket = new WebSocket(wsUrl, {
             headers: {
                 'Authorization': `Bearer ${apiKey}`
-            }
+            },
+            handshakeTimeout: 5000
+        });
+
+        socket.on('open', () => {
+            appLogger.info('ProxyTerminalBackend', `WebSocket stream opened for session ${sessionId}`);
         });
 
         socket.on('message', (data) => {
-            if (Buffer.isBuffer(data)) {
-                options.onData(data.toString('utf8'));
-            } else {
-                options.onData(data.toString());
-            }
+            const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data.toString();
+            appLogger.debug('ProxyTerminalBackend', `Received ${dataStr.length} chars for session ${sessionId}`);
+            options.onData(dataStr);
         });
 
-        socket.on('close', () => {
+        socket.on('close', (code, reason) => {
+            appLogger.info('ProxyTerminalBackend', `WebSocket stream closed for session ${sessionId} (Code: ${code}, Reason: ${reason})`);
             options.onExit(0);
         });
 
         socket.on('error', (err) => {
-            appLogger.error('ProxyTerminalBackend', `WebSocket error for session ${sessionId}`, err);
+            appLogger.error('ProxyTerminalBackend', `WebSocket error for session ${sessionId}: ${err.message}`, err);
         });
 
         // 3. Return process handle
@@ -91,22 +116,58 @@ export class ProxyTerminalBackend implements ITerminalBackend {
                 }
             },
             resize: (cols: number, rows: number) => {
-                // Currently, the proxy's terminal handler doesn't have a specific resize route,
-                // but we can add it or send it as a control message if we extend the protocol.
-                // For now, let's just log it. 
-                // NOTE: The Rust session has a resize() method, we just need to expose it.
-                appLogger.debug('ProxyTerminalBackend', `Resize requested: ${cols}x${rows} (not yet implemented in proxy WS)`);
+                void (async () => {
+                    try {
+                        await axios.post(`${this.proxyUrl}/v0/terminal/${sessionId}/resize`, {
+                            cols,
+                            rows
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${apiKey}`,
+                                'Content-Type': 'application/json'
+                            },
+                            timeout: 2000
+                        });
+                    } catch (err) {
+                        appLogger.error('ProxyTerminalBackend', `Failed to resize terminal session ${sessionId}`, err);
+                    }
+                })();
             },
             kill: () => {
                 socket.close();
-                // Optionally call DELETE /v0/terminal/:id if we add that route
+                void (async () => {
+                    try {
+                        await axios.delete(`${this.proxyUrl}/v0/terminal/${sessionId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${apiKey}`
+                            },
+                            timeout: 2000
+                        });
+                    } catch (err) {
+                        appLogger.error('ProxyTerminalBackend', `Failed to delete terminal session ${sessionId}`, err);
+                    }
+                })();
             }
         };
     }
 
     private async getProxyApiKey(): Promise<string> {
-        const token = await this.authService.getActiveToken('proxy_key');
-        return token || 'proxypal-local'; // Fallback to default insecure key if not set
+        try {
+            // Await the token to ensure AuthService is ready, but with a timeout
+            const token = await Promise.race([
+                this.authService.getActiveToken('proxy_key'),
+                new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 3000))
+            ]);
+            
+            if (token) {
+                return token;
+            }
+        } catch (e) {
+            appLogger.warn('ProxyTerminalBackend', 'Failed to retrieve proxy API key from AuthService');
+        }
+        
+        appLogger.warn('ProxyTerminalBackend', 'No proxy_key found or timeout reached, using unified fallback');
+        return 'proxypal-fallback'; // Fallback to default shared key if not set
     }
 }
 

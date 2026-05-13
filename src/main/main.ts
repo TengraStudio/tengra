@@ -20,8 +20,10 @@ EarlyIpc.initialize(getMainWindow);
 
 // Defer main application load to the next tick to ensure
 // all module side-effects from early boot are completed.
-void import('./app').catch(err => {
-    console.error('[CRITICAL] Failed to load application logic:', err);
-    process.exit(1);
-});
+setTimeout(() => {
+    void import('./app').catch(err => {
+        console.error('[CRITICAL] Failed to load application logic:', err);
+        process.exit(1);
+    });
+}, 0);
 

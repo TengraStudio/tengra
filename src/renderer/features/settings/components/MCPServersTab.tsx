@@ -21,8 +21,12 @@ import { cn } from '@/lib/utils';
 import { useMarketplaceStore } from '@/store/marketplace.store';
 import { pushNotification } from '@/store/notification-center.store';
 import { appLogger } from '@/utils/renderer-logger';
+import {
+    SettingsTabHeader,
+    SettingsTabLayout,
+} from './SettingsPrimitives';
 
-const C_MCPSERVERSTAB_1 = "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/40 py-16 text-muted-foreground/40 sm:flex-row";
+const C_MCPSERVERSTAB_1 = "flex flex-col items-center justify-center rounded-2xl py-16 text-muted-foreground/40 sm:flex-row";
 type McpActionPolicy = 'allow' | 'deny' | 'ask';
 
 interface MCPAction {
@@ -158,7 +162,7 @@ function ServerItem({
                 isEditing && 'border-primary/40 bg-primary/05 ring-1 ring-primary/10'
             )}
         >
-            <div className="flex items-center justify-between p-4 sm:p-5">
+            <div className="flex items-center justify-between p-4 sm:p-5 px-6 py-2">
                 <div className="flex flex-1 items-center gap-4 sm:gap-5">
                     <div
                         className={cn(
@@ -428,9 +432,7 @@ export function MCPServersTab(): JSX.Element {
         }, 0);
         return () => window.clearTimeout(timer);
     }, [loadServers]);
-
-    const activeCount = useMemo(() => servers.filter(server => (server.enabled || server.isEnabled) && server.isAlive).length, [servers]);
-
+ 
     const handleToggle = useCallback(
         async (
             serverId: string,
@@ -518,30 +520,13 @@ export function MCPServersTab(): JSX.Element {
     }, [loadServers, servers, t]);
 
     return (
-        <div className="flex flex-col space-y-6 p-5 pb-20">
-            <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                    <h2 className="text-xl font-semibold  text-foreground flex items-center gap-2.5">
-                        <IconServer className="h-5 w-5 text-primary" />
-                        {t('frontend.settings.mcp.servers.title')}
-                    </h2>
-                    <p className="text-sm text-muted-foreground/50">
-                        {t('frontend.settings.mcp.servers.subtitle')}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-muted/40 border border-border/40 px-3 py-1 text-sm font-bold  text-muted-foreground/60 uppercase">
-                        {activeCount} / {servers.length} {t('frontend.settings.mcp.status.active')}
-                    </div>
-                </div>
-            </div>
-
+        <SettingsTabLayout > 
             {loading && servers.length === 0 ? (
                 <div className="flex h-40 items-center justify-center">
                     <IconRefresh className="h-5 w-5 animate-spin text-muted-foreground/20" />
                 </div>
             ) : (
-                <div className="grid gap-2.5">
+                <div className="grid gap-2.5 px-6 py-2">
                     {serversWithUpdates.map(server => (
                         <ServerItem
                             key={(server.id || server.name) + (editingServerId === (server.id || server.name) ? '-edit' : '')}
@@ -564,7 +549,7 @@ export function MCPServersTab(): JSX.Element {
                     )}
                 </div>
             )}
-        </div>
+        </SettingsTabLayout>
     );
 }
 

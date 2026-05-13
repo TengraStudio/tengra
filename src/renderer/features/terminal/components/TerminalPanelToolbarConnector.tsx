@@ -84,6 +84,7 @@ export interface TerminalPanelToolbarConnectorProps {
     shortcutImportInputRef: React.MutableRefObject<HTMLInputElement | null>;
     shareShortcutPreferences: () => Promise<void>;
     importShortcutShareCode: () => void;
+    activeFileType?: string;
 }
 
 export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnectorProps> = (props) => {
@@ -146,6 +147,7 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
             isMaximized={props.isMaximized}
             setIsMaximized={props.setIsMaximized}
             onToggle={props.onToggle}
+            activeFileType={props.activeFileType}
         />
     );
 };

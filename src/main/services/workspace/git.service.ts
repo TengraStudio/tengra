@@ -70,6 +70,8 @@ interface GitExecutionResult {
 }
 
 export class GitService extends BaseService {
+    static readonly serviceName = 'gitService';
+    static readonly dependencies = ['llmService', 'authService'] as const;
     private readonly DEFAULT_TIMEOUT_MS = 60000;
     private readonly MIN_TIMEOUT_MS = 1000;
     private readonly MAX_TIMEOUT_MS = 600000;
@@ -338,7 +340,8 @@ export class GitService extends BaseService {
             }
             return { success: true, remotes: [] };
         } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error), remotes: [] };
+            this.logError(`Failed to get remotes for ${cwd}`, error as Error);
+            return { success: false, error: (error as Error).message };
         }
     }
 
@@ -364,62 +367,94 @@ export class GitService extends BaseService {
             cwd,
             `rev-list --left-right --count ${branch}...${tracking}`
         );
-
         return this.parseTrackingCounts(countsResult, tracking);
     }
 
-    @ipc(GIT_CHANNELS.GET_DETAILED_STATUS)
-    async getDetailedStatus(cwd: string) {
-        // Get staged files
-        const stagedResult = await this.executeRaw(cwd, 'diff --cached --name-status');
-        // Get unstaged tracked files
-        const unstagedResult = await this.executeRaw(cwd, 'diff --name-status');
-        // Get untracked files
-        const untrackedResult = await this.executeRaw(cwd, 'ls-files --others --exclude-standard');
-
-        const parseStatus = (
-            output: string,
-            staged: boolean
-        ): Array<{ status: string; path: string; staged: boolean }> => {
-            if (!output) {
-                return [];
+    @ipc(GIT_CHANNELS.GET_FILE_DIFF)
+    async getFileDiff(mountPath: string, filePath: string, staged: boolean = false) {
+        try {
+            // Find the actual repository root
+            let repoRoot: string;
+            try {
+                const rootResult = await this.executeRaw(mountPath, 'rev-parse --show-toplevel');
+                if (!rootResult.success || !rootResult.stdout) {
+                    return { success: false, error: 'Not a git repository' };
+                }
+                repoRoot = rootResult.stdout.trim();
+            } catch (e) {
+                return { success: false, error: 'Not a git repository' };
             }
-            return output
-                .split('\n')
-                .filter(line => line.trim())
-                .map(line => {
-                    const parts = line.trim().split('\t');
+
+            const cwd = repoRoot;
+
+            // For git show, the path must be relative to the repository root.
+            const headResult = await this.executeRaw(cwd, `show HEAD:"${filePath}"`);
+
+            return {
+                success: headResult.success,
+                original: headResult.stdout ?? '',
+                modified: ''
+            };
+        } catch (error) {
+            this.logError(`Failed to get file diff for ${filePath}`, error as Error);
+            return { success: false, error: (error as Error).message };
+        }
+    }
+
+    @ipc(GIT_CHANNELS.GET_DETAILED_STATUS)
+    async getDetailedStatus(mountPath: string) {
+        try {
+            // Find the actual repository root
+            let repoRoot: string;
+            try {
+                const rootResult = await this.executeRaw(mountPath, 'rev-parse --show-toplevel');
+                if (!rootResult.success || !rootResult.stdout) {
+                    return { success: false, error: 'Not a git repository' };
+                }
+                repoRoot = rootResult.stdout.trim();
+            } catch (e) {
+                return { success: false, error: 'Not a git repository' };
+            }
+
+            const cwd = repoRoot;
+            const stagedResult = await this.executeRaw(cwd, 'diff --cached --name-status');
+            const unstagedResult = await this.executeRaw(cwd, 'diff --name-status');
+            const untrackedResult = await this.executeRaw(cwd, 'ls-files --others --exclude-standard');
+
+            const parseStatus = (output: string, staged: boolean): Array<{ status: string; path: string; staged: boolean }> => {
+                if (!output) {return [];}
+                return output.split(/\r?\n/).filter(line => line.trim()).map(line => {
+                    const parts = line.trim().split(/\s+/);
                     if (parts.length >= 2) {
-                        return {
-                            status: parts[0] as string,
-                            path: parts[1] as string,
-                            staged,
-                        };
-                    } else if (parts.length === 1) {
-                        // Untracked files just have the path
-                        return {
-                            status: '??',
-                            path: parts[0] as string,
-                            staged,
-                        };
+                        return { status: parts[0], path: parts[1], staged };
                     }
-                    return null;
-                })
-                .filter(Boolean) as Array<{ status: string; path: string; staged: boolean }>;
-        };
+                    return { status: staged ? 'A' : '??', path: parts[0], staged };
+                });
+            };
 
-        const stagedFiles = parseStatus(stagedResult.stdout ?? '', true);
-        const unstagedFiles = parseStatus(unstagedResult.stdout ?? '', false);
-        const untrackedFiles = parseStatus(untrackedResult.stdout ?? '', false);
+            const stagedFiles = parseStatus(stagedResult.stdout || '', true);
+            const unstagedFiles = parseStatus(unstagedResult.stdout || '', false);
+            const untrackedFiles = (untrackedResult.stdout || '').split(/\r?\n/).filter(l => l.trim()).map(p => ({
+                status: '??',
+                path: p.trim(),
+                staged: false
+            }));
 
-        const allFiles = [...stagedFiles, ...unstagedFiles, ...untrackedFiles];
+            const allFiles = [...stagedFiles, ...unstagedFiles, ...untrackedFiles];
 
-        return {
-            success: true,
-            stagedFiles,
-            unstagedFiles: [...unstagedFiles, ...untrackedFiles],
-            allFiles,
-        };
+            return {
+                success: true,
+                staged: stagedFiles,
+                unstaged: unstagedFiles,
+                untracked: untrackedFiles,
+                allFiles,
+                stagedFiles,
+                unstagedFiles: [...unstagedFiles, ...untrackedFiles]
+            };
+        } catch (error) {
+            this.logError(`Failed to get detailed status for ${mountPath}`, error as Error);
+            return { success: false, error: (error as Error).message };
+        }
     }
 
     @ipc(GIT_CHANNELS.GET_DIFF_STATS)
@@ -508,73 +543,78 @@ export class GitService extends BaseService {
     }
 
     @ipc(GIT_CHANNELS.GET_BLAME)
-    async getBlame(cwd: string, filePath: string) {
-        const result = await this.executeRaw(
-            cwd,
-            `blame --line-porcelain -- "${this.shellEscapeQuoted(filePath)}"`
-        );
-        if (!result.success || !result.stdout) {
-            return { success: false, lines: [], error: result.error ?? 'No blame output' };
+    async getBlame(cwd: string, filePath: string, lineNumber?: number) {
+        try {
+            const command = lineNumber !== undefined
+                ? `blame -L ${lineNumber},${lineNumber} --porcelain -- "${filePath}"`
+                : `blame --line-porcelain -- "${filePath}"`;
+
+            const result = await this.executeRaw(cwd, command);
+            if (!result.success || !result.stdout) {
+                return { success: false, lines: [], error: result.error ?? 'No blame output' };
+            }
+
+            const lines = result.stdout.split('\n');
+            const blameLines: Array<{
+                lineNumber: number;
+                commit: string;
+                author: string;
+                authorTime: string;
+                summary: string;
+                content: string;
+            }> = [];
+
+            let currentCommit = '';
+            let currentLineNumber = 0;
+            let currentAuthor = '';
+            let currentTime = '';
+            let currentSummary = '';
+
+            for (const line of lines) {
+                if (/^[0-9a-f]{8,40}\s+\d+\s+\d+/.test(line)) {
+                    const headerParts = line.split(' ');
+                    currentCommit = headerParts[0] ?? '';
+                    currentLineNumber = Number(headerParts[2] ?? '0');
+                    currentAuthor = '';
+                    currentTime = '';
+                    currentSummary = '';
+                    continue;
+                }
+
+                if (line.startsWith('author ')) {
+                    currentAuthor = line.slice('author '.length);
+                    continue;
+                }
+
+                if (line.startsWith('author-time ')) {
+                    const timestamp = Number(line.slice('author-time '.length));
+                    currentTime = Number.isFinite(timestamp)
+                        ? new Date(timestamp * 1000).toLocaleDateString()
+                        : '';
+                    continue;
+                }
+
+                if (line.startsWith('summary ')) {
+                    currentSummary = line.slice('summary '.length);
+                    continue;
+                }
+
+                if (line.startsWith('\t')) {
+                    blameLines.push({
+                        lineNumber: currentLineNumber,
+                        commit: currentCommit,
+                        author: currentAuthor,
+                        authorTime: currentTime,
+                        summary: currentSummary,
+                        content: line.slice(1),
+                    });
+                }
+            }
+
+            return { success: true, lines: blameLines };
+        } catch (error) {
+            return { success: false, lines: [], error: (error as Error).message };
         }
-
-        const lines = result.stdout.split('\n');
-        const blameLines: Array<{
-            lineNumber: number;
-            commit: string;
-            author: string;
-            authorTime: string;
-            summary: string;
-            content: string;
-        }> = [];
-
-        let currentCommit = '';
-        let currentLineNumber = 0;
-        let currentAuthor = '';
-        let currentTime = '';
-        let currentSummary = '';
-
-        for (const line of lines) {
-            if (/^[0-9a-f]{8,40}\s+\d+\s+\d+/.test(line)) {
-                const headerParts = line.split(' ');
-                currentCommit = headerParts[0] ?? '';
-                currentLineNumber = Number(headerParts[2] ?? '0');
-                currentAuthor = '';
-                currentTime = '';
-                currentSummary = '';
-                continue;
-            }
-
-            if (line.startsWith('author ')) {
-                currentAuthor = line.slice('author '.length);
-                continue;
-            }
-
-            if (line.startsWith('author-time ')) {
-                const timestamp = Number(line.slice('author-time '.length));
-                currentTime = Number.isFinite(timestamp)
-                    ? new Date(timestamp * 1000).toISOString()
-                    : '';
-                continue;
-            }
-
-            if (line.startsWith('summary ')) {
-                currentSummary = line.slice('summary '.length);
-                continue;
-            }
-
-            if (line.startsWith('\t')) {
-                blameLines.push({
-                    lineNumber: currentLineNumber,
-                    commit: currentCommit,
-                    author: currentAuthor,
-                    authorTime: currentTime,
-                    summary: currentSummary,
-                    content: line.slice(1),
-                });
-            }
-        }
-
-        return { success: true, lines: blameLines };
     }
 
     @ipc(GIT_CHANNELS.GET_COMMIT_DETAILS)
@@ -1437,21 +1477,7 @@ export class GitService extends BaseService {
         return await this.execute(command, cwd, options);
     }
 
-    @ipc(GIT_CHANNELS.GET_FILE_DIFF)
-    async getFileDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ original: string; modified: string; success: boolean; error?: string }> {
-        try {
-            const command = staged ? `diff --cached -- "${filePath}"` : `diff -- "${filePath}"`;
-            const result = await this.execute(command, cwd);
 
-            if (!result.success || !result.stdout) {
-                return await this.getFallbackDiff(cwd, filePath, staged);
-            }
-
-            return this.parseUnifiedDiff(result.stdout);
-        } catch (error) {
-            return { original: '', modified: '', success: false, error: getErrorMessage(error) };
-        }
-    }
 
     private async getFallbackDiff(cwd: string, filePath: string, staged: boolean): Promise<{ original: string; modified: string; success: boolean }> {
         if (staged) {
@@ -1816,7 +1842,7 @@ ${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
             const response = await this.llmService.chat([
                 { role: 'system', content: 'You are an expert software engineer generating Pull Request summaries.' },
                 { role: 'user', content: prompt }
-            ], 'gpt-4o');
+            ], '');
 
             return { success: true, summary: response.content };
         } catch (error) {
@@ -1994,5 +2020,6 @@ ${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
         });
         return remotes;
     }
+
 }
 

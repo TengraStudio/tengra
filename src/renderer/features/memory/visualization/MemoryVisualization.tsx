@@ -17,10 +17,7 @@ import { cn } from '@/lib/utils';
 import { EntityRelationshipDiagram } from './EntityRelationshipDiagram';
 import { MemoryGraphView } from './MemoryGraphView';
 import { MemoryTimelineView } from './MemoryTimelineView';
-
-/* Batch-02: Extracted Long Classes */
-const C_MEMORYVISUALIZATION_1 = "px-6 py-3 border-t border-border/30 bg-muted/20 flex items-center justify-between typo-caption text-muted-foreground font-bold";
-
+ 
 function getLegacyTabAriaLabel(tabId: VizTab, fallbackLabel: string, t: (key: string) => string): string {
     if (tabId === 'entities') {
         return t('frontend.memory.entities');
@@ -44,7 +41,7 @@ export const MemoryVisualization: React.FC = () => {
     ];
 
     return (
-        <div className="flex flex-col h-full bg-background/20 backdrop-blur-sm">
+        <div className="flex h-full min-h-[32rem] flex-col bg-background/20 backdrop-blur-sm">
             {/* Header / Tabs */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
                 <div className="flex items-center gap-2">
@@ -78,34 +75,13 @@ export const MemoryVisualization: React.FC = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 p-6 overflow-hidden">
-                <div className="h-full w-full relative">
+            <div className="flex-1 min-h-[32rem] p-6 overflow-hidden">
+                <div className="h-full min-h-0 w-full relative">
                     {activeTab === 'graph' && <MemoryGraphView />}
                     {activeTab === 'entities' && <EntityRelationshipDiagram />}
                     {activeTab === 'timeline' && <MemoryTimelineView />}
                 </div>
-            </div>
-
-            {/* Footer / Legend */}
-            <div className={C_MEMORYVISUALIZATION_1}>
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                        <span>{t('frontend.memory.visualization.legend.semanticContext')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-success" />
-                        <span>{t('frontend.memory.visualization.legend.entityKnowledge')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-info" />
-                        <span>{t('frontend.memory.visualization.legend.episodicExperience')}</span>
-                    </div>
-                </div>
-                <div>
-                    {t('frontend.memory.visualization.poweredBy')}
-                </div>
-            </div>
+            </div> 
         </div>
     );
 };

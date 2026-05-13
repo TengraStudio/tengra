@@ -42,6 +42,8 @@ export interface CacheInvalidationResult {
  * Uses SHA256 hashes of normalized request parameters as cache keys.
  */
 export class ResponseCacheService extends BaseService {
+    static readonly serviceName = 'responseCacheService';
+    static readonly dependencies = [] as const;
     private readonly cache = new Map<string, CacheEntry>();
     private readonly MAX_ENTRIES = 1000;
     private readonly MIN_TTL_MS = 1000;

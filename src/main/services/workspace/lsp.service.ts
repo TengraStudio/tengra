@@ -9,12 +9,13 @@
  */
 
 import { ChildProcess, spawn } from 'child_process';
-import { existsSync, promises as fs } from 'fs';
+import { existsSync, mkdirSync, promises as fs } from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
 import { BaseService } from '@main/services/base.service';
 import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
+import { app } from 'electron';
 import * as rpc from 'vscode-jsonrpc/node';
 import * as protocol from 'vscode-languageserver-protocol';
 
@@ -57,6 +58,22 @@ interface LspServerDefinition {
     candidates: LspCommandCandidate[];
 }
 
+export interface LspProgressEvent {
+    workspaceId: string;
+    serverId: string;
+    languageId: WorkspaceServerLanguageId;
+    token: string | number;
+    value: protocol.WorkDoneProgressBegin | protocol.WorkDoneProgressReport | protocol.WorkDoneProgressEnd;
+}
+
+export interface LspLogEvent {
+    workspaceId: string;
+    serverId: string;
+    languageId: WorkspaceServerLanguageId;
+    type: 'info' | 'warn' | 'error' | 'log';
+    message: string;
+}
+
 export interface LspServerInstance {
     process: ChildProcess;
     connection: rpc.MessageConnection;
@@ -69,6 +86,14 @@ export interface LspServerInstance {
     exited: boolean;
     diagnosticProvider?: protocol.DiagnosticOptions;
     codeActionProvider?: boolean | protocol.CodeActionOptions;
+    hoverProvider?: boolean | protocol.HoverOptions;
+    definitionProvider?: boolean | protocol.DefinitionOptions;
+    referencesProvider?: boolean | protocol.ReferenceOptions;
+    renameProvider?: boolean | protocol.RenameOptions;
+    formattingProvider?: boolean | protocol.DocumentFormattingOptions;
+    signatureHelpProvider?: protocol.SignatureHelpOptions;
+    inlayHintProvider?: boolean | protocol.InlayHintOptions;
+    workspaceSymbolProvider?: boolean | protocol.WorkspaceSymbolOptions;
 }
 
 interface OpenDocumentState {
@@ -378,17 +403,59 @@ const LSP_SERVER_DEFINITIONS: LspServerDefinition[] = [
 ];
 
 export class LspService extends BaseService {
+    static readonly serviceName = 'lspService';
+    static readonly dependencies = ['mainWindowProvider', 'runtimeBootstrapService'] as const;
     private instances: Map<string, LspServerInstance> = new Map();
     private diagnostics: Map<string, protocol.PublishDiagnosticsParams[]> = new Map();
     private openDocuments: Map<string, Map<string, OpenDocumentState>> = new Map();
     private startPromises: Map<string, Promise<void>> = new Map();
     private workspaceServers: Map<string, Set<string>> = new Map();
+    private managedDependencyInstallPromises: Map<string, Promise<void>> = new Map();
 
     constructor(
         private mainWindowProvider?: () => import('electron').BrowserWindow | null,
         private runtimeBootstrapService?: import('@main/services/system/runtime-bootstrap.service').RuntimeBootstrapService
     ) {
         super('LspService');
+    }
+
+    private broadcastLog(instance: LspServerInstance, type: LspLogEvent['type'], message: string): void {
+        const mainWindow = this.mainWindowProvider?.();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('lsp:log-event', {
+                workspaceId: instance.workspaceId,
+                serverId: instance.serverId,
+                languageId: instance.languageId,
+                type,
+                message
+            } as LspLogEvent);
+        }
+    }
+
+    private broadcastProgress(instance: LspServerInstance, token: string | number, value: unknown): void {
+        const mainWindow = this.mainWindowProvider?.();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('lsp:progress-event', {
+                workspaceId: instance.workspaceId,
+                serverId: instance.serverId,
+                languageId: instance.languageId,
+                token,
+                value
+            } as LspProgressEvent);
+        }
+    }
+
+    private broadcastNotification(instance: LspServerInstance, message: string, type: 'error' | 'warn' | 'info'): void {
+        const mainWindow = this.mainWindowProvider?.();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('lsp:notification-event', {
+                workspaceId: instance.workspaceId,
+                serverId: instance.serverId,
+                languageId: instance.languageId,
+                message,
+                type
+            });
+        }
     }
 
     async initialize(): Promise<void> {
@@ -404,6 +471,47 @@ export class LspService extends BaseService {
         for (const definition of definitions) {
             await this.startServer(workspaceId, rootPath, definition.languageId);
         }
+    }
+
+    private triggerManagedDependencyInstall(
+        componentId: string,
+        retry?: () => Promise<void>
+    ): void {
+        if (!this.runtimeBootstrapService) {
+            return;
+        }
+
+        if (this.managedDependencyInstallPromises.has(componentId)) {
+            return;
+        }
+
+        this.logInfo(`Triggering background installation for missing managed dependency: ${componentId}`);
+
+        const installPromise = this.runtimeBootstrapService
+            .runComponentAction(componentId)
+            .then(async result => {
+                if (!result.success) {
+                    this.logWarn(
+                        `Managed dependency installation did not complete for ${componentId}: ${result.message}`
+                    );
+                    return;
+                }
+
+                if (retry) {
+                    await retry();
+                }
+            })
+            .catch(error => {
+                this.logWarn(
+                    `Managed dependency installation failed for ${componentId}: ${error instanceof Error ? error.message : String(error)
+                    }`
+                );
+            })
+            .finally(() => {
+                this.managedDependencyInstallPromises.delete(componentId);
+            });
+
+        this.managedDependencyInstallPromises.set(componentId, installPromise);
     }
 
     getWorkspaceServerSupport(workspaceId: string, files: string[]): LspServerSupportStatus[] {
@@ -616,17 +724,17 @@ export class LspService extends BaseService {
         }
         return diagnostics;
     }
-    
+
     async pullDiagnostics(
         workspaceId: string,
         filePath: string,
         languageId: WorkspaceServerLanguageId
     ): Promise<protocol.Diagnostic[] | null> {
         const definition = this.resolveDefinitionForFile(filePath, languageId);
-        if (!definition) {return null;}
+        if (!definition) { return null; }
 
         const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
-        if (!instance?.diagnosticProvider) {return null;}
+        if (!instance?.diagnosticProvider) { return null; }
 
         const normalizedFilePath = path.resolve(filePath);
         const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
@@ -662,10 +770,10 @@ export class LspService extends BaseService {
         diagnostics: protocol.Diagnostic[]
     ): Promise<(protocol.Command | protocol.CodeAction)[] | null> {
         const definition = this.resolveDefinitionForFile(filePath, languageId);
-        if (!definition) {return null;}
+        if (!definition) { return null; }
 
         const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
-        if (!instance?.codeActionProvider) {return null;}
+        if (!instance?.codeActionProvider) { return null; }
 
         const normalizedFilePath = path.resolve(filePath);
         const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
@@ -702,6 +810,10 @@ export class LspService extends BaseService {
             return [];
         }
 
+        if (!instance.capabilities?.definitionProvider) {
+            return [];
+        }
+
         const normalizedFilePath = path.resolve(filePath);
         const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
         const openDocument = documents?.get(normalizedFilePath);
@@ -723,6 +835,200 @@ export class LspService extends BaseService {
         );
 
         return this.normalizeDefinitionResult(result);
+    }
+
+    async getHover(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId,
+        line: number,
+        column: number
+    ): Promise<protocol.Hover | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) {return null;}
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance?.hoverProvider) {return null;}
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        return await this.sendRequestSafely<protocol.HoverParams, protocol.Hover | null>(
+            instance,
+            protocol.HoverRequest.type.method,
+            {
+                textDocument: { uri },
+                position: { line: line - 1, character: column - 1 }
+            }
+        );
+    }
+
+    async getReferences(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId,
+        line: number,
+        column: number,
+        includeDeclaration: boolean = true
+    ): Promise<protocol.Location[] | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) {return null;}
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance?.referencesProvider) {return null;}
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        return await this.sendRequestSafely<protocol.ReferenceParams, protocol.Location[] | null>(
+            instance,
+            protocol.ReferencesRequest.type.method,
+            {
+                textDocument: { uri },
+                position: { line: line - 1, character: column - 1 },
+                context: { includeDeclaration }
+            }
+        );
+    }
+
+    async rename(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId,
+        line: number,
+        column: number,
+        newName: string
+    ): Promise<protocol.WorkspaceEdit | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) {return null;}
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance?.renameProvider) {return null;}
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        return await this.sendRequestSafely<protocol.RenameParams, protocol.WorkspaceEdit | null>(
+            instance,
+            protocol.RenameRequest.type.method,
+            {
+                textDocument: { uri },
+                position: { line: line - 1, character: column - 1 },
+                newName
+            }
+        );
+    }
+
+    async format(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId,
+        options: protocol.FormattingOptions
+    ): Promise<protocol.TextEdit[] | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) {return null;}
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance?.formattingProvider) {return null;}
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        return await this.sendRequestSafely<protocol.DocumentFormattingParams, protocol.TextEdit[] | null>(
+            instance,
+            protocol.DocumentFormattingRequest.type.method,
+            {
+                textDocument: { uri },
+                options
+            }
+        );
+    }
+
+    async getSignatureHelp(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId,
+        line: number,
+        column: number
+    ): Promise<protocol.SignatureHelp | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) {return null;}
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance?.signatureHelpProvider) {return null;}
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        return await this.sendRequestSafely<protocol.SignatureHelpParams, protocol.SignatureHelp | null>(
+            instance,
+            protocol.SignatureHelpRequest.type.method,
+            {
+                textDocument: { uri },
+                position: { line: line - 1, character: column - 1 }
+            }
+        );
+    }
+
+    async getInlayHints(
+        workspaceId: string,
+        filePath: string,
+        languageId: WorkspaceServerLanguageId,
+        range: protocol.Range
+    ): Promise<protocol.InlayHint[] | null> {
+        const definition = this.resolveDefinitionForFile(filePath, languageId);
+        if (!definition) {return null;}
+
+        const instance = this.instances.get(this.toInstanceKey(workspaceId, definition.id));
+        if (!instance?.inlayHintProvider) {return null;}
+
+        const normalizedFilePath = path.resolve(filePath);
+        const documents = this.openDocuments.get(this.toInstanceKey(workspaceId, definition.id));
+        const openDocument = documents?.get(normalizedFilePath);
+        const uri = openDocument?.uri ?? pathToFileURL(normalizedFilePath).toString();
+
+        return await this.sendRequestSafely<protocol.InlayHintParams, protocol.InlayHint[] | null>(
+            instance,
+            protocol.InlayHintRequest.type.method,
+            {
+                textDocument: { uri },
+                range
+            }
+        );
+    }
+
+    async getWorkspaceSymbols(
+        workspaceId: string,
+        query: string,
+        languageId?: WorkspaceServerLanguageId
+    ): Promise<protocol.SymbolInformation[] | protocol.WorkspaceSymbol[] | null> {
+        const results: (protocol.SymbolInformation | protocol.WorkspaceSymbol)[] = [];
+        const serverIds = Array.from(this.workspaceServers.get(workspaceId) ?? []);
+
+        for (const serverId of serverIds) {
+            const instance = this.instances.get(this.toInstanceKey(workspaceId, serverId));
+            if (!instance?.workspaceSymbolProvider) {continue;}
+            if (languageId && instance.languageId !== languageId) {continue;}
+
+            const res = await this.sendRequestSafely<protocol.WorkspaceSymbolParams, protocol.SymbolInformation[] | protocol.WorkspaceSymbol[] | null>(
+                instance,
+                protocol.WorkspaceSymbolRequest.type.method,
+                { query }
+            );
+            if (res) {results.push(...res);}
+        }
+
+        return results;
     }
 
     async stopServer(workspaceId: string): Promise<void> {
@@ -763,9 +1069,18 @@ export class LspService extends BaseService {
         const resolvedCommand = this.resolveRunnableCommand(definition);
         if (!resolvedCommand) {
             this.logWarn(`No runnable LSP binary found for ${definition.id}`);
+            this.triggerManagedDependencyInstall(definition.id, async () => {
+                await this.startServer(workspaceId, rootPath, definition.languageId);
+            });
             return;
         }
-        const serverProcess = this.spawnServerProcess(rootPath, resolvedCommand);
+        const instanceKey = this.toInstanceKey(workspaceId, definition.id);
+        const serverProcess = this.spawnServerProcess(rootPath, resolvedCommand, (type, message) => {
+            const instance = this.instances.get(instanceKey);
+            if (instance) {
+                this.broadcastLog(instance, type, message);
+            }
+        });
 
         const stdout = serverProcess.stdout;
         const stdin = serverProcess.stdin;
@@ -778,12 +1093,49 @@ export class LspService extends BaseService {
             serverProcess.kill();
             return;
         }
-
-        const instanceKey = this.toInstanceKey(workspaceId, definition.id);
+ 
         const connection = rpc.createMessageConnection(
             new rpc.StreamMessageReader(stdout),
             new rpc.StreamMessageWriter(stdin)
         );
+
+        // Listen for log messages from server
+        connection.onNotification(protocol.LogMessageNotification.type.method, (params: protocol.LogMessageParams) => {
+            const instance = this.instances.get(instanceKey);
+            if (instance) {
+                let type: LspLogEvent['type'] = 'info';
+                if (params.type === protocol.MessageType.Error) {type = 'error';}
+                else if (params.type === protocol.MessageType.Warning) {type = 'warn';}
+                else if (params.type === protocol.MessageType.Log) {type = 'log';}
+                this.broadcastLog(instance, type, params.message);
+            }
+        });
+
+        // Listen for show message notifications
+        connection.onNotification(protocol.ShowMessageNotification.type.method, (params: protocol.ShowMessageParams) => {
+            const instance = this.instances.get(instanceKey);
+            if (instance) {
+                let type: 'error' | 'warn' | 'info' = 'info';
+                if (params.type === protocol.MessageType.Error) {type = 'error';}
+                else if (params.type === protocol.MessageType.Warning) {type = 'warn';}
+                this.broadcastNotification(instance, params.message, type);
+            }
+        });
+
+        // Handle configuration requests from server
+        connection.onRequest(protocol.ConfigurationRequest.type.method, (params: protocol.ConfigurationParams) => {
+            // TODO: In a real app, pull this from settings
+            return params.items.map(() => ({}));
+        });
+
+        // Handle progress reporting
+        connection.onNotification('$/progress', (params: { token: string | number; value: unknown }) => {
+            const instance = this.instances.get(instanceKey);
+            if (instance) {
+                this.broadcastProgress(instance, params.token, params.value);
+            }
+        });
+
         connection.listen();
 
         serverProcess.on('error', (error) => {
@@ -856,7 +1208,7 @@ export class LspService extends BaseService {
                     },
                 },
                 workspace: {
-                    configuration: false,
+                    configuration: true,
                     workspaceFolders: true,
                 },
             },
@@ -870,13 +1222,21 @@ export class LspService extends BaseService {
 
         try {
             const initResult = await connection.sendRequest(protocol.InitializeRequest.type.method, initParams) as protocol.InitializeResult;
-            
+
             const instance: LspServerInstance = {
                 process: serverProcess,
                 connection,
                 capabilities: initResult.capabilities,
                 diagnosticProvider: initResult.capabilities.diagnosticProvider as protocol.DiagnosticOptions,
-                codeActionProvider: initResult.capabilities.codeActionProvider,
+                codeActionProvider: initResult.capabilities.codeActionProvider as protocol.CodeActionOptions,
+                hoverProvider: initResult.capabilities.hoverProvider as protocol.HoverOptions,
+                definitionProvider: initResult.capabilities.definitionProvider as protocol.DefinitionOptions,
+                referencesProvider: initResult.capabilities.referencesProvider as protocol.ReferenceOptions,
+                renameProvider: initResult.capabilities.renameProvider as protocol.RenameOptions,
+                formattingProvider: initResult.capabilities.documentFormattingProvider as protocol.DocumentFormattingOptions,
+                signatureHelpProvider: initResult.capabilities.signatureHelpProvider as protocol.SignatureHelpOptions,
+                inlayHintProvider: initResult.capabilities.inlayHintProvider as protocol.InlayHintOptions,
+                workspaceSymbolProvider: initResult.capabilities.workspaceSymbolProvider as protocol.WorkspaceSymbolOptions,
                 workspaceId,
                 rootPath,
                 languageId: definition.languageId,
@@ -932,7 +1292,11 @@ export class LspService extends BaseService {
         }
     }
 
-    private spawnServerProcess(rootPath: string, command: ResolvedLspCommand): ChildProcess {
+    private spawnServerProcess(
+        rootPath: string,
+        command: ResolvedLspCommand,
+        onLog?: (type: LspLogEvent['type'], message: string) => void
+    ): ChildProcess {
         let spawnCommand = command.command;
         let spawnArgs = command.args;
         let useShell = command.shell;
@@ -943,12 +1307,29 @@ export class LspService extends BaseService {
             useShell = false;
         }
 
-        return spawn(spawnCommand, spawnArgs, {
+        const biomeLogDir = path.join(app.getPath('userData'), 'logs', 'biome');
+        mkdirSync(biomeLogDir, { recursive: true });
+
+        const serverProcess = spawn(spawnCommand, spawnArgs, {
             cwd: rootPath,
             shell: useShell,
             stdio: ['pipe', 'pipe', 'pipe'],
             windowsHide: true,
+            env: {
+                ...process.env,
+                BIOME_LOG_DIR: path.join(app.getPath('userData'), 'logs', 'biome'),
+            },
         });
+
+        serverProcess.stderr?.on('data', (chunk: Buffer | string) => {
+            const text = typeof chunk === 'string' ? chunk : chunk.toString('utf-8');
+            const trimmed = text.trim();
+            if (trimmed) {
+                onLog?.('warn', trimmed);
+            }
+        });
+
+        return serverProcess;
     }
 
     private resolveCommand(candidate: LspCommandCandidate): ResolvedLspCommand | null {
@@ -966,7 +1347,11 @@ export class LspService extends BaseService {
 
         // Check managed runtime bin directory first
         const managedBinDir = getManagedRuntimeBinDir();
-        const managedPath = path.join(managedBinDir, process.platform === 'win32' ? `${candidate.command}.exe` : candidate.command);
+        const managedCommand = process.platform === 'win32' && !candidate.command.toLowerCase().endsWith('.exe')
+            ? `${candidate.command}.exe`
+            : candidate.command;
+
+        const managedPath = path.join(managedBinDir, managedCommand);
         if (existsSync(managedPath)) {
             return {
                 command: managedPath,
@@ -1149,7 +1534,7 @@ export class LspService extends BaseService {
     private triggeredInstalls = new Set<string>();
 
     private triggerManagedInstall(componentId: string) {
-        if (!this.runtimeBootstrapService || this.triggeredInstalls.has(componentId)) {return;}
+        if (!this.runtimeBootstrapService || this.triggeredInstalls.has(componentId)) { return; }
         this.triggeredInstalls.add(componentId);
         this.logInfo(`Triggering background installation for missing managed dependency: ${componentId}`);
         this.runtimeBootstrapService.runComponentAction(componentId).catch(err => {
@@ -1171,8 +1556,8 @@ export class LspService extends BaseService {
 
     private resolveDefinition(languageId: WorkspaceServerLanguageId): LspServerDefinition | null {
         const matches = LSP_SERVER_DEFINITIONS.filter(definition => definition.languageId === languageId);
-        if (matches.length === 0) {return null;}
-        
+        if (matches.length === 0) { return null; }
+
         const preferred = matches[0];
         if ((preferred.id === 'biome' || preferred.id === 'ruff') && !this.hasRunnableCandidate(preferred)) {
             this.triggerManagedInstall(preferred.id);
@@ -1194,8 +1579,8 @@ export class LspService extends BaseService {
             return this.resolveDefinition(fallbackLanguageId);
         }
         const matches = LSP_SERVER_DEFINITIONS.filter(definition => this.matchesDefinition(definition, filePath));
-        if (matches.length === 0) {return null;}
-        
+        if (matches.length === 0) { return null; }
+
         const preferred = matches[0];
         if ((preferred.id === 'biome' || preferred.id === 'ruff') && !this.hasRunnableCandidate(preferred)) {
             this.triggerManagedInstall(preferred.id);

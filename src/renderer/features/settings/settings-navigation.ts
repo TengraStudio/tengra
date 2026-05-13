@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { type Icon,IconChartBar, IconColumns, IconDatabase, IconDeviceDesktopCog, IconPalette, IconPhoto, IconPuzzle, IconRobot, IconRocket, IconSettings, IconShare2, IconSparkles, IconTrendingUp, IconUser } from '@tabler/icons-react';
+import { type Icon, IconChartBar, IconColumns, IconDatabase, IconDeviceDesktopCog, IconMessageCode, IconPalette, IconPhoto, IconPuzzle, IconRobot, IconRocket, IconSettings, IconShare2, IconSparkles, IconTrendingUp, IconUser } from '@tabler/icons-react';
 
 import type { SettingsCategory } from '@/features/settings/types';
 
@@ -70,6 +70,12 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             label: t('frontend.settings.tabs.models'),
             sectionLabel: t('frontend.settings.categories.ai'),
             icon: IconSparkles,
+        },
+        {
+            id: 'ai-instructions',
+            label: t('frontend.settings.tabs.aiInstructions'),
+            sectionLabel: t('frontend.settings.categories.ai'),
+            icon: IconMessageCode,
         },
         {
             id: 'memory',

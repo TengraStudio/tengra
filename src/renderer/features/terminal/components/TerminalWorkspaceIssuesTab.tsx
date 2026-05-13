@@ -8,19 +8,15 @@
  * (at your option) any later version.
  */
 
-import { IconAlertCircle, IconAlertTriangle, IconCircleCheck, IconFileCode, IconSearch, IconTerminal, IconX } from '@tabler/icons-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { IconAlertTriangle, IconChevronDown, IconChevronUp, IconGitCompare, IconInfoCircle, IconX } from '@tabler/icons-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { MarkdownContent } from '@/features/chat/components/message/MarkdownContent';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useWorkspaceDiagnostics } from '@/store/diagnostics.store';
 import { CodeAnnotation, WorkspaceDiagnosticsStatus, WorkspaceIssue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
- 
+
 interface TerminalWorkspaceIssuesTabProps {
     workspacePath?: string;
     workspaceId?: string;
@@ -32,6 +28,7 @@ interface TerminalWorkspaceIssuesTabProps {
 
 const WORKSPACE_ISSUES_REFRESH_INTERVAL_MS = 60_000;
 const WORKSPACE_ISSUES_REQUEST_TIMEOUT_MS = 15_000;
+const WORKSPACE_ISSUES_INITIAL_DELAY_MS = 100;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -81,6 +78,133 @@ function resolveIssuePath(workspacePath: string, file: string): string {
     return `${workspacePath}${workspacePath.endsWith(separator) ? '' : separator}${file}`;
 }
 
+type ProblemSeverity = 'error' | 'warning' | 'info';
+
+interface WorkspaceProblemLike {
+    file?: string;
+    path?: string;
+    message?: string;
+    text?: string;
+    source?: string;
+    code?: string | number;
+    line?: number;
+    column?: number;
+    severity?: ProblemSeverity | string;
+    type?: string;
+}
+
+interface ProblemGroup {
+    filePath: string;
+    fileName: string;
+    directory: string;
+    entries: WorkspaceProblemLike[];
+}
+
+function getProblemFilePath(problem: WorkspaceProblemLike): string {
+    return problem.file ?? problem.path ?? 'Unknown';
+}
+
+function getProblemMessage(problem: WorkspaceProblemLike): string {
+    return problem.message ?? problem.text ?? 'Unknown problem';
+}
+
+function getProblemSource(problem: WorkspaceProblemLike): string {
+    const source = problem.source ?? problem.type ?? 'workspace';
+    const code = problem.code;
+    return code === undefined || code === null || code === ''
+        ? source
+        : `${source}(${code})`;
+}
+
+function getProblemSeverity(problem: WorkspaceProblemLike): ProblemSeverity {
+    const raw = String(problem.severity ?? problem.type ?? '').toLowerCase();
+
+    if (raw.includes('error')) {
+        return 'error';
+    }
+
+    if (raw.includes('warn')) {
+        return 'warning';
+    }
+
+    return 'info';
+}
+
+function groupProblemsByFile(
+    problems: WorkspaceProblemLike[],
+    rootPath?: string
+): ProblemGroup[] {
+    const groups = new Map<string, WorkspaceProblemLike[]>();
+
+    for (const problem of problems) {
+        const filePath = getProblemFilePath(problem);
+        const entries = groups.get(filePath) ?? [];
+        entries.push(problem);
+        groups.set(filePath, entries);
+    }
+
+    return Array.from(groups.entries())
+        .map(([filePath, entries]) => {
+            const normalized = filePath.replace(/\\/g, '/');
+            const fileName = normalized.split('/').at(-1) ?? normalized;
+
+            const normalizedRoot = rootPath?.replace(/\\/g, '/');
+
+            const relative = normalizedRoot && normalized.toLowerCase().startsWith(normalizedRoot.toLowerCase())
+                ? normalized.slice(normalizedRoot.length).replace(/^[/\\]+/, '')
+                : normalized;
+
+            const directory = relative.includes('/')
+                ? relative.split('/').slice(0, -1).join('\\')
+                : '';
+
+
+            return {
+                filePath,
+                fileName,
+                directory,
+
+                entries: entries.sort((left, right) => {
+                    const leftLine = Number(left.line ?? 0);
+                    const rightLine = Number(right.line ?? 0);
+                    if (leftLine !== rightLine) {
+                        return leftLine - rightLine;
+                    }
+
+                    return Number(left.column ?? 0) - Number(right.column ?? 0);
+                }),
+            };
+        })
+        .sort((left, right) => left.filePath.localeCompare(right.filePath));
+}
+
+function normalizeFilePathForCompare(value: string): string {
+    return value.replace(/\\/g, '/').toLowerCase();
+}
+
+function fileUriToPath(uri: string): string {
+    const withoutScheme = decodeURIComponent(uri.replace(/^file:\/\/\//, ''));
+    if (/^[A-Za-z]:\//.test(withoutScheme)) {
+        return withoutScheme.replace(/\//g, '\\');
+    }
+    return withoutScheme;
+}
+
+function toWorkspaceRelativePath(filePath: string, workspacePath?: string): string {
+    if (!workspacePath) {
+        return filePath;
+    }
+
+    const normalizedFile = filePath.replace(/\\/g, '/');
+    const normalizedRoot = workspacePath.replace(/\\/g, '/');
+
+    if (normalizedFile.toLowerCase().startsWith(normalizedRoot.toLowerCase())) {
+        return normalizedFile.slice(normalizedRoot.length).replace(/^[/\\]+/, '');
+    }
+
+    return filePath;
+}
+
 export function TerminalWorkspaceIssuesTab({
     workspacePath,
     workspaceId,
@@ -89,22 +213,18 @@ export function TerminalWorkspaceIssuesTab({
     activeFileType,
     onOpenFile,
 }: TerminalWorkspaceIssuesTabProps) {
-    const { t } = useTranslation();
     const [analysis, setAnalysis] = useState<{
         issues: WorkspaceIssue[];
-        annotations: CodeAnnotation[];
         lspDiagnostics: WorkspaceIssue[];
         diagnosticsStatus?: WorkspaceDiagnosticsStatus;
-    }>({ issues: [], annotations: [], lspDiagnostics: [], diagnosticsStatus: undefined });
+    }>({ issues: [], lspDiagnostics: [], diagnosticsStatus: undefined });
     const [isLoading, setIsLoading] = useState(false);
-    const [filterText, setFilterText] = useState('');
-    const [followCursor, setFollowCursor] = useState(true);
     const [activeCursor, setActiveCursor] = useState<{ filePath: string; line: number } | null>(null);
     const requestIdRef = useRef(0);
 
     const loadIssues = useCallback(async () => {
         if (!workspacePath) {
-            setAnalysis({ issues: [], annotations: [], lspDiagnostics: [], diagnosticsStatus: undefined });
+            setAnalysis({ issues: [], lspDiagnostics: [], diagnosticsStatus: undefined });
             return;
         }
 
@@ -158,9 +278,9 @@ export function TerminalWorkspaceIssuesTab({
 
             setAnalysis({
                 issues: workspaceAnalysis?.issues ?? [],
-                annotations: workspaceAnalysis?.annotations ?? [],
                 lspDiagnostics: mergedDiagnostics,
                 diagnosticsStatus: workspaceAnalysis?.diagnosticsStatus,
+
             });
         } catch (error) {
             if (requestId !== requestIdRef.current) {
@@ -178,48 +298,48 @@ export function TerminalWorkspaceIssuesTab({
         }
     }, [workspaceId, workspacePath, activeFilePath, activeFileContent, activeFileType]);
 
+    // Defer the expensive workspace.analyze() call so LSP store diagnostics
+    // (which arrive in seconds) render immediately without waiting for the
+    // full analysis pipeline (ESLint + TSC, which can take minutes).
     useEffect(() => {
-        queueMicrotask(() => {
+        const timer = window.setTimeout(() => {
             void loadIssues();
-        });
+        }, WORKSPACE_ISSUES_INITIAL_DELAY_MS);
+        return () => window.clearTimeout(timer);
     }, [loadIssues]);
 
-    const workspaceDiagnostics = useWorkspaceDiagnostics(workspaceId);
+    // The LSP service registers diagnostics keyed by workspace PATH
+    // (lspService.startServer uses rootPath as the workspaceId), but
+    // the component receives a database UUID as workspaceId. Query the
+    // store with the path so the lookup actually matches.
+    const workspaceDiagnostics = useWorkspaceDiagnostics(workspacePath);
 
-    const lspIssues = (() => {
-        if (!workspaceDiagnostics) {return [];}
+    const lspIssues = useMemo(() => {
+        if (!workspaceDiagnostics) {
+            return [];
+        }
+
         const issues: WorkspaceIssue[] = [];
-        for (const [uri, fileDiag] of workspaceDiagnostics.entries()) {
-            const isWin = /win/i.test(navigator.platform);
-            const fileName = decodeURIComponent(uri.replace(/^file:\/\/\//, '')).replace(/\//g, isWin ? '\\' : '/');
-            const relativePath = workspacePath ? fileName.replace(workspacePath, '').replace(/^[\\/]/, '') : fileName;
 
-            for (const d of fileDiag.diagnostics) {
+        for (const [uri, fileDiag] of workspaceDiagnostics.entries()) {
+            const absolutePath = fileUriToPath(uri);
+            const relativePath = toWorkspaceRelativePath(absolutePath, workspacePath);
+
+            for (const diagnostic of fileDiag.diagnostics) {
                 issues.push({
-                    severity: d.severity === 1 ? 'error' : 'warning',
-                    message: d.message,
+                    severity: diagnostic.severity === 1 ? 'error' : 'warning',
+                    message: diagnostic.message,
                     file: relativePath,
-                    line: (d.range?.start?.line ?? 0) + 1,
-                    column: (d.range?.start?.character ?? 0) + 1,
-                    source: d.source || 'lsp',
-                    code: d.code as string
+                    line: (diagnostic.range?.start?.line ?? 0) + 1,
+                    column: (diagnostic.range?.start?.character ?? 0) + 1,
+                    source: diagnostic.source || 'lsp',
+                    code: diagnostic.code as string,
                 });
             }
         }
-        return issues;
-    })();
 
-    useEffect(() => {
-        const handler = (e: Event) => {
-            if (!followCursor) {return;}
-            const detail = (e as CustomEvent).detail;
-            if (detail?.filePath && typeof detail?.line === 'number') {
-                setActiveCursor({ filePath: detail.filePath, line: detail.line });
-            }
-        };
-        window.addEventListener('tengra:cursor-moved', handler);
-        return () => window.removeEventListener('tengra:cursor-moved', handler);
-    }, [followCursor]);
+        return issues;
+    }, [workspaceDiagnostics, workspacePath]);
 
     useEffect(() => {
         if (!workspacePath) {
@@ -229,207 +349,224 @@ export function TerminalWorkspaceIssuesTab({
         return () => window.clearInterval(timer);
     }, [loadIssues, workspacePath]);
 
-    const filterIssues = <T extends WorkspaceIssue | CodeAnnotation>(issues: T[]) => {
-        if (!filterText.trim()) {return issues;}
-        const search = filterText.toLowerCase();
-        return issues.filter(issue => 
-            issue.file.toLowerCase().includes(search) || 
-            issue.message.toLowerCase().includes(search)
-        );
-    };
+    useEffect(() => {
+        if (!activeFilePath) {
+            return;
+        }
 
-    const filteredLspIssues = filterIssues(lspIssues);
-    const filteredTerminalIssues = filterIssues(analysis.issues);
-    const filteredAnnotations = filterIssues(analysis.annotations);
-    const filteredTotalCount = filteredLspIssues.length + filteredTerminalIssues.length + filteredAnnotations.length;
+        setActiveCursor({
+            filePath: toWorkspaceRelativePath(activeFilePath, workspacePath),
+            line: 1,
+        });
+    }, [activeFilePath, workspacePath]);
+ 
+    const visibleIssues = useMemo(
+        () => dedupeWorkspaceIssues([
+            ...analysis.issues,
+            ...analysis.lspDiagnostics,
+            ...lspIssues,
+        ]),
+        [analysis.issues, analysis.lspDiagnostics, lspIssues]
+    );
 
-    const totalCount = analysis.issues.length + analysis.annotations.length + lspIssues.length;
-    const hasPartialDiagnostics = analysis.diagnosticsStatus?.partial === true;
-    const failedSources = (analysis.diagnosticsStatus?.sources ?? [])
-        .filter(source => source.status === 'failed')
-        .map(source => source.source);
+    const problemGroups = useMemo(() => {
+        const groups = groupProblemsByFile(visibleIssues, workspacePath);
 
-    const renderIssue = (issue: WorkspaceIssue | CodeAnnotation, key: string) => {
-        const severity = 'severity' in issue ? issue.severity : 'warning';
-        const isError = severity === 'error'
-            || ('type' in issue && (issue.type === 'error' || issue.type === 'fixme'));
-        const filePath = issue.file;
-        const line = issue.line;
-        const message = issue.message;
+        if (!activeCursor?.filePath) {
+            return groups;
+        }
 
-        const isHighlighted = filePath === activeCursor?.filePath && 
-            line === activeCursor.line;
+        const activeNormalized = normalizeFilePathForCompare(activeCursor.filePath);
 
-        return (
-            <div
-                key={key}
-                className={cn(
-                    "w-full rounded-xl border border-border/40 bg-card/30 p-4 transition-all hover:bg-accent/10 group relative overflow-hidden cursor-pointer",
-                    isHighlighted && "ring-2 ring-primary/40 border-primary/50 bg-primary/5"
-                )}
-                onClick={() => onOpenFile?.(filePath, line)}
-                ref={el => {
-                    if (isHighlighted && el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
-                }}
-            >
-                {/* Visual indicator for severity */}
-                <div className={cn(
-                    "absolute left-0 top-0 bottom-0 w-1",
-                    isError ? "bg-destructive/50" : "bg-warning/50"
-                )} />
+        return [...groups].sort((left, right) => {
+            const leftActive = normalizeFilePathForCompare(left.filePath).endsWith(activeNormalized)
+                || normalizeFilePathForCompare(left.filePath) === activeNormalized;
+            const rightActive = normalizeFilePathForCompare(right.filePath).endsWith(activeNormalized)
+                || normalizeFilePathForCompare(right.filePath) === activeNormalized;
 
-                <div className="flex items-start gap-4">
-                    <div className="mt-1 flex-shrink-0">
-                        {isError ? (
-                            <IconAlertCircle className="w-5 h-5 text-destructive" />
-                        ) : (
-                            <IconAlertTriangle className="w-5 h-5 text-warning" />
-                        )}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-3">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <span className={cn(
-                                    "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
-                                    isError ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-warning/10 text-warning border border-warning/20"
-                                )}>
-                                    {isError ? t('frontend.terminal.workspaceIssuesError') : t('frontend.terminal.workspaceIssuesWarning')}
-                                </span>
-                                <span className="text-xs text-muted-foreground font-mono truncate opacity-60">
-                                    {filePath}:{line}
-                                </span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                                {'source' in issue && (
-                                    <Badge variant="outline" className="h-5 px-1.5 text-[9px] opacity-40 font-mono border-border/40">
-                                        {(issue as WorkspaceIssue).source}
-                                    </Badge>
-                                )}
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider rounded-md hover:bg-primary/10 text-primary transition-colors"
-                                    onClick={() => workspacePath && onOpenFile?.(resolveIssuePath(workspacePath, filePath), line)}
-                                >
-                                    Go to File
-                                </Button>
-                            </div>
-                        </div>
+            if (leftActive && !rightActive) {
+                return -1;
+            }
 
-                        <div className="text-sm text-foreground/80 leading-relaxed font-medium markdown-issue">
-                            <MarkdownContent content={message} t={t as (key: string, options?: Record<string, string | number>) => string} />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
+            if (!leftActive && rightActive) {
+                return 1;
+            }
+
+            return left.filePath.localeCompare(right.filePath);
+        });
+    }, [visibleIssues, workspacePath, activeCursor]);
+
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+    // Sync expanded groups when new file groups appear so they start expanded.
+    // Without this, groups loaded asynchronously were never added to the set
+    // and appeared permanently collapsed ("only 1 issue category" bug).
+    useEffect(() => {
+        if (problemGroups.length === 0) {
+            return;
+        }
+        setExpandedGroups(prev => {
+            const incoming = new Set(problemGroups.map(g => g.filePath));
+            const hasNew = problemGroups.some(g => !prev.has(g.filePath));
+            if (!hasNew) {
+                return prev;
+            }
+            // Merge: keep existing expanded state, add any new groups as expanded
+            const merged = new Set(prev);
+            for (const path of incoming) {
+                merged.add(path);
+            }
+            return merged;
+        });
+    }, [problemGroups]);
 
     return (
         <div className="h-full flex flex-col bg-background/40">
-            {workspacePath && (
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-card/20">
-                    <div className="relative flex-1 group">
-                        <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 group-focus-within:text-primary/70 transition-colors" />
-                        <Input
-                            placeholder={t('frontend.terminal.workspaceIssuesFilterPlaceholder')}
-                            value={filterText}
-                            onChange={e => setFilterText(e.target.value)}
-                            className="h-8 pl-8 pr-8 bg-background/40 border-border/20 focus-visible:ring-1 focus-visible:ring-primary/30 text-xs"
-                        />
-                        {filterText && (
-                            <button 
-                                onClick={() => setFilterText('')}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded-sm text-muted-foreground/50 hover:text-foreground transition-colors"
-                            >
-                                <IconX className="w-3 h-3" />
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-muted/20 border border-border/10 text-[10px] font-bold text-muted-foreground/60 whitespace-nowrap">
-                        {filteredTotalCount} {t('frontend.terminal.workspaceIssuesResults')}
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn("h-8 w-8", followCursor && "text-primary bg-primary/10")}
-                        onClick={() => setFollowCursor(!followCursor)}
-                        title={t('frontend.terminal.workspaceIssuesFollowCursor')}
-                    >
-                        <IconTerminal className="w-3.5 h-3.5" />
-                    </Button>
-                </div>
-            )}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                {!workspacePath ? (
-                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                        {t('frontend.terminal.workspaceIssuesNoWorkspace')}
-                    </div>
-                ) : isLoading && totalCount === 0 ? (
-                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                        {t('frontend.terminal.workspaceIssuesLoading')}
-                    </div>
-                ) : totalCount === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center gap-3 p-8">
-                        <IconCircleCheck className="w-8 h-8 text-success" />
-                        <div className="text-sm font-bold">{t('frontend.terminal.workspaceIssuesNoIssues')}</div>
-                        {hasPartialDiagnostics && (
-                            <div className="text-sm text-warning/90">
-                                {t('frontend.terminal.workspaceIssuesPartialResults', {
-                                    sources: failedSources.join(', ')})}
-                            </div>
-                        )}
-                    </div>
-                ) : filteredTotalCount === 0 && filterText ? (
-                    <div className="h-full flex flex-col items-center justify-center gap-2 p-8 text-muted-foreground">
-                        <IconSearch className="w-6 h-6 opacity-20" />
-                        <div className="text-sm">{t('frontend.terminal.workspaceIssuesNoResults')}</div>
-                        <Button variant="link" size="sm" onClick={() => setFilterText('')} className="text-primary/60 hover:text-primary text-xs">
-                            Clear filter
-                        </Button>
-                    </div>
+                {problemGroups.length === 0 ? (
+                    <>
+                    </>
                 ) : (
-                    <div className="space-y-4">
-                        {hasPartialDiagnostics && (
-                            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning/90">
-                                {t('frontend.terminal.workspaceIssuesPartialResults', {
-                                    sources: failedSources.join(', ')})}
-                            </div>
-                        )}
-                        {filteredLspIssues.length > 0 && (
-                            <section className="space-y-2">
-                                <div className="text-sm font-bold text-primary/80 flex items-center gap-2">
-                                    <IconFileCode className="w-3 h-3" />
-                                    {t('frontend.terminal.workspaceIssuesLanguageServer')} ({filteredLspIssues.length})
+                    <div className="min-w-full">
+                        {problemGroups.map(group => {
+
+
+
+                            return (
+                                <div key={group.filePath} className={`w-full transition-all duration-200 ease-in-out`}>
+                                    <button
+                                        type="button"
+                                        className={cn("flex h-9 w-full items-center gap-2 px-3 text-left hover:bg-foreground/20 transition-colors duration-200 ease-in-out")}
+                                        onClick={() => {
+                                            setExpandedGroups(prev => {
+                                                const newExpandedGroups = new Set(prev);
+                                                if (newExpandedGroups.has(group.filePath)) {
+                                                    newExpandedGroups.delete(group.filePath);
+                                                } else {
+                                                    newExpandedGroups.add(group.filePath);
+                                                }
+                                                return newExpandedGroups;
+                                            });
+                                        }}
+
+                                    >
+                                        <span>
+                                            {expandedGroups.has(group.filePath) ? (
+                                                <IconChevronUp className="h-4 w-4 text-muted-foreground" />
+                                            ) : (
+                                                <IconChevronDown className="h-4 w-4 text-muted-foreground" />
+                                            )}
+                                        </span>
+                                        <span className="truncate font-medium">
+                                            {group.fileName}
+                                        </span>
+                                        {group.directory && (
+                                            <span className="truncate text-muted-foreground">
+                                                {group.directory}
+                                            </span>
+                                        )}
+                                        <span className="ml-auto rounded-full bg-foreground/20 px-2 py-0.5 text-xs text-foreground">
+                                            {group.entries.length}
+                                        </span>
+                                    </button>
+
+                                    <div className={`overflow-hidden transition-all duration-200 ease-in-out ${expandedGroups.has(group.filePath) ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                        {group.entries.map((problem, index) => {
+                                            const severity = getProblemSeverity(problem);
+                                            const line = problem.line ?? 1;
+                                            const column = problem.column ?? 1;
+
+                                            const problemFile = getProblemFilePath(problem);
+                                            const isHighlighted =
+                                                activeCursor &&
+                                                normalizeFilePathForCompare(problemFile).endsWith(normalizeFilePathForCompare(activeCursor.filePath)) &&
+                                                line === activeCursor.line;
+
+                                             return (
+                                                <div
+                                                    key={`${group.filePath}:${line}:${column}:${index}`}
+                                                    className={cn("grid min-h-8 w-full grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-2 px-4 pr-3 text-left hover:bg-foreground/10 cursor-pointer group", isHighlighted && "bg-primary/15 rounded-md ring-1 ring-primary/40")}
+                                                    onClick={() => {
+                                                        const targetPath = workspacePath
+                                                            ? resolveIssuePath(workspacePath, group.filePath)
+                                                            : group.filePath;
+
+                                                        onOpenFile?.(targetPath, line);
+                                                    }}
+                                                    ref={element => {
+                                                        if (isHighlighted && element) {
+                                                            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                                        }
+                                                    }}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            const targetPath = workspacePath
+                                                                ? resolveIssuePath(workspacePath, group.filePath)
+                                                                : group.filePath;
+                                                            onOpenFile?.(targetPath, line);
+                                                        }
+                                                    }}
+                                                >
+
+                                                    <span
+                                                        className={
+                                                            severity === 'error'
+                                                                ? 'text-destructive'
+                                                                : severity === 'warning'
+                                                                    ? 'text-warning'
+                                                                    : 'text-info'
+                                                        }
+                                                    >
+                                                        {severity === 'error' ? <IconX className="h-4 w-4" /> : severity === 'warning' ? <IconAlertTriangle className="h-4 w-4" /> : <IconInfoCircle className="h-4 w-4" />}
+                                                    </span>
+
+                                                    <span className="truncate">
+                                                        {getProblemMessage(problem)}
+                                                    </span>
+
+                                                    <div className="flex items-center gap-2 pr-2">
+                                                        <span className="whitespace-nowrap text-xs text-muted-foreground">
+                                                            {getProblemSource(problem)}{' '}
+                                                            <span className="ml-1">
+                                                                [Ln {line}, Col {column}]
+                                                            </span>
+                                                        </span>
+                                                        
+                                                        <button
+                                                            type="button"
+                                                            className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-primary/20 hover:text-primary text-muted-foreground transition-all duration-200"
+                                                            title="View Diff"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const targetPath = workspacePath
+                                                                    ? resolveIssuePath(workspacePath, group.filePath)
+                                                                    : group.filePath;
+                                                                
+                                                                const navEvent = new CustomEvent('tengra:workspace-navigate', {
+                                                                    detail: {
+                                                                        type: 'open_diff',
+                                                                        path: targetPath,
+                                                                        diffId: undefined 
+                                                                    }
+                                                                });
+                                                                window.dispatchEvent(navEvent);
+                                                            }}
+                                                        >
+                                                            <IconGitCompare className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                                {filteredLspIssues.map((issue, i) => renderIssue(issue, `lsp-${i}`))}
-                            </section>
-                        )}
-                        {filteredTerminalIssues.length > 0 && (
-                            <section className="space-y-2">
-                                <div className="text-sm font-bold text-destructive/80 flex items-center gap-2">
-                                    <IconTerminal className="w-3 h-3" />
-                                    {t('frontend.terminal.workspaceIssuesTerminal')} ({filteredTerminalIssues.length})
-                                </div>
-                                {filteredTerminalIssues.map((issue, i) => renderIssue(issue, `term-${i}`))}
-                            </section>
-                        )}
-                        {filteredAnnotations.length > 0 && (
-                            <section className="space-y-2">
-                                <div className="text-sm font-bold text-warning/80 flex items-center gap-2">
-                                    <IconFileCode className="w-3 h-3" />
-                                    {t('frontend.terminal.workspaceIssuesAnnotations')} ({filteredAnnotations.length})
-                                </div>
-                                {filteredAnnotations.map((issue, i) => renderIssue(issue, `ann-${i}`))}
-                            </section>
-                        )}
+                            );
+                        })}
                     </div>
                 )}
             </div>
         </div>
     );
 }
-

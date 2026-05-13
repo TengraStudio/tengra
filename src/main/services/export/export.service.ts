@@ -28,6 +28,8 @@ export interface ExportOptions {
 }
 
 export class ExportService extends BaseService {
+    static readonly serviceName = 'exportService';
+    static readonly dependencies = [] as const;
     private pdfExportQueue: Promise<void> = Promise.resolve();
 
     constructor() {

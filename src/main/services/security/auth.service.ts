@@ -21,7 +21,7 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService, LinkedAccount } from '@main/services/data/database.service';
 import { CopilotService } from '@main/services/llm/copilot/copilot.service';
-import { ProxyService } from '@main/services/proxy/proxy.service';
+import type { ProxyService } from '@main/services/proxy/proxy.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
@@ -189,16 +189,14 @@ const API_KEY_PROVIDER_HINTS = new Set([
     'anthropic',
     'gemini',
     'mistral',
-    'groq',
-    'together',
-    'perplexity',
-    'cohere',
+    'groq', 
     'xai',
     'deepseek',
     'openrouter',
     'nvidia',
     'huggingface',
     'opencode',
+    'local',
 ]);
 type CredentialKind = 'oauth' | 'api_key';
 
@@ -211,6 +209,9 @@ type CredentialKind = 'oauth' | 'api_key';
  * - Active account per provider: user selects which account to use
  */
 export class AuthService extends BaseService {
+    static readonly serviceName = 'authService';
+    static readonly category = 'deferred';
+    static readonly dependencies = ['databaseService', 'securityService', 'eventBusService', 'copilotService', 'mainWindowProvider'] as const;
     private sessions = new Map<string, AuthSession>();
     private _providerSessionLimits = new Map<string, number>();
     private readonly _defaultSessionLimit = 5;
@@ -1136,10 +1137,10 @@ export class AuthService extends BaseService {
         return accounts.find(account => account.isActive) ?? accounts[0] ?? null;
     }
 
-    private async refreshLinkedAccountsCache(): Promise<LinkedAccount[]> {
-        if (this.linkedAccountsCacheInFlight) {
-            return this.linkedAccountsCacheInFlight;
-        }
+    async refreshLinkedAccountsCache(): Promise<LinkedAccount[]> {
+        this.linkedAccountsCache = null;
+        (this.databaseService as unknown as { _system: { invalidateLinkedAccountsCache: () => void } })._system.invalidateLinkedAccountsCache();
+        
         this.linkedAccountsCacheInFlight = this.databaseService.getLinkedAccounts()
             .then(accounts => {
                 this.linkedAccountsCache = accounts;
@@ -1970,6 +1971,7 @@ export class AuthService extends BaseService {
             avatarUrl: account.avatarUrl,
             isActive: account.isActive,
             createdAt: account.createdAt,
+            metadata: account.metadata,
             decryptionError
         };
     }

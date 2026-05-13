@@ -13,8 +13,8 @@
  * VSCode-like status bar with left/right sections and interactive items.
  */
 
-import { IconAlertCircle, IconBell, IconBolt,IconGitBranch, IconLoader2, IconWifi, IconWifiOff } from '@tabler/icons-react';
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import { IconActivity, IconAlertCircle, IconBell, IconBolt, IconBrain, IconGitBranch, IconLoader2, IconWifi, IconWifiOff } from '@tabler/icons-react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -131,7 +131,7 @@ export const StatusBar: React.FC<{
     return (
         <div
             className={cn(
-                'flex h-6 select-none items-center justify-between text-foreground/90',
+                'fixed bottom-0 left-0 right-0 z-50 flex h-6 select-none items-center justify-between border-t border-border/10 text-foreground/90',
                 variantClass,
                 className
             )}
@@ -140,6 +140,7 @@ export const StatusBar: React.FC<{
             <div className="flex items-center">
                 <AnalysisStatus workspaceId={workspaceId} />
                 <GlobalDiagnosticCounts workspaceId={workspaceId} />
+                <WorkspaceIntelligenceStatus workspaceId={workspaceId} />
                 {leftItems.map(item => (
                     <StatusBarItemView key={item.id} item={item} />
                 ))}
@@ -274,6 +275,141 @@ export const ErrorStatus: React.FC<{
             <span>
                 {count} {label}
             </span>
+        </div>
+    );
+};
+
+interface LspProgress {
+    token: string | number;
+    value: {
+        kind: 'begin' | 'report' | 'end';
+        title?: string;
+        message?: string;
+        percentage?: number;
+    };
+}
+
+interface LspNotification {
+    workspaceId: string;
+    serverId: string;
+    message: string;
+    type: 'info' | 'warn' | 'error';
+}
+
+export const WorkspaceIntelligenceStatus: React.FC<{
+    workspaceId: string | undefined;
+}> = ({ workspaceId }) => {
+    const [progress, setProgress] = useState<Map<string | number, LspProgress['value']>>(new Map());
+    const [notifications, setNotifications] = useState<LspNotification[]>([]);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const cleanupProgress = window.electron.ipcRenderer.on('lsp:progress-event', (_event, data: { workspaceId: string, token: string | number, value: LspProgress['value'] }) => {
+            if (workspaceId && data.workspaceId !== workspaceId) {return;}
+            
+            setProgress(prev => {
+                const next = new Map(prev);
+                if (data.value.kind === 'end') {
+                    next.delete(data.token);
+                } else {
+                    next.set(data.token, data.value);
+                }
+                return next;
+            });
+        });
+
+        const cleanupNotify = window.electron.ipcRenderer.on('lsp:notification-event', (_event, data: LspNotification) => {
+            if (workspaceId && data.workspaceId !== workspaceId) {return;}
+            setNotifications(prev => [data, ...prev].slice(0, 50));
+        });
+
+        return () => {
+            cleanupProgress();
+            cleanupNotify();
+        };
+    }, [workspaceId]);
+
+    const activeProgress = Array.from(progress.values());
+    const currentProgress = activeProgress[0]; // Just show one for brevity in status bar
+
+    return (
+        <div className="relative flex items-center h-full">
+            {currentProgress && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 typo-overline text-foreground/80 animate-pulse border-r border-foreground/10">
+                    <IconLoader2 className="h-3 w-3 animate-spin" />
+                    <span className="truncate max-w-[120px]">{currentProgress.title || currentProgress.message || 'Processing...'}</span>
+                    {currentProgress.percentage !== undefined && (
+                        <span className="opacity-60">{currentProgress.percentage}%</span>
+                    )}
+                </div>
+            )}
+            
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMenuOpen(!isMenuOpen);
+                }}
+                className={cn(
+                    "relative flex items-center h-full px-2 transition-colors",
+                    isMenuOpen ? "bg-foreground/20" : "hover:bg-foreground/10",
+                    notifications.length > 0 && "text-warning"
+                )}
+                title="Workspace Intelligence"
+            >
+                <IconBrain className="h-3.5 w-3.5" />
+                {notifications.length > 0 && (
+                    <span className="absolute right-1 top-1 flex h-1.5 w-1.5 rounded-full bg-destructive shadow-sm" />
+                )}
+            </button>
+
+            {isMenuOpen && (
+                <>
+                    <div 
+                        className="fixed inset-0 z-40 cursor-default" 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMenuOpen(false);
+                        }} 
+                    />
+                    <div className="absolute bottom-full left-0 z-50 mb-1 w-72 max-h-96 overflow-y-auto rounded-md border border-border/40 bg-popover/95 backdrop-blur-md p-1 shadow-2xl custom-scrollbar ring-1 ring-black/5">
+                        <div className="p-2 border-b border-border/20 mb-1 flex items-center justify-between sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Workspace Intelligence</span>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setNotifications([]);
+                                }}
+                                className="text-[10px] hover:text-foreground transition-colors font-medium opacity-60"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                        <div className="py-1">
+                            {notifications.length === 0 ? (
+                                <div className="py-8 text-center">
+                                    <IconBrain className="h-8 w-8 mx-auto mb-2 opacity-10" />
+                                    <div className="text-[10px] text-muted-foreground opacity-50">No new notifications</div>
+                                </div>
+                            ) : (
+                                notifications.map((n, i) => (
+                                    <div key={i} className="px-3 py-2.5 text-[11px] hover:bg-foreground/5 transition-colors border-b border-border/10 last:border-0 group">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <span className={cn(
+                                                "h-1.5 w-1.5 rounded-full",
+                                                n.type === 'error' ? "bg-destructive shadow-[0_0_4px_rgba(239,68,68,0.4)]" : 
+                                                n.type === 'warn' ? "bg-warning shadow-[0_0_4px_rgba(245,158,11,0.4)]" : "bg-primary shadow-[0_0_4px_rgba(59,130,246,0.4)]"
+                                            )} />
+                                            <span className="font-bold opacity-40 group-hover:opacity-60 transition-opacity">[{n.serverId}]</span>
+                                            <span className="ml-auto text-[9px] opacity-30">Just now</span>
+                                        </div>
+                                        <div className="leading-relaxed text-foreground/90 font-medium selection:bg-primary/20">{n.message}</div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };

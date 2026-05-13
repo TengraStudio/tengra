@@ -25,6 +25,8 @@ import {
 } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
+import { ElectronAPI } from '../../../electron';
+
 import { useMountManagement } from './useMountManagement';
 
 interface UseWorkspaceManagerProps {
@@ -908,6 +910,86 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         setOpenTabs,
     } = useTabManagement(workspace.id);
     const [councilEnabled, setCouncilEnabled] = useState(Boolean(workspace.councilConfig.enabled));
+
+    const refreshGitStatus = useCallback(async (targetTabId?: string) => {
+        const tabsToRefresh = targetTabId 
+            ? openTabs.filter(t => t.id === targetTabId)
+            : openTabs;
+        
+        if (tabsToRefresh.length === 0) {
+            return;
+        }
+
+        // Group tabs by mount to avoid redundant git status calls
+        const tabsByMount = new Map<string, typeof openTabs>();
+        for (const tab of tabsToRefresh) {
+            if (tab.type !== 'code') {continue;}
+            const mount = mounts.find(m => m.id === tab.mountId);
+            if (mount?.type !== 'local') {continue;}
+            
+            const list = tabsByMount.get(mount.id) || [];
+            list.push(tab);
+            tabsByMount.set(mount.id, list);
+        }
+
+        for (const [mountId, tabs] of tabsByMount.entries()) {
+            const mount = mounts.find(m => m.id === mountId);
+            if (!mount) {
+                continue;
+            }
+
+            try {
+                const gitResult = await window.electron.git.getDetailedStatus(mount.rootPath);
+                if (!gitResult.success) {
+                    continue;
+                }
+
+                for (const tab of tabs) {
+                    const normalizedTabPath = normalizePath(tab.path).toLowerCase();
+                    const repoRelativePath = getRelativePath(normalizedTabPath, mount.rootPath).toLowerCase();
+                    
+                    const fileStatus = gitResult.allFiles?.find(f => normalizePath(f.path).toLowerCase() === repoRelativePath);
+
+                    let gitStatus: string | undefined;
+                    let gitRawStatus: string | undefined;
+                    let originalContent: string | undefined;
+
+                    if (fileStatus) {
+                        gitStatus = fileStatus.status;
+                        gitRawStatus = fileStatus.status;
+
+                        const isUntracked = fileStatus.status === '??';
+                        if (!isUntracked) {
+                            // Use the exact path reported by Git
+                            const diffResult = await window.electron.git.getFileDiff(mount.rootPath, fileStatus.path, false);
+                            if (diffResult.success) {
+                                originalContent = diffResult.original;
+                            }
+                        }
+                    }
+
+                    const hasChanges = tab.gitStatus !== gitStatus || 
+                        tab.gitRawStatus !== gitRawStatus || 
+                        tab.originalContent !== originalContent;
+
+                    if (hasChanges) {
+                        setOpenTabs(prev => prev.map(t => 
+                            t.id === tab.id ? { ...t, gitStatus, gitRawStatus, originalContent } : t
+                        ));
+                    }
+                }
+            } catch (e) {
+                appLogger.warn('WorkspaceManager', `Failed to refresh git status for mount ${mountId}`, e as Error);
+            }
+        }
+    }, [mounts, openTabs, setOpenTabs]);
+
+    useEffect(() => {
+        if (activeTabId) {
+            void refreshGitStatus(activeTabId);
+        }
+    }, [activeTabId, refreshGitStatus]);
+
     const {
         persistMounts,
         mountForm,
@@ -962,6 +1044,41 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
                 return;
             }
 
+            let gitStatus: string | undefined;
+            let gitRawStatus: string | undefined;
+            let originalContent: string | undefined;
+
+            try {
+                const gitResult = await window.electron.git.getDetailedStatus(mount.rootPath);
+                if (!gitResult.success) {
+                    return;
+                }
+
+                const normalizedEntryPath = normalizePath(entry.path).toLowerCase();
+                const repoRelativeEntryPath = getRelativePath(normalizedEntryPath, mount.rootPath).toLowerCase();
+                
+                const fileStatus = gitResult.allFiles?.find(f => normalizePath(f.path).toLowerCase() === repoRelativeEntryPath);
+                if (!fileStatus) {
+                    return;
+                }
+
+                gitStatus = fileStatus.status;
+                gitRawStatus = fileStatus.status;
+
+                const isUntracked = fileStatus.status === '??';
+                if (isUntracked) {
+                    return;
+                }
+
+                // Use the exact path reported by Git
+                const diffResult = await window.electron.git.getFileDiff(mount.rootPath, fileStatus.path, false);
+                if (diffResult.success) {
+                    originalContent = diffResult.original;
+                }
+            } catch (e) {
+                appLogger.warn('WorkspaceManager', 'Failed to fetch git status/diff for new tab', e as Error);
+            }
+
             const tab: EditorTab = {
                 id: tabId,
                 mountId: entry.mountId,
@@ -974,6 +1091,9 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
                 isPinned: false,
                 initialLine: entry.initialLine,
                 readOnly: entry.readOnly,
+                gitStatus,
+                gitRawStatus,
+                originalContent,
             };
             setOpenTabs(prev => {
                 const existingTab = prev.find(
@@ -1008,7 +1128,7 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
 
     const openDiff = useCallback(
         async (diffId: string) => {
-            const result = await window.electron.files.getFileDiff(diffId);
+            const result = await (window as unknown as { electron: ElectronAPI }).electron.files.getFileDiff(diffId);
             if (!result.success || !result.data) {
                 appLogger.error('useWorkspaceManager', 'Failed to load diff', diffId);
                 return;
@@ -1065,8 +1185,8 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
 
         const result =
             mount.type === 'local'
-                ? await window.electron.files.writeFile(activeTabData.path, activeTabData.content)
-                : await window.electron.ssh.writeFile(
+                ? await (window as unknown as { electron: ElectronAPI }).electron.files.writeFile(activeTabData.path, activeTabData.content)
+                : await (window as unknown as { electron: ElectronAPI }).electron.ssh.writeFile(
                     mount.id,
                     activeTabData.path,
                     activeTabData.content
@@ -1082,10 +1202,14 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
             detail: { filePath: activeTabData.path, workspaceId: workspace.id } 
         }));
         logActivity('Saved file', activeTabData.path);
+        
+        // Refresh git status after save
+        void refreshGitStatus(activeTabData.id);
+
         if (!options?.silent) {
             appLogger.info('useWorkspaceManager', 'File saved successfully', activeTabData.path);
         }
-    }, [activeTabId, openTabs, mounts, ensureMountReady, logActivity, setOpenTabs, workspace.id]);
+    }, [activeTabId, openTabs, mounts, ensureMountReady, logActivity, setOpenTabs, workspace.id, refreshGitStatus]);
 
     const copyTabAbsolutePath = useCallback(
         async (tabId: string) => {
@@ -1093,7 +1217,7 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
             if (!tab) {
                 return;
             }
-            const result = await window.electron.clipboard.writeText(tab.path);
+            const result = await (window as unknown as { electron: ElectronAPI }).electron.clipboard.writeText(tab.path);
             if (result.success) {
                 logActivity('Copied tab path', tab.path);
                 return;
@@ -1112,7 +1236,7 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
             const relativePath = mount?.rootPath
                 ? getRelativePath(tab.path, mount.rootPath)
                 : tab.name;
-            const result = await window.electron.clipboard.writeText(relativePath);
+            const result = await (window as unknown as { electron: ElectronAPI }).electron.clipboard.writeText(relativePath);
             if (result.success) {
                 logActivity('Copied tab relative path', relativePath);
                 return;
@@ -1130,7 +1254,7 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
             const directoryPath = getDirectoryPath(tab.path);
             const encodedPath = encodeURIComponent(directoryPath);
             try {
-                window.electron.openExternal(`safe-file://${encodedPath}`);
+                (window as unknown as { electron: ElectronAPI }).electron.openExternal(`safe-file://${encodedPath}`);
                 logActivity('Revealed file in explorer', tab.path);
                 return;
             } catch (error) {
@@ -1176,13 +1300,13 @@ export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceM
         bulkCopyEntries,
         updateTabContent,
         revertTab,
-        dashboardTab,
-        setDashboardTab,
         mountForm,
         setMountForm,
         addMount,
         pickLocalFolder,
         testConnection,
+        dashboardTab,
+        setDashboardTab,
     };
 }
 

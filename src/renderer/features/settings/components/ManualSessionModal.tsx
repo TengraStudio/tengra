@@ -30,6 +30,7 @@ export interface ManualSessionModalState {
     isOpen: boolean;
     accountId: string;
     email?: string;
+    provider?: string;
 }
 
 interface ManualSessionModalProps extends ManualSessionModalState {
@@ -42,44 +43,61 @@ interface ManualSessionModalProps extends ManualSessionModalState {
 
 const HeaderSection: React.FC<{
     email?: string;
+    provider?: string;
     t: (key: string, options?: Record<string, string>) => string;
-}> = ({ email, t }) => (
+}> = ({ email, provider, t }) => (
     <div className={C_MANUALSESSIONMODAL_1}>
         <div className="p-2.5 rounded-xl bg-primary/10 text-primary shadow-sm">
             <IconShieldCheck className="w-5.5 h-5.5" />
         </div>
         <div className="space-y-1.5 flex-1 min-w-0">
             <p className="text-sm font-bold text-foreground truncate">
-                {t('frontend.auth.completeConnection', { email: email ?? t('frontend.auth.yourAccount') })}
+                {provider === 'cursor' 
+                  ? t('frontend.auth.completeCursorConnection')
+                  : t('frontend.auth.completeConnection', { email: email ?? t('frontend.auth.yourAccount') })}
             </p>
             <p className="text-sm text-muted-foreground leading-relaxed font-medium opacity-80">
-                {t('frontend.auth.sessionKeyDescription')}
+                {provider === 'cursor'
+                  ? t('frontend.auth.cursorSessionDescription')
+                  : t('frontend.auth.sessionKeyDescription')}
             </p>
         </div>
     </div>
 );
 
-const InstructionsSection: React.FC<{ t: (key: string) => string }> = ({ t }) => (
-    <div className="space-y-4 px-1">
-        <h4 className="text-sm font-bold text-primary/70 flex items-center gap-2">
-            <IconAlertCircle className="w-3.5 h-3.5" />
-            {t('frontend.auth.howToFindKey')}
-        </h4>
-        <ul className="grid grid-cols-1 gap-2.5">
-            {[1, 2, 3, 4, 5].map(step => (
-                <li
-                    key={step}
-                    className={C_MANUALSESSIONMODAL_2}
-                >
-                    <span className={C_MANUALSESSIONMODAL_3}>
-                        {step}
-                    </span>
-                    <span>{t(`auth.sessionKeyInstructions.step${step}`)}</span>
-                </li>
-            ))}
-        </ul>
-    </div>
-);
+const InstructionsSection: React.FC<{ provider?: string; t: (key: string) => string }> = ({ provider, t }) => {
+    const steps = provider === 'cursor' 
+        ? [
+            t('frontend.auth.cursorInstructions.step1'),
+            t('frontend.auth.cursorInstructions.step2'),
+            t('frontend.auth.cursorInstructions.step3'),
+            t('frontend.auth.cursorInstructions.step4'),
+            t('frontend.auth.cursorInstructions.step5'),
+        ]
+        : [1, 2, 3, 4, 5].map(step => t(`auth.sessionKeyInstructions.step${step}`));
+
+    return (
+        <div className="space-y-4 px-1">
+            <h4 className="text-sm font-bold text-primary/70 flex items-center gap-2">
+                <IconAlertCircle className="w-3.5 h-3.5" />
+                {t('frontend.auth.howToFindKey')}
+            </h4>
+            <ul className="grid grid-cols-1 gap-2.5">
+                {steps.map((stepText, idx) => (
+                    <li
+                        key={idx}
+                        className={C_MANUALSESSIONMODAL_2}
+                    >
+                        <span className={C_MANUALSESSIONMODAL_3}>
+                            {idx + 1}
+                        </span>
+                        <span>{stepText}</span>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+};
 
 interface InputSectionProps {
     sessionKey: string;
@@ -87,6 +105,7 @@ interface InputSectionProps {
     isSaving: boolean;
     success: boolean;
     error: string | null;
+    provider?: string;
     t: (key: string) => string;
 }
 
@@ -96,6 +115,7 @@ const InputSection: React.FC<InputSectionProps> = ({
     isSaving,
     success,
     error,
+    provider,
     t,
 }) => (
     <div className="space-y-2.5 px-0.5">
@@ -103,30 +123,44 @@ const InputSection: React.FC<InputSectionProps> = ({
             htmlFor="sessionKey"
             className="text-sm font-bold text-muted-foreground/70 ml-1"
         >
-            {t('frontend.auth.sessionKeyLabel')}
+            {provider === 'cursor' ? t('frontend.auth.cursorSessionLabel') : t('frontend.auth.sessionKeyLabel')}
         </label>
         <div className="relative group">
             <div className={C_MANUALSESSIONMODAL_4}>
                 <IconKey className="w-4 h-4" />
             </div>
-            <Input
-                id="sessionKey"
-                type="password"
-                placeholder={t('frontend.auth.sessionKeyPlaceholder')}
-                value={sessionKey}
-                onChange={e => setSessionKey(e.target.value)}
-                disabled={isSaving || success}
-                className={cn(
-                    'w-full h-12 pl-11 pr-4 bg-background/50 border-border/40 rounded-2xl outline-none transition-all font-mono text-sm font-medium shadow-sm focus-visible:ring-primary/20',
-                    error ? 'border-destructive/40 focus:border-destructive' : 'border-border/40'
-                )}
-            />
+            {provider === 'cursor' ? (
+                <textarea
+                    id="sessionKey"
+                    placeholder={t('frontend.auth.cursorSessionPlaceholder')}
+                    value={sessionKey}
+                    onChange={e => setSessionKey(e.target.value)}
+                    disabled={isSaving || success}
+                    className={cn(
+                        'w-full min-h-[120px] pl-11 pr-4 py-3 bg-background/50 border-border/40 rounded-2xl outline-none transition-all font-mono text-xs font-medium shadow-sm focus-visible:ring-primary/20 resize-none',
+                        error ? 'border-destructive/40 focus:border-destructive' : 'border-border/40'
+                    )}
+                />
+            ) : (
+                <Input
+                    id="sessionKey"
+                    type="password"
+                    placeholder={t('frontend.auth.sessionKeyPlaceholder')}
+                    value={sessionKey}
+                    onChange={e => setSessionKey(e.target.value)}
+                    disabled={isSaving || success}
+                    className={cn(
+                        'w-full h-12 pl-11 pr-4 bg-background/50 border-border/40 rounded-2xl outline-none transition-all font-mono text-sm font-medium shadow-sm focus-visible:ring-primary/20',
+                        error ? 'border-destructive/40 focus:border-destructive' : 'border-border/40'
+                    )}
+                />
+            )}
             {sessionKey && !isSaving && !success && (
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setSessionKey('')}
-                    className={C_MANUALSESSIONMODAL_5}
+                    className={cn(C_MANUALSESSIONMODAL_5, provider === 'cursor' && "top-4 translate-y-0")}
                 >
                     <IconX className="w-3.5 h-3.5" />
                 </Button>
@@ -162,14 +196,14 @@ const SaveButtonContent: React.FC<SaveButtonProps> = ({ isSaving, success, t }) 
     return (
         <>
             <IconShieldCheck className="w-4.5 h-4.5" />
-            {t('frontend.auth.saveSessionKey')}
+            {t('frontend.auth.saveSession')}
         </>
     );
 };
 
 /**
- * Modal for manual Claude session key entry.
- * Provides clear instructions and validation for the 'sk-ant-sid' format.
+ * Modal for manual session key entry (Claude or Cursor).
+ * Provides clear instructions and validation.
  */
 export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
     isOpen,
@@ -177,6 +211,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
     onSave,
     email,
     accountId,
+    provider,
 }) => {
     const { t } = useTranslation();
     const [sessionKey, setSessionKey] = useState('');
@@ -189,12 +224,21 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
             if (!key.trim()) {
                 return t('frontend.auth.enterSessionKey');
             }
-            if (!key.startsWith('sk-ant-sid')) {
+            if (provider === 'cursor') {
+                try {
+                    const parsed = JSON.parse(key);
+                    if (!parsed.access_token) {
+                        return t('frontend.auth.invalidCursorSession');
+                    }
+                } catch {
+                    return t('frontend.auth.invalidJsonFormat');
+                }
+            } else if (!key.startsWith('sk-ant-sid')) {
                 return t('frontend.auth.invalidSessionFormat');
             }
             return null;
         },
-        [t]
+        [provider, t]
     );
 
     const handleSaveSuccess = useCallback(() => {
@@ -230,23 +274,28 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
         }
     }, [sessionKey, onSave, accountId, validateSessionKey, handleSaveSuccess, t]);
 
+    const isValid = sessionKey.trim().length > 0 && (
+        provider === 'cursor' ? sessionKey.includes('access_token') : sessionKey.startsWith('sk-ant-sid')
+    );
+
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={t('frontend.auth.sessionKeyRequired')}
+            title={provider === 'cursor' ? t('frontend.auth.cursorSessionRequired') : t('frontend.auth.sessionKeyRequired')}
             size="md"
             preventClose={isSaving}
         >
             <div className="space-y-8 py-2">
-                <HeaderSection email={email} t={t} />
-                <InstructionsSection t={t} />
+                <HeaderSection email={email} provider={provider} t={t} />
+                <InstructionsSection provider={provider} t={t} />
                 <InputSection
                     sessionKey={sessionKey}
                     setSessionKey={setSessionKey}
                     isSaving={isSaving}
                     success={success}
                     error={error}
+                    provider={provider}
                     t={t}
                 />
                 <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
@@ -259,9 +308,9 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         {t('common.cancel')}
                     </Button>
                     <Button
-                        variant={success ? 'default' : 'default'}
+                        variant="default"
                         onClick={() => void handleSave()}
-                        disabled={isSaving || success || !sessionKey.startsWith('sk-ant-sid')}
+                        disabled={isSaving || success || !isValid}
                         className={cn(
                             'w-full sm:flex-2 h-12 rounded-2xl typo-body font-bold flex items-center justify-center gap-3 transition-all shadow-xl',
                             success

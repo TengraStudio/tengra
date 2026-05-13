@@ -174,6 +174,9 @@ async function executeBatchRequest(
  * Service for handling IPC batching operations
  */
 export class IpcBatchService extends BaseService {
+    static readonly serviceName = 'ipcBatchService';
+    static readonly dependencies = [] as const;
+
     constructor() {
         super('IpcBatchService');
     }

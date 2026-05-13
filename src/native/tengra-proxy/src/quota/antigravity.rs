@@ -44,32 +44,66 @@ pub async fn fetch_antigravity_quota(session_token: &str) -> Result<QuotaResult>
     let mut earliest_reset: Option<String> = None;
 
     if let Some(models_val) = json.get("models") {
-        if let Some(models_obj) = models_val.as_object() {
-            for (model_id, model_data) in models_obj {
-                process_model_data(
-                    model_id,
-                    model_data,
-                    &mut models_quota,
-                    &mut total_remaining,
-                    &mut total_quota_sum,
-                    &mut earliest_reset,
-                );
-            }
+        let models_to_process = if let Some(models_obj) = models_val.as_object() {
+            models_obj
+                .iter()
+                .map(|(id, data)| (id.as_str(), data))
+                .collect::<Vec<_>>()
         } else if let Some(models_arr) = models_val.as_array() {
-            for model_entry in models_arr {
-                let model_id = model_entry
-                    .get("id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("unknown");
-                process_model_data(
-                    model_id,
-                    model_entry,
-                    &mut models_quota,
-                    &mut total_remaining,
-                    &mut total_quota_sum,
-                    &mut earliest_reset,
-                );
+            models_arr
+                .iter()
+                .map(|entry| {
+                    let id = entry
+                        .get("id")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown");
+                    (id, entry)
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+
+        // Pass 1: Find earliest reset across all models
+        for (model_id, model_data) in &models_to_process {
+            if model_id.starts_with("chat_") || model_id.starts_with("tab_") {
+                continue;
             }
+
+            let mut model_reset: Option<String> = None;
+            if let Some(quota_info) = model_data.get("quotaInfo") {
+                model_reset = quota_info
+                    .get("resetTime")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+            }
+            if let Some(quotas_arr) = model_data.get("quotas").and_then(|v| v.as_array()) {
+                for q in quotas_arr {
+                    if let Some(rt) = q.get("resetTime").and_then(|v| v.as_str()) {
+                        if model_reset.is_none() || rt < model_reset.as_ref().unwrap().as_str() {
+                            model_reset = Some(rt.to_string());
+                        }
+                    }
+                }
+            }
+
+            if let Some(rt) = model_reset {
+                if earliest_reset.is_none() || rt < *earliest_reset.as_ref().unwrap() {
+                    earliest_reset = Some(rt);
+                }
+            }
+        }
+
+        // Pass 2: Process individual model data with the earliest_reset context
+        for (model_id, model_data) in models_to_process {
+            process_model_data(
+                model_id,
+                model_data,
+                &mut models_quota,
+                &mut total_remaining,
+                &mut total_quota_sum,
+                &earliest_reset, // Pass as immutable ref
+            );
         }
     }
 
@@ -79,7 +113,7 @@ pub async fn fetch_antigravity_quota(session_token: &str) -> Result<QuotaResult>
         models_quota: &mut Vec<ModelQuota>,
         total_remaining: &mut f64,
         total_quota_sum: &mut f64,
-        earliest_reset: &mut Option<String>,
+        earliest_reset: &Option<String>,
     ) {
         if model_id.starts_with("chat_") || model_id.starts_with("tab_") {
             return;
@@ -100,12 +134,26 @@ pub async fn fetch_antigravity_quota(session_token: &str) -> Result<QuotaResult>
             remaining_fraction = quota_info.get("remainingFraction").and_then(|v| v.as_f64());
             remaining_quota = quota_info.get("remainingQuota").and_then(|v| v.as_f64());
             total_quota = quota_info.get("totalQuota").and_then(|v| v.as_f64());
+            reset_time = quota_info
+                .get("resetTime")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+        }
 
-            if let Some(rt) = quota_info.get("resetTime").and_then(|v| v.as_str()) {
-                let rt_str = rt.to_string();
-                reset_time = Some(rt_str.clone());
-                if earliest_reset.is_none() || reset_time.as_ref() < earliest_reset.as_ref() {
-                    *earliest_reset = Some(rt_str);
+        // Support for multiple quotas (e.g. 5-hour vs 7-day on premium)
+        if let Some(quotas_arr) = model_data.get("quotas").and_then(|v| v.as_array()) {
+            for q in quotas_arr {
+                let q_fraction = q.get("remainingFraction").and_then(|v| v.as_f64());
+                if let Some(f) = q_fraction {
+                    if remaining_fraction.is_none() || f < remaining_fraction.unwrap() {
+                        remaining_fraction = Some(f);
+                        remaining_quota = q.get("remainingQuota").and_then(|v| v.as_f64());
+                        total_quota = q.get("totalQuota").and_then(|v| v.as_f64());
+                        reset_time = q
+                            .get("resetTime")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
+                    }
                 }
             }
         }
@@ -120,31 +168,35 @@ pub async fn fetch_antigravity_quota(session_token: &str) -> Result<QuotaResult>
                 0.0
             }
         } else {
-            // No absolute quota, use fraction or reset time heuristic
-            let mut fraction = remaining_fraction.unwrap_or(0.0);
+            // Fallback Detection Heuristic:
+            // Google Antigravity (GCP) returns a 7-day reset (e.g. > 100h) for exhausted short-term quotas.
+            // If the account is currently reporting short-term quotas for ANY model (resets < 24h),
+            // then models showing long-term resets (> 48h) are almost certainly exhausted at the premium tier.
+            let mut fraction = remaining_fraction.unwrap_or(1.0);
 
-            // Heuristic for restricted accounts:
-            // Google often returns rf=1.0 and a resetTime exactly 7 days away for restricted/exhausted accounts.
-            // Healthy accounts on free tier reset daily (24h) or hourly.
             if let Some(rt_str) = reset_time.as_ref() {
                 if let Ok(rt) = chrono::DateTime::parse_from_rfc3339(rt_str) {
                     let now = chrono::Utc::now();
                     let diff = rt.with_timezone(&chrono::Utc) - now;
+                    let diff_hours = diff.num_hours();
 
-                    // If reset is more than 3 days away, it's likely a weekly/restricted limit
-                    // and if remaining_fraction is 1.0 (default for restricted), it's probably fake.
-                    if diff.num_hours() > 72 {
-                        if fraction >= 1.0 || remaining_fraction.is_none() {
-                            fraction = 0.0;
+                    // If we have an earliest reset that is short-term (< 24h)
+                    if let Some(earliest_rt_str) = earliest_reset.as_ref() {
+                        if let Ok(earliest_rt) =
+                            chrono::DateTime::parse_from_rfc3339(earliest_rt_str)
+                        {
+                            let earliest_diff = earliest_rt.with_timezone(&chrono::Utc) - now;
+
+                            // Account is in "short-term reporting" mode
+                            if earliest_diff.num_hours() < 24 {
+                                // This specific model is in "long-term fallback" mode
+                                if diff_hours > 48 {
+                                    fraction = 0.0;
+                                }
+                            }
                         }
                     }
-                } else if remaining_fraction.is_none() {
-                    // Fallback: if we have a reset time but NO fraction/quota, it's likely exhausted
-                    fraction = 0.0;
                 }
-            } else if remaining_fraction.is_none() {
-                // No quota info at all -> assume exhausted/restricted
-                fraction = 0.0;
             }
 
             fraction
@@ -177,19 +229,14 @@ pub async fn fetch_antigravity_quota(session_token: &str) -> Result<QuotaResult>
     let (remaining, total) = if total_quota_sum > 0.0 {
         (total_remaining, total_quota_sum)
     } else if !models_quota.is_empty() {
-        // If we have models but no absolute quota, use the average fraction
-        let sum: f64 = models_quota.iter().map(|m| m.remaining_fraction).sum();
-        let count = models_quota.len() as f64;
-        let avg_fraction = if count > 0.0 { sum / count } else { 0.0 };
+        // For Antigravity, the account-level quota is best represented by the MAX
+        // available fraction among all enabled models, rather than an average.
+        let max_fraction: f64 = models_quota
+            .iter()
+            .map(|m| m.remaining_fraction)
+            .fold(0.0, |a, b| a.max(b));
 
-        // Ensure we don't return NaN or Infinity
-        let safe_fraction = if avg_fraction.is_nan() || avg_fraction.is_infinite() {
-            0.0
-        } else {
-            avg_fraction.max(0.0).min(1.0)
-        };
-
-        (safe_fraction * 100.0, 100.0)
+        (max_fraction * 100.0, 100.0)
     } else {
         (0.0, 100.0)
     };

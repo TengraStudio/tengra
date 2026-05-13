@@ -90,6 +90,8 @@ const MAX_CONTEXT_ATTRIBUTES = 50;
 const MAX_CONTEXT_VALUE_LENGTH = 512;
 
 export class FeatureFlagService extends BaseService {
+    static readonly serviceName = 'featureFlagService';
+    static readonly dependencies = ['dataService'] as const;
     private flags: Map<string, FeatureFlag> = new Map();
     private overrides: Map<string, boolean> = new Map();
     private configPath: string;

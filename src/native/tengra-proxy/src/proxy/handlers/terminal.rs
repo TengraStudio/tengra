@@ -32,6 +32,12 @@ pub struct CreateTerminalResponse {
     pub id: String,
 }
 
+#[derive(Deserialize)]
+pub struct ResizeTerminalRequest {
+    pub rows: u16,
+    pub cols: u16,
+}
+
 pub async fn create_terminal(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateTerminalRequest>,
@@ -50,6 +56,31 @@ pub async fn create_terminal(
             (axum::http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
         }
     }
+}
+
+pub async fn resize_terminal(
+    State(state): State<Arc<AppState>>,
+    Path(session_id): Path<String>,
+    Json(payload): Json<ResizeTerminalRequest>,
+) -> impl IntoResponse {
+    match state.terminal_manager.get_session(&session_id) {
+        Some(session) => match session.resize(payload.rows, payload.cols) {
+            Ok(_) => axum::http::StatusCode::OK.into_response(),
+            Err(e) => {
+                let body = Json(serde_json::json!({ "error": e.to_string() }));
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+            }
+        },
+        None => axum::http::StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
+pub async fn delete_terminal(
+    State(state): State<Arc<AppState>>,
+    Path(session_id): Path<String>,
+) -> impl IntoResponse {
+    state.terminal_manager.remove_session(&session_id);
+    axum::http::StatusCode::OK
 }
 
 pub async fn list_terminals(State(state): State<Arc<AppState>>) -> Json<Vec<String>> {

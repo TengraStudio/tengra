@@ -106,6 +106,7 @@ export interface LlamaModel {
     size: number;
 }
 
+
 export interface LinkedAccountInfo {
     id: string;
     provider: string;
@@ -288,8 +289,23 @@ export interface ElectronAPI {
             rootPath: string,
             query: string,
             workspaceId?: string,
-            isRegex?: boolean
+            isRegex?: boolean,
+            matchCase?: boolean,
+            matchWholeWord?: boolean
         ) => Promise<FileSearchResult[]>;
+        searchFilesStream: (
+            rootPath: string,
+            query: string,
+            requestId: string,
+            options?: {
+                isRegex?: boolean;
+                matchCase?: boolean;
+                matchWholeWord?: boolean;
+                includeGlob?: string;
+                excludeGlob?: string;
+            }
+        ) => Promise<void>;
+        searchFilesCancel: (requestId: string) => Promise<void>;
         indexWorkspace: (rootPath: string, workspaceId: string) => Promise<void>;
         queryIndexedSymbols: (
             query: string

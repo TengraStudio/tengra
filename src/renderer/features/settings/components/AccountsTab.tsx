@@ -8,16 +8,10 @@
  * (at your option) any later version.
  */
 
-import antigravityLogo from '@assets/antigravity.svg?url';
-import chatgptLogo from '@assets/chatgpt.svg?url';
-import claudeLogo from '@assets/claude.svg?url';
-import copilotLogo from '@assets/copilot.svg?url';
-import geminiLogo from '@assets/gemini.png';
-import ollamaLogo from '@assets/ollama.svg?url';
-import opencodeLogo from '@assets/opencode.svg?url';
-import { IconBolt,IconChevronDown, IconCpu, IconExternalLink, IconGlobe, IconInfoCircle, IconKey, IconPlus, IconRefresh, IconRobot, IconShield, IconSparkles, IconTerminal, IconTrash, IconUserPlus } from '@tabler/icons-react';
+import { IconBolt, IconChevronDown, IconExternalLink, IconGlobe, IconInfoCircle, IconKey, IconPlus, IconRefresh, IconShield, IconTerminal, IconTrash, IconUserPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,10 +25,16 @@ import { getSettingsSnapshot } from '@/store/settings.store';
 import { AppSettings } from '@/types';
 import type { QuotaResponse } from '@/types/quota';
 import type { AntigravityCreditUsageMode } from '@/types/settings';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { AccountWrapper, AuthBusyState } from '../types';
 
 import { AccountRow } from './accounts/AccountRow';
+import {
+    SettingsPanel,
+    SettingsTabHeader,
+    SettingsTabLayout,
+} from './SettingsPrimitives';
 
 /* Batch-02: Extracted Long Classes */
 const C_ACCOUNTSTAB_1 = "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-muted/30 text-foreground";
@@ -59,18 +59,18 @@ interface ProviderConfig {
     id: string
     name: string
     description: string
-    logo: string
     category: ProviderCategory
 }
 
 const PROVIDERS: ProviderConfig[] = [
     // AI Providers
-    { id: 'claude', name: 'frontend.accounts.providers.claude.name', description: 'frontend.accounts.providers.claude.description', logo: claudeLogo, category: 'ai' },
-    { id: 'codex', name: 'frontend.accounts.providers.codex.name', description: 'frontend.accounts.providers.codex.description', logo: chatgptLogo, category: 'ai' },
-    { id: 'antigravity', name: 'frontend.accounts.providers.antigravity.name', description: 'frontend.accounts.providers.antigravity.description', logo: antigravityLogo, category: 'ai' },
-    { id: 'ollama', name: 'frontend.accounts.providers.ollama.name', description: 'frontend.accounts.providers.ollama.description', logo: ollamaLogo, category: 'ai' },
+    { id: 'claude', name: 'frontend.accounts.providers.claude.name', description: 'frontend.accounts.providers.claude.description', category: 'ai' },
+    { id: 'codex', name: 'frontend.accounts.providers.codex.name', description: 'frontend.accounts.providers.codex.description', category: 'ai' },
+    { id: 'antigravity', name: 'frontend.accounts.providers.antigravity.name', description: 'frontend.accounts.providers.antigravity.description', category: 'ai' },
+    { id: 'ollama', name: 'frontend.accounts.providers.ollama.name', description: 'frontend.accounts.providers.ollama.description', category: 'ai' },
+    { id: 'cursor', name: 'frontend.accounts.providers.cursor.name', description: 'frontend.accounts.providers.cursor.description', category: 'ai' },
     // Developer Tools
-    { id: 'copilot', name: 'frontend.accounts.providers.copilot.name', description: 'frontend.accounts.providers.copilot.description', logo: copilotLogo, category: 'developer' },
+    { id: 'copilot', name: 'frontend.accounts.providers.copilot.name', description: 'frontend.accounts.providers.copilot.description', category: 'developer' },
 ];
 
 const PROVIDER_ACCOUNT_ALIASES: Record<string, string[]> = {
@@ -79,7 +79,9 @@ const PROVIDER_ACCOUNT_ALIASES: Record<string, string[]> = {
     antigravity: ['antigravity', 'google', 'gemini'],
     ollama: ['ollama'],
     copilot: ['copilot', 'copilot_token'],
-    opencode: ['opencode']
+    cursor: ['cursor'],
+    opencode: ['opencode'],
+    xai: ['xai']
 };
 
 function normalizeEmail(email?: string): string | null {
@@ -148,67 +150,32 @@ export function buildAntigravityCreditModeSettings(
  * API Key provider configuration for direct API access
  */
 interface ApiKeyProviderConfig {
-    id: keyof Pick<AppSettings, 'openai' | 'anthropic' | 'gemini' | 'mistral' | 'groq' | 'together' | 'perplexity' | 'cohere' | 'xai' | 'deepseek' | 'openrouter' | 'nvidia' | 'opencode'>;
+    id: keyof Pick<AppSettings, 'openai' | 'anthropic' | 'gemini' | 'mistral' | 'groq' | 'xai' | 'deepseek' | 'openrouter' | 'nvidia' | 'opencode'>;
     name: string;
     description: string;
-    logo?: string;
-    icon?: React.ComponentType<{ className?: string }>;
     placeholder: string;
     docsUrl?: string;
 }
 
 const API_KEY_PROVIDERS: ApiKeyProviderConfig[] = [
-    { id: 'openai', name: 'frontend.accounts.apiProviders.openai.name', description: 'frontend.accounts.apiProviders.openai.description', logo: chatgptLogo, placeholder: 'sk-...', docsUrl: 'https://platform.openai.com/api-keys' },
-    { id: 'anthropic', name: 'frontend.accounts.apiProviders.anthropic.name', description: 'frontend.accounts.apiProviders.anthropic.description', logo: claudeLogo, placeholder: 'sk-ant-...', docsUrl: 'https://console.anthropic.com/settings/keys' },
-    { id: 'gemini', name: 'frontend.accounts.apiProviders.gemini.name', description: 'frontend.accounts.apiProviders.gemini.description', logo: geminiLogo, placeholder: 'AIza...', docsUrl: 'https://aistudio.google.com/apikey' },
-    { id: 'nvidia', name: 'frontend.accounts.providers.nvidia.name', description: 'frontend.accounts.providers.nvidia.description', icon: IconCpu, placeholder: 'nvapi-...', docsUrl: 'https://build.nvidia.com/explore/discover' },
-    { id: 'mistral', name: 'frontend.accounts.apiProviders.mistral.name', description: 'frontend.accounts.apiProviders.mistral.description', icon: IconSparkles, placeholder: 'API key', docsUrl: 'https://console.mistral.ai/api-keys' },
-    { id: 'groq', name: 'frontend.accounts.apiProviders.groq.name', description: 'frontend.accounts.apiProviders.groq.description', icon: IconBolt, placeholder: 'gsk_...', docsUrl: 'https://console.groq.com/keys' },
-    { id: 'together', name: 'frontend.accounts.apiProviders.together.name', description: 'frontend.accounts.apiProviders.together.description', icon: IconRobot, placeholder: 'API key', docsUrl: 'https://api.together.xyz/settings/api-keys' },
-    { id: 'perplexity', name: 'frontend.accounts.apiProviders.perplexity.name', description: 'frontend.accounts.apiProviders.perplexity.description', icon: IconSparkles, placeholder: 'pplx-...', docsUrl: 'https://www.perplexity.ai/settings/api' },
-    { id: 'cohere', name: 'frontend.accounts.apiProviders.cohere.name', description: 'frontend.accounts.apiProviders.cohere.description', icon: IconRobot, placeholder: 'API key', docsUrl: 'https://dashboard.cohere.com/api-keys' },
-    { id: 'xai', name: 'frontend.accounts.apiProviders.xai.name', description: 'frontend.accounts.apiProviders.xai.description', icon: IconSparkles, placeholder: 'xai-...', docsUrl: 'https://console.x.ai/' },
-    { id: 'deepseek', name: 'frontend.accounts.apiProviders.deepseek.name', description: 'frontend.accounts.apiProviders.deepseek.description', icon: IconRobot, placeholder: 'sk-...', docsUrl: 'https://platform.deepseek.com/api_keys' },
-    { id: 'openrouter', name: 'frontend.accounts.apiProviders.openrouter.name', description: 'frontend.accounts.apiProviders.openrouter.description', icon: IconKey, placeholder: 'sk-or-...', docsUrl: 'https://openrouter.ai/keys' },
-    { id: 'opencode', name: 'frontend.accounts.apiProviders.opencode.name', description: 'frontend.accounts.apiProviders.opencode.description', logo: opencodeLogo, placeholder: 'API key', docsUrl: 'https://opencode.ai' },
+    { id: 'openai', name: 'frontend.accounts.apiProviders.openai.name', description: 'frontend.accounts.apiProviders.openai.description', placeholder: 'sk-...', docsUrl: 'https://platform.openai.com/api-keys' },
+    { id: 'anthropic', name: 'frontend.accounts.apiProviders.anthropic.name', description: 'frontend.accounts.apiProviders.anthropic.description', placeholder: 'sk-ant-...', docsUrl: 'https://console.anthropic.com/settings/keys' },
+    { id: 'gemini', name: 'frontend.accounts.apiProviders.gemini.name', description: 'frontend.accounts.apiProviders.gemini.description', placeholder: 'AIza...', docsUrl: 'https://aistudio.google.com/apikey' },
+    { id: 'nvidia', name: 'frontend.accounts.providers.nvidia.name', description: 'frontend.accounts.providers.nvidia.description', placeholder: 'nvapi-...', docsUrl: 'https://build.nvidia.com/explore/discover' },
+    { id: 'mistral', name: 'frontend.accounts.apiProviders.mistral.name', description: 'frontend.accounts.apiProviders.mistral.description', placeholder: 'API key', docsUrl: 'https://console.mistral.ai/api-keys' },
+    { id: 'groq', name: 'frontend.accounts.apiProviders.groq.name', description: 'frontend.accounts.apiProviders.groq.description', placeholder: 'gsk_...', docsUrl: 'https://console.groq.com/keys' },
+    { id: 'xai', name: 'frontend.accounts.apiProviders.xai.name', description: 'frontend.accounts.apiProviders.xai.description', placeholder: 'xai-...', docsUrl: 'https://console.x.ai/' },
+    { id: 'deepseek', name: 'frontend.accounts.apiProviders.deepseek.name', description: 'frontend.accounts.apiProviders.deepseek.description', placeholder: 'sk-...', docsUrl: 'https://platform.deepseek.com/api_keys' },
+    { id: 'openrouter', name: 'frontend.accounts.apiProviders.openrouter.name', description: 'frontend.accounts.apiProviders.openrouter.description', placeholder: 'sk-or-...', docsUrl: 'https://openrouter.ai/keys' },
+    { id: 'opencode', name: 'frontend.accounts.apiProviders.opencode.name', description: 'frontend.accounts.apiProviders.opencode.description', placeholder: 'API key', docsUrl: 'https://opencode.ai' },
 ];
 
-const LOGO_INVERT_PROVIDERS = new Set([
-    'claude',
-    'anthropic',
-    'codex',
-    'copilot',
-    'ollama',
-    'deepseek',
-]);
-
-function ProviderIdentity({
-    logo,
-    icon: IconComponent,
-    providerId,
-}: {
-    logo?: string;
-    icon?: React.ComponentType<{ className?: string }>;
-    providerId: string;
-}) {
+function ProviderIdentity({ providerId }: { providerId: string; }) {
     return (
-        <div className={C_ACCOUNTSTAB_1}>
-            {logo ? (
-                <img
-                    src={logo}
-                    alt=""
-                    className={cn(
-                        'h-7 w-7 object-contain transition-all duration-300',
-                        !['antigravity', 'gemini', 'huggingface', 'nvidia'].includes(providerId) && 'theme-logo-invert',
-                        LOGO_INVERT_PROVIDERS.has(providerId) ? 'opacity-90' : 'opacity-60'
-                    )}
-                />
-            ) : IconComponent ? (
-                <IconComponent className="h-6 w-6 text-foreground/80" />
-            ) : (
-                <IconKey className="h-6 w-6 text-foreground/80" />
-            )}
-        </div>
+        <ProviderIcon
+            provider={providerId}
+            variant="settings"
+        />
     );
 }
 
@@ -221,7 +188,8 @@ interface AccountsTabProps {
     isOllamaRunning: boolean
     refreshAuthStatus: () => Promise<void>
     connectCopilot: () => Promise<void>
-    connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity' | 'ollama') => Promise<void>
+    connectCursor: () => Promise<void>
+    connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity' | 'ollama' | 'cursor') => Promise<void>
     cancelAuthFlow: () => void
     startOllama: () => Promise<void>
     checkOllama: () => Promise<void>
@@ -243,7 +211,7 @@ interface ProviderCardProps {
     onConnect: (providerId: string) => void
     onUnlink: (accountId: string) => Promise<void>
     onSetActive: (providerId: string, accountId: string) => Promise<void>
-    onShowManualSession: (accountId: string, email?: string) => void
+    onShowManualSession: (accountId: string, email?: string, provider?: string) => void
     onCreditUsageModeChange: (accountId: string, mode: AntigravityCreditUsageMode) => void
     t: (key: string) => string
 }
@@ -286,7 +254,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                 )}
                 onClick={() => hasAccounts && setExpanded(!expanded)}
             >
-                <ProviderIdentity logo={provider.logo} providerId={provider.id} />
+                <ProviderIdentity providerId={provider.id} />
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-foreground">{t(provider.name)}</div>
                     <div className="mt-1 typo-caption text-muted-foreground">{t(provider.description)}</div>
@@ -332,20 +300,20 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                                 : null;
 
                             return (
-                            <AccountRow
-                                key={account.id}
-                                account={account}
-                                isLast={index === accounts.length - 1}
-                                isBusy={isBusy}
-                                providerId={provider.id}
-                                creditAmount={quotaAccount?.antigravityAiCredits?.creditAmount}
-                                creditUsageMode={getCreditUsageMode(settings, account.id, quotaAccount)}
-                                onUnlink={onUnlink}
-                                onSetActive={onSetActive}
-                                onShowManualSession={onShowManualSession}
-                                onCreditUsageModeChange={provider.id === 'antigravity' ? onCreditUsageModeChange : undefined}
-                                t={t}
-                            />
+                                <AccountRow
+                                    key={account.id}
+                                    account={account}
+                                    isLast={index === accounts.length - 1}
+                                    isBusy={isBusy}
+                                    providerId={provider.id}
+                                    creditAmount={quotaAccount?.antigravityAiCredits?.creditAmount}
+                                    creditUsageMode={getCreditUsageMode(settings, account.id, quotaAccount)}
+                                    onUnlink={onUnlink}
+                                    onSetActive={onSetActive}
+                                    onShowManualSession={onShowManualSession}
+                                    onCreditUsageModeChange={provider.id === 'antigravity' ? onCreditUsageModeChange : undefined}
+                                    t={t}
+                                />
                             );
                         })}
                     </div>
@@ -394,19 +362,13 @@ const ProviderList = React.memo(({
     onConnect: (id: string) => void
     onUnlink: (id: string) => Promise<void>
     onSetActive: (pid: string, aid: string) => Promise<void>
-    onShowManualSession: (aid: string, email?: string) => void
+    onShowManualSession: (aid: string, email?: string, provider?: string) => void
     onCreditUsageModeChange: (accountId: string, mode: AntigravityCreditUsageMode) => void
     t: (k: string) => string
 }) => {
     return (
-        <section className="space-y-4">
-            <div className="flex items-center gap-3 mb-2 px-1">
-                <IconShield className="w-4 h-4 text-primary" />
-                <h3 className="typo-caption font-medium text-muted-foreground">
-                    {title}
-                </h3>
-            </div>
-            <div className="grid grid-cols-1 gap-4">
+        <SettingsPanel title={title} icon={IconShield} className="space-y-0">
+            <div className="grid grid-cols-1 gap-4 px-6 py-2">
                 {providers.map(provider => (
                     <ProviderCard
                         key={provider.id}
@@ -424,7 +386,7 @@ const ProviderList = React.memo(({
                     />
                 ))}
             </div>
-        </section>
+        </SettingsPanel>
     );
 });
 ProviderList.displayName = 'ProviderList';
@@ -448,7 +410,6 @@ const ApiKeyProviderCard = React.memo(({
     const [newKey, setNewKey] = useState('');
     const [expanded, setExpanded] = useState(false);
     const hasKeys = apiKeys.length > 0;
-    const IconComponent = provider.icon;
 
     const handleAddKey = () => {
         if (newKey.trim()) {
@@ -476,7 +437,7 @@ const ApiKeyProviderCard = React.memo(({
                 )}
                 onClick={() => hasKeys && setExpanded(!expanded)}
             >
-                <ProviderIdentity logo={provider.logo} icon={IconComponent} providerId={provider.id} />
+                <ProviderIdentity providerId={provider.id} />
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-foreground">{t(provider.name)}</div>
                     <div className="mt-1 typo-caption text-muted-foreground">{t(provider.description)}</div>
@@ -612,20 +573,19 @@ const ApiKeyProvidersSection = React.memo(({
 
     const handleAddKey = async (providerId: ApiKeyProviderConfig['id'], key: string) => {
         if (linkedAccounts.linkAccount) {
-            await linkedAccounts.linkAccount(providerId, { 
+            await linkedAccounts.linkAccount(providerId, {
                 key,
                 accessToken: key,
                 metadata: { type: 'api_key', auth_type: 'api_key' }
             });
         }
-        
+
         const defaultModels: Record<string, string> = {
-            openai: 'gpt-4o', anthropic: 'claude-3-5-sonnet-20240620', gemini: 'gemini-1.5-pro',
-            mistral: 'mistral-large-latest', groq: 'llama-3.1-70b-versatile', together: 'meta-llama/Llama-3-70b-chat-hf',
-            perplexity: 'llama-3-sonar-large-32k-chat', cohere: 'command-r-plus', xai: 'grok-beta',
-            deepseek: 'deepseek-chat', openrouter: 'anthropic/claude-3.5-sonnet',
-            nvidia: 'nvidia/llama3-chatqa-1.5-70b',
-            opencode: 'big-pickle',
+            openai: '', anthropic: '', gemini: '',
+            mistral: '', groq: '', xai: '',
+            deepseek: '', openrouter: '',
+            nvidia: '',
+            opencode: '',
         };
         const nextSettings = {
             ...settings,
@@ -645,19 +605,13 @@ const ApiKeyProvidersSection = React.memo(({
     };
 
     return (
-        <section className="space-y-6 pt-4">
-            <div className="flex flex-col gap-2 px-1">
-                <div className="flex items-center gap-3">
-                    <IconKey className="w-4 h-4 text-primary" />
-                    <h3 className="typo-caption font-medium text-muted-foreground">
-                        {t('frontend.accounts.categories.apiKeyProviders')}
-                    </h3>
-                </div>
-                <p className="text-sm text-muted-foreground font-medium leading-relaxed opacity-70 max-w-2xl">
-                    {t('frontend.accounts.apiKeyProvidersDescription')}
-                </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
+        <SettingsPanel
+            title={t('frontend.accounts.categories.apiKeyProviders')}
+            description={t('frontend.accounts.apiKeyProvidersDescription')}
+            icon={IconKey}
+            className="pt-0"
+        >
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 px-6 py-2">
                 {API_KEY_PROVIDERS.map(provider => (
                     <ApiKeyProviderCard
                         key={provider.id}
@@ -669,7 +623,7 @@ const ApiKeyProvidersSection = React.memo(({
                     />
                 ))}
             </div>
-        </section>
+        </SettingsPanel>
     );
 });
 ApiKeyProvidersSection.displayName = 'ApiKeyProvidersSection';
@@ -719,264 +673,255 @@ const OllamaSection = React.memo(({
     };
 
     return (
-        <section className="space-y-4 pt-4">
-            <div className="flex items-center gap-3 mb-2 px-1">
-                <IconTerminal className="w-4 h-4 text-primary" />
-                <h3 className="typo-caption font-medium text-muted-foreground">
-                    {t('frontend.accounts.categories.localModels')}
-                </h3>
+        <SettingsPanel
+            title={t('frontend.accounts.categories.localModels')}
+            icon={IconTerminal}
+        >
+            <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+                <ProviderIcon
+                    provider="ollama"
+                    variant="settings"
+                />
+                <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground">{t('frontend.accounts.providers.ollama.name')}</div>
+                    <div className="mt-1 typo-caption text-muted-foreground">{t('frontend.accounts.providers.ollama.description')}</div>
+                </div>
+                <Badge className={cn(
+                    'h-7 rounded-lg px-3 typo-body font-medium',
+                    isRunning
+                        ? 'border-success/20 bg-success/10 text-success'
+                        : 'border-transparent bg-muted text-muted-foreground'
+                )}>
+                    {isRunning ? t('frontend.accounts.running') : t('frontend.accounts.notRunning')}
+                </Badge>
             </div>
-            <div className="group overflow-hidden rounded-2xl border border-border/30 bg-card transition-colors hover:border-border/50">
-                <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-muted/30">
-                        <img 
-                            src={ollamaLogo} 
-                            alt={t('frontend.accounts.providers.ollama.name')} 
-                            className="h-7 w-7 object-contain theme-logo-invert" 
+            <div className="border-t border-border/20 bg-muted/02 px-5 py-2 space-y-5">
+                <div className="grid grid-cols-1 gap-5">
+                    <div className="space-y-2">
+                        <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.serverAddress')}</Label>
+                        <Input
+                            type="text"
+                            value={settings.ollama.url}
+                            onChange={e => updateOllamaUrl(e.target.value)}
+                            className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
                         />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-foreground">{t('frontend.accounts.providers.ollama.name')}</div>
-                        <div className="mt-1 typo-caption text-muted-foreground">{t('frontend.accounts.providers.ollama.description')}</div>
-                    </div>
-                    <Badge className={cn(
-                        'h-7 rounded-lg px-3 typo-body font-medium',
-                        isRunning
-                            ? 'border-success/20 bg-success/10 text-success'
-                            : 'border-transparent bg-muted text-muted-foreground'
-                    )}>
-                        {isRunning ? t('frontend.accounts.running') : t('frontend.accounts.notRunning')}
-                    </Badge>
                 </div>
 
-                <div className="border-t border-border/20 bg-muted/02 p-5 space-y-5">
-                    <div className="grid grid-cols-1 gap-5">
-                        <div className="space-y-2">
-                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.serverAddress')}</Label>
-                            <Input
-                                type="text"
-                                value={settings.ollama.url}
-                                onChange={e => updateOllamaUrl(e.target.value)}
-                                className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
-                            />
+                <div className="rounded-2xl border border-border/30 bg-background/60 p-4 space-y-4">
+                    <div className="space-y-1">
+                        <div className="text-sm font-semibold text-foreground">{t('frontend.accounts.llama.runtimeTitle')}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {t('frontend.accounts.llama.runtimeDescription')}
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-border/30 bg-background/60 p-4 space-y-4">
-                        <div className="space-y-1">
-                            <div className="text-sm font-semibold text-foreground">{t('frontend.accounts.llama.runtimeTitle')}</div>
-                            <div className="text-xs text-muted-foreground">
-                                {t('frontend.accounts.llama.runtimeDescription')}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.host')}</Label>
-                                <Input
-                                    type="text"
-                                    value={llamaSettings.host ?? '127.0.0.1'}
-                                    onChange={e => updateLlamaSettings({ host: e.target.value })}
-                                    className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.port')}</Label>
-                                <Input
-                                    type="number"
-                                    value={llamaSettings.port ?? 8080}
-                                    onChange={e => updateLlamaSettings({ port: Number(e.target.value) })}
-                                    className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.backend')}</Label>
-                                <select
-                                    value={llamaSettings.backend ?? 'auto'}
-                                    onChange={e => {
-                                        const backend = e.target.value as NonNullable<AppSettings['llama']>['backend'];
-                                        updateLlamaSettings({ backend });
-                                    }}
-                                    className="h-10 w-full rounded-xl border border-border/40 bg-background px-3 font-mono typo-caption text-foreground"
-                                >
-                                    <option value="auto">auto</option>
-                                    <option value="cpu">cpu</option>
-                                    <option value="cuda">cuda</option>
-                                    <option value="vulkan">vulkan</option>
-                                    <option value="metal">metal</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.gpuLayers')}</Label>
-                                <Input type="number" value={llamaSettings.gpuLayers ?? -1} onChange={e => updateLlamaSettings({ gpuLayers: Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.contextSize')}</Label>
-                                <Input type="number" value={llamaSettings.contextSize ?? 8192} onChange={e => updateLlamaSettings({ contextSize: Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.batchSize')}</Label>
-                                <Input type="number" value={llamaSettings.batchSize ?? 512} onChange={e => updateLlamaSettings({ batchSize: Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.ubatchSize')}</Label>
-                                <Input type="number" value={llamaSettings.ubatchSize ?? ''} onChange={e => updateLlamaSettings({ ubatchSize: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.parallelSlots')}</Label>
-                                <Input type="number" value={llamaSettings.parallel ?? ''} onChange={e => updateLlamaSettings({ parallel: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.threads')}</Label>
-                                <Input type="number" value={llamaSettings.threads ?? ''} onChange={e => updateLlamaSettings({ threads: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.threadsBatch')}</Label>
-                                <Input type="number" value={llamaSettings.threadsBatch ?? ''} onChange={e => updateLlamaSettings({ threadsBatch: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.defragThreshold')}</Label>
-                                <Input type="number" step="0.01" value={llamaSettings.defragThold ?? ''} onChange={e => updateLlamaSettings({ defragThold: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.mainGpu')}</Label>
-                                <Input type="number" value={llamaSettings.mainGpu ?? ''} onChange={e => updateLlamaSettings({ mainGpu: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.tensorSplit')}</Label>
-                                <Input type="text" value={llamaSettings.tensorSplit ?? ''} onChange={e => updateLlamaSettings({ tensorSplit: e.target.value })} placeholder={t('frontend.accounts.llama.tensorSplitPlaceholder')} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.sleepIdleSeconds')}</Label>
-                                <Input type="number" value={llamaSettings.sleepIdleSeconds ?? ''} onChange={e => updateLlamaSettings({ sleepIdleSeconds: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
-                                <Checkbox
-                                    checked={llamaSettings.flashAttn ?? true}
-                                    onCheckedChange={checked => {
-                                        const nextValue = checked === true;
-                                        updateLlamaSettings({ flashAttn: nextValue });
-                                    }}
-                                />
-                                <div>
-                                    <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.flashAttention')}</div>
-                                    <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.flashAttentionDescription')}</div>
-                                </div>
-                            </label>
-                            <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
-                                <Checkbox
-                                    checked={llamaSettings.continuousBatching ?? true}
-                                    onCheckedChange={checked => {
-                                        const nextValue = checked === true;
-                                        updateLlamaSettings({ continuousBatching: nextValue });
-                                    }}
-                                />
-                                <div>
-                                    <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.continuousBatching')}</div>
-                                    <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.continuousBatchingDescription')}</div>
-                                </div>
-                            </label>
-                            <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
-                                <Checkbox
-                                    checked={llamaSettings.mlock ?? true}
-                                    onCheckedChange={checked => {
-                                        const nextValue = checked === true;
-                                        updateLlamaSettings({ mlock: nextValue });
-                                    }}
-                                />
-                                <div>
-                                    <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.lockModelInRam')}</div>
-                                    <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.lockModelInRamDescription')}</div>
-                                </div>
-                            </label>
-                            <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
-                                <Checkbox
-                                    checked={llamaSettings.mmap ?? true}
-                                    onCheckedChange={checked => {
-                                        const nextValue = checked === true;
-                                        updateLlamaSettings({ mmap: nextValue });
-                                    }}
-                                />
-                                <div>
-                                    <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.useMmap')}</div>
-                                    <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.useMmapDescription')}</div>
-                                </div>
-                            </label>
-                            <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
-                                <Checkbox
-                                    checked={llamaSettings.metrics ?? false}
-                                    onCheckedChange={checked => {
-                                        const nextValue = checked === true;
-                                        updateLlamaSettings({ metrics: nextValue });
-                                    }}
-                                />
-                                <div>
-                                    <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.metricsEndpoint')}</div>
-                                    <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.metricsEndpointDescription')}</div>
-                                </div>
-                            </label>
-                        </div>
-
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="space-y-2">
-                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.extraArgs')}</Label>
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.host')}</Label>
                             <Input
                                 type="text"
-                                value={llamaSettings.extraArgs ?? ''}
-                                onChange={e => updateLlamaSettings({ extraArgs: e.target.value })}
-                                placeholder={t('frontend.accounts.llama.extraArgsPlaceholder')}
+                                value={llamaSettings.host ?? '127.0.0.1'}
+                                onChange={e => updateLlamaSettings({ host: e.target.value })}
                                 className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
                             />
-                            <div className="text-xs text-muted-foreground">
-                                {t('frontend.accounts.llama.extraArgsDescription')}
-                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.port')}</Label>
+                            <Input
+                                type="number"
+                                value={llamaSettings.port ?? 8080}
+                                onChange={e => updateLlamaSettings({ port: Number(e.target.value) })}
+                                className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.backend')}</Label>
+                            <select
+                                value={llamaSettings.backend ?? 'auto'}
+                                onChange={e => {
+                                    const backend = e.target.value as NonNullable<AppSettings['llama']>['backend'];
+                                    updateLlamaSettings({ backend });
+                                }}
+                                className="h-10 w-full rounded-xl border border-border/40 bg-background px-3 font-mono typo-caption text-foreground"
+                            >
+                                <option value="auto">auto</option>
+                                <option value="cpu">cpu</option>
+                                <option value="cuda">cuda</option>
+                                <option value="vulkan">vulkan</option>
+                                <option value="metal">metal</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.gpuLayers')}</Label>
+                            <Input type="number" value={llamaSettings.gpuLayers ?? -1} onChange={e => updateLlamaSettings({ gpuLayers: Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.contextSize')}</Label>
+                            <Input type="number" value={llamaSettings.contextSize ?? 8192} onChange={e => updateLlamaSettings({ contextSize: Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.batchSize')}</Label>
+                            <Input type="number" value={llamaSettings.batchSize ?? 512} onChange={e => updateLlamaSettings({ batchSize: Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.ubatchSize')}</Label>
+                            <Input type="number" value={llamaSettings.ubatchSize ?? ''} onChange={e => updateLlamaSettings({ ubatchSize: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.parallelSlots')}</Label>
+                            <Input type="number" value={llamaSettings.parallel ?? ''} onChange={e => updateLlamaSettings({ parallel: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.threads')}</Label>
+                            <Input type="number" value={llamaSettings.threads ?? ''} onChange={e => updateLlamaSettings({ threads: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.threadsBatch')}</Label>
+                            <Input type="number" value={llamaSettings.threadsBatch ?? ''} onChange={e => updateLlamaSettings({ threadsBatch: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.defragThreshold')}</Label>
+                            <Input type="number" step="0.01" value={llamaSettings.defragThold ?? ''} onChange={e => updateLlamaSettings({ defragThold: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.mainGpu')}</Label>
+                            <Input type="number" value={llamaSettings.mainGpu ?? ''} onChange={e => updateLlamaSettings({ mainGpu: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.tensorSplit')}</Label>
+                            <Input type="text" value={llamaSettings.tensorSplit ?? ''} onChange={e => updateLlamaSettings({ tensorSplit: e.target.value })} placeholder={t('frontend.accounts.llama.tensorSplitPlaceholder')} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.sleepIdleSeconds')}</Label>
+                            <Input type="number" value={llamaSettings.sleepIdleSeconds ?? ''} onChange={e => updateLlamaSettings({ sleepIdleSeconds: e.target.value === '' ? undefined : Number(e.target.value) })} className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
+                            <Checkbox
+                                checked={llamaSettings.flashAttn ?? true}
+                                onCheckedChange={checked => {
+                                    const nextValue = checked === true;
+                                    updateLlamaSettings({ flashAttn: nextValue });
+                                }}
+                            />
+                            <div>
+                                <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.flashAttention')}</div>
+                                <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.flashAttentionDescription')}</div>
+                            </div>
+                        </label>
+                        <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
+                            <Checkbox
+                                checked={llamaSettings.continuousBatching ?? true}
+                                onCheckedChange={checked => {
+                                    const nextValue = checked === true;
+                                    updateLlamaSettings({ continuousBatching: nextValue });
+                                }}
+                            />
+                            <div>
+                                <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.continuousBatching')}</div>
+                                <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.continuousBatchingDescription')}</div>
+                            </div>
+                        </label>
+                        <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
+                            <Checkbox
+                                checked={llamaSettings.mlock ?? true}
+                                onCheckedChange={checked => {
+                                    const nextValue = checked === true;
+                                    updateLlamaSettings({ mlock: nextValue });
+                                }}
+                            />
+                            <div>
+                                <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.lockModelInRam')}</div>
+                                <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.lockModelInRamDescription')}</div>
+                            </div>
+                        </label>
+                        <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
+                            <Checkbox
+                                checked={llamaSettings.mmap ?? true}
+                                onCheckedChange={checked => {
+                                    const nextValue = checked === true;
+                                    updateLlamaSettings({ mmap: nextValue });
+                                }}
+                            />
+                            <div>
+                                <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.useMmap')}</div>
+                                <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.useMmapDescription')}</div>
+                            </div>
+                        </label>
+                        <label className="flex items-center gap-3 rounded-xl border border-border/30 bg-card px-4 py-3">
+                            <Checkbox
+                                checked={llamaSettings.metrics ?? false}
+                                onCheckedChange={checked => {
+                                    const nextValue = checked === true;
+                                    updateLlamaSettings({ metrics: nextValue });
+                                }}
+                            />
+                            <div>
+                                <div className="text-sm font-medium text-foreground">{t('frontend.accounts.llama.metricsEndpoint')}</div>
+                                <div className="text-xs text-muted-foreground">{t('frontend.accounts.llama.metricsEndpointDescription')}</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('frontend.accounts.llama.extraArgs')}</Label>
+                        <Input
+                            type="text"
+                            value={llamaSettings.extraArgs ?? ''}
+                            onChange={e => updateLlamaSettings({ extraArgs: e.target.value })}
+                            placeholder={t('frontend.accounts.llama.extraArgsPlaceholder')}
+                            className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
+                        />
+                        <div className="text-xs text-muted-foreground">
+                            {t('frontend.accounts.llama.extraArgsDescription')}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void checkOllama();
+                        }}
+                        className={C_ACCOUNTSTAB_5}
+                    >
+                        <IconRefresh className={cn("h-3 w-3 mr-2", !isRunning && "animate-spin")} />
+                        {t('frontend.accounts.check')}
+                    </Button>
+                    {!isRunning && (
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                void checkOllama();
+                                void startOllama();
                             }}
-                            className={C_ACCOUNTSTAB_5}
+                            className={C_ACCOUNTSTAB_6}
                         >
-                            <IconRefresh className={cn("h-3 w-3 mr-2", !isRunning && "animate-spin")} />
-                            {t('frontend.accounts.check')}
+                            <IconBolt className="h-3.5 w-3.5 mr-2" />
+                            {t('frontend.accounts.start')}
                         </Button>
-                        {!isRunning && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    void startOllama();
-                                }}
-                                className={C_ACCOUNTSTAB_6}
-                            >
-                                <IconBolt className="h-3.5 w-3.5 mr-2" />
-                                {t('frontend.accounts.start')}
-                            </Button>
-                        )}
-                    </div>
+                    )}
                 </div>
             </div>
-        </section>
+        </SettingsPanel>
     );
 });
 OllamaSection.displayName = 'OllamaSection';
@@ -989,12 +934,14 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     setManualSessionModal, t
 }) => {
     const handleConnect = React.useCallback((providerId: string) => {
+        appLogger.debug('AccountsTab', `handleConnect called with: ${providerId}`);
         switch (providerId) {
             case 'copilot': void connectCopilot(); break;
             case 'codex': void connectBrowserProvider('codex'); break;
             case 'claude': void connectBrowserProvider('claude'); break;
             case 'antigravity': void connectBrowserProvider('antigravity'); break;
             case 'ollama': void connectBrowserProvider('ollama'); break;
+            case 'cursor': void connectBrowserProvider('cursor'); break;
         }
     }, [connectCopilot, connectBrowserProvider]);
 
@@ -1005,8 +952,8 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     const aiProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'ai'), []);
     const developerProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'developer'), []);
 
-    const handleShowManualSession = React.useCallback((accountId: string, email?: string) => {
-        setManualSessionModal({ isOpen: true, accountId, email });
+    const handleShowManualSession = React.useCallback((accountId: string, email?: string, provider?: string) => {
+        setManualSessionModal({ isOpen: true, accountId, email, provider });
     }, [setManualSessionModal]);
 
     const handleCreditUsageModeChange = React.useCallback((accountId: string, mode: AntigravityCreditUsageMode) => {
@@ -1020,34 +967,27 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     if (!settings) { return null; }
 
     return (
-        <div className="mx-auto max-w-5xl space-y-10 pb-10">
-            <header className="flex flex-col justify-between gap-4 px-1 md:flex-row md:items-center">
-                <div className="space-y-1.5">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-xl">
-                            <IconUserPlus className="w-5 h-5 text-primary" />
-                        </div>
-                        <h2 className="text-2xl font-semibold text-foreground">{t('frontend.accounts.title')}</h2>
-                    </div>
-                    <p className="flex items-center gap-2 text-sm text-muted-foreground/70">
-                        <IconInfoCircle className="w-3 h-3" />
-                        {t('frontend.accounts.subtitle')}
-                    </p>
-                </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleRefresh();
-                    }}
-                    className={C_ACCOUNTSTAB_7}
-                >
-                    <IconRefresh className={cn("h-3.5 w-3.5 transition-transform duration-500", linkedAccounts.loading ? "animate-spin" : "group-hover:rotate-180")} />
-                    {t('common.refresh')}
-                </Button>
-            </header>
+        <SettingsTabLayout>
+            <SettingsTabHeader
+                title={t('frontend.accounts.title')}
+                description={t('frontend.accounts.subtitle')}
+                icon={IconUserPlus}
+                actions={(
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRefresh();
+                        }}
+                        className={C_ACCOUNTSTAB_7}
+                    >
+                        <IconRefresh className={cn("h-3.5 w-3.5 transition-transform duration-500", linkedAccounts.loading ? "animate-spin" : "group-hover:rotate-180")} />
+                        {t('common.refresh')}
+                    </Button>
+                )}
+            />
 
             {authMessage && (
                 <div className="animate-in slide-in-from-top-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 duration-500">
@@ -1074,7 +1014,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                 </div>
             )}
 
-            <div className="space-y-10">
+            <div className="space-y-6">
                 <ProviderList
                     title={t('frontend.accounts.categories.aiProviders')}
                     providers={aiProviders}
@@ -1135,10 +1075,9 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                     onClose={closeDeviceCodeModal}
                 />
             )}
-        </div>
+        </SettingsTabLayout>
     );
 });
 
 ProviderCard.displayName = 'ProviderCard';
 AccountsTab.displayName = 'AccountsTab';
-

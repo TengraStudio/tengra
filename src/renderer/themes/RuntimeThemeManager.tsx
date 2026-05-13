@@ -33,20 +33,19 @@ export const RuntimeThemeManager: React.FC = () => {
 
     useEffect(() => {
         const root = document.documentElement;
-
-        // Cleanup any previously-applied theme variables to avoid leakage across themes.
-        // Only removes variables that were set by this manager (tracked in `appliedVarsRef`).
-        for (const cssVarName of appliedVarsRef.current) {
-            root.style.removeProperty(cssVarName);
-        }
-        appliedVarsRef.current.clear();
-
         if (!manifest) {
             appLogger.debug('RuntimeThemeManager', `Theme ${theme} manifest not found in registry yet.`);
             return;
         }
 
         appLogger.info('RuntimeThemeManager', `Applying theme: ${manifest.displayName} (${theme})`);
+
+        // Cleanup the previous theme only after we know the new manifest is available.
+        // This avoids a transient fallback to default colors while themes are reloading.
+        for (const cssVarName of appliedVarsRef.current) {
+            root.style.removeProperty(cssVarName);
+        }
+        appliedVarsRef.current.clear();
 
         const colors = manifest.colors;
         const vars = manifest.vars ?? {};

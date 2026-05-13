@@ -105,7 +105,7 @@ export function WorkspaceAnalysisTodos({ todos, t }: WorkspaceAnalysisTodosProps
         <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-warning" />
-                {t('frontend.workspaceDashboard.todoList')}
+                {t('frontend.workspaceDashboard.todoComments')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {todos.map((todo: string, i: number) => (

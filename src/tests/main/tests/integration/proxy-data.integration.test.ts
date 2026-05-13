@@ -30,6 +30,7 @@ const mockSecurityService = { encryptSync: vi.fn(d => d), decryptSync: vi.fn(d =
 const mockProcessManager = {} as never;
 const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never;
 const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never;
+const mockCacheService = { get: vi.fn().mockResolvedValue(null), set: vi.fn() } as never;
 
 describe('Proxy-Data Integration', () => {
     let tempDir: string;
@@ -41,15 +42,16 @@ describe('Proxy-Data Integration', () => {
         fs.mkdirSync(tempDir, { recursive: true });
         mockGetPath.mockReturnValue(tempDir);
         dataService = new DataService();
-        proxyService = new ProxyService({
-            settingsService: mockSettingsService,
+        proxyService = new ProxyService(
+            mockSettingsService,
             dataService,
-            securityService: mockSecurityService,
-            processManager: mockProcessManager,
-            authService: mockAuthService,
-            eventBus: mockEventBus,
-            databaseService: {} as never
-        });
+            mockSecurityService,
+            mockProcessManager,
+            mockAuthService,
+            mockEventBus,
+            {} as never,
+            mockCacheService
+        );
     });
 
     afterEach(() => {

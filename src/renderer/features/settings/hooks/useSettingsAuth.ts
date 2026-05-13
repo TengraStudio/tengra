@@ -69,6 +69,7 @@ export function useSettingsAuth(
         cancelBrowserAuth,
         cancelBrowserAuthForAccount,
         handleSaveClaudeSession,
+        handleSaveCursorSession,
         disconnectProvider
     } = useBrowserAuth({
         settings,
@@ -103,11 +104,13 @@ export function useSettingsAuth(
         checkOllama,
         refreshAuthStatus,
         connectCopilot,
+        connectCursor: () => connectBrowserProvider('cursor'),
         connectBrowserProvider,
         cancelAuthFlow,
         disconnectProvider,
         cancelBrowserAuthForAccount,
         handleSaveClaudeSession,
+        handleSaveCursorSession,
         deviceCodeModal,
         closeDeviceCodeModal,
         manualSessionModal,
@@ -115,7 +118,7 @@ export function useSettingsAuth(
     }), [
         statusMessage, setStatusMessage, authMessage, authBusy, isOllamaRunning, authStatus,
         startOllama, checkOllama, refreshAuthStatus, connectCopilot,
-        connectBrowserProvider, cancelAuthFlow, disconnectProvider, cancelBrowserAuthForAccount, handleSaveClaudeSession,
+        connectBrowserProvider, cancelAuthFlow, disconnectProvider, cancelBrowserAuthForAccount, handleSaveClaudeSession, handleSaveCursorSession,
         deviceCodeModal, closeDeviceCodeModal, manualSessionModal, setManualSessionModal
     ]);
 }

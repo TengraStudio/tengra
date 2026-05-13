@@ -30,6 +30,8 @@ export interface AuditLogEntry {
 }
 
 export class AuditLogService extends BaseService {
+    static readonly serviceName = 'auditLogService';
+    static readonly dependencies = [] as const;
     private readonly entries: AuditLogEntry[] = [];
 
     constructor() {

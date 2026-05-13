@@ -81,7 +81,7 @@ impl Database {
                 .map_err(|_| anyhow::anyhow!("Database lock poisoned"))?;
             migrations::run_migrations_internal(&mut conn)?;
             migrations::repair_workspace_schema_internal(&mut conn)?;
-            migrations::ensure_runtime_support_tables_internal(&mut conn)?;
+            migrations::ensure_runtime_support_tables_internal(&conn)?;
             Ok::<(), anyhow::Error>(())
         })
         .await??;

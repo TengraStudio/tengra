@@ -79,6 +79,8 @@ interface ClaudeMessage {
  * Parses and imports chat conversations from ChatGPT and Claude export formats.
  */
 export class ChatImportService extends BaseService {
+    static readonly serviceName = 'chatImportService';
+    static readonly dependencies = ['databaseService'] as const;
     constructor(private readonly databaseService: DatabaseService) {
         super('ChatImportService');
     }

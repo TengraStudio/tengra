@@ -9,10 +9,9 @@
  */
 
 import { FitAddon } from '@xterm/addon-fit';
-import { type ITheme, Terminal as XTerm } from '@xterm/xterm';
+import { Terminal as XTerm } from '@xterm/xterm';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
-import { useTerminalSmartSuggestions } from '@/features/terminal/hooks/useTerminalSmartSuggestions';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { TerminalTab } from '@/types';
@@ -149,7 +148,7 @@ function useTerminalSession(
     tab: TerminalTab,
     containerRef: React.RefObject<HTMLDivElement>,
     workspacePath: string | undefined,
-    initialTheme: ITheme
+    resolvedAppearance: ResolvedTerminalAppearance
 ) {
     const xtermRef = useRef<XTerm | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
@@ -184,15 +183,23 @@ function useTerminalSession(
         markTerminalSessionInitializing(tab.id);
 
         const term = new XTerm({
-            cursorBlink: true,
-            fontSize: 13,
-            fontFamily: "'Cascadia Mono', Consolas, 'Courier New', monospace",
-            theme: initialTheme,
+            cursorBlink: resolvedAppearance.cursorBlink,
+            fontSize: resolvedAppearance.fontSize,
+            fontFamily: resolvedAppearance.fontFamily,
+            lineHeight: resolvedAppearance.lineHeight,
+            theme: resolvedAppearance.theme,
             allowProposedApi: true,
             scrollback: 10000,
             cols: 80,
             rows: 24,
         });
+
+        // Some versions of xterm types may not include bellStyle in the constructor options,
+        // so we set it manually after creation.
+        if (resolvedAppearance.bellEnabled) {
+            (term.options as unknown as { bellStyle: string }).bellStyle = resolvedAppearance.bellStyle;
+        }
+
         const fitAddon = new FitAddon();
         term.loadAddon(fitAddon);
         term.open(containerRef.current);
@@ -336,6 +343,9 @@ function useTerminalSession(
                 clearTerminalSessionFlags(tab.id);
                 return;
             }
+            if (!isMountedRef.current) {
+                return;
+            }
             sessionCreated = true;
             markTerminalSessionInitialized(tab.id);
             setupEvents(tab.id);
@@ -403,7 +413,7 @@ function useTerminalSession(
         };
     }, [
         containerRef,
-        initialTheme,
+        resolvedAppearance,
         workspacePath,
         tab.backendId,
         tab.bootstrapCommand,
@@ -441,20 +451,13 @@ export const TerminalInstance = memo(({
 }: TerminalInstanceProps) => {
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
+    const [initialAppearance] = useState(resolvedAppearance);
     const { xtermRef, fitAddonRef, isReady, hasError } = useTerminalSession(
         tab,
         containerRef,
         workspacePath,
-        resolvedAppearance.theme
+        initialAppearance
     );
-
-    useTerminalSmartSuggestions({
-        xtermRef,
-        tabId: tab.id,
-        shell: tab.type,
-        cwd: workspacePath,
-        enabled: isReady && isVisible,
-    });
 
     useEffect(() => {
         if (!xtermRef.current) {

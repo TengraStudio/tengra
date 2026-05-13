@@ -31,6 +31,10 @@ const mockAuthService = {
     setActiveAccount: vi.fn().mockResolvedValue(undefined),
 };
 
+const mockModelSelectionService = {
+    selectInlineModel: vi.fn().mockResolvedValue({ model: 'mock-model' }),
+};
+
 type InlineDeps = ConstructorParameters<typeof InlineSuggestionService>[0];
 
 function makeRequest(overrides: Partial<InlineSuggestionRequest> = {}): InlineSuggestionRequest {
@@ -52,6 +56,7 @@ describe('InlineSuggestionService', () => {
         service = new InlineSuggestionService({
             llmService: mockLlmService as never as InlineDeps['llmService'],
             authService: mockAuthService as never as InlineDeps['authService'],
+            modelSelectionService: mockModelSelectionService as never as InlineDeps['modelSelectionService'],
         });
     });
 

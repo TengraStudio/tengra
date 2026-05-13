@@ -21,6 +21,9 @@ import React, { ComponentType, useCallback, useEffect, useMemo, useRef, useState
 
 import { useCodeEditorDiagnostics } from '@/components/ui/code-editor-diagnostics';
 import { useCodeEditorDirtyDecorations } from '@/components/ui/code-editor-dirty-decorations';
+import { useCodeEditorGitBlame } from '@/components/ui/code-editor-git-blame';
+import { useCodeEditorGitDecorations } from '@/components/ui/code-editor-git-decorations';
+import { useCodeEditorGitProActions } from '@/components/ui/code-editor-git-pro-actions';
 import {
     CodeEditorNavigationTarget,
     CodeEditorWorkspaceResultsPayload,
@@ -42,6 +45,8 @@ import { applyMonacoTheme, ensureMonacoInitialized } from '@/utils/monaco-loader
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 import { initTextMateSupport } from '@/utils/textmate-loader';
+
+import { Button } from './button';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
@@ -316,6 +321,11 @@ export interface CodeEditorProps {
         oldValue: string;
         newValue: string;
     };
+    renderSideBySide?: boolean;
+    lineNumbers?: 'on' | 'off' | 'relative' | 'interval';
+    gitStatus?: string;
+    gitRawStatus?: string;
+    originalContent?: string;
 }
 
 let textMateInitialized = false;
@@ -824,6 +834,7 @@ const MonacoEditorInternal: React.FC<{
     className?: string;
     diffMode?: boolean;
     originalValue?: string;
+    renderSideBySide?: boolean;
 }> = ({
     Editor,
     DiffEditor,
@@ -839,6 +850,7 @@ const MonacoEditorInternal: React.FC<{
     className,
     diffMode,
     originalValue,
+    renderSideBySide = true,
 }) => {
         const diffEditorRef = useRef<editor.IDiffEditor | null>(null);
 
@@ -873,7 +885,7 @@ const MonacoEditorInternal: React.FC<{
                         loading={loading}
                         options={{
                             ...options,
-                            renderSideBySide: true,
+                            renderSideBySide,
                         }}
                     />
                 ) : (
@@ -895,7 +907,11 @@ const MonacoEditorInternal: React.FC<{
         );
     };
 
-export const CodeEditor: React.FC<CodeEditorProps> = ({
+interface CodeEditorContentProps extends CodeEditorProps {
+    monacoComponents: NonNullable<ReturnType<typeof useMonacoLoader>['monacoComponents']>;
+}
+
+const CodeEditorContent: React.FC<CodeEditorContentProps> = ({
     value,
     language = 'typescript',
     onChange,
@@ -926,15 +942,21 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     originalValue,
     diffMode = false,
     diff,
+    renderSideBySide = true,
+    lineNumbers,
+    gitStatus,
+    gitRawStatus,
+    originalContent,
+    monacoComponents,
 }) => {
     const { isLight } = useTheme();
     const { t } = useTranslation(appLanguage);
     const editorRef = useRef<MonacoEditorInstance | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
     const [editorMounted, setEditorMounted] = useState(false);
+    const [isQuickDiff, setIsQuickDiff] = useState<number | null>(null);
     const settings = useSettingsStore(snapshot => snapshot.settings);
-    const { monacoComponents, loading } = useMonacoLoader(performanceMarkPrefix);
-    const updateDecorations = useEditorDecorations(monacoComponents?.monaco ?? null, t);
+    const updateDecorations = useEditorDecorations(monacoComponents.monaco, t);
     const normalizedLanguage = normalizeLanguage(language);
     const modelPath = useMemo(() => toMonacoModelPath(filePath), [filePath]);
     const settingsInlineSuggestionConfig = useMemo(
@@ -950,7 +972,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     useInlineCompletions(
         monacoRef,
         normalizedLanguage,
-        !!monacoComponents,
+        true,
         editorMounted,
         aiSafetyFilterEnabled,
         aiContextLimit,
@@ -989,7 +1011,43 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         editorMounted,
         savedValue,
     });
+    useCodeEditorGitDecorations({
+        editorRef,
+        monacoRef,
+        editorMounted,
+        originalContent,
+        gitStatus,
+    });
+    useCodeEditorGitBlame({
+        editorRef,
+        monacoRef,
+        editorMounted,
+        filePath: filePath,
+        rootPath: workspacePath,
+    });
+
+    const { renderMenu } = useCodeEditorGitProActions({
+        editorRef,
+        monacoRef,
+        editorMounted,
+        originalContent,
+        onOpenDiff: (lineNumber) => setIsQuickDiff(lineNumber),
+    });
+
     useEditorInitialLine(editorRef, initialLine);
+
+    useEffect(() => {
+        if (!isQuickDiff || !editorRef.current) {return;}
+
+        const timer = setTimeout(() => {
+            if (editorRef.current) {
+                editorRef.current.revealLineInCenter(isQuickDiff);
+                editorRef.current.setSelection(new (monacoRef.current!).Selection(isQuickDiff, 1, isQuickDiff, 1));
+                editorRef.current.focus();
+            }
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [isQuickDiff]);
 
     const handleEditorDidMount = useEditorLifecycle(
         editorRef,
@@ -1004,9 +1062,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     );
 
     const monacoTheme = useMemo(() => {
-        if (!monacoComponents?.monaco) {
-            return isLight ? 'vs' : 'vs-dark';
-        }
         return applyMonacoTheme(monacoComponents.monaco, isLight);
     }, [monacoComponents, isLight]);
 
@@ -1042,10 +1097,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 formatOnPaste: true,
                 formatOnType: true,
                 tabSize: 4,
-                glyphMargin: codeLensEnabled,
-                lineNumbers: 'on',
+                glyphMargin: true,
+                lineNumbers: lineNumbers ?? 'on',
                 folding: true,
-                lineDecorationsWidth: 10,
+                lineDecorationsWidth: 15,
                 overviewRulerLanes: 3,
                 renderLineHighlight: 'line',
                 fixedOverflowWidgets: true,
@@ -1068,31 +1123,57 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             settings?.editor,
             workspaceEditorSettings,
             contentBottomPaddingPx,
+            lineNumbers,
         ]
     );
 
-    if (loading || !monacoComponents) {
-        return <LoadingOverlay className={className} t={t} />;
-    }
     return (
-        <MonacoEditorInternal
-            Editor={monacoComponents.Editor}
-            DiffEditor={monacoComponents.DiffEditor}
-            value={value ?? ''}
-            language={normalizedLanguage}
-            modelPath={modelPath || undefined}
-            onChange={onChange}
-            theme={monacoTheme}
-            onMount={(editorInstance, monacoInstance) => {
-                void handleEditorDidMount(editorInstance, monacoInstance);
-            }}
-            loading={<LoadingOverlay className={className} t={t} />}
-            options={editorOptions}
-            monaco={monacoComponents.monaco}
-            className={className}
-            diffMode={diffMode || !!diff}
-            originalValue={diff?.oldValue ?? originalValue}
-        />
+        <div className={cn("relative w-full h-full editor-transition-container", isQuickDiff && "quick-diff-enter")}>
+            <MonacoEditorInternal
+                Editor={monacoComponents.Editor}
+                DiffEditor={monacoComponents.DiffEditor}
+                value={value ?? ''}
+                language={normalizedLanguage}
+                modelPath={modelPath || undefined}
+                onChange={onChange}
+                theme={monacoTheme}
+                onMount={(editorInstance, monacoInstance) => {
+                    void handleEditorDidMount(editorInstance, monacoInstance);
+                }}
+                loading={<LoadingOverlay className={className} t={t} />}
+                options={editorOptions}
+                monaco={monacoComponents.monaco}
+                className={className}
+                diffMode={!!isQuickDiff || diffMode || !!diff}
+                originalValue={originalContent || diff?.oldValue || originalValue}
+                renderSideBySide={renderSideBySide}
+            />
+            {renderMenu()}
+            {isQuickDiff && (
+                <div className="absolute top-4 right-12 z-50">
+                    <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className="shadow-md border border-border"
+                        onClick={() => setIsQuickDiff(null)}
+                    >
+                        Close Diff
+                    </Button>
+                </div>
+            )}
+        </div>
     );
 };
+
+export const CodeEditor: React.FC<CodeEditorProps> = (props) => {
+    const { monacoComponents, loading } = useMonacoLoader(props.performanceMarkPrefix);
+    const { t } = useTranslation(props.appLanguage);
+
+    if (loading || !monacoComponents) {
+        return <LoadingOverlay className={props.className} t={t} />;
+    }
+
+    return <CodeEditorContent {...props} monacoComponents={monacoComponents} />;
+};
+
 

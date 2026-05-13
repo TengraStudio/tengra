@@ -15,6 +15,8 @@ import { EventBusService } from './event-bus.service';
 import { SettingsService } from './settings.service';
 
 export class PowerManagerService extends BaseService {
+    static readonly serviceName = 'powerManagerService';
+    static readonly dependencies = ['settingsService', 'eventBus'] as const;
     private isLowPowerModeActive = false;
     private isHibernating = false;
     private hibernationTimeout: NodeJS.Timeout | null = null;

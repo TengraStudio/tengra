@@ -23,6 +23,8 @@ import type { MarketplaceCodeLanguagePack } from '@shared/types/marketplace';
 const CODE_LANGUAGE_FILE_SUFFIX = '.code-language-pack.json';
 
 export class CodeLanguageService extends BaseService {
+    static readonly serviceName = 'codeLanguageService';
+    static readonly dependencies = ['dataService'] as const;
     private readonly packsDir: string;
     private readonly installedPacks = new Map<string, MarketplaceCodeLanguagePack>();
 

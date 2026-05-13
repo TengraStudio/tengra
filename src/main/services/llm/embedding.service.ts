@@ -13,6 +13,7 @@ import { appLogger } from '@main/logging/logger';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LlamaService } from '@main/services/llm/local/llama.service';
 import { OllamaService } from '@main/services/llm/local/ollama.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withRetry } from '@main/utils/retry.util';
 import { EMBEDDING_CHANNELS } from '@shared/constants/ipc-channels';
@@ -83,12 +84,16 @@ interface CacheEntry {
 }
 
 export class EmbeddingService {
-    private currentProvider: EmbeddingProvider = 'ollama';
-    private model: string = 'all-minilm'; // Default for Ollama
+    static readonly serviceName = 'embeddingService';
+    static readonly dependencies = ['ollama', 'llm', 'llama', 'settingsService', 'modelSelectionService'] as const;
+    private currentProvider: EmbeddingProvider = 'none';
+    private model: string = '';
     private readonly requiredDimension = 1536;
     private readonly maxCacheEntries = 500;
     private readonly cacheTtlMs = 10 * 60 * 1000;
+    private readonly autoSelectionCacheTtlMs = 60_000;
     private embeddingCache = new Map<string, CacheEntry>();
+    private cachedAutoSelection: { key: string; provider: EmbeddingProvider; model: string; expiresAt: number } | null = null;
     private analytics: EmbeddingAnalytics = {
         totalRequests: 0,
         cacheHits: 0,
@@ -109,14 +114,17 @@ export class EmbeddingService {
         private ollama: OllamaService,
         private llm: LLMService,
         private llama: LlamaService,
-        private settingsService: SettingsService
+        private settingsService: SettingsService,
+        private modelSelectionService: ModelSelectionService
     ) {
         this.initializeProvider();
     }
 
     private initializeProvider() {
         const settings = this.settingsService.getSettings();
-        this.setProvider(settings.embeddings.provider, settings.embeddings.model);
+        const provider = settings.embeddings.provider;
+        const model = settings.embeddings.model ?? '';
+        this.setProvider(provider, model);
     }
 
     setProvider(provider: EmbeddingProvider, model?: string) {
@@ -134,9 +142,10 @@ export class EmbeddingService {
     async generateEmbedding(text: string): Promise<number[]> {
         const startedAt = Date.now();
         // Always check latest settings before generating
-        const settings = this.settingsService.getSettings();
-        this.currentProvider = settings.embeddings.provider;
-        this.model = this.resolveModel(this.currentProvider, settings.embeddings.model);
+        const resolved = await this.resolveEmbeddingRoute();
+        this.currentProvider = resolved.provider;
+        this.model = resolved.model;
+
         this.analytics.totalRequests++;
         this.analytics.providerRequests[this.currentProvider]++;
         this.analytics.lastErrorCode = undefined;
@@ -250,13 +259,45 @@ export class EmbeddingService {
             return model.trim();
         }
 
-        const providerDefaults: Record<EmbeddingProvider, string> = {
-            ollama: 'all-minilm',
-            openai: 'text-embedding-3-small',
-            llama: 'llama-embed',
-            none: 'none'
+        return ''; // Dynamically resolved in resolveEmbeddingRoute
+    }
+
+    private async resolveEmbeddingRoute(): Promise<{ provider: EmbeddingProvider; model: string }> {
+        const settings = this.settingsService.getSettings();
+        const settingsProvider = settings.embeddings.provider;
+        const settingsModel = settings.embeddings.model?.trim() ?? '';
+        const cacheKey = `${settingsProvider}:${settingsModel}`;
+
+        if (this.cachedAutoSelection?.key === cacheKey
+            && this.cachedAutoSelection.expiresAt > Date.now()) {
+            return {
+                provider: this.cachedAutoSelection.provider,
+                model: this.cachedAutoSelection.model,
+            };
+        }
+
+        let provider: EmbeddingProvider = settingsProvider;
+        let model = settingsModel;
+
+        if (provider === 'none' || model.length === 0) {
+            const selection = await this.modelSelectionService.selectEmbeddingModel().catch(() => null);
+            const selectedProvider = selection?.provider?.trim().toLowerCase();
+            const selectedModel = selection?.model?.trim() ?? '';
+
+            if (selectedModel && (selectedProvider === 'openai' || selectedProvider === 'codex' || selectedProvider === 'ollama' || selectedProvider === 'llama')) {
+                provider = selectedProvider === 'codex' ? 'openai' : selectedProvider as EmbeddingProvider;
+                model = selectedModel;
+            }
+        }
+
+        this.cachedAutoSelection = {
+            key: cacheKey,
+            provider,
+            model,
+            expiresAt: Date.now() + this.autoSelectionCacheTtlMs,
         };
-        return providerDefaults[provider];
+
+        return { provider, model };
     }
 
     private getCacheKey(provider: EmbeddingProvider, model: string, text: string): string {

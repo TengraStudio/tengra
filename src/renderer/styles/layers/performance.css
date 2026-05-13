@@ -47,3 +47,100 @@ html.tengra-performance-mode [class*="transition-all"] {
 html.tengra-performance-mode [class*="will-change"] {
     will-change: auto !important;
 }
+
+/* Git Gutter Decorations (always active) */
+.git-gutter-added {
+    width: 3px !important;
+    background-color: var(--git-added);
+    margin-left: 1px;
+    border-radius: 0 1px 1px 0;
+    opacity: 0.8;
+}
+
+.git-gutter-modified {
+    width: 3px !important;
+    background-color: var(--git-modified);
+    margin-left: 1px;
+    border-radius: 0 1px 1px 0;
+    opacity: 0.8;
+}
+
+.git-gutter-deleted {
+    width: 0;
+    height: 0;
+    border-left: 5px solid var(--git-deleted);
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    margin-left: 0px;
+    z-index: 10;
+}
+
+/* Git Text Colors */
+.text-git-modified { color: var(--git-modified) !important; }
+.text-git-added { color: var(--git-added) !important; }
+
+/* Inline Git Blame */
+.git-blame-inline {
+    color: var(--muted-foreground);
+    opacity: 0.5;
+    font-size: 0.9em;
+    font-style: italic;
+    margin-left: 20px;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Git Action Glyph Bulb */
+.git-action-glyph-bulb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5'/%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    opacity: 0.3; /* Base visibility so user knows it's there */
+    transition: opacity 0.2s ease-in-out;
+    z-index: 50;
+    width: 20px !important;
+}
+
+.git-action-glyph-bulb:hover {
+    opacity: 1 !important;
+}
+
+.text-git-deleted { color: var(--git-deleted) !important; }
+.text-git-untracked { color: var(--git-untracked) !important; }
+.text-git-ignored { color: var(--git-ignored) !important; }
+
+/* Darker Git Added - Diff Editor Overrides */
+.monaco-editor .line-insert,
+.monaco-editor .char-insert {
+    background-color: rgba(26, 91, 41, 0.4) !important;
+}
+
+.monaco-editor .diff-overview .diff-overview-insert {
+    background-color: rgba(26, 91, 41, 0.6) !important;
+}
+
+/* Transitions for Quick Diff */
+.editor-transition-container {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-diff-enter {
+    animation: editor-zoom-in 0.3s ease-out forwards;
+}
+
+@keyframes editor-zoom-in {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Git Background Colors (for selected states) */
+.bg-git-vsc-selected { background-color: var(--git-vsc-selected) !important; }
+.bg-git-vsc-hover { background-color: var(--git-vsc-hover) !important; }
+.text-git-vsc-dim { color: var(--git-vsc-dim) !important; }

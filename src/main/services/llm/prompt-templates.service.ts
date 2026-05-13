@@ -29,6 +29,8 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 export class PromptTemplatesService extends BaseService {
+    static readonly serviceName = 'promptTemplatesService';
+    static readonly dependencies = ['dataService', 'databaseService'] as const;
     private templatesPath: string;
     private customTemplates: PromptTemplate[] = [];
 

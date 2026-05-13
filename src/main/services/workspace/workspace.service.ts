@@ -23,8 +23,7 @@ import { JobSchedulerService } from '@main/services/system/job-scheduler.service
 import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
 import { UtilityProcessService } from '@main/services/system/utility-process.service';
 import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
-import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
-import { scanDirForTodos } from '@main/services/workspace/code-intelligence/file-scanner.util';
+import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service'; 
 import { LspService, WorkspaceServerLanguageId } from '@main/services/workspace/lsp.service';
 import {
     DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
@@ -33,13 +32,12 @@ import {
 } from '@main/services/workspace/workspace-ignore.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
-import { WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
+import { LSP_CHANNELS, WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
     WorkspaceEnvKeySchema,
     WorkspaceEnvVarsSchema,
     WorkspaceRootPathSchema
-} from '@shared/schemas/service-hardening.schema';
-import { FileSearchResult } from '@shared/types/common';
+} from '@shared/schemas/service-hardening.schema'; 
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import type {
     CodeAnnotation,
@@ -311,6 +309,86 @@ const LANGUAGE_DISTRIBUTION_EXCLUDED_LANGUAGES = new Set([
     'INI', 'JSON', 'JSON5', 'JSONC', 'YAML', 'TOML', 'XML', 'XML Schema', 'XSLT', 'SVG'
 ]);
 
+const WORKSPACE_METRICS_EXCLUDED_EXTENSIONS = new Set([
+    '.exe',
+    '.dll',
+    '.so',
+    '.dylib',
+    '.bin',
+    '.dat',
+    '.pak',
+    '.node',
+    '.wasm',
+
+    '.zip',
+    '.tar',
+    '.gz',
+    '.tgz',
+    '.bz2',
+    '.xz',
+    '.7z',
+    '.rar',
+
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.webp',
+    '.ico',
+    '.icns',
+    '.bmp',
+    '.svg',
+
+    '.mp3',
+    '.mp4',
+    '.mov',
+    '.avi',
+    '.mkv',
+    '.wav',
+    '.ogg',
+
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.ppt',
+    '.pptx',
+
+    '.sqlite',
+    '.sqlite3',
+    '.db',
+]);
+
+const WORKSPACE_METRICS_EXCLUDED_FILENAMES = new Set([
+    'package-lock.json',
+    'pnpm-lock.yaml',
+    'yarn.lock',
+    'bun.lockb',
+    'cargo.lock',
+    'composer.lock',
+    'poetry.lock',
+    'go.sum',
+]);
+
+const WORKSPACE_METRICS_EXCLUDED_SEGMENTS = new Set([
+    '.git',
+    '.svn',
+    '.hg',
+    'node_modules',
+    'dist',
+    'build',
+    'release',
+    'out',
+    'coverage',
+    '.next',
+    '.nuxt',
+    '.turbo',
+    '.cache',
+    'target',
+    'vendor',
+]);
+
 const LOG_CONTEXT = 'WorkspaceService';
 type WorkspaceChangeCallback = (event: string, path: string) => void;
 const WORKSPACE_SCAN_INCLUDED_PATTERNS = new Set([
@@ -324,6 +402,9 @@ function normalizeWorkspacePath(value: string): string {
 }
 
 export class WorkspaceService extends BaseService {
+    static readonly serviceName = 'workspaceService';
+    static readonly category = 'lazy';
+    static readonly dependencies = ['lspService', 'utilityProcessService', 'cacheService', 'proxyService', 'databaseService', 'codeIntelligenceService', 'jobSchedulerService', 'mainWindowProvider', 'allowedFileRoots'] as const;
     private static readonly WORKER_FILE_NAME = 'workspace-scanner.worker.cjs';
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private watchCallbacks: Map<string, Set<WorkspaceChangeCallback>> = new Map();
@@ -605,7 +686,7 @@ export class WorkspaceService extends BaseService {
         filePath: string;
         languageId: string;
     }): Promise<RuntimeValue> {
-        if (!this.lspService) {return serializeToIpc(null);}
+        if (!this.lspService) { return serializeToIpc(null); }
         const result = await this.lspService.pullDiagnostics(
             payload.workspaceId,
             payload.filePath,
@@ -622,13 +703,142 @@ export class WorkspaceService extends BaseService {
         range: protocol.Range;
         diagnostics: protocol.Diagnostic[];
     }): Promise<RuntimeValue> {
-        if (!this.lspService) {return serializeToIpc(null);}
+        if (!this.lspService) { return serializeToIpc(null); }
         const result = await this.lspService.getCodeActions(
             payload.workspaceId,
             payload.filePath,
             payload.languageId as WorkspaceServerLanguageId,
             payload.range,
             payload.diagnostics
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(LSP_CHANNELS.GET_HOVER)
+    async getHoverIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: WorkspaceServerLanguageId;
+        line: number;
+        column: number;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) {return serializeToIpc(null);}
+        const result = await this.lspService.getHover(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId,
+            payload.line,
+            payload.column
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(LSP_CHANNELS.GET_REFERENCES)
+    async getReferencesIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: WorkspaceServerLanguageId;
+        line: number;
+        column: number;
+        includeDeclaration?: boolean;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) {return serializeToIpc(null);}
+        const result = await this.lspService.getReferences(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId,
+            payload.line,
+            payload.column,
+            payload.includeDeclaration
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(LSP_CHANNELS.RENAME)
+    async renameIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: WorkspaceServerLanguageId;
+        line: number;
+        column: number;
+        newName: string;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) {return serializeToIpc(null);}
+        const result = await this.lspService.rename(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId,
+            payload.line,
+            payload.column,
+            payload.newName
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(LSP_CHANNELS.FORMAT)
+    async formatIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: WorkspaceServerLanguageId;
+        options: protocol.FormattingOptions;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) {return serializeToIpc(null);}
+        const result = await this.lspService.format(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId,
+            payload.options
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(LSP_CHANNELS.GET_SIGNATURE_HELP)
+    async getSignatureHelpIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: WorkspaceServerLanguageId;
+        line: number;
+        column: number;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) {return serializeToIpc(null);}
+        const result = await this.lspService.getSignatureHelp(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId,
+            payload.line,
+            payload.column
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(LSP_CHANNELS.GET_INLAY_HINTS)
+    async getInlayHintsIpc(payload: {
+        workspaceId: string;
+        filePath: string;
+        languageId: WorkspaceServerLanguageId;
+        range: protocol.Range;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) {return serializeToIpc(null);}
+        const result = await this.lspService.getInlayHints(
+            payload.workspaceId,
+            payload.filePath,
+            payload.languageId,
+            payload.range
+        );
+        return serializeToIpc(result);
+    }
+
+    @ipc(LSP_CHANNELS.GET_WORKSPACE_SYMBOLS)
+    async getWorkspaceSymbolsIpc(payload: {
+        workspaceId: string;
+        query: string;
+        languageId?: WorkspaceServerLanguageId;
+    }): Promise<RuntimeValue> {
+        if (!this.lspService) {return serializeToIpc(null);}
+        const result = await this.lspService.getWorkspaceSymbols(
+            payload.workspaceId,
+            payload.query,
+            payload.languageId
         );
         return serializeToIpc(result);
     }
@@ -750,6 +960,50 @@ export class WorkspaceService extends BaseService {
         });
     }
 
+
+    private shouldIncludeInWorkspaceMetrics(filePath: string): boolean {
+        const normalized = filePath.replace(/\\/g, '/').toLowerCase();
+        const baseName = path.basename(normalized);
+        const extension = path.extname(normalized);
+
+        if (WORKSPACE_METRICS_EXCLUDED_FILENAMES.has(baseName)) {
+            return false;
+        }
+
+        if (WORKSPACE_METRICS_EXCLUDED_EXTENSIONS.has(extension)) {
+            return false;
+        }
+
+        const segments = normalized.split('/').filter(Boolean);
+        for (let index = 0; index < segments.length; index += 1) {
+            const segment = segments[index];
+
+            if (WORKSPACE_METRICS_EXCLUDED_SEGMENTS.has(segment)) {
+                return false;
+            }
+
+            const twoSegmentPath = index + 1 < segments.length
+                ? `${segment}/${segments[index + 1]}`
+                : segment;
+
+            if (WORKSPACE_METRICS_EXCLUDED_SEGMENTS.has(twoSegmentPath)) {
+                return false;
+            }
+        }
+
+        return this.isLikelySourceTextFile(filePath);
+    }
+
+    private isLikelySourceTextFile(filePath: string): boolean {
+        const extension = path.extname(filePath).toLowerCase();
+
+        if (extension.length === 0) {
+            return false;
+        }
+
+        return Object.prototype.hasOwnProperty.call(EXTENSION_LANGUAGE_MAP, extension.slice(1));
+    }
+
     private async buildWorkspaceAnalysis(
         rootPath: string,
         options?: { includeIssues?: boolean }
@@ -760,6 +1014,8 @@ export class WorkspaceService extends BaseService {
 
         const scanResult = await this.scanFiles(rootPath);
         const files = scanResult.files;
+        const metricFiles = files.filter(file => this.shouldIncludeInWorkspaceMetrics(file));
+
         const type = await this.detectType(files);
         const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(
             rootPath,
@@ -768,14 +1024,13 @@ export class WorkspaceService extends BaseService {
         );
         const stats = await this.calculateStats(
             rootPath,
-            files,
-            scanResult.complete ? files.length : this.INITIAL_STATS_SAMPLE_LIMIT
+            metricFiles,
+            scanResult.complete ? metricFiles.length : Math.min(metricFiles.length, this.INITIAL_STATS_SAMPLE_LIMIT)
         );
-        const languages = await this.calculateLanguages(files);
+        const languages = await this.calculateLanguages(metricFiles);
         const monorepo = await this.detectMonorepo(rootPath, files);
         const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
-        const staticIssues = includeIssues ? await this.findStaticIssues(rootPath, files) : undefined;
-        const annotations = includeIssues ? await this.findAnnotations(rootPath, files) : undefined;
+        const staticIssues = includeIssues ? await this.findStaticIssues(rootPath, files) : undefined; 
         const lspDiagnostics = includeIssues ? [] : undefined;
         const lspServers = this.collectLspServerSupport(rootPath, files);
 
@@ -798,8 +1053,7 @@ export class WorkspaceService extends BaseService {
                 },
                 monorepo,
                 todos: [],
-                issues: staticIssues?.issues,
-                annotations,
+                issues: staticIssues?.issues, 
                 lspDiagnostics,
                 lspServers,
                 diagnosticsStatus: staticIssues?.diagnosticsStatus,
@@ -1050,8 +1304,7 @@ export class WorkspaceService extends BaseService {
                 const stats = await this.calculateStats(rootPath, fullScan.files);
                 const languages = await this.calculateLanguages(fullScan.files);
                 const monorepo = await this.detectMonorepo(rootPath, fullScan.files);
-                const staticIssues = await this.findStaticIssues(rootPath, fullScan.files);
-                const annotations = await this.findAnnotations(rootPath, fullScan.files);
+                const staticIssues = await this.findStaticIssues(rootPath, fullScan.files); 
                 this.fileListCache.set(rootPath, {
                     files: fullScan.files,
                     timestamp,
@@ -1083,8 +1336,7 @@ export class WorkspaceService extends BaseService {
                                 hasMore: initialFilePage.hasMore,
                             },
                             monorepo,
-                            issues: staticIssues.issues,
-                            annotations,
+                            issues: staticIssues.issues, 
                             diagnosticsStatus: staticIssues.diagnosticsStatus,
                         },
                     });
@@ -1278,18 +1530,15 @@ export class WorkspaceService extends BaseService {
         }
         return undefined;
     }
+ 
+    private resolveManagedRuntimeCommand(command: string): string | null {
+        const managedBinDir = getManagedRuntimeBinDir();
+        const normalizedCommand = process.platform === 'win32' && !command.toLowerCase().endsWith('.exe')
+            ? `${command}.exe`
+            : command;
 
-    private async findAnnotations(rootPath: string, _files: string[]): Promise<CodeAnnotation[]> {
-        const results: FileSearchResult[] = [];
-        const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
-        await scanDirForTodos(rootPath, results, ignoreMatcher);
-
-        return results.map(res => ({
-            file: res.file,
-            line: res.line,
-            message: res.text,
-            type: (res.type?.toLowerCase() as 'todo') || 'todo'
-        }));
+        const managedPath = path.join(managedBinDir, normalizedCommand);
+        return existsSync(managedPath) ? managedPath : null;
     }
 
     private async findStaticIssues(rootPath: string, files: string[]): Promise<{ issues: WorkspaceIssue[]; diagnosticsStatus: WorkspaceDiagnosticsStatus }> {
@@ -1301,9 +1550,11 @@ export class WorkspaceService extends BaseService {
 
         // 1. Biome (Native-First)
         if (hasJsOrTsSources) {
+            const biomeCommand = this.resolveManagedRuntimeCommand('biome') ?? 'biome';
+
             const biomeResult = await this.runStaticDiagnosticsCommand(
                 rootPath,
-                ['--no-install', 'biome', 'check', '--format=json', '--no-errors-on-unmatched'],
+                [biomeCommand, 'check', '--reporter=json', '--no-errors-on-unmatched'],
                 this.STATIC_DIAGNOSTICS_TIMEOUT_MS
             );
 
@@ -1649,7 +1900,7 @@ export class WorkspaceService extends BaseService {
             }
             currentDir = parentDir;
         }
-        
+
         return null;
     }
 
@@ -1688,7 +1939,7 @@ export class WorkspaceService extends BaseService {
 
     private parseBiomeIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
         const issues: WorkspaceIssue[] = [];
-        if (!stdout || stdout.trim() === '') {return issues;}
+        if (!stdout || stdout.trim() === '') { return issues; }
         try {
             const data = JSON.parse(stdout) as {
                 diagnostics?: Array<{
@@ -1728,7 +1979,7 @@ export class WorkspaceService extends BaseService {
 
     private parseRuffIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
         const issues: WorkspaceIssue[] = [];
-        if (!stdout || stdout.trim() === '') {return issues;}
+        if (!stdout || stdout.trim() === '') { return issues; }
         try {
             const data = JSON.parse(stdout) as Array<{
                 code?: string;
@@ -1760,7 +2011,7 @@ export class WorkspaceService extends BaseService {
 
     private parseGoIssues(rootPath: string, stdout: string): WorkspaceIssue[] {
         const issues: WorkspaceIssue[] = [];
-        if (!stdout || stdout.trim() === '') {return issues;}
+        if (!stdout || stdout.trim() === '') { return issues; }
         try {
             const data = JSON.parse(stdout) as {
                 Issues?: Array<{
@@ -2831,54 +3082,68 @@ export class WorkspaceService extends BaseService {
             appLogger.error(LOG_CONTEXT, 'calculateStats called with non-array files', { type: typeof files });
             return { fileCount: 0, totalSize: 0, loc: 0, lastModified: 0 };
         }
+
         let totalSize = 0;
         let lastModified = 0;
+
+        // File count intentionally remains the full scanned file count.
         const fileCount = files.length;
-        const sampledFiles = this.buildStatsSample(files, maxSampleCount);
+
+        // Code metrics should ignore binaries, archives, generated output, runtime assets, lockfiles, etc.
+        const metricFiles = files.filter(file => this.shouldIncludeInWorkspaceMetrics(file));
+        const sampledFiles = this.buildStatsSample(metricFiles, maxSampleCount);
+
         const directorySizes = new Map<string, WorkspaceDirectorySizeEntry>();
 
-        // Simple LOC estimation based on file size (very rough)
-        // 100 bytes approx 1 line of code including whitespace
         let totalBytes = 0;
         const topFilesBySize: Array<{ path: string; size: number }> = [];
 
         for (const file of files) {
             try {
                 const stat = await fs.stat(file);
-                totalSize += stat.size;
                 const modifiedAt = Math.max(0, Math.trunc(stat.mtimeMs));
                 if (modifiedAt > lastModified) {
                     lastModified = modifiedAt;
                 }
-                this.trackDirectorySize(directorySizes, rootPath, file, stat.size);
-
-                // Track top 20 files by size to find top LOC candidates
-                if (stat.isFile()) {
-                    topFilesBySize.push({ path: file, size: stat.size });
-                    if (topFilesBySize.length > 50) {
-                        topFilesBySize.sort((a, b) => b.size - a.size);
-                        topFilesBySize.length = 30;
-                    }
-                }
             } catch (error) {
-                // Ignore missing file errors during scan
                 appLogger.error(LOG_CONTEXT, `Failed to stat file ${file}:`, getErrorMessage(error as Error));
             }
         }
 
-        // Calculate exact LOC for top files
+        for (const file of metricFiles) {
+            try {
+                const stat = await fs.stat(file);
+                if (!stat.isFile()) {
+                    continue;
+                }
+
+                totalSize += stat.size;
+                this.trackDirectorySize(directorySizes, rootPath, file, stat.size);
+
+                topFilesBySize.push({ path: file, size: stat.size });
+                if (topFilesBySize.length > 50) {
+                    topFilesBySize.sort((a, b) => b.size - a.size);
+                    topFilesBySize.length = 30;
+                }
+            } catch (error) {
+                appLogger.error(LOG_CONTEXT, `Failed to stat metric file ${file}:`, getErrorMessage(error as Error));
+            }
+        }
+
         const topFilesByLoc: Array<{ path: string; loc: number }> = [];
         topFilesBySize.sort((a, b) => b.size - a.size);
+
         for (const file of topFilesBySize.slice(0, 10)) {
             if (this.isBinaryFile(file.path)) {
                 continue;
             }
+
             try {
                 const content = await fs.readFile(file.path, 'utf-8');
                 const lines = content.split('\n').length;
                 topFilesByLoc.push({
                     path: path.relative(rootPath, file.path),
-                    loc: lines
+                    loc: lines,
                 });
             } catch {
                 // Ignore read errors
@@ -2889,8 +3154,13 @@ export class WorkspaceService extends BaseService {
             if (this.isBinaryFile(file)) {
                 continue;
             }
+
             try {
                 const stat = await fs.stat(file);
+                if (!stat.isFile()) {
+                    continue;
+                }
+
                 totalBytes += stat.size;
             } catch (error) {
                 appLogger.error(LOG_CONTEXT, `Failed to stat sampled file ${file}:`, getErrorMessage(error as Error));
@@ -2898,14 +3168,15 @@ export class WorkspaceService extends BaseService {
         }
 
         const sampleCount = sampledFiles.length;
-        const scaleFactor = sampleCount > 0 && sampleCount < fileCount
-            ? fileCount / sampleCount
+        const metricFileCount = metricFiles.length;
+        const scaleFactor = sampleCount > 0 && sampleCount < metricFileCount
+            ? metricFileCount / sampleCount
             : 1;
 
         return {
             fileCount,
             totalSize,
-            loc: Math.round((totalBytes * scaleFactor) / 50), // Rough estimate: 50 bytes per line avg
+            loc: Math.round((totalBytes * scaleFactor) / 50),
             lastModified,
             largestDirectories: Array.from(directorySizes.values())
                 .sort((left, right) => right.size - left.size)
@@ -3046,7 +3317,7 @@ export class WorkspaceService extends BaseService {
     }
 
     private resolveAndValidateRootPath(inputPath: string): string {
-        if (typeof inputPath !== 'string' || !inputPath) { 
+        if (typeof inputPath !== 'string' || !inputPath) {
             throw new ValidationError('Workspace root path must be a non-empty string');
         }
         const sanitizedInput = process.platform === 'win32' && inputPath.startsWith('/') && inputPath.charAt(2) === ':'

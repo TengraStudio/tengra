@@ -8,25 +8,16 @@
  * (at your option) any later version.
  */
 
-import LogoAntigravity from '@assets/antigravity.svg?url';
-import LogoChatgpt from '@assets/chatgpt.svg?url';
-import LogoClaude from '@assets/claude.svg?url';
-import LogoCopilot from '@assets/copilot.svg?url';
-import LogoGemini from '@assets/gemini.png';
-import LogoHuggingFace from '@assets/huggingface.svg?url';
-import LogoNvidia from '@assets/nvidia.svg?url';
-import LogoOllama from '@assets/ollama.svg?url';
-import LogoOpenCode from '@assets/opencode.svg?url';
 import { Label } from '@radix-ui/react-label';
 import type {
     WorkspaceAgentCommandPolicy,
     WorkspaceAgentPathPolicy,
 } from '@shared/types/workspace-agent-session';
-import { IconBolt,IconBrain, IconSearch, IconStar } from '@tabler/icons-react';
+import { IconBolt, IconBrain, IconSearch, IconStar } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-// import { Button } from '@/components/ui/button';
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -36,7 +27,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { WorkspaceAgentPermissionEditor } from '@/features/workspace/workspace-agent/WorkspaceAgentPermissionEditor';
-import { useThemeDetection } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
 import { ModelCategory } from '../types';
@@ -86,12 +76,14 @@ const ModelSelectorQuotaBanner: React.FC<{
     activeCopilotQuota?: import('@shared/types/quota').CopilotQuota | null;
     activeClaudeQuota?: import('@shared/types/quota').ClaudeQuota | null;
     activeCodexUsage?: { usage: import('@shared/types/quota').CodexUsage } | null;
+    activeCursorQuota?: import('@shared/types/quota').CursorQuota | null;
     t: (key: string) => string;
-}> = ({ activeCategory, activeCopilotQuota, activeClaudeQuota, activeCodexUsage, t }) => {
+}> = ({ activeCategory, activeCopilotQuota, activeClaudeQuota, activeCodexUsage, activeCursorQuota, t }) => {
     const items = useMemo(() => {
         const isCopilot = activeCategory.id === 'copilot';
         const isCodex = activeCategory.id === 'codex';
         const isClaude = activeCategory.id === 'claude';
+        const isCursor = activeCategory.id === 'cursor';
         const result: Array<{ label: string; percent: number; sublabel?: string; value?: string }> = [];
 
         if (isCopilot && activeCopilotQuota) {
@@ -137,10 +129,27 @@ const ModelSelectorQuotaBanner: React.FC<{
             });
         }
 
-        return result;
-    }, [activeCategory.id, activeCopilotQuota, activeCodexUsage, activeClaudeQuota, t]);
+        if (isCursor && activeCursorQuota) {
+            if (activeCursorQuota.fiveHour) {
+                result.push({
+                    label: t('frontend.statistics.usageStatus'),
+                    percent: 100 - activeCursorQuota.fiveHour.utilization,
+                    sublabel: '5h window'
+                });
+            }
+            if (activeCursorQuota.weekly) {
+                result.push({
+                    label: t('frontend.statistics.weeklyStatus'),
+                    percent: 100 - activeCursorQuota.weekly.utilization,
+                    sublabel: '7d window'
+                });
+            }
+        }
 
-    const isVisible = ['antigravity', 'copilot', 'codex', 'claude'].includes(activeCategory.id);
+        return result;
+    }, [activeCategory.id, activeCopilotQuota, activeCodexUsage, activeClaudeQuota, activeCursorQuota, t]);
+
+    const isVisible = ['antigravity', 'copilot', 'codex', 'claude', 'cursor'].includes(activeCategory.id);
 
     // Persistent cache to prevent flickering when data is temporarily null/loading
     const [quotaCache, setQuotaCache] = useState<Record<string, typeof items>>({});
@@ -235,14 +244,11 @@ interface ModelSelectorPopoverProps {
     activeClaudeQuota?: import('@shared/types/quota').ClaudeQuota | null;
     activeCodexUsage?: ({ usage: import('@shared/types/quota').CodexUsage; accountId?: string; email?: string } & { isActive?: boolean }) | null;
     activeAntigravityQuota?: import('@shared/types/quota').QuotaResponse | null;
+    activeCursorQuota?: import('@shared/types/quota').CursorQuota | null;
     permissionPolicy?: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy;
     onUpdatePermissionPolicy?: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
     triggerRef?: React.RefObject<HTMLElement>;
 }
-
-
-
-
 
 interface ModelSelectorPermissionsPanelProps {
     onUpdatePermissionPolicy?: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
@@ -313,8 +319,6 @@ const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps
     </div>
 );
 
-
-
 export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
     isOpen,
     initialTab,
@@ -336,11 +340,11 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
     activeClaudeQuota,
     activeCodexUsage,
     activeAntigravityQuota,
+    activeCursorQuota,
     permissionPolicy,
     onUpdatePermissionPolicy: _onUpdatePermissionPolicy,
     triggerRef
 }) => {
-    const { isDark } = useThemeDetection();
     const popoverRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -363,10 +367,6 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
             }
         }
     }
-
-
-
-
 
     useEffect(() => {
         if (!isOpen || !triggerRef?.current || !popoverRef.current) {
@@ -417,8 +417,6 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
         };
     }, [isOpen, triggerRef, activeTab, activeProviderId]);
 
-
-
     const handleClose = useCallback(() => {
         setSearchQuery('');
         setActiveTab('models');
@@ -463,9 +461,9 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
         return categories.find(c => c.id === activeProviderId) ?? filteredCategories[0];
     }, [filteredCategories, activeProviderId, categories]);
 
-    const handleSelect = useCallback((provider: string, id: string, isMulti: boolean, explicitThinkingLevel?: string) => {
-        if (isMulti) {
-            onSelect(provider, id, isMulti, true);
+    const handleSelect = useCallback((provider: string, id: string, isM: boolean, explicitThinkingLevel?: string) => {
+        if (isM) {
+            onSelect(provider, id, isM, true);
             return;
         }
 
@@ -474,17 +472,15 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
 
             const isAlreadySelected = selectedModels.some(m => m.model === id && m.provider === provider);
             if (!isAlreadySelected) {
-                onSelect(provider, id, isMulti, false);
+                onSelect(provider, id, isM, false);
                 handleClose();
             }
             return;
         }
 
-        onSelect(provider, id, isMulti, false);
+        onSelect(provider, id, isM, false);
         handleClose();
     }, [handleClose, onSelect, onThinkingLevelChange, selectedModels]);
-
-
 
     if (!isOpen) {
         return null;
@@ -531,23 +527,6 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
                     <div className="px-2 border-b border-border/40 flex items-center gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-muted/10 h-60 shrink-0 whitespace-nowrap">
                         {filteredCategories.map(cat => {
                             const isActive = activeProviderId === cat.id;
-
-                            const logoMap: Record<string, string> = {
-                                openai: LogoChatgpt,
-                                anthropic: LogoClaude,
-                                claude: LogoClaude,
-                                google: LogoGemini,
-                                gemini: LogoGemini,
-                                antigravity: LogoAntigravity,
-                                copilot: LogoCopilot,
-                                ollama: LogoOllama,
-                                codex: LogoChatgpt,
-                                opencode: LogoOpenCode,
-                                huggingface: LogoHuggingFace,
-                                nvidia: LogoNvidia,
-                            };
-
-                            const logoAsset = logoMap[cat.id.toLowerCase()];
                             const Icon = cat.id === 'favorites' ? IconStar : (cat.icon || IconBolt);
 
                             return (
@@ -563,37 +542,25 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
                                     title={cat.name}
                                 >
                                     <div className={cn(
-                                        'flex items-center justify-center transition-all duration-300',
+                                        'flex items-center justify-center transition-all duration-300 h-6 w-6',
                                         isActive ? 'scale-110' : 'scale-95'
                                     )}>
-                                        {logoAsset ? (
-                                            (() => {
-                                                const providerId = cat.id.toLowerCase();
-                                                const isBrandColored = ['gemini', 'google', 'huggingface', 'nvidia', 'antigravity'].includes(providerId);
-
-                                                return (
-                                                    <img
-                                                        src={logoAsset}
-                                                        alt={cat.name}
-                                                        className={cn(
-                                                            'w-6 h-6 object-contain transition-all duration-300',
-                                                            isActive ? 'opacity-100' : 'opacity-30 group-hover:opacity-60'
-                                                        )}
-                                                        style={!isBrandColored ? {
-                                                            filter: isDark
-                                                                ? 'invert(1)'
-                                                                : (isActive ? 'brightness(0)' : 'grayscale(1)')
-                                                        } : {}}
-                                                    />
-                                                );
-                                            })()
-                                        ) : (
+                                        {cat.id === 'favorites' ? (
                                             <Icon className={cn(
                                                 'w-5 h-5 transition-all duration-300',
-                                                isActive
-                                                    ? (cat.id === 'favorites' ? 'text-amber-400 fill-amber-400' : (cat.color || 'text-primary'))
-                                                    : 'text-muted-foreground/30'
+                                                isActive ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'
                                             )} />
+                                        ) : (
+                                        <ProviderIcon 
+                                            provider={cat.id} 
+                                            variant="minimal"
+                                            size="100%"
+                                            className={cn(
+                                                'transition-all duration-300',
+                                                isActive ? 'opacity-100' : 'opacity-30'
+                                            )}
+                                            containerClassName="bg-transparent border-none p-0 h-6 w-6"
+                                        />
                                         )}
                                     </div>
                                 </button>
@@ -609,6 +576,7 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
                                 activeCopilotQuota={activeCopilotQuota}
                                 activeClaudeQuota={activeClaudeQuota}
                                 activeCodexUsage={activeCodexUsage}
+                                activeCursorQuota={activeCursorQuota}
                                 t={t}
                             />
                         )}
@@ -758,4 +726,3 @@ export const ModelSelectorPopover: React.FC<ModelSelectorPopoverProps> = ({
 };
 
 ModelSelectorPopover.displayName = 'ModelSelectorPopover';
-

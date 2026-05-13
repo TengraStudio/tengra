@@ -29,18 +29,6 @@ export interface StreamChunk {
     };
 }
 
-type OpenCodeToolCallState = {
-    id: string;
-    name: string;
-    arguments: string;
-};
-
-type OpenCodeStreamState = {
-    toolCalls: Map<string, OpenCodeToolCallState>;
-    processedMessageIds: Set<string>;
-    lastContent: string;
-};
-
 type XmlParserState = {
     buffer: string;
     lastUpdateTime: number;
@@ -80,7 +68,6 @@ export class StreamParser {
         const body = this.getStreamBody(input);
         const decoder = new TextDecoder();
         let buffer = '';
-        const openCodeState = this.createOpenCodeStreamState();
         const xmlState: XmlParserState = { buffer: '', lastUpdateTime: Date.now() };
 
         try {
@@ -89,7 +76,6 @@ export class StreamParser {
                 decoder,
                 setBuf: (b: string) => { buffer = b; },
                 getBuf: () => buffer,
-                openCodeState,
                 xmlState,
             };
 
@@ -104,13 +90,6 @@ export class StreamParser {
         }
     }
 
-    private static createOpenCodeStreamState(): OpenCodeStreamState {
-        return {
-            toolCalls: new Map<string, OpenCodeToolCallState>(),
-            processedMessageIds: new Set<string>(),
-            lastContent: '',
-        };
-    }
 
     private static getStreamBody(input: RuntimeValue): ReadableStream<Uint8Array> | AsyncIterable<Uint8Array> {
         if (input && typeof input === 'object' && 'body' in input) {
@@ -132,11 +111,10 @@ export class StreamParser {
             decoder: TextDecoder;
             setBuf: (b: string) => void;
             getBuf: () => string;
-            openCodeState: OpenCodeStreamState;
             xmlState: XmlParserState;
         }
     ) {
-        const { decoder, setBuf, getBuf, openCodeState, xmlState } = options;
+        const { decoder, setBuf, getBuf, xmlState } = options;
         const reader = body.getReader();
         const MAX_ITERATIONS = 1_000_000;
         let iterationCount = 0;
@@ -147,7 +125,7 @@ export class StreamParser {
                 if (done) { break; }
                 const newContent = decoder.decode(value, { stream: true });
                 setBuf(getBuf() + newContent);
-                for (const chunk of this.processBuffer(getBuf(), setBuf, openCodeState, xmlState)) {
+                for (const chunk of this.processBuffer(getBuf(), setBuf, xmlState)) {
                     yield chunk;
                     if (chunk.finish_reason != null) {
                         shouldBreak = true;
@@ -166,17 +144,16 @@ export class StreamParser {
             decoder: TextDecoder;
             setBuf: (b: string) => void;
             getBuf: () => string;
-            openCodeState: OpenCodeStreamState;
             xmlState: XmlParserState;
         }
     ) {
-        const { decoder, setBuf, getBuf, openCodeState, xmlState } = options;
+        const { decoder, setBuf, getBuf, xmlState } = options;
         appLogger.debug('stream-parser.util', '[StreamParser] Using AsyncIterable iteration');
         for await (const value of body) {
             const newContent = decoder.decode(value, { stream: true });
             setBuf(getBuf() + newContent);
             let shouldBreak = false;
-            for (const chunk of this.processBuffer(getBuf(), setBuf, openCodeState, xmlState)) {
+            for (const chunk of this.processBuffer(getBuf(), setBuf, xmlState)) {
                 yield chunk;
                 if (chunk.finish_reason != null) {
                     shouldBreak = true;
@@ -191,7 +168,6 @@ export class StreamParser {
     private static *processBuffer(
         buffer: string,
         updateBuffer: (b: string) => void,
-        openCodeState: OpenCodeStreamState,
         xmlState: XmlParserState
     ): Generator<StreamChunk> {
         const lines = buffer.split('\n');
@@ -208,7 +184,7 @@ export class StreamParser {
 
             try {
                 const json = safeJsonParse<StreamPayload>(data, { choices: [] });
-                yield* this.handlePayload(json, openCodeState, xmlState);
+                yield* this.handlePayload(json, xmlState);
             } catch (error) {
                 appLogger.error('stream-parser.util', `[StreamParser] Error parsing JSON: ${getErrorMessage(error)}, data: ${data.slice(0, 50)}...`);
             }
@@ -230,342 +206,14 @@ export class StreamParser {
         return jsonData;
     }
 
-    private static *handlePayload(json: StreamPayload, openCodeState: OpenCodeStreamState, xmlState: XmlParserState): Generator<StreamChunk> {
-        // 1. OPENCODE /responses format
-        if (json.type?.startsWith('response.')) {
-            yield* this.handleOpenCodePayload(json, openCodeState);
-            return;
-        }
-
+    private static *handlePayload(json: StreamPayload, xmlState: XmlParserState): Generator<StreamChunk> {
         if (json.type === 'error' && json.message) {
             throw new Error(json.message);
         }
 
-        // 2. STANDARD OpenAI format
         for (const chunk of this.handleOpenAIPayload(json)) {
             yield* this.interceptXmlToolCalls(chunk, xmlState);
         }
-    }
-
-    private static *handleOpenCodePayload(json: StreamPayload, openCodeState: OpenCodeStreamState): Generator<StreamChunk> {
-        const type = json.type;
-
-        if (this.isOpenCodeDoneEvent(json)) {
-            const itemId = json.item?.id;
-            if (itemId && openCodeState.processedMessageIds.has(itemId)) {
-                return;
-            }
-            const contentItems = json.item?.content;
-            if (contentItems) {
-                if (itemId) {
-                    openCodeState.processedMessageIds.add(itemId);
-                }
-                const text = contentItems
-                    .filter((c) => c.type === 'output_text')
-                    .map((c) => c.text ?? '')
-                    .join('');
-                const reasoning = contentItems
-                    .filter((c) => c.type === 'reasoning' || c.type === 'summary_text')
-                    .map((c) => c.text ?? '')
-                    .join('');
-                if (text && text !== openCodeState.lastContent) {
-                    openCodeState.lastContent = text;
-                    yield { content: text };
-                }
-                if (reasoning) {
-                    yield { reasoning };
-                }
-            }
-            return;
-        }
-
-        if (!type) { return; }
-        if (
-            !json.delta
-            && !json.text
-            && type !== 'response.output_item.added'
-            && type !== 'response.output_item.done'
-            && type !== 'response.function_call_arguments.done'
-            && type !== 'response.mcp_call_arguments.done'
-            && type !== 'response.completed'
-        ) {
-            return;
-        }
-
-        yield* this.dispatchOpenCodeDelta(json, openCodeState);
-    }
-
-    private static isOpenCodeDoneEvent(json: StreamPayload): boolean {
-        return json.type === 'response.output_item.done' && !!json.item?.content;
-    }
-
-    private static *dispatchOpenCodeDelta(json: StreamPayload, openCodeState: OpenCodeStreamState): Generator<StreamChunk> {
-        if (json.type === 'response.output_text.delta' && json.delta) {
-            yield* this.handleOpenCodeText(json.delta, openCodeState);
-        } else if (
-            json.type === 'response.reasoning_text.delta'
-        ) {
-            if (json.delta) {
-                yield* this.handleOpenCodeReasoning(json.delta);
-            }
-        } else if (json.type === 'response.reasoning_summary_text.delta') {
-            if (json.delta) {
-                yield* this.handleOpenCodeReasoning(json.delta);
-            }
-        } else if (json.type === 'response.summary_text.delta') {
-            if (json.delta) {
-                yield* this.handleOpenCodeText(json.delta, openCodeState);
-            }
-        } else if (
-            json.type === 'response.output_text.done'
-        ) {
-            const itemId = json.item_id || json.item?.id;
-            if (itemId && openCodeState.processedMessageIds.has(itemId)) {
-                return;
-            }
-            if (json.text && json.text !== openCodeState.lastContent) {
-                if (itemId) {
-                    openCodeState.processedMessageIds.add(itemId);
-                }
-                openCodeState.lastContent = json.text;
-                yield { content: json.text };
-            }
-        } else if (
-            json.type === 'response.reasoning_text.done'
-        ) {
-            if (json.text) {
-                yield { reasoning: json.text };
-            }
-        } else if (
-            json.type === 'response.reasoning_summary_text.done'
-        ) {
-            if (json.text) {
-                yield { reasoning: json.text };
-            }
-        } else if (
-            json.type === 'response.summary_text.done'
-        ) {
-            if (json.text && json.text !== openCodeState.lastContent) {
-                openCodeState.lastContent = json.text;
-                yield { content: json.text };
-            }
-        } else if (
-            json.type === 'response.function_call_arguments.delta'
-            || json.type === 'response.mcp_call_arguments.delta'
-            || json.type === 'response.output_item.added'
-            || json.type === 'response.output_item.done'
-        ) {
-            if (json.type === 'response.output_item.done') {
-                const images = this.extractOpenCodeImages(json);
-                if (images.length > 0) {
-                    yield { images };
-                }
-            }
-            this.updateOpenCodeToolCallState(json, openCodeState);
-            if (json.type === 'response.output_item.done' && this.isOpenCodeFunctionCallItem(json)) {
-                const toolCall = this.finalizeOpenCodeToolCall(json, openCodeState, false);
-                if (toolCall) {
-                    yield toolCall;
-                }
-            }
-        } else if (
-            json.type === 'response.function_call_arguments.done'
-            || json.type === 'response.mcp_call_arguments.done'
-        ) {
-            const toolCall = this.finalizeOpenCodeToolCall(json, openCodeState, true);
-            if (toolCall) {
-                yield toolCall;
-            }
-        } else if (json.type === 'response.completed') {
-            // Flush all pending tool calls
-            for (const [id] of openCodeState.toolCalls) {
-                const toolCall = this.finalizeOpenCodeToolCall({ call_id: id } as StreamPayload, openCodeState, false);
-                if (toolCall) {
-                    yield toolCall;
-                }
-            }
-            yield { finish_reason: 'stop', content: '' };
-        }
-    }
-
-    private static *handleOpenCodeText(delta: string | { text?: string }, openCodeState: OpenCodeStreamState) {
-        const content = typeof delta === 'string' ? delta : delta.text;
-        if (content) {
-            openCodeState.lastContent += content;
-            yield { content };
-        }
-    }
-
-    private static *handleOpenCodeReasoning(delta: string | { text?: string }) {
-        const reasoning = typeof delta === 'string' ? delta : delta.text;
-        if (reasoning) { yield { reasoning, type: 'reasoning' }; }
-    }
-
-    private static updateOpenCodeToolCallState(json: StreamPayload, openCodeState: OpenCodeStreamState): void {
-        const toolCallId = this.resolveOpenCodeToolCallId(json);
-        if (!toolCallId) {
-            return;
-        }
-
-        const current = openCodeState.toolCalls.get(toolCallId) ?? {
-            id: toolCallId,
-            name: '',
-            arguments: '',
-        };
-        const name = this.resolveOpenCodeToolCallName(json);
-        if (name) {
-            current.name = name;
-        }
-
-        const delta = this.resolveOpenCodeToolCallArguments(json);
-        if (delta) {
-            if (
-                json.type === 'response.function_call_arguments.delta'
-                || json.type === 'response.mcp_call_arguments.delta'
-            ) {
-                current.arguments += delta;
-            } else if (delta.length >= current.arguments.length) {
-                current.arguments = delta;
-            }
-        }
-
-        openCodeState.toolCalls.set(toolCallId, current);
-    }
-
-    private static finalizeOpenCodeToolCall(
-        json: StreamPayload,
-        openCodeState: OpenCodeStreamState,
-        shouldUpdateState: boolean
-    ): StreamChunk | null {
-        if (shouldUpdateState) {
-            this.updateOpenCodeToolCallState(json, openCodeState);
-        }
-        const toolCallId = this.resolveOpenCodeToolCallId(json);
-        if (!toolCallId) {
-            return null;
-        }
-
-        const current = openCodeState.toolCalls.get(toolCallId);
-        if (!current || current.arguments.trim() === '') {
-            return null;
-        }
-        if (current.name.trim() === '') {
-            return null;
-        }
-
-        openCodeState.toolCalls.delete(toolCallId);
-        return {
-            type: 'tool_calls',
-            tool_calls: [{
-                id: current.id,
-                type: 'function',
-                function: {
-                    name: current.name,
-                    arguments: current.arguments
-                }
-            }]
-        };
-    }
-
-    private static resolveOpenCodeToolCallId(json: StreamPayload): string | null {
-        const candidate = json.call_id ?? json.item_id ?? json.item?.call_id ?? json.item?.id;
-        if (typeof candidate === 'string' && candidate.trim() !== '') {
-            return candidate.trim();
-        }
-        return null;
-    }
-
-    private static resolveOpenCodeToolCallName(json: StreamPayload): string {
-        const directCandidate = json.name ?? json.item?.name;
-        if (typeof directCandidate === 'string' && directCandidate.trim().length > 0) {
-            return directCandidate.trim();
-        }
-
-        const functionCandidate = json.item?.function;
-        if (
-            functionCandidate
-            && typeof functionCandidate === 'object'
-            && !Array.isArray(functionCandidate)
-            && typeof functionCandidate['name'] === 'string'
-            && functionCandidate['name'].trim().length > 0
-        ) {
-            return functionCandidate['name'].trim();
-        }
-        return '';
-    }
-
-    private static resolveOpenCodeToolCallArguments(json: StreamPayload): string {
-        if (typeof json.delta === 'string') {
-            return json.delta;
-        }
-        if (typeof json.delta?.text === 'string') {
-            return json.delta.text;
-        }
-        if (typeof json.arguments === 'string') {
-            return json.arguments;
-        }
-        if (typeof json.item?.arguments === 'string') {
-            return json.item.arguments;
-        }
-        if (
-            json.item?.function
-            && typeof json.item.function === 'object'
-            && !Array.isArray(json.item.function)
-            && typeof json.item.function.arguments === 'string'
-        ) {
-            return json.item.function.arguments;
-        }
-        if (json.item?.arguments && typeof json.item.arguments === 'object' && !Array.isArray(json.item.arguments)) {
-            return JSON.stringify(json.item.arguments);
-        }
-        return '';
-    }
-
-    private static isOpenCodeFunctionCallItem(json: StreamPayload): boolean {
-        return json.item?.type === 'function_call';
-    }
-
-    private static extractOpenCodeImages(json: StreamPayload): Array<string | { image_url: { url: string } }> {
-        const item = json.item;
-        if (!item) {
-            return [];
-        }
-
-        const itemType = typeof item.type === 'string' ? item.type : '';
-        if (
-            itemType !== 'image_generation_call'
-            && itemType !== 'output_image'
-            && !itemType.endsWith('image_generation_call')
-        ) {
-            return [];
-        }
-
-        const result = typeof item.result === 'string' ? item.result.trim() : '';
-        if (result) {
-            return [{ image_url: { url: `data:image/png;base64,${result}` } }];
-        }
-
-        const directUrl = this.extractOpenCodeImageUrl(item.image_url) ?? this.extractOpenCodeImageUrl(item.url);
-        if (directUrl) {
-            return [{ image_url: { url: directUrl } }];
-        }
-
-        return [];
-    }
-
-    private static extractOpenCodeImageUrl(value: string | { url?: string } | undefined): string | null {
-        if (typeof value === 'string' && value.trim().length > 0) {
-            return value.trim();
-        }
-        if (
-            value
-            && typeof value === 'object'
-            && typeof value.url === 'string'
-            && value.url.trim().length > 0
-        ) {
-            return value.url.trim();
-        }
-        return null;
     }
 
     private static *handleOpenAIPayload(json: StreamPayload): Generator<StreamChunk> {

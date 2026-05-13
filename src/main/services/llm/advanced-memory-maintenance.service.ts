@@ -51,6 +51,8 @@ interface MaintenanceDependencies {
 }
 
 export class AdvancedMemoryMaintenanceService {
+    static readonly serviceName = 'advancedMemoryMaintenanceService';
+    static readonly dependencies = ['deps'] as const;
     constructor(private readonly deps: MaintenanceDependencies) {}
 
     async runDecayMaintenance(): Promise<void> {

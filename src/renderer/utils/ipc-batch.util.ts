@@ -15,7 +15,7 @@
 
 import { Folder } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
-import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota';
+import { ClaudeQuota, CodexUsage, CopilotQuota, CursorQuota, QuotaResponse } from '@shared/types/quota';
 import { AppSettings } from '@shared/types/settings';
 import { sanitizeObject } from '@shared/utils/sanitize.util';
 
@@ -200,6 +200,7 @@ export const CommonBatches = {
             .add('getCopilotQuota')
             .add('getCodexUsage')
             .add('getClaudeQuota')
+            .add('getCursorQuota')
             .execute();
 
         return {
@@ -207,7 +208,8 @@ export const CommonBatches = {
             quota: results.get('getQuota') as { accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null,
             copilotQuota: results.get('getCopilotQuota') as { accounts: Array<CopilotQuota & { accountId?: string; email?: string }> } | undefined,
             codexUsage: results.get('getCodexUsage') as { accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }> } | undefined,
-            claudeQuota: results.get('getClaudeQuota') as { accounts: Array<ClaudeQuota> } | undefined
+            claudeQuota: results.get('getClaudeQuota') as { accounts: Array<ClaudeQuota> } | undefined,
+            cursorQuota: results.get('getCursorQuota') as { accounts: Array<CursorQuota> } | undefined
         };
     },
 

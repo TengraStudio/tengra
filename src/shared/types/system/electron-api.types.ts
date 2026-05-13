@@ -188,6 +188,11 @@ export interface ElectronAPI {
         accountId?: string
     ) => Promise<{ success: boolean; error?: string }>;
 
+    saveCursorSession: (
+        session: string,
+        accountId?: string
+    ) => Promise<{ success: boolean; error?: string }>;
+
     code: {
         scanTodos: (rootPath: string) => Promise<TodoItem[]>;
         findSymbols: (rootPath: string, query: string) => Promise<FileSearchResult[]>;

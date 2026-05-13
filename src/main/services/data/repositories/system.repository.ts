@@ -109,7 +109,7 @@ export class SystemRepository extends BaseRepository {
         this.statsCache = null;
     }
 
-    private invalidateLinkedAccountsCache(provider?: string): void {
+    public invalidateLinkedAccountsCache(provider?: string): void {
         if (!provider) {
             this.linkedAccountsCache.clear();
             return;

@@ -93,6 +93,8 @@ function tokenizeExtraArgs(extraArgs: string): string[] {
 }
 
 export class LlamaService extends BaseService {
+    static readonly serviceName = 'llamaService';
+    static readonly dependencies = ['dataService', 'runtimeBootstrapService', 'settingsService'] as const;
     private static readonly WINDOWS_DLL_NOT_FOUND = 0xC0000135;
     private serverProcess: ChildProcess | null = null;
     private modelsDir: string;

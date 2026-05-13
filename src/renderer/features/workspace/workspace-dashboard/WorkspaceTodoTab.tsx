@@ -28,7 +28,6 @@ import { pushNotification } from '@/store/notification-center.store';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import { AIAssistantBar } from './todo/AIAssistantBar';
 import { PromptModal } from './todo/PromptModal';
 import { TaskCard } from './todo/TaskCard';
 import { TaskColumn } from './todo/TaskColumn';
@@ -283,14 +282,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                 setSearchQuery={setSearchQuery}
                 handleAddTask={() => { void handleAddTask(); }}
                 t={t}
-            />
-
-            <AIAssistantBar
-                aiPrompt={aiPrompt}
-                setAiPrompt={setAiPrompt}
-                isAnalyzing={isAnalyzing}
-                handleAIAnalyze={() => { void handleAIAnalyze(); }}
-            />
+            /> 
 
             <div className="flex-1 overflow-hidden relative">
                 {view === 'kanban' && (

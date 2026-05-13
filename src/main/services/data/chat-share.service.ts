@@ -52,6 +52,8 @@ const SHARES_DIR = 'shares';
 const TENGRA_PROTOCOL = 'tengra';
 
 export class ChatShareService extends BaseService {
+    static readonly serviceName = 'chatShareService';
+    static readonly dependencies = ['db', 'dataService'] as const;
     private registryPath: string = '';
     private sharesDir: string = '';
 

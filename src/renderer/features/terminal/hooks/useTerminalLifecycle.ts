@@ -54,7 +54,7 @@ export function useTerminalLifecycle({
             bufferRef.current[p.id] = (bufferRef.current[p.id] ?? '') + p.data;
 
             const activeRecording = recordingCaptureRef.current;
-            if (activeRecording?.tabId === p.id && p.data) {
+            if (activeRecording?.tabId === p.id && p.data && activeRecording.events) {
                 activeRecording.events.push({
                     at: Date.now() - activeRecording.startedAt,
                     type: 'data',
@@ -79,7 +79,7 @@ export function useTerminalLifecycle({
 
             parseSemanticChunk(p.id, '', true);
             const activeRecording = recordingCaptureRef.current;
-            if (activeRecording?.tabId === p.id) {
+            if (activeRecording?.tabId === p.id && activeRecording.events) {
                 activeRecording.events.push({
                     at: Date.now() - activeRecording.startedAt,
                     type: 'exit',

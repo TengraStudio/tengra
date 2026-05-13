@@ -29,9 +29,9 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
 }) => {
     const tabs = [
         { id: 'overview', icon: IconLayout, title: t('frontend.workspaceDashboard.overview') },
-        { id: 'tasks', icon: IconListCheck, title: t('frontend.workspaceDashboard.todoList') },
+        { id: 'tasks', icon: IconListCheck, title: t('frontend.workspaceTodo.label') },
         { id: 'search', icon: IconSearch, title: t('frontend.workspaceDashboard.search') },
-        { id: 'git', icon: IconGitBranch, title: t('frontend.workspaceDashboard.git') },
+        { id: 'git', icon: IconGitBranch, title: t('frontend.workspaceDashboard.git.label') },
         { id: 'settings', icon: IconSettings, title: t('frontend.workspaceDashboard.settings') },
     ] as const;
 

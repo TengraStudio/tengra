@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-export * from '@/features/workspace/workspace-layout/CommandStrip';
 export * from '@/features/workspace/workspace-layout/DashboardTabs';
 export * from '@/features/workspace/workspace-layout/SavedProfileSelector';
 export * from '@/features/workspace/workspace-layout/ShortcutHelpOverlay';
@@ -17,6 +16,7 @@ export * from '@/features/workspace/workspace-layout/WorkspaceCard';
 export * from '@/features/workspace/workspace-layout/WorkspaceCreatePage';
 export * from '@/features/workspace/workspace-layout/WorkspaceDetails';
 export * from '@/features/workspace/workspace-layout/WorkspaceDialogs';
+export * from '@/features/workspace/workspace-layout/WorkspaceFooter';
 export * from '@/features/workspace/workspace-layout/WorkspaceHeader';
 export * from '@/features/workspace/workspace-layout/WorkspaceListContent';
 export * from '@/features/workspace/workspace-layout/WorkspaceListPage';

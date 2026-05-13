@@ -24,8 +24,7 @@ export type TranslationKeys = JsonValue;
 const translations: Partial<Record<BuiltInLanguage, TranslationKeys>> = {
     en: enLocalePack.translations
 };
-const DEFAULT_LANGUAGE = 'en';
-const DEFAULT_TRANSLATION_FALLBACK_KEY = 'common.notAvailable';
+const DEFAULT_LANGUAGE = 'en'; 
 const TRANSLATION_ROOT_PREFIX = 'translations.';
 type TranslationScope = 'frontend' | 'backend' | 'common';
 
@@ -92,17 +91,7 @@ const selectTranslationText = (
     }
 
     if (typeof translationValue !== 'string') {
-        const defaultFallback = getTranslationNode(translationRoot, DEFAULT_TRANSLATION_FALLBACK_KEY);
-        if (typeof defaultFallback === 'string') {
-            return interpolateTranslation(defaultFallback, options);
-        }
-
-        const englishFallback = getTranslationNode(translations.en as JsonValue, DEFAULT_TRANSLATION_FALLBACK_KEY);
-        if (typeof englishFallback === 'string') {
-            return interpolateTranslation(englishFallback, options);
-        }
-
-        return '';
+        return path;
     }
 
     return interpolateTranslation(translationValue, options);

@@ -12,6 +12,7 @@ import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
+import { LlamaService } from '@main/services/llm/local/llama.service';
 import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import {
     LocalModelFileFormat,
@@ -39,6 +40,7 @@ import { BrowserWindow } from 'electron';
 
 export type ModelProviderId =
     | 'ollama'
+    | 'llama'
     | 'opencode'
     | 'antigravity'
     | 'codex'
@@ -50,6 +52,11 @@ export type ModelProviderId =
     | 'openai'
     | 'huggingface'
     | 'anthropic'
+    | 'mistral'
+    | 'groq'
+    | 'xai'
+    | 'deepseek'
+    | 'openrouter'
     | 'sd-cpp';
 
 /**
@@ -109,6 +116,7 @@ export interface ModelRegistryDependencies {
     authService: AuthService;
     tokenService: TokenService;
     ollamaService: OllamaService;
+    llamaService: LlamaService;
     localImageService: LocalImageService;
     huggingFaceService: HuggingFaceService;
 }
@@ -118,10 +126,15 @@ export interface ModelRegistryDependencies {
  * Also keeps token context-window limits in sync with TokenEstimationService.
  */
 export class ModelRegistryService extends BaseService {
+    static readonly serviceName = 'modelRegistryService';
+    static readonly dependencies = ['deps'] as const;
     private static readonly OPENCODE_MODELS_URL = 'https://opencode.ai/zen/v1/models';
     private static readonly OPENCODE_DEFAULT_API_KEY = 'public';
     private static readonly OPENCODE_REQUEST_TIMEOUT_MS = 2500;
     private static readonly OPENCODE_FREE_PRICE = 0;
+
+    private static readonly DEEPSEEK_MODELS_URL = 'https://api.deepseek.com/models';
+    private static readonly OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/frontend/models';
     private static readonly COPILOT_MODEL_DEFINITIONS: Readonly<Record<string, {
         name: string;
         description?: string;
@@ -148,6 +161,54 @@ export class ModelRegistryService extends BaseService {
             'grok-code-fast-1': { name: 'Grok Code Fast 1' },
             'raptor-mini': { name: 'Raptor mini' },
             'goldeneye': { name: 'Goldeneye' },
+        };
+    private static readonly CURSOR_MODEL_DEFINITIONS: Readonly<Record<string, {
+        name: string;
+        description?: string;
+    }>> = {
+            'claude-3-5-sonnet': { name: 'Claude 3.5 Sonnet (Cursor)' },
+            'claude-3-5-haiku': { name: 'Claude 3.5 Haiku (Cursor)' },
+            'cursor-small': { name: 'Cursor Small' },
+            'gpt-4o': { name: 'GPT-4o (Cursor)' },
+            'claude-3-7-sonnet': { name: 'Claude 3.7 Sonnet (Cursor)' },
+            'claude-3-7-sonnet-thinking': { name: 'Claude 3.7 Sonnet Thinking (Cursor)' },
+        };
+    private static readonly MISTRAL_MODEL_DEFINITIONS: Readonly<Record<string, {
+        name: string;
+        description?: string;
+    }>> = {
+            'codestral-latest': { name: 'Codestral Latest' },
+            'devstral-latest': { name: 'Devstral Latest' },
+            'mistral-large-latest': { name: 'Mistral Large Latest' },
+            'mistral-small-latest': { name: 'Mistral Small Latest' },
+            'ministral-8b-latest': { name: 'Ministral 8B Latest' },
+            'ministral-3b-latest': { name: 'Ministral 3B Latest' },
+        };
+    private static readonly GROQ_MODEL_DEFINITIONS: Readonly<Record<string, {
+        name: string;
+        description?: string;
+    }>> = {
+            'llama-3.3-70b-versatile': { name: 'Llama 3.3 70B Versatile' },
+            'llama-3.1-8b-instant': { name: 'Llama 3.1 8B Instant' },
+            'qwen/qwen3-32b': { name: 'Qwen 3 32B' },
+        };
+    private static readonly XAI_MODEL_DEFINITIONS: Readonly<Record<string, {
+        name: string;
+        description?: string;
+    }>> = {
+            'grok-4.3': { name: 'Grok 4.3' },
+            'grok-4.20-multi-agent-0309': { name: 'Grok 4.20 Multi-Agent' },
+            'grok-beta': { name: 'Grok Beta' },
+        };
+    private static readonly DEEPSEEK_MODEL_DEFINITIONS: Readonly<Record<string, {
+        name: string;
+        description?: string;
+    }>> = {
+            'deepseek-v3': { name: 'DeepSeek V3' },
+            'deepseek-v4-flash': { name: 'DeepSeek V4 Flash' },
+            'deepseek-v4-pro': { name: 'DeepSeek V4 Pro' },
+            'deepseek-reasoner': { name: 'DeepSeek Reasoner (R1)' },
+            'deepseek-chat': { name: 'DeepSeek Chat' },
         };
     private static readonly COPILOT_MODELS_BY_PLAN: Readonly<Record<CopilotPlanTier, readonly string[]>> = {
         free: [
@@ -308,6 +369,7 @@ export class ModelRegistryService extends BaseService {
         ];
     private static readonly KNOWN_PROVIDER_IDS: ReadonlySet<string> = new Set([
         'ollama',
+        'llama',
         'opencode',
         'antigravity',
         'codex',
@@ -320,6 +382,10 @@ export class ModelRegistryService extends BaseService {
         'openai',
         'huggingface',
         'anthropic',
+        'mistral',
+        'groq',
+        'xai',
+        'deepseek',
         'sd-cpp',
     ]);
 
@@ -661,6 +727,16 @@ export class ModelRegistryService extends BaseService {
                 return ['nvidia'];
             case 'opencode':
                 return ['opencode'];
+            case 'mistral':
+                return ['mistral'];
+            case 'groq':
+                return ['groq'];
+            case 'xai':
+                return ['xai', 'grok'];
+            case 'deepseek':
+                return ['deepseek'];
+            case 'openrouter':
+                return ['openrouter'];
             default:
                 return [provider];
         }
@@ -806,6 +882,10 @@ export class ModelRegistryService extends BaseService {
             requestedProvider = 'openai';
         } else if (normalizedRawProvider === 'huggingface') {
             requestedProvider = 'huggingface';
+        } else if (normalizedRawProvider === 'deepseek') {
+            requestedProvider = 'deepseek';
+        } else if (normalizedRawProvider === 'openrouter') {
+            requestedProvider = 'openrouter';
         } else if (normalizedRawProvider === 'sd-cpp') {
             requestedProvider = 'sd-cpp';
         }
@@ -919,6 +999,15 @@ export class ModelRegistryService extends BaseService {
         if (p === 'claude' || p === 'anthropic') {
             return 'claude';
         }
+        if (p === 'mistral') {
+            return 'mistral';
+        }
+        if (p === 'groq') {
+            return 'groq';
+        }
+        if (p === 'xai' || p === 'grok') {
+            return 'xai';
+        }
         return p;
     }
 
@@ -942,6 +1031,21 @@ export class ModelRegistryService extends BaseService {
         }
         if (raw === 'github') {
             return 'copilot';
+        }
+        if (raw === 'mistral') {
+            return 'mistral';
+        }
+        if (raw === 'groq') {
+            return 'groq';
+        }
+        if (raw === 'xai') {
+            return 'xai';
+        }
+        if (raw === 'deepseek') {
+            return 'deepseek';
+        }
+        if (raw === 'openrouter') {
+            return 'openrouter';
         }
 
         if (raw === '' || !ModelRegistryService.KNOWN_PROVIDER_IDS.has(raw)) {
@@ -1054,8 +1158,11 @@ export class ModelRegistryService extends BaseService {
         const fallback: ModelProviderInfo[] = [
             { id: 'gpt-5.5', name: 'GPT 5.5', provider: 'codex', sourceProvider: 'codex' },
             { id: 'gpt-5.4', name: 'GPT 5.4', provider: 'codex', sourceProvider: 'codex' },
-            { id: 'gpt-5.3-codex', name: 'GPT 5.3 Codex', provider: 'codex', sourceProvider: 'codex' },
-            { id: 'claude-sonnet-4.6', name: 'Claude Sonnet 4.6', provider: 'claude', sourceProvider: 'claude' },
+            { id: 'claude-opus-4.6', name: 'Claude Opus 4.6', provider: 'claude', sourceProvider: 'claude' },
+            { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', provider: 'claude', sourceProvider: 'claude' },
+            { id: 'grok-4.3', name: 'Grok 4.3', provider: 'xai', sourceProvider: 'xai' },
+            { id: 'mistral-large-latest', name: 'Mistral Large Latest', provider: 'mistral', sourceProvider: 'mistral' },
+            { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile', provider: 'groq', sourceProvider: 'groq' },
             { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', sourceProvider: 'openai' },
             {
                 id: 'openai/gpt-image-1',
@@ -1077,16 +1184,24 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async fetchRemoteModels(): Promise<ModelProviderInfo[]> {
-        const [proxyCatalog, openCodeModels] = await Promise.all([
+        const [proxyCatalog, openCodeModels, deepseekModels, openrouterModels] = await Promise.all([
             this.fetchProxyCatalog(),
             this.fetchOpenCodeModels(),
+            this.fetchDeepSeekModels(),
+            this.fetchOpenRouterModels(),
         ]);
-        const copilotModels = await this.buildHardcodedCopilotModels(proxyCatalog.rawModels);
+        const [copilotModels, cursorModels] = await Promise.all([
+            this.buildHardcodedCopilotModels(proxyCatalog.rawModels),
+            this.buildHardcodedCursorModels(proxyCatalog.rawModels),
+        ]);
         const all = proxyCatalog.mappedModels.filter(
             model => !this.isCopilotProvider(model.providerCategory ?? model.provider)
         );
         all.push(...copilotModels);
+        all.push(...cursorModels);
         all.push(...openCodeModels);
+        all.push(...deepseekModels);
+        all.push(...openrouterModels);
 
         const hasOpenAIKey = await this.hasApiKeyCredentialForProvider('openai');
         if (hasOpenAIKey) {
@@ -1174,6 +1289,38 @@ export class ModelRegistryService extends BaseService {
                 name: proxyModel?.name ?? definition?.name ?? id,
                 provider: 'copilot',
                 sourceProvider: 'copilot',
+                description: proxyModel?.description ?? definition?.description,
+                quotaInfo: proxyModel?.quotaInfo,
+            });
+        });
+    }
+
+    private async buildHardcodedCursorModels(
+        rawProxyModels: ProxyCatalogModel[]
+    ): Promise<ModelProviderInfo[]> {
+        const accounts = await this.deps.authService.getAccountsByProviderFull('cursor');
+        if (accounts.length === 0) {
+            return [];
+        }
+
+        const allowedIds = Object.keys(ModelRegistryService.CURSOR_MODEL_DEFINITIONS);
+        const proxyIndex = new Map<string, ProxyCatalogModel>();
+
+        for (const rawModel of rawProxyModels) {
+            if (rawModel.provider.toLowerCase() !== 'cursor') {
+                continue;
+            }
+            proxyIndex.set(rawModel.id, rawModel);
+        }
+
+        return allowedIds.map(id => {
+            const proxyModel = proxyIndex.get(id);
+            const definition = ModelRegistryService.CURSOR_MODEL_DEFINITIONS[id];
+            return this.enrichModelMetadata({
+                id,
+                name: proxyModel?.name ?? definition?.name ?? id,
+                provider: 'cursor',
+                sourceProvider: 'cursor',
                 description: proxyModel?.description ?? definition?.description,
                 quotaInfo: proxyModel?.quotaInfo,
             });
@@ -1370,6 +1517,114 @@ export class ModelRegistryService extends BaseService {
         return { input: matched.input, output: matched.output };
     }
 
+    private async fetchDeepSeekModels(): Promise<ModelProviderInfo[]> {
+        const apiKey = await this.deps.authService.getActiveToken('deepseek');
+        if (!apiKey) {
+            return [];
+        }
+        return this.fetchGenericOpenAIModels(
+            ModelRegistryService.DEEPSEEK_MODELS_URL,
+            apiKey,
+            'deepseek'
+        );
+    }
+
+    private async fetchOpenRouterModels(): Promise<ModelProviderInfo[]> {
+        // OpenRouter frontend API doesn't need a key
+        try {
+            const response = await fetch(ModelRegistryService.OPENROUTER_MODELS_URL, {
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) {
+                return [];
+            }
+            const payload = await response.json() as JsonObject;
+            const rawData = payload['data'];
+            if (!Array.isArray(rawData)) {
+                return [];
+            }
+
+            return rawData.map(item => {
+                if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                    return null;
+                }
+                const obj = item as JsonObject;
+                const id = String(obj['id'] ?? '');
+                const name = String(obj['name'] ?? id);
+                return this.enrichModelMetadata({
+                    id,
+                    name,
+                    provider: 'openrouter',
+                    sourceProvider: 'openrouter',
+                    description: String(obj['description'] ?? ''),
+                    contextWindow: typeof obj['context_length'] === 'number' ? obj['context_length'] : undefined,
+                });
+            }).filter((m): m is ModelProviderInfo => m !== null);
+        } catch (e) {
+            appLogger.debug('ModelRegistry', `Failed to fetch OpenRouter models: ${getErrorMessage(e as Error)}`);
+            return [];
+        }
+    }
+
+    private async fetchGenericOpenAIModels(
+        url: string,
+        apiKey: string,
+        provider: ModelProviderId
+    ): Promise<ModelProviderInfo[]> {
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    Authorization: `Bearer ${apiKey}`,
+                },
+            });
+            if (!response.ok) {
+                return [];
+            }
+            const payload = await response.json() as JsonObject;
+            const rawData = payload['data'];
+            if (!Array.isArray(rawData)) {
+                return [];
+            }
+
+            return rawData.map(item => {
+                if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                    return null;
+                }
+                const obj = item as JsonObject;
+                const id = String(obj['id'] ?? '');
+                const name = String(obj['name'] ?? id);
+                return this.enrichModelMetadata({
+                    id,
+                    name: this.resolveStaticModelName(provider, id) ?? name,
+                    provider,
+                    sourceProvider: provider,
+                });
+            }).filter((m): m is ModelProviderInfo => m !== null);
+        } catch (e) {
+            appLogger.debug('ModelRegistry', `Failed to fetch ${provider} models from ${url}: ${getErrorMessage(e as Error)}`);
+            return [];
+        }
+    }
+
+    private resolveStaticModelName(provider: ModelProviderId, id: string): string | undefined {
+        if (provider === 'deepseek') {
+            return ModelRegistryService.DEEPSEEK_MODEL_DEFINITIONS[id]?.name;
+        }
+        if (provider === 'mistral') {
+            return ModelRegistryService.MISTRAL_MODEL_DEFINITIONS[id]?.name;
+        }
+        if (provider === 'groq') {
+            return ModelRegistryService.GROQ_MODEL_DEFINITIONS[id]?.name;
+        }
+        if (provider === 'xai') {
+            return ModelRegistryService.XAI_MODEL_DEFINITIONS[id]?.name;
+        }
+        return undefined;
+    }
+
     /**
      * Get locally installed models
      */
@@ -1379,11 +1634,12 @@ export class ModelRegistryService extends BaseService {
     }
 
     async getInstalledModels(): Promise<ModelProviderInfo[]> {
-        const [ollamaModels, huggingFaceModels] = await Promise.all([
+        const [ollamaModels, llamaModels, huggingFaceModels] = await Promise.all([
             this.getInstalledOllamaModels(),
+            this.getInstalledLlamaModels(),
             this.getInstalledHuggingFaceModels(),
         ]);
-        return [...ollamaModels, ...huggingFaceModels];
+        return [...ollamaModels, ...llamaModels, ...huggingFaceModels];
     }
 
     private async getInstalledOllamaModels(): Promise<ModelProviderInfo[]> {
@@ -1424,7 +1680,7 @@ export class ModelRegistryService extends BaseService {
                 provider: 'huggingface',
                 sourceProvider: 'huggingface',
                 contextWindow: model.contextLength,
-                capabilities: { text_generation: true },
+                capabilities: { text_generation: true, embedding: false },
                 backend: model.runtimeProvider ?? resolveRuntimeProviderForLocalModel(model.path),
                 runtimeProvider: model.runtimeProvider ?? resolveRuntimeProviderForLocalModel(model.path),
                 fileFormat: model.fileFormat ?? resolveLocalModelFileFormat(model.path),
@@ -1436,6 +1692,32 @@ export class ModelRegistryService extends BaseService {
             appLogger.debug(
                 'ModelRegistry',
                 `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch installed Hugging Face models: ${getErrorMessage(error as Error)}`
+            );
+            return [];
+        }
+    }
+
+    private async getInstalledLlamaModels(): Promise<ModelProviderInfo[]> {
+        try {
+            const models = await this.deps.llamaService.getModels();
+            return models
+                .filter(model => typeof model.name === 'string' && model.name.trim().length > 0)
+                .map(model => this.enrichModelMetadata({
+                    id: `llama/${model.name}`,
+                    name: model.name,
+                    provider: 'llama',
+                    sourceProvider: 'llama',
+                    contextWindow: this.resolveLlamaContextWindow(model.name),
+                    capabilities: { text_generation: true },
+                    localPath: model.path,
+                    loaded: model.loaded,
+                }));
+        } catch (error) {
+            this.usageStats.providerFetchFailures += 1;
+            this.trackUsageStats('model-registry.provider.fetch.failed', { provider: 'llama' });
+            appLogger.debug(
+                'ModelRegistry',
+                `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch installed Llama models: ${getErrorMessage(error as Error)}`
             );
             return [];
         }
@@ -1464,6 +1746,14 @@ export class ModelRegistryService extends BaseService {
             id: `ollama/${modelName}`,
             name: modelName,
             provider: 'ollama',
+        });
+    }
+
+    private resolveLlamaContextWindow(modelName: string): number | undefined {
+        return resolveContextWindowForModel({
+            id: `llama/${modelName}`,
+            name: modelName,
+            provider: 'llama',
         });
     }
 

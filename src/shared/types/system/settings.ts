@@ -18,13 +18,6 @@ export type McpPermissionProfile = 'read-only' | 'workspace-only' | 'network-ena
 
 export type AntigravityCreditUsageMode = 'auto' | 'ask-every-time';
 
-export type ModelGovernanceSettings = {
-    mode: 'allowlist' | 'blocklist';
-    allowedModels: string[];
-    blockedModels: string[];
-    [key: string]: JsonValue | undefined;
-};
-
 /** A user-defined scheduled notification entry */
 export interface CronJobEntry {
     /** Unique identifier */
@@ -145,7 +138,6 @@ export interface AppSettings {
         agentAllowedPaths?: string[];
         dismissedLanguagePrompts?: string[];
     };
-    modelGovernance?: ModelGovernanceSettings;
     github?: {
         username?: string;
     };
@@ -176,16 +168,7 @@ export interface AppSettings {
     };
     mistral?: {
         model: string;
-    };
-    together?: {
-        model: string;
-    };
-    perplexity?: {
-        model: string;
-    };
-    cohere?: {
-        model: string;
-    };
+    }; 
     xai?: {
         model: string;
     };

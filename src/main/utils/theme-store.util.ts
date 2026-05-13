@@ -12,6 +12,7 @@ import * as fs from 'fs';
 
 import { appLogger } from '@main/logging/logger';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
+import { BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import { CustomTheme, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -22,6 +23,16 @@ interface ThemeStoreData {
     history: string[];
     preset: ThemePreset | null;
 }
+
+const BUILTIN_THEMES = BUILTIN_THEME_MANIFESTS.map(theme => ({
+    id: theme.id,
+    name: theme.displayName,
+    isDark: theme.type !== 'light',
+    colors: { ...theme.colors },
+    description: theme.description,
+    author: theme.author,
+    tags: theme.tags,
+}));
 
 class ThemeStore {
     private static instance: ThemeStore | null = null;
@@ -82,7 +93,7 @@ class ThemeStore {
     }
 
     async setTheme(themeId: string): Promise<boolean> {
-        const theme = this.store.customThemes.find(t => t.id === themeId);
+        const theme = this.getThemeDetails(themeId);
         if (!theme) {
             appLogger.warn('ThemeStore', `Theme not found: ${themeId}`);
             return false;
@@ -108,16 +119,26 @@ class ThemeStore {
     }
 
     getAllThemes(): Array<{ id: string; name: string; isDark: boolean; isCustom?: boolean }> {
+        const builtIn = BUILTIN_THEMES.map(t => ({
+            id: t.id,
+            name: t.name,
+            isDark: t.isDark,
+            isCustom: false,
+        }));
         const custom = this.store.customThemes.map(t => ({
             id: t.id,
             name: t.name,
             isDark: t.isDark,
             isCustom: true
         }));
-        return [...custom];
+        return [...builtIn, ...custom];
     }
 
     getThemeDetails(themeId: string) {
+        const builtIn = BUILTIN_THEMES.find(t => t.id === themeId);
+        if (builtIn) {
+            return { ...builtIn, isBuiltIn: true };
+        }
         const custom = this.store.customThemes.find(t => t.id === themeId);
         if (custom) {
             return { ...custom, isBuiltIn: false };

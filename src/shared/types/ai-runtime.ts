@@ -11,7 +11,7 @@
 import { ToolCall, ToolResult } from '@/types/chat';
 import { JsonObject } from '@/types/common';
 
-export type AiRuntimeSystemMode = 'thinking' | 'agent' | 'fast' | 'architect';
+export type AiRuntimeSystemMode = 'instant' | 'ask' | 'thinking' | 'agent' | 'fast' | 'architect';
 
 export type AiIntentType =
     | 'direct_answer'
@@ -82,6 +82,7 @@ export interface AiPresentationMetadata extends JsonObject {
     answerMode: AiAnswerMode;
     isStreaming: boolean;
     hasReasoning: boolean;
+    systemMode?: AiRuntimeSystemMode;
     reasoningSummary?: string;
     reasoningSegments?: string[];
     toolCallCount: number;
@@ -109,6 +110,7 @@ export interface AiPresentationContext {
     images?: string[];
     isStreaming?: boolean;
     language?: string;
+    systemMode?: AiRuntimeSystemMode;
     evidenceSnapshot?: AiEvidenceStoreSnapshot;
 }
 

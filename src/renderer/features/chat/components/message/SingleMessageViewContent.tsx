@@ -149,6 +149,7 @@ interface MessageBubbleInnerProps {
     message: Message;
     contentProps: MessageBubbleContentProps;
     actionsContextProps: MessageActionsContextProps;
+    mode: CanonicalChatMode;
 }
 
 type ToolLineStatus = 'running' | 'completed' | 'failed';
@@ -179,7 +180,27 @@ type FileChangeItem = {
     additions: number;
     deletions: number;
     diffId?: string;
+    preview?: string;
 };
+
+type CanonicalChatMode = 'instant' | 'thinking' | 'agent';
+
+function resolveCanonicalChatMode(message: Message): CanonicalChatMode {
+    const aiPresentation = message.metadata?.aiPresentation;
+    if (aiPresentation && typeof aiPresentation === 'object' && !Array.isArray(aiPresentation)) {
+        const raw = (aiPresentation as Record<string, unknown>).systemMode;
+        if (raw === 'instant' || raw === 'thinking' || raw === 'agent') {
+            return raw;
+        }
+        if (raw === 'ask') {
+            return 'instant';
+        }
+        if (raw === 'fast' || raw === 'architect') {
+            return raw === 'fast' ? 'instant' : 'thinking';
+        }
+    }
+    return 'thinking';
+}
 
 function normalizeForPrefix(value: string): string {
     return value.replace(/\\/g, '/').replace(/\/+$/g, '');
@@ -241,6 +262,9 @@ function extractFileChanges(message: Message): FileChangeItem[] {
             const pathValue = typeof record.path === 'string' ? record.path : '';
             const stats = extractDiffStats(record.diffStats);
             const diffId = typeof record.diffId === 'string' ? record.diffId : undefined;
+            const preview = typeof record.diffPreview === 'string'
+                ? record.diffPreview
+                : (typeof record.preview === 'string' ? record.preview : undefined);
             if (!pathValue || !stats) {
                 continue;
             }
@@ -250,6 +274,7 @@ function extractFileChanges(message: Message): FileChangeItem[] {
                 additions: stats.additions,
                 deletions: stats.deletions,
                 diffId,
+                preview,
             });
             continue;
         }
@@ -263,6 +288,9 @@ function extractFileChanges(message: Message): FileChangeItem[] {
                 const pathValue = typeof file.path === 'string' ? file.path : '';
                 const stats = extractDiffStats(file.diffStats);
                 const diffId = typeof file.diffId === 'string' ? file.diffId : undefined;
+                const preview = typeof file.diffPreview === 'string'
+                    ? file.diffPreview
+                    : (typeof file.preview === 'string' ? file.preview : undefined);
                 if (!pathValue || !stats) {
                     continue;
                 }
@@ -272,6 +300,7 @@ function extractFileChanges(message: Message): FileChangeItem[] {
                     additions: stats.additions,
                     deletions: stats.deletions,
                     diffId,
+                    preview,
                 });
             }
         }
@@ -619,6 +648,7 @@ const FileChangesCard = memo(({
     changes: FileChangeItem[];
 }) => {
     const [isUndoing, setIsUndoing] = useState(false);
+    const [expandedByKey, setExpandedByKey] = useState<Record<string, boolean>>({});
 
     const totals = useMemo(() => {
         const additions = changes.reduce((sum, c) => sum + (c.additions ?? 0), 0);
@@ -655,8 +685,8 @@ const FileChangesCard = memo(({
     }, [changes]);
 
     return (
-        <div className="mt-4 rounded-xl border border-border/30 bg-muted/5 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/20 bg-muted/10">
+        <div className="mt-3 overflow-hidden rounded border border-border bg-background">
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 px-3 py-2">
                 <div className="flex items-center gap-2 text-sm">
                     <span className="font-semibold text-foreground/90">
                         {changes.length} {changes.length === 1 ? 'file changed' : 'files changed'}
@@ -672,7 +702,7 @@ const FileChangesCard = memo(({
                         }}
                         disabled={!canUndo}
                         className={cn(
-                            'flex items-center gap-1.5 text-xs font-medium transition-colors',
+                            'flex items-center gap-1.5 text-xs transition-colors',
                             canUndo ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/30 cursor-not-allowed'
                         )}
                     >
@@ -682,7 +712,7 @@ const FileChangesCard = memo(({
                     <button
                         type="button"
                         onClick={onReview}
-                        className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <span>Review</span>
                         <IconExternalLink className="w-3.5 h-3.5" />
@@ -691,23 +721,38 @@ const FileChangesCard = memo(({
             </div>
 
             <div className="divide-y divide-border/10">
-                {changes.map((c, idx) => (
-                    <button
-                        key={`${c.path}:${c.diffId ?? ''}:${idx}`}
-                        type="button"
-                        onClick={() => navigateToWorkspace({ type: 'open_diff', path: c.path, diffId: c.diffId })}
-                        className="flex w-full items-center justify-between gap-4 px-4 py-2.5 text-left text-sm hover:bg-muted/15 transition-colors group"
-                    >
-                        <span className="truncate text-muted-foreground group-hover:text-foreground transition-colors">{c.displayPath}</span>
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                            <span className="tabular-nums text-xs font-medium">
-                                <span className="text-primary/80">+{c.additions}</span>
-                                <span className="ml-2 text-destructive/80">-{c.deletions}</span>
-                            </span>
-                            <IconChevronDown className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors -rotate-90" />
+                {changes.map((c, idx) => {
+                    const rowKey = `${c.path}:${c.diffId ?? ''}:${idx}`;
+                    const expanded = Boolean(expandedByKey[rowKey]);
+                    return (
+                        <div key={rowKey} className="group">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    navigateToWorkspace({ type: 'open_diff', path: c.path, diffId: c.diffId });
+                                    setExpandedByKey(prev => ({ ...prev, [rowKey]: !prev[rowKey] }));
+                                }}
+                                className="flex w-full items-center justify-between gap-4 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/20"
+                            >
+                                <span className="truncate text-muted-foreground group-hover:text-foreground transition-colors">{c.displayPath}</span>
+                                <div className="flex items-center gap-3 flex-shrink-0">
+                                    <span className="tabular-nums text-xs font-medium">
+                                        <span className="text-primary/80">+{c.additions}</span>
+                                        <span className="ml-2 text-destructive/80">-{c.deletions}</span>
+                                    </span>
+                                    <IconChevronDown className={cn('w-4 h-4 text-muted-foreground/40 transition-transform', expanded && 'rotate-180')} />
+                                </div>
+                            </button>
+                            {expanded && typeof c.preview === 'string' && c.preview.trim().length > 0 && (
+                                <div className="px-4 pb-3">
+                                    <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded border border-border bg-muted/10 p-2 text-xs text-foreground/80">
+                                        {c.preview}
+                                    </pre>
+                                </div>
+                            )}
                         </div>
-                    </button>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
@@ -724,6 +769,7 @@ const MessageBubbleInner = memo(
         message,
         contentProps,
         actionsContextProps,
+        mode,
     }: MessageBubbleInnerProps) => {
         const { showToggle, showActions } = createToggleVisibilityFlags(
             displayContent,
@@ -735,6 +781,13 @@ const MessageBubbleInner = memo(
             () => (!isUser ? extractFileChanges(message) : []),
             [isUser, message]
         );
+        const inlineToolCalls = useMemo(() => {
+            if (mode === 'thinking' || mode === 'agent') {
+                return [] as ToolCallView[];
+            }
+            return buildToolCalls(message);
+        }, [message, mode]);
+        const inlineToolResultMap = useMemo(() => buildToolResultMap(message), [message]);
 
         return (
             <div className={UI_PRIMITIVES.CHAT_BUBBLE_BASE}>
@@ -760,6 +813,62 @@ const MessageBubbleInner = memo(
                         t={actionsContextProps.t}
                     />
                 )}
+                {!isUser && inlineToolCalls.length > 0 && (
+                    <div className="mt-3 rounded border border-border bg-muted/10 p-2.5">
+                        <div className="mb-2 text-xs font-medium text-muted-foreground">Tool calls</div>
+                        <div className="space-y-2">
+                            {inlineToolCalls.map(toolCall => (
+                                <div key={toolCall.id} className="rounded border border-border bg-background px-2 py-1.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="font-mono text-xs text-foreground">{toolCall.name || 'tool'}</div>
+                                        <span
+                                            className={cn(
+                                                'h-1.5 w-1.5 rounded-full',
+                                                inlineToolResultMap.has(toolCall.id) ? 'bg-muted-foreground/70' : 'bg-primary/70'
+                                            )}
+                                        />
+                                    </div>
+                                    {toolCall.rawArguments.trim().length > 0 && (
+                                        <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap border-l border-border pl-2 font-mono text-xs text-foreground/80">
+                                            {toolCall.rawArguments}
+                                        </pre>
+                                    )}
+                                    {(() => {
+                                        const toolResult = inlineToolResultMap.get(toolCall.id);
+                                        if (!toolResult) {
+                                            return null;
+                                        }
+                                        const errorText = typeof toolResult.error === 'string'
+                                            ? toolResult.error.trim()
+                                            : '';
+                                        if (errorText.length > 0) {
+                                            return (
+                                                <div className="mt-1 rounded border border-destructive/30 bg-destructive/5 px-2 py-1 text-xs text-destructive">
+                                                    {errorText}
+                                                </div>
+                                            );
+                                        }
+                                        const resultText = (() => {
+                                            try {
+                                                return JSON.stringify(toolResult.result, null, 2);
+                                            } catch {
+                                                return '';
+                                            }
+                                        })();
+                                        if (resultText.trim().length === 0) {
+                                            return null;
+                                        }
+                                        return (
+                                            <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap border-l border-border pl-2 font-mono text-xs text-muted-foreground">
+                                                {resultText}
+                                            </pre>
+                                        );
+                                    })()}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 {!isUser && fileChanges.length > 0 && (
                     <FileChangesCard changes={fileChanges} />
                 )}
@@ -784,6 +893,7 @@ interface PlanAndThoughtProps {
     isStreaming?: boolean;
     onApprovePlan?: () => void;
     t: TranslationFn;
+    mode: CanonicalChatMode;
 }
 
 const PlanAndThought = memo(
@@ -794,7 +904,9 @@ const PlanAndThought = memo(
         isStreaming,
         onApprovePlan,
         t,
+        mode,
     }: PlanAndThoughtProps & { message: Message }) => {
+        const supportsReasoningTimeline = mode === 'thinking' || mode === 'agent';
         return (
             <>
                 <PlanSection
@@ -804,7 +916,9 @@ const PlanAndThought = memo(
                     onApprovePlan={onApprovePlan}
                     t={t}
                 />
-                <ThoughtTimeline message={message} isStreaming={isStreaming} isLast={isLast} t={t} />
+                {supportsReasoningTimeline && (
+                    <ThoughtTimeline message={message} isStreaming={isStreaming} isLast={isLast} t={t} />
+                )}
             </>
         );
     }
@@ -814,9 +928,9 @@ PlanAndThought.displayName = 'PlanAndThought';
 
 const buildWrapperClasses = (isUser: boolean, isFocused?: boolean): string =>
     cn(
-        'flex w-full animate-fade-in group/message rounded-2xl p-2 transition-all duration-300',
+        'group/message flex w-full animate-fade-in rounded-md px-2 py-1.5 transition-colors',
         isUser ? 'justify-end' : 'justify-start',
-        isFocused && 'bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/5'
+        isFocused && 'bg-muted/30'
     );
 
 const buildContentWrapperClasses = (isUser: boolean): string =>
@@ -884,6 +998,7 @@ export const SingleMessageViewContent = memo(
         const contentWrapperClasses = buildContentWrapperClasses(isUser);
         const columnWrapperClasses = buildColumnWrapperClasses(isUser);
         const isThoughtOnly = Boolean(message.metadata?.thoughtOnly === true);
+        const mode = resolveCanonicalChatMode(message);
 
         return (
             <div id={id} className={wrapperClasses}>
@@ -904,6 +1019,7 @@ export const SingleMessageViewContent = memo(
                             isStreaming={isStreaming}
                             onApprovePlan={onApprovePlan}
                             t={t}
+                            mode={mode}
                         />
                         {!isThoughtOnly && (
                             <>
@@ -920,6 +1036,7 @@ export const SingleMessageViewContent = memo(
                                     message={message}
                                     contentProps={contentProps}
                                     actionsContextProps={actionsContextProps}
+                                    mode={mode}
                                 />
                             </>
                         )}

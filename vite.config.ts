@@ -62,9 +62,9 @@ export default defineConfig(({ mode }) => {
                             '@system': resolve(__dirname, 'src/renderer/system'),
                         }
                     },
-                    build: {
-                        outDir: 'dist/main',
-                        emptyOutDir: true,
+                        build: {
+                            outDir: 'dist/main',
+                            emptyOutDir: true,
                         lib: {
                             entry: 'src/main/main.ts',
                             formats: ['cjs'],
@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => {
                                 moduleSideEffects: false
                             },
                             output: {
-                                codeSplitting: false,
+                                inlineDynamicImports: true,
                                 entryFileNames: 'main.js'
                             }
                         }
@@ -118,7 +118,7 @@ export default defineConfig(({ mode }) => {
                         external: ['electron'],
                         treeshake: !isDev,
                         output: {
-                            codeSplitting: false
+                            inlineDynamicImports: true
                         }
                     }
                 }
@@ -163,7 +163,7 @@ export default defineConfig(({ mode }) => {
                 '@shared': resolve(__dirname, 'src/shared'),
                 '@assets': resolve(__dirname, 'assets'),
                 '@tests': resolve(__dirname, 'src/tests'),
-                'path': 'path-browserify'
+                'path': 'path-browserify',
             },
             // Ensure ESM modules are resolved correctly
             conditions: ['import', 'module', 'browser', 'default'],
@@ -208,7 +208,7 @@ export default defineConfig(({ mode }) => {
             rollupOptions: { 
                 external,
                 output: {
-                    codeSplitting: false,
+                    inlineDynamicImports: true,
                     entryFileNames: 'main.js'
                 }
             }
@@ -306,8 +306,7 @@ export default defineConfig(({ mode }) => {
                 '@xterm/addon-webgl',
                 '@monaco-editor/react',
                 'monaco-editor',
-                'monaco-editor/esm/vs/editor/editor.api',
-                'monaco-editor/esm/vs/editor/editor.all',
+                'monaco-editor/esm/vs/editor/editor.api.js',
                 'monaco-editor/esm/vs/editor/editor.worker',
                 'monaco-editor/esm/vs/language/json/json.worker',
                 'monaco-editor/esm/vs/language/css/css.worker',

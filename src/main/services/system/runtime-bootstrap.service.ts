@@ -58,6 +58,8 @@ const TERMINAL_LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const IGNORABLE_CLEANUP_ERROR_CODES = new Set(['EBUSY', 'ENOENT', 'EPERM']);
 
 export class RuntimeBootstrapService extends BaseService {
+    static readonly serviceName = 'runtimeBootstrapService';
+    static readonly dependencies = ['runtimeManifestService', 'runtimeHealthService'] as const;
     private readonly allowedDownloadHosts = new Set([
         'github.com',
         'release-assets.githubusercontent.com',
@@ -68,6 +70,7 @@ export class RuntimeBootstrapService extends BaseService {
     public onScanFinished?: (result: RuntimeBootstrapExecutionResult) => void;
     private isMainProcessReadyGetter?: () => boolean;
     private initializationPromise: Promise<void> | null = null;
+    private managedRuntimeInstallPromise: Promise<void> | null = null;
 
     constructor(
         private readonly runtimeManifestService: RuntimeManifestService = new RuntimeManifestService(),
@@ -113,12 +116,41 @@ export class RuntimeBootstrapService extends BaseService {
             return { success: result.success, message: result.message };
         }
 
-        if (componentId === 'sd-cpp' || componentId === 'biome' || componentId === 'ruff' || componentId === 'golangci-lint') {
-            await this.ensureManagedRuntime();
+        if (this.isManagedRuntimeComponent(componentId)) {
+            this.triggerManagedRuntimeInstall();
             return { success: true, message: t('backend.runtimeInstallTriggered') };
         }
 
         return { success: false, message: `No runtime action is registered for ${componentId}` };
+    }
+
+    private isManagedRuntimeComponent(componentId: string): boolean {
+        return componentId === 'sd-cpp'
+            || componentId === 'biome'
+            || componentId === 'ruff'
+            || componentId === 'golangci-lint'
+            || componentId === 'rust-analyzer';
+    }
+
+    private triggerManagedRuntimeInstall(): void {
+        if (this.managedRuntimeInstallPromise) {
+            return;
+        }
+
+        this.managedRuntimeInstallPromise = this.ensureManagedRuntime()
+            .then(() => {
+                // Intentionally ignore the execution result here.
+                // runComponentAction should only trigger background installation.
+            })
+            .catch(error => {
+                this.logError(
+                    'Managed runtime background installation failed',
+                    error instanceof Error ? error : new Error(String(error))
+                );
+            })
+            .finally(() => {
+                this.managedRuntimeInstallPromise = null;
+            });
     }
 
     buildInstallPlan(
@@ -252,6 +284,11 @@ export class RuntimeBootstrapService extends BaseService {
             envManifestUrl === undefined &&
             resolvedManifestUrl === NETWORK_DEFAULTS.RUNTIME_MANIFEST_URL;
 
+        const bundledManifest = await this.loadBundledManifest();
+        if (bundledManifest && usesDefaultManifestUrl) {
+            return bundledManifest;
+        }
+
         // PRE-LAUNCH BYPASS: Disable manifest network fetch while repo is private
         // TODO: Remove this once the repository is public
         const isPreLaunch = false;
@@ -291,6 +328,9 @@ export class RuntimeBootstrapService extends BaseService {
                     });
                     if (response.ok) {
                         const manifestText = await response.text();
+                        this.runtimeManifestService.parseManifest(
+                            safeJsonParse<JsonObject>(manifestText, {})
+                        );
                         await this.cacheManifest(manifestText);
                         this.logDebug('Background runtime manifest update complete');
                     }
@@ -316,10 +356,11 @@ export class RuntimeBootstrapService extends BaseService {
                 throw new Error('error.system.manifest_read_failed');
             }
             const manifestText = await response.text();
-            await this.cacheManifest(manifestText);
-            return this.runtimeManifestService.parseManifest(
+            const parsedManifest = this.runtimeManifestService.parseManifest(
                 safeJsonParse<JsonObject>(manifestText, {})
             );
+            await this.cacheManifest(manifestText);
+            return parsedManifest;
         } catch (error) {
             return this.loadCachedOrFallbackManifest(
                 cachedManifestPath,
@@ -569,11 +610,61 @@ export class RuntimeBootstrapService extends BaseService {
         };
     }
 
+    private getBundledManifestPath(): string | null {
+        const candidateRoots = [
+            process.resourcesPath,
+            process.cwd(),
+        ];
+
+        for (const root of candidateRoots) {
+            const candidate = path.join(root, 'runtime-manifest.json');
+            if (fs.existsSync(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private async loadBundledManifest(): Promise<RuntimeManifest | null> {
+        const bundledManifestPath = this.getBundledManifestPath();
+        if (!bundledManifestPath) {
+            return null;
+        }
+
+        try {
+            const manifestText = await fsPromises.readFile(bundledManifestPath, 'utf8');
+            return this.runtimeManifestService.parseManifest(
+                safeJsonParse<JsonObject>(manifestText, {})
+            );
+        } catch (error) {
+            this.logWarn(
+                `Failed to load bundled runtime manifest at ${bundledManifestPath}`,
+                error instanceof Error ? error : undefined
+            );
+            return null;
+        }
+    }
+
     private async downloadTarget(target: RuntimeManifestTarget): Promise<string> {
+        const bundledAssetPath = this.resolveBundledRuntimeAssetPath(target);
+        if (bundledAssetPath && fs.existsSync(bundledAssetPath)) {
+            this.logInfo(`Using bundled runtime asset for ${target.assetName}`);
+            const buffer = await fsPromises.readFile(bundledAssetPath);
+            this._performChecksumVerification(buffer, target.sha256, target.assetName);
+
+            const downloadPath = path.join(getManagedRuntimeDownloadsDir(), target.assetName);
+            await fsPromises.mkdir(path.dirname(downloadPath), { recursive: true });
+            await fsPromises.writeFile(downloadPath, buffer);
+
+            return downloadPath;
+        }
         this.validateDownloadUrl(target.downloadUrl);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout for large binary downloads
         try {
+
+
             this.logInfo(`Starting download for ${target.assetName}...`);
             const response = await fetch(target.downloadUrl, {
                 redirect: 'follow',
@@ -583,10 +674,10 @@ export class RuntimeBootstrapService extends BaseService {
                 this.logError(`Download rejected by server: HTTP ${response.status} ${response.statusText} for ${target.downloadUrl}`);
                 throw new Error(`error.llm.download_failed: HTTP ${response.status}`);
             }
-            
+
             const totalBytes = Number(response.headers.get('content-length')) || 0;
             const chunks = await this.readResponseStream(response, target.assetName, totalBytes);
-            
+
             this.logInfo(`Download complete for ${target.assetName}`);
             const buffer = Buffer.concat(chunks);
 
@@ -598,6 +689,33 @@ export class RuntimeBootstrapService extends BaseService {
         } finally {
             clearTimeout(timeoutId);
         }
+    }
+
+    private getBundledRuntimeAssetFileName(target: RuntimeManifestTarget): string {
+        return target.assetName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    }
+
+    private getBundledRuntimeAssetPlatformDir(target: RuntimeManifestTarget): string {
+        return `${target.platform}-${target.arch}`.replace(/[^a-zA-Z0-9._-]/g, '_');
+    }
+
+    private resolveBundledRuntimeAssetPath(target: RuntimeManifestTarget): string | null {
+        const assetFileName = this.getBundledRuntimeAssetFileName(target);
+        const platformDir = this.getBundledRuntimeAssetPlatformDir(target);
+
+        const candidateRoots = [
+            process.resourcesPath,
+            process.cwd(),
+        ];
+
+        for (const root of candidateRoots) {
+            const candidate = path.join(root, 'assets', 'runtime', platformDir, assetFileName);
+            if (fs.existsSync(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private _performChecksumVerification(data: Buffer, expectedSha256: string, assetName: string): void {

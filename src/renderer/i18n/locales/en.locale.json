@@ -55,6 +55,8 @@
       "loadingContext": "Loading {{context}}...",
       "selectEllipsis": "Select…",
       "clear": "Clear",
+      "collapseAll": "Collapse all",
+      "expandAll": "Expand all",
       "hide": "Hide",
       "show": "Show",
       "stop": "Stop",
@@ -211,6 +213,10 @@
             "name": "Ollama",
             "description": "Run AI models locally on your device"
           },
+          "cursor": {
+            "name": "Cursor",
+            "description": "Cursor AI models and code completion services"
+          },
           "nvidia": {
             "name": "NVIDIA",
             "description": "Local GPU acceleration and model runtime"
@@ -231,35 +237,23 @@
           },
           "mistral": {
             "name": "Mistral AI",
-            "description": "Mistral Large, Medium and Small models"
+            "description": "Mistral Large, Pixtral and Codestral models"
           },
           "groq": {
             "name": "Groq",
-            "description": "Ultra-fast inference with LPU technology"
-          },
-          "together": {
-            "name": "Together AI",
-            "description": "Open source models with fast inference"
-          },
-          "perplexity": {
-            "name": "Perplexity",
-            "description": "AI search with real-time web access"
-          },
-          "cohere": {
-            "name": "Cohere",
-            "description": "Command R+ enterprise AI models"
+            "description": "Ultra-fast inference for Llama 3 and Qwen models"
           },
           "xai": {
             "name": "xAI (Grok)",
-            "description": "Grok-2 conversational AI"
+            "description": "Grok-4 reasoning and conversational models"
           },
           "deepseek": {
             "name": "DeepSeek",
-            "description": "DeepSeek V3 and reasoning models"
+            "description": "DeepSeek V4 Flash, Pro and R1 reasoning models"
           },
           "openrouter": {
             "name": "OpenRouter",
-            "description": "Unified API for 200+ AI models"
+            "description": "Access 300+ models from OpenAI, Anthropic, Meta and more"
           },
           "opencode": {
             "name": "OpenCode",
@@ -326,6 +320,198 @@
         "debug": "Debugging",
         "extensions": "Extensions",
         "settings": "Settings"
+      },
+      "workspaceDashboard": {
+        "analyzing": "Analyzing workspace...",
+        "noWorkspace": "No workspace to display.",
+        "overview": "Overview",
+        "files": "Files",
+        "search": "Search",
+        "git": {
+          "label": "Git",
+          "unknownFile": "Unknown File",
+          "parsingDiff": "Parsing diff...",
+          "noChangesDetected": "No changes detected.",
+          "noDiffOutput": "No diff output available.",
+          "commitDetails": "Commit Details",
+          "diff": "Diff",
+          "commits": "Commits",
+          "noActivityDetected": "No activity detected.",
+          "loadOlderCommits": "Load older commits",
+          "endOfHistory": "End of history",
+          "changes": "Changes",
+          "history": "History",
+          "syncChanges": "Sync Changes",
+          "fetchingPullRequests": "Fetching pull requests...",
+          "failedLoadPullRequests": "Failed to load pull requests.",
+          "fetchingIssues": "Fetching issues...",
+          "failedLoadIssues": "Failed to load issues."
+        },
+        "pullRequests": "Pull Requests",
+        "issues": "Issues",
+        "noPullRequests": "No Pull Requests",
+        "pullRequestIntegrationHint": "Pull request integration will be available soon. You'll be able to view and manage PRs directly from Tengra.",
+        "noIssuesFound": "No Issues Found",
+        "issueTrackingIntegrationHint": "Issue tracking integration is coming soon. Stay tuned for updates!",
+        "environment": "Environment",
+        "fileCount": "FILE COUNT",
+        "loc": "ESTIMATED LINES",
+        "locHint": "approx. from scanned files",
+        "modules": "MODULES",
+        "type": "TYPE",
+        "fileType": "File type",
+        "frameworks": "Frameworks",
+        "dependencies": "Dependencies",
+        "devDependencies": "Dev dependencies",
+        "rootPath": "Root path",
+        "filesLower": "files",
+        "linesLower": "lines",
+        "largestDirectories": "Largest directories",
+        "mostComplexFiles": "Most complex files",
+        "techStack": "Technology stack",
+        "technologyStack": "Technology stack",
+        "noFrameworks": "No major frameworks detected.",
+        "langDist": "Language distribution",
+        "languageDistribution": "Language distribution",
+        "languages": "languages",
+        "searchInWorkspace": "Search in workspace...",
+        "noResults": "No results found.",
+        "selectFile": "Select a file to view.",
+        "workspaceTasks": "Workspace tasks",
+        "pending": "Pending",
+        "terminalFailedStart": "Failed to start terminal.",
+        "terminalExited": "Terminal exited with code",
+        "terminalFailedSession": "Failed to create terminal session",
+        "loadingFiles": "Loading file tree...",
+        "emptyDir": "Empty directory",
+        "status": "Status",
+        "clean": "Clean",
+        "dirty": "Modified",
+        "notAGitRepo": "Not a Git repository",
+        "gitStatus": {
+          "modified": "Modified",
+          "added": "Added",
+          "deleted": "Deleted"
+        },
+        "gitSectionStatus": "Repository status",
+        "stage": "Stage",
+        "unstage": "Unstage",
+        "linesAdded": "Lines added",
+        "linesDeleted": "Lines deleted",
+        "indexingComplete": "Indexing complete!",
+        "indexingFailed": "Indexing failed.",
+        "indexingStarted": "Starting workspace indexing...",
+        "totalSize": "TOTAL SIZE",
+        "storageBreakdown": "LARGEST DIRECTORIES",
+        "scannedStorageOnly": "scanned files only",
+        "storageFiles": "{{count}} files",
+        "detectedTechnologies": "Detected technologies",
+        "version": "Version",
+        "detected": "Detected",
+        "settings": "Settings",
+        "updateFailed": "Failed to update settings",
+        "envDescription": "Manage your workspace environment variables.",
+        "envKey": "KEY",
+        "envValue": "VALUE",
+        "envNoVars": "No environment variables found. Create a .env file to get started.",
+        "envNamePlaceholder": "VARIABLE_NAME",
+        "envAddVar": "Add variable",
+        "envSave": "Save changes",
+        "envHideValue": "Hide value",
+        "envShowValue": "Show value",
+        "envActions": "ACTIONS",
+        "editor": {
+          "breadcrumbNav": "Breadcrumb nav",
+          "preview": "Preview",
+          "showPreview": "Show Preview",
+          "hidePreview": "Hide Preview",
+          "editorOnly": "Editor Only",
+          "macroExported": "Macro exported",
+          "macroImportFailed": "Macro import failed",
+          "macroImported": "Macro imported",
+          "macroReplayed": "Macro replayed",
+          "renameBlocked": "Rename blocked",
+          "renameImpact": "Rename impact",
+          "selectFile": "Select file",
+          "selectFileForSplit": "Select file for split",
+          "semanticApplied": "Semantic applied",
+          "semanticPreviewReady": "Semantic preview ready",
+          "snippetExported": "Snippet exported",
+          "snippetImportFailed": "Snippet import failed",
+          "snippetImported": "Snippet imported",
+          "snippetInserted": "Snippet inserted",
+          "snippetSaved": "Snippet saved",
+          "snippetShareCodeCopied": "Snippet share code copied"
+        },
+        "searchMatchCaseTitle": "Match Case",
+        "searchMatchWholeWordTitle": "Match Whole Word",
+        "searchUseRegexTitle": "Use Regular Expression",
+        "searchIncludePatternPlaceholder": "e.g. *.ts, src/**",
+        "searchExcludePatternPlaceholder": "e.g. node_modules, dist",
+        "filesTab": {
+          "noFileSelected": "No file selected",
+          "noFileDesc": "Select a file from the explorer to view and edit its contents.",
+          "shortcuts": "Shortcuts",
+          "quickSearch": "Quick search",
+          "navigation": "Navigation",
+          "toggleExplorer": "Toggle Explorer"
+        },
+        "folderInspector": {
+          "files": "Files",
+          "size": "Size",
+          "scripts": "Scripts",
+          "moreScripts": "+ {{count}} more scripts",
+          "dependencies": "Dependencies",
+          "packageTitle": "NPM Package",
+          "packageName": "Name:",
+          "packageVersion": "Version:",
+          "root": "Root"
+        },
+        "contributions": {
+          "lastYear": "{{count}} contributions in the last year",
+          "legendLess": "Less",
+          "legendMore": "More",
+          "tooltip": "{{count}} contribution(s) on {{date}}",
+          "months": {
+            "jan": "Jan",
+            "feb": "Feb",
+            "mar": "Mar",
+            "apr": "Apr",
+            "may": "May",
+            "jun": "Jun",
+            "jul": "Jul",
+            "aug": "Aug",
+            "sep": "Sep",
+            "oct": "Oct",
+            "nov": "Nov",
+            "dec": "Dec"
+          },
+          "days": {
+            "mon": "Mon",
+            "wed": "Wed",
+            "fri": "Fri",
+            "sun": "Sun"
+          }
+        },
+        "tabs": {
+          "environment": "Environment"
+        },
+        "empty": "Empty",
+        "lines": "Lines",
+        "toggleReplace": {
+          "label": "Toggle Replace"
+        },
+        "replace": {
+          "label": "Replace"
+        },
+        "replaceAll": {
+          "label": "Replace All"
+        },
+        "replaceAllConfirm": "Replace all {{count}} occurrences of \"{{query}}\" with \"{{replace}}\"?",
+        "todoComments": "Todo Comments"
+      },
+      "semanticSearch": {
+        "results": "Search Results"
       },
       "advanced": {
         "title": "Advanced Engine",
@@ -498,7 +684,22 @@
         "failedUrlForProvider": "Failed URL for {{provider}}",
         "githubConnectionFailed": "GitHub connection failed.",
         "copilotConnectionFailed": "Copilot connection failed.",
-        "githubUser": "GitHub User"
+        "githubUser": "GitHub User",
+        "completeCursorConnection": "Complete Cursor Connection",
+        "cursorSessionDescription": "Tengra needs your Cursor session data to authenticate. This data is stored locally and encrypted.",
+        "cursorSessionLabel": "Cursor Session JSON",
+        "cursorSessionPlaceholder": "Paste the JSON object containing access_token...",
+        "cursorInstructions": {
+          "step1": "Open your browser and log in to Cursor (cursor.com)",
+          "step2": "Press F12 to open Developer Tools",
+          "step3": "Go to the 'Application' tab and select 'Local Storage' from the left",
+          "step4": "Find the key named 'sb-cursor-auth-token' (or similar)",
+          "step5": "Copy the entire value (it should be a JSON object) and paste it below"
+        },
+        "invalidCursorSession": "Invalid Cursor session. Missing access_token.",
+        "invalidJsonFormat": "Invalid JSON format.",
+        "cursorSessionRequired": "Cursor Session Required",
+        "saveSession": "Save session"
       },
       "chat": {
         "streamError": "Stream error",
@@ -1186,6 +1387,7 @@
         "export": "Export",
         "import": "Import",
         "replaceOnImport": "Replace existing memories on import",
+        "replaceExisting": "Replace existing",
         "contextUsage": "Context usage",
         "contextPreviewCount": "Context preview",
         "totalSearchQueries": "Search queries",
@@ -1219,6 +1421,14 @@
         "archived": "Archived",
         "userVerified": "User verified",
         "accessed": "Accessed",
+        "source": "Source",
+        "sources": {
+          "user_explicit": "User",
+          "user_implicit": "Inferred",
+          "system": "System",
+          "conversation": "Conversation",
+          "tool_result": "Tool result"
+        },
         "restore": "Restore",
         "shareToWorkspace": "Share to workspace",
         "tabs": {
@@ -1253,12 +1463,30 @@
           "importFailed": "Memory import failed"
         },
         "refreshTitle": "Refresh",
+        "search": "Search",
+        "filter": "Filter",
+        "graphSelectionHint": "Click a node to inspect the memory.",
+        "graphCreated": "Created {{time}}",
+        "graphLinks": "{{count}} links",
+        "graphNoTags": "No tags",
         "expirationLabel": "Expiration label",
         "historyTitle": "History title",
         "noHistory": "No history",
         "recategorizeAll": "Recategorize all",
         "rollback": "Rollback",
-        "showHistory": "Show history"
+        "showHistory": "Show history",
+        "status": {
+          "ready": "Ready",
+          "needsAttention": "Needs attention",
+          "healthy": "Healthy",
+          "degraded": "Degraded",
+          "unknown": "Unknown"
+        },
+        "header": {
+          "lookupDuration": "{{value}}ms lookup",
+          "cacheHitRate": "Cache {{value}}%",
+          "lookupIssues": "{{timeouts}} timeouts / {{failures}} failures"
+        }
       },
       "messageBubble": {
         "secondsShort": "s",
@@ -1558,9 +1786,6 @@
           }
         }
       },
-      "semanticSearch": {
-        "results": "Search Results"
-      },
       "serviceHealth": {
         "modelRegistry": {
           "ready": "serviceHealth.modelRegistry.ready",
@@ -1596,6 +1821,7 @@
           "appearance": "Appearance",
           "system": "System",
           "models": "Models",
+          "aiInstructions": "AI Instructions",
           "memory": "Memory",
           "extensions": "Extensions",
           "plugins": "Plugins",
@@ -1877,6 +2103,7 @@
         "usageLimits": {
           "title": "Model Usage Limits",
           "consumptionGuard": "Consumption Guard",
+          "subtitle": "Set simple caps for provider usage.",
           "copilotProtocol": "Copilot Protocol",
           "activePolicy": "Active Policy",
           "coreAllocation": "Core Allocation",
@@ -2075,7 +2302,30 @@
         "windowWidth": "Window width",
         "workAtBackground": "Run in background",
         "workAtBackgroundDesc": "Keep running in the background when the window is closed.",
-        "workspacesBasePath": "Workspaces Base Path"
+        "workspacesBasePath": "Workspaces Base Path",
+        "aiInstructions": {
+          "globalTitle": "Global instructions",
+          "globalDescription": "Apply custom system instructions and prompt wrappers to all models.",
+          "modelTitle": "Model-specific instructions",
+          "modelDescription": "Override global behavior for a selected model.",
+          "enableGlobal": "Enable global overrides",
+          "enableModel": "Enable this model override",
+          "systemInstructions": "System instructions",
+          "systemPlaceholder": "Add global system instructions that should be applied before the conversation.",
+          "modelSystemPlaceholder": "Add system instructions only for this model.",
+          "promptPrefix": "Prompt prefix",
+          "promptSuffix": "Prompt suffix",
+          "promptPrefixPlaceholder": "Text added before the user's message.",
+          "promptSuffixPlaceholder": "Text added after the user's message.",
+          "selectModel": "Model",
+          "selectModelPlaceholder": "Select a model",
+          "selectModelEmpty": "Select a model to configure model-specific instructions.",
+          "resetGlobal": "Reset global defaults",
+          "resetModel": "Reset model override",
+          "currentDefaultInstructions": "Current default instructions",
+          "currentModelInstructions": "Current model instructions",
+          "copyDefaultToOverride": "Copy default to override"
+        }
       },
       "shortcuts": {
         "title": "Keyboard Shortcuts",
@@ -2804,7 +3054,8 @@
         "explorer": {
           "collapseAll": "Collapse all",
           "newFile": "New file",
-          "newFolder": "New folder"
+          "newFolder": "New folder",
+          "title": "Explorer"
         },
         "editorTitle": "Editor",
         "editorDescription": "Customize the look and feel of the code editor.",
@@ -2819,7 +3070,19 @@
         "devCommand": "Dev Command",
         "devPort": "Dev Port",
         "devAutoStart": "Dev Auto Start",
-        "devAutoStartDescription": "Dev Auto Start Description"
+        "devAutoStartDescription": "Dev Auto Start Description",
+        "bulkActions": {
+          "rename": "Rename",
+          "move": "Move",
+          "copy": "Copy"
+        },
+        "createFile": "Create File",
+        "createFolder": "Create Folder",
+        "refresh": "Refresh",
+        "collapseAll": "Collapse All",
+        "noFilesFound": "No files found.",
+        "noFilesFoundSub": "Try searching for something else or check your filters.",
+        "loading": "Loading workspace..."
       },
       "workspaceAgent": {
         "thoughtStep": "Thought #{{index}}",
@@ -2876,166 +3139,6 @@
           "noPaths": "No paths defined"
         },
         "selectAgentProfile": "Select agent profile"
-      },
-      "workspaceDashboard": {
-        "analyzing": "Analyzing workspace...",
-        "noWorkspace": "No workspace to display.",
-        "overview": "Overview",
-        "files": "Files",
-        "search": "Search",
-        "git": "Git",
-        "pullRequests": "Pull Requests",
-        "issues": "Issues",
-        "noPullRequests": "No Pull Requests",
-        "pullRequestIntegrationHint": "Pull request integration will be available soon. You'll be able to view and manage PRs directly from Tengra.",
-        "noIssuesFound": "No Issues Found",
-        "issueTrackingIntegrationHint": "Issue tracking integration is coming soon. Stay tuned for updates!",
-        "environment": "Environment",
-        "fileCount": "FILE COUNT",
-        "loc": "ESTIMATED LINES",
-        "locHint": "approx. from scanned files",
-        "modules": "MODULES",
-        "type": "TYPE",
-        "fileType": "File type",
-        "frameworks": "Frameworks",
-        "dependencies": "Dependencies",
-        "devDependencies": "Dev dependencies",
-        "rootPath": "Root path",
-        "filesLower": "files",
-        "linesLower": "lines",
-        "largestDirectories": "Largest directories",
-        "mostComplexFiles": "Most complex files",
-        "techStack": "Technology stack",
-        "technologyStack": "Technology stack",
-        "noFrameworks": "No major frameworks detected.",
-        "langDist": "Language distribution",
-        "languageDistribution": "Language distribution",
-        "languages": "languages",
-        "searchInWorkspace": "Search in workspace...",
-        "noResults": "No results found.",
-        "selectFile": "Select a file to view.",
-        "workspaceTasks": "Workspace tasks",
-        "pending": "Pending",
-        "terminalFailedStart": "Failed to start terminal.",
-        "terminalExited": "Terminal exited with code",
-        "terminalFailedSession": "Failed to create terminal session",
-        "loadingFiles": "Loading file tree...",
-        "emptyDir": "Empty directory",
-        "status": "Status",
-        "clean": "Clean",
-        "dirty": "Modified",
-        "notAGitRepo": "Not a Git repository",
-        "gitStatus": {
-          "modified": "Modified",
-          "added": "Added",
-          "deleted": "Deleted"
-        },
-        "gitSectionStatus": "Repository status",
-        "stage": "Stage",
-        "unstage": "Unstage",
-        "linesAdded": "Lines added",
-        "linesDeleted": "Lines deleted",
-        "indexingComplete": "Indexing complete!",
-        "indexingFailed": "Indexing failed.",
-        "indexingStarted": "Starting workspace indexing...",
-        "totalSize": "TOTAL SIZE",
-        "storageBreakdown": "LARGEST DIRECTORIES",
-        "scannedStorageOnly": "scanned files only",
-        "storageFiles": "{{count}} files",
-        "detectedTechnologies": "Detected technologies",
-        "version": "Version",
-        "detected": "Detected",
-        "todoList": "Upcoming Tasks",
-        "settings": "Settings",
-        "updateFailed": "Failed to update settings",
-        "envDescription": "Manage your workspace environment variables.",
-        "envKey": "KEY",
-        "envValue": "VALUE",
-        "envNoVars": "No environment variables found. Create a .env file to get started.",
-        "envNamePlaceholder": "VARIABLE_NAME",
-        "envAddVar": "Add variable",
-        "envSave": "Save changes",
-        "envHideValue": "Hide value",
-        "envShowValue": "Show value",
-        "envActions": "ACTIONS",
-        "editor": {
-          "breadcrumbNav": "Breadcrumb nav",
-          "preview": "Preview",
-          "showPreview": "Show Preview",
-          "hidePreview": "Hide Preview",
-          "editorOnly": "Editor Only",
-          "macroExported": "Macro exported",
-          "macroImportFailed": "Macro import failed",
-          "macroImported": "Macro imported",
-          "macroReplayed": "Macro replayed",
-          "renameBlocked": "Rename blocked",
-          "renameImpact": "Rename impact",
-          "selectFile": "Select file",
-          "selectFileForSplit": "Select file for split",
-          "semanticApplied": "Semantic applied",
-          "semanticPreviewReady": "Semantic preview ready",
-          "snippetExported": "Snippet exported",
-          "snippetImportFailed": "Snippet import failed",
-          "snippetImported": "Snippet imported",
-          "snippetInserted": "Snippet inserted",
-          "snippetSaved": "Snippet saved",
-          "snippetShareCodeCopied": "Snippet share code copied"
-        },
-        "filesTab": {
-          "noFileSelected": "No file selected",
-          "noFileDesc": "Select a file from the explorer to view and edit its contents.",
-          "shortcuts": "Shortcuts",
-          "quickSearch": "Quick search",
-          "navigation": "Navigation",
-          "toggleExplorer": "Toggle Explorer"
-        },
-        "folderInspector": {
-          "files": "Files",
-          "size": "Size",
-          "scripts": "Scripts",
-          "moreScripts": "+ {{count}} more scripts",
-          "dependencies": "Dependencies",
-          "packageTitle": "NPM Package",
-          "packageName": "Name:",
-          "packageVersion": "Version:",
-          "root": "Root"
-        },
-        "contributions": {
-          "lastYear": "{{count}} contributions in the last year",
-          "legendLess": "Less",
-          "legendMore": "More",
-          "tooltip": "{{count}} contribution(s) on {{date}}",
-          "months": {
-            "jan": "Jan",
-            "feb": "Feb",
-            "mar": "Mar",
-            "apr": "Apr",
-            "may": "May",
-            "jun": "Jun",
-            "jul": "Jul",
-            "aug": "Aug",
-            "sep": "Sep",
-            "oct": "Oct",
-            "nov": "Nov",
-            "dec": "Dec"
-          },
-          "days": {
-            "mon": "Mon",
-            "wed": "Wed",
-            "fri": "Fri",
-            "sun": "Sun"
-          }
-        },
-        "searchMatchCaseTitle": "Match Case",
-        "searchMatchWholeWordTitle": "Match Whole Word",
-        "searchUseRegexTitle": "Use Regular Expression",
-        "searchIncludePatternPlaceholder": "e.g. *.ts, src/**",
-        "searchExcludePatternPlaceholder": "e.g. node_modules, dist",
-        "tabs": {
-          "environment": "Environment"
-        },
-        "empty": "Empty",
-        "lines": "Lines"
       },
       "workspaceModals": {
         "titles": {
@@ -3383,7 +3486,39 @@
         "categoryInProgress": "In Progress",
         "categoryApproved": "Completed",
         "categoryUpcoming": "Upcoming",
-        "categoryBug": "Bugs & Errors"
+        "categoryBug": "Bugs & Errors",
+        "editTask": "Edit Task",
+        "createNewTask": "Create New Task",
+        "editTaskDesc": "Update task details.",
+        "createTaskDesc": "Add a new task to your workspace.",
+        "title": "Title",
+        "placeholders": {
+          "title": "Task title",
+          "description": "Task description"
+        },
+        "description": "Description",
+        "status": "Status",
+        "priority": "Priority",
+        "deadline": "Deadline",
+        "estimation": "Estimation",
+        "cancel": "Cancel",
+        "saveChanges": "Save Changes",
+        "kanban": "Kanban",
+        "calendar": "Calendar",
+        "week": "Week",
+        "year": "Year",
+        "analytics": "Analytics",
+        "today": "Today",
+        "searchPlaceholder": "Search tasks...",
+        "newTask": "New Task",
+        "tasksScheduled": "Tasks Scheduled",
+        "noTasksForThisDay": "No tasks for this day.",
+        "deleteTaskConfirm": "Are you sure you want to delete this task?",
+        "delete": "Delete",
+        "newSubtask": "New Subtask",
+        "enterSubtaskTitle": "Enter subtask title...",
+        "subtaskPlaceholder": "Subtask name",
+        "label": "Upcoming Tasks"
       },
       "aiSummary": "Summary",
       "aiCause": "Cause",
@@ -3766,6 +3901,7 @@
         "apiUsage": "API Usage",
         "defaultAccount": "Default Account",
         "active": "Active",
+        "inactive": "Inactive",
         "claudeAccount": "Claude Account",
         "fiveHourStatus": "5h status",
         "sevenDayStatus": "7d Status",
@@ -3959,7 +4095,11 @@
         "workspaceIssuesPartialResults": "Partial results",
         "workspaceIssuesTabTitle": "Workspace issues",
         "workspaceIssuesTerminal": "Terminal",
-        "workspaceIssuesWarning": "Warning"
+        "workspaceIssuesWarning": "Warning",
+        "bellEnabled": "Enable terminal bell",
+        "bellEnabledDesc": "Play a sound or flash the screen when the terminal requests a bell.",
+        "bellStyle": "Bell style",
+        "bellStyleDesc": "Choose how the terminal alerts you."
       }
     },
     "backend": {
@@ -4196,7 +4336,8 @@
       "getADetailedExplanationOfCode": "Get ADetailed Explanation Of Code",
       "generateUnitTestsForCode": "Generate Unit Tests For Code",
       "createAConciseSummary": "Create AConcise Summary",
-      "translateTextBetweenLanguages": "Translate Text Between Languages"
+      "translateTextBetweenLanguages": "Translate Text Between Languages",
+      "runtimeInstallTriggered": "Runtime installation triggered."
     }
   }
 }

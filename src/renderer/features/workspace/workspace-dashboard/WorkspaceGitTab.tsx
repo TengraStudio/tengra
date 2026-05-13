@@ -170,9 +170,8 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                                 "h-8 px-3 text-sm font-semibold rounded-md",
                                 view === 'changes' ? "bg-muted text-foreground" : "text-muted-foreground"
                             )}
-                            onClick={() => setView('changes')}
-                        >
-                            Changes
+                            >
+                            {t('frontend.workspaceDashboard.git.changes')}
                             {gitData.changedFiles.length > 0 && (
                                 <Badge variant="secondary" className="ml-2 h-4 px-1 bg-primary/10 text-primary border-none min-w-1-25rem flex justify-center">
                                     {gitData.changedFiles.length}
@@ -188,7 +187,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                             )}
                             onClick={() => setView('history')}
                         >
-                            History
+                            {t('frontend.workspaceDashboard.git.history')}
                         </Button>
                         <Button
                             variant="ghost"
@@ -236,7 +235,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                         onClick={() => { void handlePull(); }}
                         disabled={isPulling}
                     >
-                        {isPulling ? <IconRefresh className="w-3.5 h-3.5 animate-spin mr-2" /> : "Sync Changes"}
+                        {isPulling ? <IconRefresh className="w-3.5 h-3.5 animate-spin mr-2" /> : t('frontend.workspaceDashboard.git.syncChanges')}
                     </Button>
                 </div>
             </div>
@@ -258,7 +257,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                                         className="h-7 px-3 hover:bg-destructive/10 text-destructive font-bold uppercase tracking-wider text-[10px] rounded-md"
                                         onClick={() => { void fetchGitData(); }} // Re-fetch clears error in hook
                                     >
-                                        Dismiss
+                                        {t('common.dismiss')}
                                     </Button>
                                 </div>
                             )}
@@ -314,14 +313,14 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                                     {sectionStates.pullRequests.loading ? (
                                         <div className="flex flex-col items-center justify-center py-20 animate-pulse">
                                             <IconRefresh className="w-8 h-8 text-muted-foreground/40 animate-spin mb-4" />
-                                            <p className="text-sm text-muted-foreground">Fetching pull requests...</p>
+                                            <p className="text-sm text-muted-foreground">{t('frontend.workspaceDashboard.git.fetchingPullRequests')}</p>
                                         </div>
                                     ) : sectionStates.pullRequests.error ? (
                                         <div className="p-8 text-center bg-destructive/5 rounded-xl border border-destructive/10">
                                             <IconAlertCircle className="w-8 h-8 text-destructive mx-auto mb-3" />
-                                            <p className="text-sm font-medium text-destructive mb-1">Failed to load Pull Requests</p>
+                                            <p className="text-sm font-medium text-destructive mb-1">{t('frontend.workspaceDashboard.git.failedLoadPullRequests')}</p>
                                             <p className="text-xs text-muted-foreground mb-4">{sectionStates.pullRequests.error}</p>
-                                            <Button variant="outline" size="sm" onClick={() => { void fetchPullRequests(); }}>Retry</Button>
+                                            <Button variant="outline" size="sm" onClick={() => { void fetchPullRequests(); }}>{t('common.retry')}</Button>
                                         </div>
                                     ) : pullRequests.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -359,14 +358,14 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                                     {sectionStates.issues.loading ? (
                                         <div className="flex flex-col items-center justify-center py-20 animate-pulse">
                                             <IconRefresh className="w-8 h-8 text-muted-foreground/40 animate-spin mb-4" />
-                                            <p className="text-sm text-muted-foreground">Fetching issues...</p>
+                                            <p className="text-sm text-muted-foreground">{t('frontend.workspaceDashboard.git.fetchingIssues')}</p>
                                         </div>
                                     ) : sectionStates.issues.error ? (
                                         <div className="p-8 text-center bg-destructive/5 rounded-xl border border-destructive/10">
                                             <IconAlertCircle className="w-8 h-8 text-destructive mx-auto mb-3" />
-                                            <p className="text-sm font-medium text-destructive mb-1">Failed to load Issues</p>
+                                            <p className="text-sm font-medium text-destructive mb-1">{t('frontend.workspaceDashboard.git.failedLoadIssues')}</p>
                                             <p className="text-xs text-muted-foreground mb-4">{sectionStates.issues.error}</p>
-                                            <Button variant="outline" size="sm" onClick={() => { void fetchIssues(); }}>Retry</Button>
+                                            <Button variant="outline" size="sm" onClick={() => { void fetchIssues(); }}>{t('common.retry')}</Button>
                                         </div>
                                     ) : issues.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">

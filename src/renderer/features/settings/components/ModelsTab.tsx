@@ -21,7 +21,6 @@ import { appLogger } from '@/utils/renderer-logger';
 
 import { type DownloadHistoryItem, DownloadHistoryList } from './models/DownloadHistoryList';
 import { InstalledModelsList } from './models/InstalledModelsList';
-import { ModelGovernancePanel } from './models/ModelGovernancePanel';
 import {
     SETTINGS_SEGMENTED_CONTROL_CLASS,
     SettingsPanel,
@@ -56,7 +55,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     const [modelSearch, setModelSearch] = useState('');
     const [showHiddenModels, setShowHiddenModels] = useState(false);
     const [downloadHistory, setDownloadHistory] = useState<DownloadHistoryItem[]>([]);
-    
+
     // Custom modal states
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [modelToDelete, setModelToDelete] = useState<{ id: string; provider: string } | null>(null);
@@ -188,7 +187,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     };
 
     const handleConfirmDelete = async () => {
-        if (!modelToDelete) {return;}
+        if (!modelToDelete) { return; }
         const { id: modelId, provider } = modelToDelete;
         setIsConfirmDeleteOpen(false);
         setModelToDelete(null);
@@ -269,37 +268,28 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
             />
 
             <SettingsPanel title={t('frontend.workspaces.myModels')} icon={IconDatabase}>
-                <div className="space-y-8 min-h-400">
-                {subTab === 'installed' ? (
-                    <InstalledModelsList
-                        filtered={filtered}
-                        modelSearch={modelSearch}
-                        setModelSearch={setModelSearch}
-                        showHiddenModels={showHiddenModels}
-                        setShowHiddenModels={setShowHiddenModels}
-                        hiddenModels={hiddenModels}
-                        defaultModel={defaultModel}
-                        defaultProvider={defaultProvider}
-                        setDefault={setDefault}
-                        updateHidden={updateHidden}
-                        onDelete={(id, prov) => { handleDeleteModel(id, prov); }}
-                        t={t}
-                    />
-                ) : (
+                <div className="space-y-8 min-h-400 px-6 py-2">
+                    {subTab === 'installed' ? (
+                        <InstalledModelsList
+                            filtered={filtered}
+                            modelSearch={modelSearch}
+                            setModelSearch={setModelSearch}
+                            showHiddenModels={showHiddenModels}
+                            setShowHiddenModels={setShowHiddenModels}
+                            hiddenModels={hiddenModels}
+                            defaultModel={defaultModel}
+                            defaultProvider={defaultProvider}
+                            setDefault={setDefault}
+                            updateHidden={updateHidden}
+                            onDelete={(id, prov) => { handleDeleteModel(id, prov); }}
+                            t={t}
+                        />
+                    ) : (
                     <DownloadHistoryList
                         history={downloadHistory}
                         t={t}
                     />
                 )}
-
-                <div className="my-2 h-px bg-border/20" />
-
-                <ModelGovernancePanel
-                    settings={settings}
-                    allModelIds={allModelIds}
-                    setSettings={setSettings}
-                    t={t}
-                />
                 </div>
             </SettingsPanel>
 

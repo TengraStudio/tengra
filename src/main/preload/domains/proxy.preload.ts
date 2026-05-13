@@ -9,7 +9,7 @@
  */
 
 import { PROXY_CHANNELS, USAGE_CHANNELS } from '@shared/constants/ipc-channels';
-import { CodexUsage, CopilotQuota, ProxyModelResponse, QuotaResponse } from '@shared/types';
+import { CodexUsage, CopilotQuota, CursorQuota, ProxyModelResponse, QuotaResponse } from '@shared/types';
 import { IpcValue } from '@shared/types/common';
 import { MarketplaceSkill } from '@shared/types/marketplace';
 import { ProxySkill, ProxySkillUpsertInput } from '@shared/types/skill';
@@ -27,6 +27,7 @@ export interface ProxyBridge {
         accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
     }>;
     getClaudeQuota: () => Promise<{ accounts: Array<import('@shared/types/quota').ClaudeQuota> }>;
+    getCursorQuota: () => Promise<{ accounts: Array<CursorQuota> }>;
     forceRefreshQuota: () => Promise<boolean>;
 
     antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
@@ -54,6 +55,10 @@ export interface ProxyBridge {
         sessionKey: string,
         accountId?: string
     ) => Promise<{ success: boolean; error?: string }>;
+    saveCursorSession: (
+        session: string,
+        accountId?: string
+    ) => Promise<{ success: boolean; error?: string }>;
     checkUsageLimit: (
         provider: string,
         model: string
@@ -78,6 +83,7 @@ export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
         getCopilotQuota: () => ipc.invoke(PROXY_CHANNELS.GET_COPILOT_QUOTA),
         getCodexUsage: () => ipc.invoke(PROXY_CHANNELS.GET_CODEX_USAGE),
         getClaudeQuota: () => ipc.invoke(PROXY_CHANNELS.GET_CLAUDE_QUOTA),
+        getCursorQuota: () => ipc.invoke(PROXY_CHANNELS.GET_CURSOR_QUOTA),
         forceRefreshQuota: () => ipc.invoke(PROXY_CHANNELS.FORCE_REFRESH_QUOTA),
 
         antigravityLogin: accountId => ipc.invoke(PROXY_CHANNELS.ANTIGRAVITY_LOGIN, accountId),
@@ -90,6 +96,8 @@ export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
         verifyAuthBridge: (provider) => ipc.invoke(PROXY_CHANNELS.VERIFY_AUTH_BRIDGE, provider),
         saveClaudeSession: (sessionKey, accountId) =>
             ipc.invoke(PROXY_CHANNELS.SAVE_CLAUDE_SESSION, sessionKey, accountId),
+        saveCursorSession: (session, accountId) =>
+            ipc.invoke(PROXY_CHANNELS.COMPLETE_CURSOR_AUTH, session, accountId),
         checkUsageLimit: (provider, model) => ipc.invoke(USAGE_CHANNELS.CHECK_LIMIT, provider, model),
         getUsageCount: (period, provider, model) =>
             ipc.invoke(USAGE_CHANNELS.GET_USAGE_COUNT, period, provider, model),

@@ -48,7 +48,6 @@ pub async fn dispatch(state: Arc<AppState>, input: ToolDispatchInput) -> ToolDis
         "workspace" => workspace::handle_action(&input.action, input.arguments).await,
         "docker" => workspace::handle_action(&input.action, input.arguments).await, // Alias
         "llm" => llm::handle_action(&input.action, input.arguments).await,
-        "ollama" => llm::handle_action(&input.action, input.arguments).await, // Alias
         "analysis" => crate::analysis::handle_action(state, &input.action, input.arguments).await,
         _ => ToolDispatchResponse {
             success: false,

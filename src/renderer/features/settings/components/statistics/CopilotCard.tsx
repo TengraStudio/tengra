@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import CopilotIcon from '@assets/copilot.svg?url';
 import React from 'react';
 
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { CopilotQuota } from '@/types/quota';
@@ -68,15 +68,22 @@ function renderLimitRow(t: (key: string) => string, options: RenderLimitRowOptio
 
 interface CopilotCardProps {
     copilotQuota: AccountWrapper<CopilotQuota> | null
+    activeAccountId?: string | null
+    activeAccountEmail?: string | null
 }
 
-export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
+export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota, activeAccountId, activeAccountEmail }) => {
     const { t } = useTranslation();
     if (!copilotQuota?.accounts || copilotQuota.accounts.length === 0) { return null; }
 
     return (
         <div className="space-y-4">
             {copilotQuota.accounts.map((acc, idx: number) => {
+                const isActiveAccount = (
+                    (activeAccountId && acc.accountId === activeAccountId) ||
+                    (activeAccountEmail && acc.email === activeAccountEmail) ||
+                    acc.isActive === true
+                );
                 const seatInfo = acc.seat_breakdown;
                 const limit = seatInfo ? seatInfo.total_seats : acc.limit;
                 const remaining = seatInfo ? (limit - seatInfo.active_seats) : acc.remaining;
@@ -85,16 +92,18 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
                 return (
                     <div key={acc.accountId ?? idx} className="overflow-hidden rounded-2xl border border-border/15 bg-background shadow-sm">
                         <div className="flex items-center justify-between border-b border-border/10 bg-muted/5 px-4 py-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                                <img src={CopilotIcon} alt="Copilot Icon" className="w-6 h-6 invert" />
-                            </div>
+                            <ProviderIcon 
+                                provider="copilot" 
+                                variant="minimal" 
+                                size="100%"
+                                containerClassName="w-8 h-8 p-1"
+                            />
                             <div className="flex items-center gap-3 min-w-0">
                                 <span className="truncate text-sm font-bold text-foreground">
                                     {acc.email ?? t('frontend.statistics.copilotAccount')}
                                 </span>
                             </div>
-                            <span>{acc.isActive ? t("frontend.statistics.active") : ""}</span>
-                            {/* TODO: Check if isActive value coming true or false */}
+                            <span>{isActiveAccount ? t("frontend.statistics.active") : ""}</span>
                         </div>
 
                         {!acc.error && (
@@ -164,5 +173,3 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
         </div>
     );
 };
-
-

@@ -22,6 +22,8 @@ type NotificationPlatform = 'discord' | 'telegram';
  * when tasks complete, system events occur, or scheduled alerts fire.
  */
 export class NotificationDispatcherService extends BaseService {
+    static readonly serviceName = 'notificationDispatcherService';
+    static readonly dependencies = ['socialMediaService', 'eventBusService'] as const;
     private unsubscribeFns: Array<() => void> = [];
 
     constructor(

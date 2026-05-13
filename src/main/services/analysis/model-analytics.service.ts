@@ -59,6 +59,8 @@ export interface AnalyticsSummary {
 }
 
 export class ModelAnalyticsService extends BaseService {
+    static readonly serviceName = 'modelAnalyticsService';
+    static readonly dependencies = ['_dataService'] as const;
     private records: ModelUsageRecord[] = [];
     // private dataService: DataService | null = null; // Unused
     private readonly maxRecords = 10000;

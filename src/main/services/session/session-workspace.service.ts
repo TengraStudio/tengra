@@ -29,6 +29,8 @@ const mapCanvasEdgeRecord = (record: UacCanvasEdgeRecord): SessionCanvasEdgeReco
 });
 
 export class SessionWorkspaceService extends BaseService {
+    static readonly serviceName = 'sessionWorkspaceService';
+    static readonly dependencies = ['databaseService'] as const;
     constructor(private readonly databaseService: DatabaseService) {
         super('SessionWorkspaceService');
     }

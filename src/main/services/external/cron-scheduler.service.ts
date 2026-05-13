@@ -36,6 +36,8 @@ interface ActiveCronJob {
  * No external dependencies — uses a simple minute-granularity tick loop.
  */
 export class CronSchedulerService extends BaseService {
+    static readonly serviceName = 'cronSchedulerService';
+    static readonly dependencies = ['settingsService', 'eventBusService'] as const;
     private activeJobs: Map<string, ActiveCronJob> = new Map();
     private tickTimer: ReturnType<typeof setInterval> | null = null;
     private lastTickMinute: number = -1;

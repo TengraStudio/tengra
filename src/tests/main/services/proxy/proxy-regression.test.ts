@@ -23,6 +23,7 @@ import {
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
+import { CacheService } from '@main/services/system/cache.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { AppErrorCode, ProxyServiceError } from '@shared/utils/error.util';
@@ -75,13 +76,19 @@ function buildService() {
             exec: vi.fn(),
             getLinkedAccounts: vi.fn().mockResolvedValue([]),
         } as never as DatabaseService,
+        cacheService: { get: vi.fn().mockResolvedValue(null), set: vi.fn() } as never as CacheService,
     };
 
-    const service = new ProxyService({
-        ...mocks,
-        dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
-        securityService: {} as never as SecurityService,
-    });
+    const service = new ProxyService(
+        mocks.settingsService,
+        { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
+        {} as never as SecurityService,
+        mocks.processManager,
+        mocks.authService,
+        mocks.eventBus,
+        mocks.databaseService,
+        mocks.cacheService
+    );
 
     return { service, ...mocks };
 }

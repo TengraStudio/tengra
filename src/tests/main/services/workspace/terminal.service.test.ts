@@ -132,7 +132,7 @@ describe('TerminalService', () => {
     it('creates, writes, resizes, and kills terminal sessions', async () => {
         const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
         const mockEventBus = { on: vi.fn(() => () => {}) };
-        const service = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
+        const service = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, {} as any, () => null);
         service.addBackend({
             id: 'proxy-terminal',
             isAvailable: async () => true,
@@ -161,7 +161,7 @@ describe('TerminalService', () => {
     it('persists snapshots and restores sessions after restart', async () => {
         const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
         const mockEventBus = { on: vi.fn(() => () => {}) };
-        const serviceBeforeRestart = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
+        const serviceBeforeRestart = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, {} as any, () => null);
         serviceBeforeRestart.addBackend({
             id: 'proxy-terminal',
             isAvailable: async () => true,
@@ -185,7 +185,7 @@ describe('TerminalService', () => {
         const snapshotPath = normalizePath(path.join(USER_DATA_PATH, 'data/terminal/sessions.json'));
         expect(fileStore.get(snapshotPath)).toContain('persist-1');
 
-        const serviceAfterRestart = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
+        const serviceAfterRestart = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, {} as any, () => null);
         serviceAfterRestart.addBackend({
             id: 'proxy-terminal',
             isAvailable: async () => true,
@@ -213,7 +213,7 @@ describe('TerminalService', () => {
     it('uses userData path from electron app for persistence files', () => {
         const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
         const mockEventBus = { on: vi.fn(() => () => {}) };
-        new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, () => null);
+        new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, {} as any, () => null);
         expect(app.getPath).toHaveBeenCalledWith('userData');
     });
 });

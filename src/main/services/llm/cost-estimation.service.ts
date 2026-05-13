@@ -359,6 +359,8 @@ const DEFAULT_PRICING: ModelPricingInfo = {
  * Provides cost estimation for LLM API calls before and after execution
  */
 export class CostEstimationService extends BaseService {
+    static readonly serviceName = 'costEstimationService';
+    static readonly dependencies = [] as const;
     private tokenEstimator: TokenEstimationService;
 
     constructor() {

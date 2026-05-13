@@ -53,7 +53,7 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
                 </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
                 {(['hourly', 'daily', 'weekly'] as const).map(period => {
                     const periodLimit = copilotLimits?.[period] ?? {
                         enabled: false,

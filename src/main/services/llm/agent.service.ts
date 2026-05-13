@@ -65,6 +65,8 @@ interface AgentArchiveRow {
 }
 
 export class AgentService extends BaseService {
+    static readonly serviceName = 'agentService';
+    static readonly dependencies = ['dbService'] as const;
     constructor(private dbService: DatabaseService) {
         super('AgentService');
     }
@@ -93,7 +95,7 @@ export class AgentService extends BaseService {
             agent.name,
             agent.systemPrompt,
             toolsJson,
-            agent.parentModel ?? 'gpt-4o',
+            agent.parentModel ?? '',
             now,
             now
         );
@@ -206,7 +208,7 @@ export class AgentService extends BaseService {
                 description: t('backend.rootcauseFocusedDebuggingSpecialist'),
                 systemPrompt: 'You are a debugging specialist. You isolate root causes and propose minimal-risk fixes.',
                 tools: ['code_search'],
-                parentModel: 'gpt-4o',
+                parentModel: '',
                 category: 'engineering'
             },
             {
@@ -214,7 +216,7 @@ export class AgentService extends BaseService {
                 description: t('backend.securityfirstReviewer'),
                 systemPrompt: 'You analyze attack surfaces and prioritize exploitability and blast radius.',
                 tools: ['code_search'],
-                parentModel: 'gpt-4o',
+                parentModel: '',
                 category: 'security'
             },
             {
@@ -222,7 +224,7 @@ export class AgentService extends BaseService {
                 description: t('backend.technicalDocumentationAssistant'),
                 systemPrompt: 'You convert code and architecture into concise, accurate technical docs.',
                 tools: [],
-                parentModel: 'gpt-4o',
+                parentModel: '',
                 category: 'documentation'
             }
         ];
@@ -366,21 +368,21 @@ export class AgentService extends BaseService {
                 description: t('backend.seniorTechnicalArchitect'),
                 systemPrompt: 'You are an expert Technical Lead. You always think about system architecture, scalability, and clean code patterns. You are strict about types and error handling.',
                 tools: ['code_search'],
-                parentModel: 'gpt-4o'
+                parentModel: ''
             },
             {
                 name: 'QA',
                 description: t('backend.qualityAssuranceEngineer'),
                 systemPrompt: 'You are a QA Engineer. Your goal is to break the code. You suggest edge cases, unit tests, and security vulnerabilities.',
                 tools: [],
-                parentModel: 'gpt-4o'
+                parentModel: ''
             },
             {
                 name: 'Designer',
                 description: t('backend.uiuxDesigner'),
                 systemPrompt: 'You are a UI/UX expert. You focus on aesthetics, whitespace, color theory, and user experience. You critique usage of CSS and layout.',
                 tools: [],
-                parentModel: 'gpt-4o'
+                parentModel: ''
             }
         ];
 

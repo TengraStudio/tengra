@@ -90,6 +90,8 @@ export interface MarketplaceServiceDependencies {
 }
 
 export class MarketplaceService extends BaseService {
+    static readonly serviceName = 'marketplaceService';
+    static readonly dependencies = ['deps', 'mainWindowProvider'] as const;
     private static readonly REGISTRY_CACHE_TTL_MS = 5 * 60 * 1000;
     private readonly REGISTRY_URL = 'https://raw.githubusercontent.com/TengraStudio/tengra-market/main/registry.json';
     private readonly MARKET_BASE_URL = 'https://raw.githubusercontent.com/TengraStudio/tengra-market/main';
@@ -143,7 +145,7 @@ export class MarketplaceService extends BaseService {
     }
 
     @ipc(MARKETPLACE_CHANNELS.FETCH)
-    async fetchRegistryIpc() {
+    async fetchRegistryIpc(_event?: IpcMainInvokeEvent, ..._args: unknown[]) {
         return await this.fetchRegistry();
     }
 

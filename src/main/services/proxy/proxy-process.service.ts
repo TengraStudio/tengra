@@ -17,7 +17,7 @@ import * as path from 'path';
 import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
-import { DatabaseService } from '@main/services/data/database.service';
+import { DatabaseService, LinkedAccount } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { LoggingService } from '@main/services/system/logging.service';
 import { getManagedRuntimeBinaryPath } from '@main/services/system/runtime-path.service';
@@ -67,6 +67,8 @@ interface OAuthTimeoutConfig {
 }
 
 export class ProxyProcessManager {
+    static readonly serviceName = 'proxyProcessManager';
+    static readonly dependencies = ['settingsService', 'authService', 'databaseService', 'loggingService'] as const;
     private child: ChildProcess | null = null;
     private currentPort: number = 8317;
     private stdoutBuffer = '';
@@ -91,13 +93,18 @@ export class ProxyProcessManager {
 
             if (await this.isExistingProxyHealthy(this.currentPort)) {
                 this.isProxyRunning = true;
-                appLogger.info('Proxy', `Reusing existing tengra-proxy on port ${this.currentPort}`);
+                appLogger.info('Proxy', `Reusing existing healthy tengra-proxy on port ${this.currentPort}`);
                 return {
                     running: true,
                     port: this.currentPort,
                     attached: true,
                 };
             }
+
+            // Stale or unhealthy proxy on our port - cleanup
+            appLogger.warn('Proxy', `Unhealthy process detected on port ${this.currentPort}. Cleaning up.`);
+            await this.killProcessOnPort(this.currentPort);
+            await new Promise(resolve => setTimeout(resolve, 500)); // Give OS time to release port
 
             await this.ensureBridgePortAvailable(1455);
             const binaryPath = await this.ensureBinary();
@@ -197,6 +204,7 @@ export class ProxyProcessManager {
                     TENGRA_MASTER_KEY_HEX: this.authService.getRuntimeMasterKeyHex() ?? '',
                     // OS native encryption hint
                     TENGRA_USE_OS_SECURITY: 'true',
+                    RUST_LOG: 'debug', // Enable verbose proxy logging
                     ...oauthTimeoutEnv,
                     ...ollamaBaseUrlEnv,
                 }
@@ -244,12 +252,12 @@ export class ProxyProcessManager {
             key: keyof OAuthTimeoutConfig;
             envKey: string;
         }> = [
-            { key: 'default', envKey: 'TENGRA_OAUTH_TIMEOUT_SECS' },
-            { key: 'codex', envKey: 'TENGRA_OAUTH_TIMEOUT_CODEX_SECS' },
-            { key: 'claude', envKey: 'TENGRA_OAUTH_TIMEOUT_CLAUDE_SECS' },
-            { key: 'antigravity', envKey: 'TENGRA_OAUTH_TIMEOUT_ANTIGRAVITY_SECS' },
-            { key: 'ollama', envKey: 'TENGRA_OAUTH_TIMEOUT_OLLAMA_SECS' },
-        ];
+                { key: 'default', envKey: 'TENGRA_OAUTH_TIMEOUT_SECS' },
+                { key: 'codex', envKey: 'TENGRA_OAUTH_TIMEOUT_CODEX_SECS' },
+                { key: 'claude', envKey: 'TENGRA_OAUTH_TIMEOUT_CLAUDE_SECS' },
+                { key: 'antigravity', envKey: 'TENGRA_OAUTH_TIMEOUT_ANTIGRAVITY_SECS' },
+                { key: 'ollama', envKey: 'TENGRA_OAUTH_TIMEOUT_OLLAMA_SECS' },
+            ];
 
         for (const entry of timeoutEntries) {
             const timeoutMs = timeoutConfig[entry.key];
@@ -280,7 +288,7 @@ export class ProxyProcessManager {
         };
     }
 
-    private async waitForHealthy(port: number, timeoutMs: number = 20000): Promise<void> {
+    private async waitForHealthy(port: number, timeoutMs: number = 10000): Promise<void> {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
             const isHealthy = await this.isExistingProxyHealthy(port);
@@ -312,6 +320,33 @@ export class ProxyProcessManager {
                 resolve(false);
             });
         });
+    }
+
+    private async killProcessOnPort(port: number): Promise<void> {
+        if (process.platform !== 'win32') {
+            return;
+        }
+
+        try {
+            const { stdout } = await promisify(exec)(`netstat -ano | findstr :${port}`, { windowsHide: true });
+            if (!stdout) { return; }
+
+            const lines = stdout.split(/\r?\n/).filter(line => line.includes('LISTENING'));
+            for (const line of lines) {
+                const parts = line.trim().split(/\s+/);
+                const pid = parts[parts.length - 1];
+                if (pid && /^\d+$/.test(pid) && pid !== '0') {
+                    appLogger.info('Proxy', `Killing process ${pid} on port ${port}`);
+                    try {
+                        await promisify(exec)(`taskkill /F /PID ${pid} /T`, { windowsHide: true });
+                    } catch (e) {
+                        appLogger.warn('Proxy', `Failed to kill PID ${pid}: ${getErrorMessage(e)}`);
+                    }
+                }
+            }
+        } catch {
+            // No process found or netstat failed, safe to continue
+        }
     }
 
     private async ensureBridgePortAvailable(port: number): Promise<void> {
@@ -378,7 +413,7 @@ export class ProxyProcessManager {
     private async ensureBinary(): Promise<string> {
         const binaryPath = this.getBinaryPath();
         const binaryExists = await fs.promises.access(binaryPath, fs.constants.F_OK).then(() => true).catch(() => false);
-        
+
         // Never attempt to rebuild in production (packaged) mode
         const isPackaged = process.env.NODE_ENV === 'production' || app?.isPackaged;
         const autoRebuildEnabled = !isPackaged && process.env.TENGRA_PROXY_AUTO_REBUILD === '1';
@@ -386,9 +421,9 @@ export class ProxyProcessManager {
         if (binaryExists && !autoRebuildEnabled) {
             return binaryPath;
         }
-        
+
         if (isPackaged) {
-            if (binaryExists) {return binaryPath;}
+            if (binaryExists) { return binaryPath; }
             throw new Error(`Critical component missing: tengra-proxy not found at ${binaryPath}`);
         }
 
@@ -516,9 +551,9 @@ export class ProxyProcessManager {
 
     private processProxyLogLine(line: string, defaultLevel: 'info' | 'error') {
         if (line.includes('__TENGRA_DEBUG__:')) {
-          // const parts = line.split('__TENGRA_DEBUG__:');
-          // appLogger.info('Proxy:Debug', parts[1]?.trim() || '');
-          return;
+            // const parts = line.split('__TENGRA_DEBUG__:');
+            // appLogger.info('Proxy:Debug', parts[1]?.trim() || '');
+            return;
         }
         if (line.includes('__TENGRA_AUTH_UPDATE__:')) {
             const parts = line.split('__TENGRA_AUTH_UPDATE__:');
@@ -541,6 +576,11 @@ export class ProxyProcessManager {
 
         const level = this.detectLogLevel(line, defaultLevel);
         const message = line.trim();
+
+        // Suppress intrusive fallback mode warnings from the backend heuristics
+        if (message.includes('detected in fallback mode')) {
+            return;
+        }
 
         if (level === 'debug') {
             appLogger.debug('Proxy', message);
@@ -583,7 +623,7 @@ export class ProxyProcessManager {
             const payload = JSON.parse(trimmed);
             // Support both standard {message: ...} and tracing-subscriber {fields: {message: ...}}
             const message = payload.message || (payload.fields?.message);
-            
+
             if (message) {
                 // Clean up context name (Rust often includes module paths)
                 let context = payload.context || payload.target || 'Proxy';
@@ -680,18 +720,20 @@ export class ProxyProcessManager {
         const managementPassword = await this.ensureManagementPassword();
 
         // Persist proxy key in Database so tengra-proxy can use it
-        try {
-            const now = Date.now();
-            await this.databaseService.exec(`
-                INSERT INTO linked_accounts (id, provider, access_token, metadata, is_active, created_at, updated_at)
-                VALUES ('proxy_key_default', 'proxy_key', '${proxyApiKey}', '{"type":"proxy_key"}', 1, ${now}, ${now})
-                ON CONFLICT(id) DO UPDATE SET provider = EXCLUDED.provider, access_token = EXCLUDED.access_token, metadata = EXCLUDED.metadata, is_active = EXCLUDED.is_active, updated_at = EXCLUDED.updated_at
-            `);
-            appLogger.info('Proxy', 'Proxy API key synchronized to database');
-        } catch (e) {
-            appLogger.error('Proxy', `Failed to synchronize proxy key to DB: ${getErrorMessage(e)}`);
-            // Continue anyway, it might be a transient failure or DB not ready
-        }
+        // We do this in the background to avoid blocking proxy startup if DB is initializing
+        void (async () => {
+            try {
+                const now = Date.now();
+                await this.databaseService.exec(`
+                    INSERT INTO linked_accounts (id, provider, access_token, metadata, is_active, created_at, updated_at)
+                    VALUES ('proxy_key_default', 'proxy_key', '${proxyApiKey}', '{"type":"proxy_key"}', 1, ${now}, ${now})
+                    ON CONFLICT(id) DO UPDATE SET provider = EXCLUDED.provider, access_token = EXCLUDED.access_token, metadata = EXCLUDED.metadata, is_active = EXCLUDED.is_active, updated_at = EXCLUDED.updated_at
+                `);
+                appLogger.info('Proxy', 'Proxy API key synchronized to database');
+            } catch (e) {
+                appLogger.error('Proxy', `Failed to synchronize proxy key to DB: ${getErrorMessage(e)}`);
+            }
+        })();
 
         const settings = this.settingsService.getSettings();
         const proxySettings = settings.proxy ?? { enabled: false, url: 'http://localhost:8317/v1', key: '' };
@@ -713,21 +755,44 @@ export class ProxyProcessManager {
 
 
     private async ensureProxyApiKey(): Promise<string> {
-        const activeToken = await this.authService.getActiveToken('proxy_key');
-        if (activeToken && activeToken.trim().length > 0) {
-            return activeToken.trim();
+        try {
+            // Give authService (and DB) a limited window to respond
+            // This prevents the terminal from hanging indefinitely if the DB is stuck
+            const activeToken = await Promise.race([
+                this.authService.getActiveToken('proxy_key'),
+                new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 3000))
+            ]);
+
+            if (activeToken && activeToken.trim().length > 0) {
+                appLogger.info('Proxy', 'Using active token from auth service');
+                return activeToken.trim();
+            }
+
+            const accounts = await Promise.race([
+                this.authService.getAccountsByProviderFull('proxy_key'),
+                new Promise<LinkedAccount[]>((resolve) => setTimeout(() => resolve([]), 2000))
+            ]);
+
+            appLogger.debug('Proxy', `Accounts: ${JSON.stringify(accounts)}`);
+
+            const fallbackToken = accounts
+                .map(account => account.accessToken ?? account.sessionToken ?? account.refreshToken)
+                .find(token => typeof token === 'string' && token.trim().length > 0);
+
+            if (fallbackToken) {
+                return fallbackToken.trim();
+            }
+        } catch (e) {
+            appLogger.warn('Proxy', `Failed to get proxy key from auth service: ${getErrorMessage(e)}`);
         }
 
-        const accounts = await this.authService.getAccountsByProviderFull('proxy_key');
-        const fallbackToken = accounts
-            .map(account => account.accessToken ?? account.sessionToken ?? account.refreshToken)
-            .find(token => typeof token === 'string' && token.trim().length > 0);
-        if (fallbackToken) {
-            return fallbackToken.trim();
-        }
-
-        const key = crypto.randomBytes(32).toString('hex');
-        return key;
+        appLogger.info('Proxy', 'Using generated fallback proxy API key');
+        const newKey = `sk-${crypto.randomBytes(24).toString('hex')}`;
+        // Attempt to link it in the background
+        void this.authService.linkAccount('proxy_key', { accessToken: newKey }).catch(() => {
+            // Ignore background link failures
+        });
+        return newKey;
     }
 
     private async ensureManagementPassword(): Promise<string> {

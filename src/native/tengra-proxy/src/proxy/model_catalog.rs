@@ -699,63 +699,6 @@ fn get_catalog() -> &'static Vec<ModelInfo> {
                 max_completion_tokens: 65_536,
                 thinking_levels: &[],
             },
-            // Together AI
-            ModelInfo {
-                id: "Qwen/Qwen3.5-397B-A17B",
-                provider: "together",
-                owned_by: "qwen",
-                created: 1_758_019_200,
-                context_length: 262_144,
-                max_completion_tokens: 8_192,
-                thinking_levels: &[],
-            },
-            ModelInfo {
-                id: "deepseek-ai/DeepSeek-V3.1",
-                provider: "together",
-                owned_by: "deepseek",
-                created: 1_758_019_200,
-                context_length: 128_000,
-                max_completion_tokens: 8_192,
-                thinking_levels: &[],
-            },
-            // Perplexity AI
-            ModelInfo {
-                id: "sonar-pro",
-                provider: "perplexity",
-                owned_by: "perplexity",
-                created: 1_738_368_000,
-                context_length: 200_000,
-                max_completion_tokens: 8_000,
-                thinking_levels: &[],
-            },
-            ModelInfo {
-                id: "sonar",
-                provider: "perplexity",
-                owned_by: "perplexity",
-                created: 1_738_368_000,
-                context_length: 128_000,
-                max_completion_tokens: 8_000,
-                thinking_levels: &[],
-            },
-            // Cohere
-            ModelInfo {
-                id: "command-a-03-2025",
-                provider: "cohere",
-                owned_by: "cohere",
-                created: 1_740_787_200,
-                context_length: 256_000,
-                max_completion_tokens: 8_000,
-                thinking_levels: &["low", "medium", "high"],
-            },
-            ModelInfo {
-                id: "command-a-reasoning-08-2025",
-                provider: "cohere",
-                owned_by: "cohere",
-                created: 1_754_006_400,
-                context_length: 256_000,
-                max_completion_tokens: 32_000,
-                thinking_levels: &["low", "medium", "high"],
-            },
             // xAI (Grok)
             ModelInfo {
                 id: "grok-4.20",
@@ -847,6 +790,11 @@ fn get_catalog() -> &'static Vec<ModelInfo> {
 pub fn resolve_provider(model: &str) -> Option<&'static str> {
     let lower = model.trim().to_lowercase();
 
+    // Cursor
+    if lower.starts_with("cursor-") || lower == "default" {
+        return Some("cursor");
+    }
+
     // GitHub Copilot
     if lower.starts_with("copilot-") || lower.starts_with("github-") {
         return Some("copilot");
@@ -891,24 +839,6 @@ pub fn resolve_provider(model: &str) -> Option<&'static str> {
         return Some("groq");
     }
 
-    // Together AI
-    if lower.starts_with("together/")
-        || lower.starts_with("meta-llama/")
-        || lower.starts_with("togethercomputer/")
-    {
-        return Some("together");
-    }
-
-    // Perplexity
-    if lower.starts_with("sonar") || lower.starts_with("pplx-") {
-        return Some("perplexity");
-    }
-
-    // Cohere
-    if lower.starts_with("command-") || lower.starts_with("cohere/") {
-        return Some("cohere");
-    }
-
     // xAI Grok
     if lower.starts_with("grok-") || lower.starts_with("xai/") {
         return Some("xai");
@@ -937,6 +867,16 @@ pub fn resolve_provider(model: &str) -> Option<&'static str> {
         .iter()
         .find(|info| info.id.eq_ignore_ascii_case(model))
         .map(|info| info.provider)
+}
+
+pub fn providers_for_model(model: &str) -> Vec<&'static str> {
+    let mut providers = Vec::new();
+    for info in get_catalog().iter() {
+        if info.id.eq_ignore_ascii_case(model) && !providers.contains(&info.provider) {
+            providers.push(info.provider);
+        }
+    }
+    providers
 }
 
 #[allow(dead_code)]
@@ -1002,8 +942,6 @@ mod tests {
     fn resolves_new_providers() {
         assert_eq!(resolve_provider("magistral-medium-2507"), Some("mistral"));
         assert_eq!(resolve_provider("grok-4.20"), Some("xai"));
-        assert_eq!(resolve_provider("sonar-pro"), Some("perplexity"));
-        assert_eq!(resolve_provider("command-a-03-2025"), Some("cohere"));
         assert_eq!(resolve_provider("deepseek-chat"), Some("deepseek"));
         assert_eq!(
             resolve_provider("openrouter/anthropic/claude-sonnet-4"),

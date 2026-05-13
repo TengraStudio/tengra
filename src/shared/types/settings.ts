@@ -19,12 +19,19 @@ export type McpPermissionProfile = 'read-only' | 'workspace-only' | 'network-ena
 
 export type AntigravityCreditUsageMode = 'auto' | 'ask-every-time';
 
-export type ModelGovernanceSettings = {
-    mode: 'allowlist' | 'blocklist';
-    allowedModels: string[];
-    blockedModels: string[];
+export interface PromptOverrideSettings {
+    enabled?: boolean;
+    systemInstructions?: string;
+    userPromptPrefix?: string;
+    userPromptSuffix?: string;
     [key: string]: JsonValue | undefined;
-};
+}
+
+export interface AiPromptOverrideSettings {
+    global?: PromptOverrideSettings;
+    byModel?: Record<string, PromptOverrideSettings>;
+    [key: string]: JsonValue | undefined;
+}
 
 /** A user-defined scheduled notification entry */
 export interface CronJobEntry {
@@ -96,7 +103,6 @@ export interface AppSettings {
         sdCppExtraArgs?: string;
     };
     activeAccountId?: string;
-
     general: {
         language: string;
         theme: string;
@@ -143,7 +149,7 @@ export interface AppSettings {
         agentAllowedPaths?: string[];
         dismissedLanguagePrompts?: string[];
     };
-    modelGovernance?: ModelGovernanceSettings;
+    aiPromptOverrides?: AiPromptOverrideSettings;
     github?: {
         username?: string;
     };
@@ -175,15 +181,6 @@ export interface AppSettings {
     mistral?: {
         model: string;
     };
-    together?: {
-        model: string;
-    };
-    perplexity?: {
-        model: string;
-    };
-    cohere?: {
-        model: string;
-    };
     xai?: {
         model: string;
     };
@@ -207,6 +204,7 @@ export interface AppSettings {
     copilot?: {
         connected: boolean;
     };
+
     userAvatar?: string;
     aiAvatar?: string;
     proxy?: {

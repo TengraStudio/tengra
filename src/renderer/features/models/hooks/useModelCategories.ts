@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconBolt,IconBox, IconBrain, IconCode, IconLayoutGrid, IconServer, IconSparkles } from '@tabler/icons-react';
+import { IconBolt,IconBox, IconBrain, IconCode, IconKey, IconLayoutGrid, IconServer, IconSparkles } from '@tabler/icons-react';
 import { useMemo } from 'react';
 
 import type { GroupedModels, ModelInfo } from '@/types';
@@ -65,7 +65,13 @@ function createBaseCategories(t: (k: string) => string): ModelCategory[] {
         { id: 'claude', name: t('frontend.providerLabels.anthropic'), icon: IconBrain, color: 'text-accent', bg: 'bg-accent/10', providerId: 'anthropic', models: [] },
         { id: 'antigravity', name: t('frontend.providerLabels.antigravity'), icon: IconLayoutGrid, color: 'text-accent', bg: 'bg-accent/10', providerId: 'antigravity', models: [] },
         { id: 'codex', name: 'Codex', icon: IconCode, color: 'text-info', bg: 'bg-info/10', providerId: 'codex', models: [] },
+        { id: 'cursor', name: 'Cursor', icon: IconSparkles, color: 'text-info', bg: 'bg-info/10', providerId: 'cursor', models: [] },
         { id: 'opencode', name: t('frontend.modelSelector.openCode'), icon: IconCode, color: 'text-info', bg: 'bg-info/10', providerId: 'opencode', models: [] },
+        { id: 'mistral', name: 'Mistral', icon: IconSparkles, color: 'text-primary', bg: 'bg-primary/10', providerId: 'mistral', models: [] },
+        { id: 'groq', name: 'Groq', icon: IconBolt, color: 'text-warning', bg: 'bg-warning/10', providerId: 'groq', models: [] },
+        { id: 'xai', name: 'xAI (Grok)', icon: IconSparkles, color: 'text-foreground', bg: 'bg-foreground/10', providerId: 'xai', models: [] },
+        { id: 'deepseek', name: 'DeepSeek', icon: IconBolt, color: 'text-primary', bg: 'bg-primary/10', providerId: 'deepseek', models: [] },
+        { id: 'openrouter', name: 'OpenRouter', icon: IconKey, color: 'text-info', bg: 'bg-info/10', providerId: 'openrouter', models: [] },
         { id: 'ollama', name: t('frontend.providerLabels.ollama'), icon: IconServer, color: 'text-warning', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
         { id: 'huggingface', name: t('frontend.marketplace.tabs.huggingface'), icon: IconBox, color: 'text-info', bg: 'bg-info/10', providerId: 'huggingface', models: [] },
         { id: 'nvidia', name: 'NVIDIA', icon: IconBolt, color: 'text-success', bg: 'bg-success/10', providerId: 'nvidia', models: [] },
@@ -112,7 +118,13 @@ function populateCategories(props: PopulateProps) {
         gemini: 'antigravity',
         kimi: 'opencode',
         moonshot: 'opencode',
-        cursor: 'copilot',
+        mistral: 'mistral',
+        groq: 'groq',
+        xai: 'xai',
+        grok: 'xai',
+        deepseek: 'deepseek',
+        openrouter: 'openrouter',
+        cursor: 'cursor',
         'sd-cpp': 'custom',
         custom: 'custom'
     };

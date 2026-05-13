@@ -121,6 +121,8 @@ const SSH_ERROR_MESSAGE = {
 } as const;
 
 export class SSHService extends EventEmitter {
+    static readonly serviceName = 'sshService';
+    static readonly dependencies = ['storagePath', 'securityService', 'getMainWindow', 'allowedFileRoots'] as const;
     private static readonly DIRECTORY_METADATA_CACHE_TTL_MS = 5_000;
     private static readonly DIRECTORY_METADATA_STALE_TTL_MS = 60_000;
     private connections: Map<string, Client> = new Map();

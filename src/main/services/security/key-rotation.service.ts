@@ -17,6 +17,8 @@ import { KEY_ROTATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { RuntimeValue } from '@shared/types/common';
 
 export class KeyRotationService extends BaseService {
+    static readonly serviceName = 'keyRotationService';
+    static readonly dependencies = ['settingsService'] as const;
     private keyStates: Map<string, { keys: string[], currentIndex: number }> = new Map();
 
     constructor(private settingsService: SettingsService) {
@@ -77,13 +79,19 @@ export class KeyRotationService extends BaseService {
     }
 
     /**
-     * Initializes keys for a provider from settings.
-     * Supports comma-separated keys in the settings string.
+     * Initializes keys for a provider.
+     * Supports comma-separated keys in the settings string or a string array.
      */
-    initializeProviderKeys(provider: string, keyString: string) {
-        if (!keyString) { return; }
+    initializeProviderKeys(provider: string, keyInput: string | string[]) {
+        if (!keyInput) { return; }
 
-        const keys = keyString.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        let keys: string[] = [];
+        if (Array.isArray(keyInput)) {
+            keys = keyInput.map(k => k.trim()).filter(k => k.length > 0);
+        } else {
+            keys = keyInput.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        }
+
         if (keys.length > 0) {
             this.keyStates.set(provider, { keys, currentIndex: 0 });
             if (keys.length > 1) {

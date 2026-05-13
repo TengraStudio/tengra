@@ -244,7 +244,7 @@ describe('GitService', () => {
     describe('getFileDiff', () => {
         it('should parse unified diff', async () => {
             setupExecFile('@@ -1,2 +1,2 @@\n-old line\n+new line\n context\n');
-            const result = await service.getFileDiff('/repo', 'file.ts');
+            const result = await service.getFileDiff('/repo', 'file.ts', false);
             expect(result.success).toBe(true);
             expect(result.original).toContain('old line');
             expect(result.modified).toContain('new line');
@@ -253,7 +253,7 @@ describe('GitService', () => {
         it('should handle error gracefully', async () => {
             setupExecFileError('fatal: bad object');
             vi.mocked(fs.readFile).mockRejectedValue(new Error('ENOENT'));
-            const result = await service.getFileDiff('/repo', 'missing.ts');
+            const result = await service.getFileDiff('/repo', 'missing.ts', false);
             expect(result.success).toBe(false);
         });
     });

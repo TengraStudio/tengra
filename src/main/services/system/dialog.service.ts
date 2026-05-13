@@ -30,6 +30,8 @@ const DIALOG_ERROR_MESSAGE = {
 } as const;
 
 export class DialogService extends BaseService {
+    static readonly serviceName = 'dialogService';
+    static readonly dependencies = ['mainWindowProvider'] as const;
     constructor(private mainWindowProvider: () => BrowserWindow | null) {
         super('DialogService');
     }

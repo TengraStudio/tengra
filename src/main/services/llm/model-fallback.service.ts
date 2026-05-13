@@ -83,6 +83,8 @@ export type ChatHandler = (
 ) => Promise<Message | null>;
 
 export class ModelFallbackService {
+    static readonly serviceName = 'modelFallbackService';
+    static readonly dependencies = ['config'] as const;
     private config: FallbackChainConfig = { ...DEFAULT_CONFIG };
     private circuitStates = new Map<string, CircuitState>();
     private attemptHistory: FallbackAttempt[] = [];

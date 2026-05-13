@@ -56,6 +56,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     useEffect(() => {
         const root = window.document.documentElement;
         root.setAttribute('data-theme', theme);
+        localStorage.setItem('Tengra-theme', theme);
     }, [theme]);
 
     // Handle system preference changes if needed (optional for curated themes)

@@ -11,6 +11,7 @@
 import { motion } from '@/lib/framer-motion-compat';
 
 import {
+    TERMINAL_DIFF_TAB_ID,
     TERMINAL_MANAGER_MODULE_VERSION,
     TERMINAL_WORKSPACE_ISSUES_TAB_ID,
 } from '../constants/terminal-panel-constants';
@@ -18,6 +19,7 @@ import { useTerminalPanelBehavior } from '../hooks/useTerminalPanelBehavior';
 import { useTerminalPanelCore } from '../hooks/useTerminalPanelCore';
 import { useTerminalPanelEffects } from '../hooks/useTerminalPanelEffects';
 
+import { TerminalDiffTab } from './TerminalDiffTab';
 import type { TerminalPanelProps } from './TerminalPanel';
 import { TerminalPanelOverlaysConnector } from './TerminalPanelOverlaysConnector';
 import { TerminalPanelToolbarConnector } from './TerminalPanelToolbarConnector';
@@ -106,6 +108,7 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 shortcutImportInputRef={core.shortcutImportInputRef}
                 shareShortcutPreferences={core.preferences.shareShortcutPreferences}
                 importShortcutShareCode={core.preferences.importShortcutShareCode}
+                activeFileType={core.activeFileType}
             />
             <TerminalSplitView
                 onContextMenu={core.panelToggles.openTerminalContextMenu}
@@ -133,6 +136,16 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                             activeFilePath={core.activeFilePath}
                             activeFileContent={core.activeFileContent}
                             activeFileType={core.activeFileType}
+                            onOpenFile={core.onOpenFile}
+                        />
+                    ) : tab.id === TERMINAL_DIFF_TAB_ID ? (
+                        <TerminalDiffTab
+                            workspaceId={core.workspaceId ?? ''}
+                            workspacePath={core.workspacePath ?? ''}
+                            activeFilePath={core.activeFilePath}
+                            activeFileContent={core.activeFileContent}
+                            activeFileType={core.activeFileType}
+                            activeFileDiff={core.activeFileDiff}
                             onOpenFile={core.onOpenFile}
                         />
                     ) : null

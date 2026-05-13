@@ -258,8 +258,7 @@ fn get_migrations_static() -> Vec<(i32, String, String)> {
                 updated_at INTEGER NOT NULL
             );"
         )),
-        (3, "messages_table".into(), format!(
-            "CREATE TABLE IF NOT EXISTS messages (
+        (3, "messages_table".into(), "CREATE TABLE IF NOT EXISTS messages (
                 id TEXT PRIMARY KEY,
                 chat_id TEXT NOT NULL,
                 role TEXT NOT NULL,
@@ -268,8 +267,7 @@ fn get_migrations_static() -> Vec<(i32, String, String)> {
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
                 FOREIGN KEY(chat_id) REFERENCES chats(id) ON DELETE CASCADE
-            );"
-        )),
+            );".to_string()),
         (4, "knowledge_tables".into(), format!(
             "CREATE TABLE IF NOT EXISTS code_symbols (
                 id TEXT PRIMARY KEY,

@@ -43,6 +43,8 @@ interface IndexingDependencies {
 }
 
 export class AdvancedMemoryIndexingService {
+    static readonly serviceName = 'advancedMemoryIndexingService';
+    static readonly dependencies = ['deps'] as const;
     constructor(private readonly deps: IndexingDependencies) {}
 
     async findContradictions(

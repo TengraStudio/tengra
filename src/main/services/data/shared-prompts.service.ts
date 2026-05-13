@@ -67,6 +67,8 @@ interface SharedPromptRow {
 const MAX_SEARCH_LIMIT = 500;
 
 export class SharedPromptsService extends BaseService {
+    static readonly serviceName = 'sharedPromptsService';
+    static readonly dependencies = ['db'] as const;
     private initPromise: Promise<void> | null = null;
 
     constructor(private readonly db: DatabaseService) {

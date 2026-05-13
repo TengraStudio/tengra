@@ -74,7 +74,7 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
     return (
         <section
             aria-label={t('frontend.aria.workspaceSettingsPanel')}
-            className="h-full flex flex-col bg-background/5 overflow-hidden"
+            className="flex h-full flex-col overflow-hidden bg-background/5"
         >
             <SettingsHeader
                 t={t}
@@ -91,8 +91,8 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                     t={t}
                 />
 
-                <main className="flex-1 overflow-y-auto custom-scrollbar p-12" aria-label={t('frontend.aria.workspaceSettingsContent')}>
-                    <div className="max-w-2xl mx-auto">
+                <main className="flex-1 overflow-y-auto custom-scrollbar p-8" aria-label={t('frontend.aria.workspaceSettingsContent')}>
+                    <div className="mx-auto max-w-5xl">
                         {activeSection === 'general' && (
                             <GeneralSection formData={formData} setFormData={setFormData} t={t} models={models} settings={settings ?? undefined} groupedModels={groupedModels} />
                         )}

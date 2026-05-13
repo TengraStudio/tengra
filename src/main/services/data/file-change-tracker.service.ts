@@ -37,6 +37,8 @@ interface FileChangeContext {
 }
 
 export class FileChangeTracker extends BaseService {
+    static readonly serviceName = 'fileChangeTracker';
+    static readonly dependencies = ['databaseService', 'eventBusService'] as const;
     private initialized = false;
 
     constructor(

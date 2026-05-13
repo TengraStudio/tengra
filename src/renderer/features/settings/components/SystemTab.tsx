@@ -12,12 +12,12 @@ import { IconBolt,IconCloudDownload, IconCpu, IconPower, IconSettings, IconShiel
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 
 import type { SettingsSharedProps } from '../types';
 
 import {
     SettingsPanel,
+    SettingsSwitch,
     SettingsTabHeader,
     SettingsTabLayout,
     SettingsToggleRow,
@@ -57,12 +57,6 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
     return (
         <SettingsTabLayout className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <SettingsTabHeader
-                title={t('frontend.settings.systemTitle')}
-                description={t('frontend.settings.systemDescription')}
-                icon={IconSettings}
-            />
-
             <SettingsPanel
                 title={t('frontend.general.autoUpdate')}
                 description={t('frontend.settings.downloadUpdatesAutomaticallyDescription')}
@@ -79,22 +73,22 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     </Button>
                 )}
             >
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 px-6 py-2">
                     <SettingsToggleRow
                         title={t('frontend.general.autoUpdate')}
                         description={t('frontend.general.autoUpdateDesc')}
-                        control={<Switch checked={autoUpdate.enabled} onCheckedChange={checked => updateAutoUpdate({ enabled: checked })} />}
+                        control={<SettingsSwitch checked={autoUpdate.enabled} onCheckedChange={checked => updateAutoUpdate({ enabled: checked })} />}
                     />
                     <SettingsToggleRow
                         title={t('frontend.general.checkOnStartup')}
                         description={t('frontend.general.checkOnStartupDesc')}
-                        control={<Switch checked={autoUpdate.checkOnStartup} onCheckedChange={checked => updateAutoUpdate({ checkOnStartup: checked })} />}
+                        control={<SettingsSwitch checked={autoUpdate.checkOnStartup} onCheckedChange={checked => updateAutoUpdate({ checkOnStartup: checked })} />}
                     />
                     <div className="md:col-span-2">
                         <SettingsToggleRow
                             title={t('frontend.settings.downloadUpdatesAutomatically')}
                             description={t('frontend.settings.downloadUpdatesAutomaticallyDescription')}
-                            control={<Switch checked={autoUpdate.downloadAutomatically} onCheckedChange={checked => updateAutoUpdate({ downloadAutomatically: checked })} />}
+                            control={<SettingsSwitch checked={autoUpdate.downloadAutomatically} onCheckedChange={checked => updateAutoUpdate({ downloadAutomatically: checked })} />}
                         />
                     </div>
                 </div>
@@ -105,29 +99,29 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 description={t('frontend.general.workAtBackgroundDesc')}
                 icon={IconCpu}
             >
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 px-6 py-2">
                     <SettingsToggleRow
                         title={t('frontend.general.startOnStartup')}
                         description={t('frontend.general.startOnStartupDesc')}
-                        control={<Switch checked={settings?.window?.startOnStartup ?? true} onCheckedChange={checked => { void updateWindow({ startOnStartup: checked }); }} />}
+                        control={<SettingsSwitch checked={settings?.window?.startOnStartup ?? true} onCheckedChange={checked => { void updateWindow({ startOnStartup: checked }); }} />}
                         icon={IconPower}
                     />
                     <SettingsToggleRow
                         title={t('frontend.general.workAtBackground')}
                         description={t('frontend.general.workAtBackgroundDesc')}
-                        control={<Switch checked={settings?.window?.workAtBackground ?? true} onCheckedChange={checked => { void updateWindow({ workAtBackground: checked }); }} />}
+                        control={<SettingsSwitch checked={settings?.window?.workAtBackground ?? true} onCheckedChange={checked => { void updateWindow({ workAtBackground: checked }); }} />}
                         icon={IconTerminal}
                     />
                     <SettingsToggleRow
                         title={t('frontend.settings.lowPowerMode')}
                         description={t('frontend.settings.lowPowerModeDescription')}
-                        control={<Switch checked={settings?.window?.lowPowerMode ?? true} onCheckedChange={checked => { void updateWindow({ lowPowerMode: checked }); }} />}
+                        control={<SettingsSwitch checked={settings?.window?.lowPowerMode ?? true} onCheckedChange={checked => { void updateWindow({ lowPowerMode: checked }); }} />}
                         icon={IconBolt}
                     />
                     <SettingsToggleRow
                         title={t('frontend.settings.autoHibernation')}
                         description={t('frontend.settings.autoHibernationDescription')}
-                        control={<Switch checked={settings?.window?.autoHibernation ?? true} onCheckedChange={checked => { void updateWindow({ autoHibernation: checked }); }} />}
+                        control={<SettingsSwitch checked={settings?.window?.autoHibernation ?? true} onCheckedChange={checked => { void updateWindow({ autoHibernation: checked }); }} />}
                         icon={IconShieldCheck}
                     />
                 </div>

@@ -591,6 +591,7 @@ export function buildAiPresentationMetadata(context: AiPresentationContext): AiP
         sources,
         images,
         isStreaming = false,
+        systemMode,
     } = context;
     const normalizedContent = content.trim();
 
@@ -652,6 +653,7 @@ export function buildAiPresentationMetadata(context: AiPresentationContext): AiP
                 : 'fallback',
         isStreaming,
         hasReasoning: reasoningSegments.length > 0,
+        systemMode,
         reasoningSummary: normalizedReasoning,
         reasoningSegments: reasoningSegments.length > 0 ? reasoningSegments : undefined,
         toolCallCount,

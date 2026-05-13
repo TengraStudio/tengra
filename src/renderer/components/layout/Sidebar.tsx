@@ -82,7 +82,7 @@ const SidebarChatSection: React.FC<Pick<SidebarProps, 'currentView' | 'onChangeV
     const {
         chats, currentChatId, setCurrentChatId, deleteChat, updateChat,
         folders, createFolder, deleteFolder,
-        prompts, createPrompt, updatePrompt, deletePrompt, togglePin, bulkDeleteChats
+        prompts, createPrompt, updatePrompt, deletePrompt, togglePin, bulkDeleteChats, deleteAllChats
     } = useChatLibrary();
     const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
@@ -164,10 +164,9 @@ const SidebarChatSection: React.FC<Pick<SidebarProps, 'currentView' | 'onChangeV
         }
     }, [chats.length]);
     const confirmClearAll = useCallback(() => {
-        const ids = chats.map(chat => chat.id);
-        void bulkDeleteChats(ids);
+        void deleteAllChats();
         setShowClearConfirm(false);
-    }, [bulkDeleteChats, chats]);
+    }, [deleteAllChats]);
 
     return (
         <>

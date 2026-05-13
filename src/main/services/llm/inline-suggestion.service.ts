@@ -13,6 +13,7 @@ import { BaseService } from '@main/services/base.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { WORKSPACE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
@@ -29,6 +30,7 @@ interface InlineSuggestionRoute {
 interface InlineSuggestionServiceDeps {
     llmService: LLMService;
     authService: AuthService;
+    modelSelectionService: ModelSelectionService;
     advancedMemoryService?: AdvancedMemoryService;
 }
 
@@ -38,6 +40,8 @@ const INLINE_MEMORY_QUERY_MIN_LENGTH = 24;
 const INLINE_MEMORY_QUERY_MAX_LENGTH = 800;
 
 export class InlineSuggestionService extends BaseService {
+    static readonly serviceName = 'inlineSuggestionService';
+    static readonly dependencies = ['deps'] as const;
     private static readonly KNOWN_CUSTOM_PROVIDERS = new Set([
         'openai',
         'anthropic',
@@ -53,6 +57,7 @@ export class InlineSuggestionService extends BaseService {
     ]);
     private readonly llmService: LLMService;
     private readonly authService: AuthService;
+    private readonly modelSelectionService: ModelSelectionService;
     private readonly memoryContext: MemoryContextService;
     private readonly usageStats = {
         request: 0,
@@ -67,6 +72,7 @@ export class InlineSuggestionService extends BaseService {
         super('InlineSuggestionService');
         this.llmService = deps.llmService;
         this.authService = deps.authService;
+        this.modelSelectionService = deps.modelSelectionService;
         this.memoryContext = new MemoryContextService(deps.advancedMemoryService);
     }
 
@@ -87,7 +93,7 @@ Return only the text that should be inserted at the cursor.
 Match the existing coding style, indentation, and language semantics.
 ${tokenHint}
 ${memorySection}
-
+1. 
 Language: ${request.language}
 Cursor: line ${request.cursorLine}, column ${request.cursorColumn}
 
@@ -97,16 +103,22 @@ ${request.prefix}
 ${suffixSection}`;
     }
 
-    private resolveRoute(request: InlineSuggestionRequest): InlineSuggestionRoute {
+    private async resolveRoute(request: InlineSuggestionRequest): Promise<InlineSuggestionRoute> {
         if (request.source === 'copilot') {
             return {
-                model: request.model?.trim() || 'gpt-4o-copilot',
+                model: request.model?.trim() || '',
                 provider: 'copilot',
             };
         }
 
+        let model = request.model?.trim();
+        if (!model) {
+            const selection = await this.modelSelectionService.selectInlineModel();
+            model = selection?.model ?? '';
+        }
+
         return {
-            model: request.model?.trim() || 'gpt-4o-mini',
+            model,
             provider: this.normalizeCustomProvider(request.provider),
         };
     }
@@ -209,7 +221,7 @@ ${suffixSection}`;
 
         const memoryContext = await this.getMemoryContext(request);
         const prompt = this.buildPrompt(request, memoryContext);
-        const route = this.resolveRoute(request);
+        const route = await this.resolveRoute(request);
         try {
             const response = await this.withSelectedCopilotAccount(copilotAccountId, async () =>
                 this.llmService.chat(
@@ -261,7 +273,7 @@ ${suffixSection}`;
             cursorLine: lines.length,
             cursorColumn: lastLine.length + 1,
             source: 'custom',
-            model: 'gpt-4o-mini',
+            model: '',
         });
         return response.suggestion ?? '';
     }

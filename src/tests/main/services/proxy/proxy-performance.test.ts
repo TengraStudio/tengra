@@ -18,6 +18,7 @@ import {
 import { PROXY_PROCESS_PERFORMANCE_BUDGETS, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
+import { CacheService } from '@main/services/system/cache.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -76,15 +77,16 @@ describe('ProxyService performance instrumentation', () => {
             linkAccount: vi.fn().mockResolvedValue(undefined),
         } as never as AuthService;
 
-        proxyService = new ProxyService({
-            settingsService: mockSettingsService,
-            dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
-            securityService: {} as never as SecurityService,
-            processManager: mockProcessManager,
-            authService: mockAuthService,
-            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
-            databaseService: {} as never as DatabaseService,
-        });
+        proxyService = new ProxyService(
+            mockSettingsService,
+            { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
+            {} as never as SecurityService,
+            mockProcessManager,
+            mockAuthService,
+            { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
+            {} as never as DatabaseService,
+            { get: vi.fn().mockResolvedValue(null), set: vi.fn() } as never as CacheService
+        );
     });
 
     describe('PROXY_PERFORMANCE_BUDGETS constants', () => {

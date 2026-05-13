@@ -24,6 +24,12 @@ import { cn } from '@/lib/utils';
 
 import { CATEGORY_CONFIG } from './constants';
 
+function formatSourceLabel(t: (key: string) => string, source: string): string {
+  const key = `frontend.memory.sources.${source}`;
+  const translated = t(key);
+  return translated === key ? source.replace(/_/g, ' ') : translated;
+}
+
 interface StatsPanelProps {
   stats: MemoryStatistics;
   health?: AdvancedMemoryHealthSummary | null;
@@ -78,7 +84,7 @@ const StatsPanelContent = ({
         <div className="space-y-2">
           {Object.entries(stats.bySource).map(([source, count]) => (
             <div key={source} className="flex items-center justify-between p-2 rounded bg-muted/30">
-              <span className="text-sm capitalize">{source.replace(/_/g, ' ')}</span>
+              <span className="text-sm capitalize">{formatSourceLabel(t, source)}</span>
               <span className="font-bold">{count}</span>
             </div>
           ))}

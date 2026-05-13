@@ -25,9 +25,11 @@ export interface LLMEmbeddingsDeps {
  * Service responsible for generating text embeddings via OpenAI-compatible APIs.
  */
 export class LLMEmbeddingsService {
+    static readonly serviceName = 'llmEmbeddingsService';
+    static readonly dependencies = ['deps', 'getOpenAIBaseUrl'] as const;
+
     constructor(
         private deps: LLMEmbeddingsDeps,
-        private getOpenAIApiKey: () => string,
         private getOpenAIBaseUrl: () => string
     ) {}
 
@@ -37,17 +39,17 @@ export class LLMEmbeddingsService {
      * @param model - The embedding model to use.
      * @returns A numeric embedding vector.
      */
-    async getEmbeddings(input: string, model: string = 'text-embedding-3-small'): Promise<number[]> {
+    async getEmbeddings(input: string, model?: string): Promise<number[]> {
         const normalizedInput = input.trim();
         if (normalizedInput.length === 0) {
             throw new ValidationError('Embedding input must not be empty', { field: 'input' });
         }
-        const normalizedModel = model.trim();
+        const normalizedModel = model?.trim() ?? '';
         if (normalizedModel.length === 0) {
             throw new ValidationError('Embedding model must not be empty', { field: 'model' });
         }
 
-        const key = this.deps.keyRotationService.getCurrentKey('openai') ?? this.getOpenAIApiKey();
+        const key = this.deps.keyRotationService.getCurrentKey('openai');
         const baseUrl = this.getOpenAIBaseUrl();
 
         if (!key && !baseUrl.match(/(localhost|127\.0\.0\.1)/)) {

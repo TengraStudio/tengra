@@ -31,6 +31,8 @@ interface ResolutionCandidate {
 }
 
 export class ConversationMemoryFoundationService {
+    static readonly serviceName = 'conversationMemoryFoundationService';
+    static readonly dependencies = ['advancedMemory'] as const;
     constructor(private readonly advancedMemory: AdvancedMemoryService) {}
 
     async ingestConversationTurn(input: ConversationMemoryInput): Promise<void> {

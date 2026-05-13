@@ -98,6 +98,8 @@ function getActionPermissionCategory(actionName: string): McpPermission {
  * between the renderer and the modular McpPluginService.
  */
 export class McpDispatcherService {
+    static readonly serviceName = 'mcpDispatcherService';
+    static readonly dependencies = ['settingsService', 'pluginService'] as const;
     constructor(
         private settingsService: SettingsService,
         private pluginService: McpPluginService

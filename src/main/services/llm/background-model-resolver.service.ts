@@ -10,6 +10,7 @@
 
 import { appLogger } from '@main/logging/logger';
 import { ModelProviderInfo } from '@main/services/llm/model-registry.service';
+import { ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { AuthService } from '@main/services/security/auth.service';
 
@@ -19,22 +20,27 @@ export interface BackgroundModelSelection {
     source: 'oauth' | 'local' | 'api-key';
 }
 
-interface BackgroundModelResolverDeps {
-    authService: AuthService;
-    getModels: () => Promise<ModelProviderInfo[]>;
-}
-
 /**
  * Selects a cheap, low-impact model for background jobs such as memory
  * extraction. This intentionally does not reuse the user's active chat model.
  */
 export class BackgroundModelResolver {
+    static readonly serviceName = 'backgroundModelResolver';
+    static readonly dependencies = ['authService', 'modelRegistryService'] as const;
     private cachedSelection: { value: BackgroundModelSelection | null; expiresAt: number } | null = null;
     private readonly cacheTtlMs = 60_000;
     private readonly selector: ModelSelectionService;
+    private readonly modelRegistryService: ModelRegistryService;
 
-    constructor(deps: BackgroundModelResolverDeps) {
-        this.selector = new ModelSelectionService(deps);
+    constructor(
+        authService: AuthService,
+        modelRegistryService: ModelRegistryService
+    ) {
+        this.modelRegistryService = modelRegistryService;
+        this.selector = new ModelSelectionService({
+            authService,
+            getModels: () => this.modelRegistryService.getAllModels(),
+        });
     }
 
     async resolve(): Promise<BackgroundModelSelection | null> {

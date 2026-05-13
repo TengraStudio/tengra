@@ -9,6 +9,7 @@
  */
 
 import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
+import { LlamaService } from '@main/services/llm/local/llama.service';
 import { LocalImageService } from '@main/services/llm/local/local-image.service';
 import { OllamaService } from '@main/services/llm/local/ollama.service';
 import { ModelRegistryService } from '@main/services/llm/model-registry.service';
@@ -47,6 +48,7 @@ let mockEventBus: Partial<EventBusService>;
 let mockAuthService: Partial<AuthService>;
 let mockTokenService: Partial<TokenService>;
 let mockLocalImageService: Partial<LocalImageService>;
+let mockLlamaService: Partial<LlamaService>;
 let mockOllamaService: Partial<OllamaService>;
 let mockHuggingFaceService: MockHuggingFaceService;
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -99,6 +101,7 @@ beforeEach(() => {
     };
 
     mockLocalImageService = { getSDCppStatus: vi.fn().mockResolvedValue('ready') };
+    mockLlamaService = { getModels: vi.fn().mockResolvedValue([]) };
 
     mockHuggingFaceService = {
         searchModels: vi.fn().mockResolvedValue({
@@ -117,6 +120,7 @@ beforeEach(() => {
         authService: mockAuthService as AuthService,
         tokenService: mockTokenService as TokenService,
         ollamaService: mockOllamaService as OllamaService,
+        llamaService: mockLlamaService as LlamaService,
         localImageService: mockLocalImageService as LocalImageService,
         huggingFaceService: mockHuggingFaceService as never as HuggingFaceService
     });

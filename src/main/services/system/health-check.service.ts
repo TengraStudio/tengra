@@ -48,6 +48,8 @@ interface ServiceCheck {
 }
 
 export class HealthCheckService extends BaseService {
+    static readonly serviceName = 'healthCheckService';
+    static readonly dependencies = [] as const;
     private checks: Map<string, ServiceCheck> = new Map();
     private statuses: Map<string, HealthStatus> = new Map();
     private intervals: Map<string, NodeJS.Timeout> = new Map();

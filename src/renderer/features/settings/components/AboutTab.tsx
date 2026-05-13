@@ -48,27 +48,21 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
 
     return (
         <SettingsTabLayout className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <SettingsTabHeader
-                title={t('frontend.app.name')}
-                description={t('frontend.about.description')}
-                icon={IconGlobe}
-            />
-
             <SettingsPanel title={t('frontend.app.name')} icon={IconGlobe} className="text-center">
-                <div className="flex flex-col items-center space-y-8">
-                <div className="relative">
-                    <div className={C_ABOUTTAB_1}>
-                        <img
-                            src={logo}
-                            alt={t('frontend.app.name')}
-                            className="h-16 w-16 opacity-90 brightness-110"
-                        />
+                <div className="flex flex-col items-center space-y-8 px-6 py-2">
+                    <div className="relative">
+                        <div className={C_ABOUTTAB_1}>
+                            <img
+                                src={logo}
+                                alt={t('frontend.app.name')}
+                                className="h-16 w-16 opacity-90 brightness-110"
+                            />
+                        </div>
                     </div>
-                </div>
 
                     <div className="space-y-4">
                         <h2 className="text-4xl font-semibold leading-none text-foreground sm:text-5xl">
-                        {t('frontend.app.name')}
+                            {t('frontend.app.name')}
                         </h2>
                     </div>
 
@@ -98,7 +92,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
             </SettingsPanel>
 
             <SettingsPanel title={t('frontend.about.buildVersion')} icon={IconBolt}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 px-6 py-2">
                     <div className="rounded-card-lg border border-border/20 bg-muted/5 p-5 transition-colors hover:bg-muted/10">
                         <div className="flex items-center gap-2 mb-4">
                             <IconDeviceMobile className="w-3.5 h-3.5 text-primary/60" />
@@ -109,9 +103,9 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         <div className="text-sm font-bold text-foreground truncate">
                             {navigator.platform}
                         </div>
-                    </div> 
+                    </div>
 
-                   
+
                     <div className={C_ABOUTTAB_6}>
                         <div className="flex flex-col gap-4">
                             <div className="flex items-center gap-2">
@@ -121,14 +115,9 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                                 </div>
                             </div>
                             <div className="text-sm font-medium text-primary">
-                                {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v1.0.46'}
+                                {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'N/A'}
                             </div>
-                        </div>
-                        <Badge variant="outline" className="rounded-xl border-border/20 bg-background/50 px-4 py-2 font-mono typo-body font-medium text-muted-foreground">
-                            {typeof __BUILD_TIME__ !== 'undefined'
-                                ? new Date(__BUILD_TIME__).toLocaleString()
-                                : t('frontend.about.notAvailable')}
-                        </Badge>
+                        </div> 
                     </div>
                 </div>
             </SettingsPanel>

@@ -38,8 +38,8 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
     canRedo: boolean
     undo: () => void
     redo: () => void
-    systemMode: 'thinking' | 'agent' | 'fast'
-    setSystemMode: (mode: 'thinking' | 'agent' | 'fast') => void
+    systemMode: 'instant' | 'ask' | 'thinking' | 'agent' | 'fast'
+    setSystemMode: (mode: 'instant' | 'ask' | 'thinking' | 'agent' | 'fast') => void
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -69,6 +69,7 @@ type ChatLibraryContextType = {
     deletePrompt: ChatContextType['deletePrompt']
     togglePin: ChatContextType['togglePin']
     bulkDeleteChats: ChatContextType['bulkDeleteChats']
+    deleteAllChats: ChatContextType['deleteAllChats']
 };
 const ChatLibraryContext = createContext<ChatLibraryContextType | null>(null);
 type ChatComposerContextType = {
@@ -271,7 +272,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         redo,
         systemMode: chatManager.systemMode,
         setSystemMode: chatManager.setSystemMode,
-        bulkDeleteChats: chatManager.bulkDeleteChats
+        bulkDeleteChats: chatManager.bulkDeleteChats,
+        deleteAllChats: chatManager.deleteAllChats
     }), [
         chatManager, handleSpeak, handleStopSpeak, isSpeaking, speakingMessageId,
         workspaces, selectedWorkspace, setSelectedWorkspace, loadWorkspaces,
@@ -301,6 +303,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         deletePrompt: chatManager.deletePrompt,
         togglePin: chatManager.togglePin,
         bulkDeleteChats: chatManager.bulkDeleteChats,
+        deleteAllChats: chatManager.deleteAllChats,
     }), [
         chatManager.chats,
         chatManager.currentChatId,
@@ -316,6 +319,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         chatManager.deletePrompt,
         chatManager.togglePin,
         chatManager.bulkDeleteChats,
+        chatManager.deleteAllChats,
     ]);
     const composerValue = useMemo(() => ({
         setInput: chatManager.setInput,

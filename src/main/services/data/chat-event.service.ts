@@ -32,6 +32,8 @@ export type ChatEventType =
     | 'thread_archived';
 
 export class ChatEventService extends BaseService {
+    static readonly serviceName = 'chatEventService';
+    static readonly dependencies = ['databaseService'] as const;
     constructor(private databaseService: DatabaseService) {
         super('ChatEventService');
     }

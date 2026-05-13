@@ -304,14 +304,7 @@ export const WorkspaceIssueSchema = z.object({
     source: z.string(),
     code: z.union([z.string(), z.number().int()]).optional()
 });
-
-export const CodeAnnotationSchema = z.object({
-    file: z.string(),
-    line: z.number().int().positive(),
-    message: z.string(),
-    type: z.enum(['todo', 'fixme', 'warn', 'error'])
-});
-
+ 
 export const WorkspaceLspServerSupportSchema = z.object({
     languageId: z.string().max(100),
     serverId: z.string().max(200),
@@ -352,8 +345,7 @@ export const WorkspaceAnalysisSchema = z.object({
         packages: z.array(z.string().max(256)).max(1000)
     }).optional(),
     todos: z.array(z.string().max(500)).max(1000),
-    issues: z.array(WorkspaceIssueSchema).max(1000).optional(),
-    annotations: z.array(CodeAnnotationSchema).max(1000).optional(),
+    issues: z.array(WorkspaceIssueSchema).max(1000).optional(),  
     lspDiagnostics: z.array(WorkspaceIssueSchema).max(5000).optional(),
     lspServers: z.array(WorkspaceLspServerSupportSchema).max(100).optional(),
     diagnosticsStatus: WorkspaceDiagnosticsStatusSchema.optional(),

@@ -106,7 +106,7 @@ function MonacoToggleRow({
                         <Icon className="h-4 w-4" />
                     </div>
                 )}
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col ga.5">
                     <span className="typo-body font-semibold text-foreground">{label}</span>
                     {description && <span className="typo-caption text-muted-foreground/60">{description}</span>}
                 </div>
@@ -199,20 +199,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
     }
 
     return (
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 pb-20">
-            {/* Split Layout Header */}
-            <div className="flex flex-col gap-4 px-1">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
-                        <IconCode className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-foreground">{t('frontend.settings.editorTitle')}</h2>
-                        <p className="typo-body text-muted-foreground/60">{t('frontend.settings.editorDescription')}</p>
-                    </div>
-                </div>
-            </div>
-
+        <div className="flex flex-col gap-10 pb-20">
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-editor-split">
                 {/* Left Column: Settings */}
                 <div className="flex flex-col gap-10">
@@ -222,9 +209,9 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                         title={t('frontend.settings.editor.typographyTitle')}
                         description="Font settings and character spacing."
                         icon={IconTypography}
-                        className="border-none bg-transparent p-0 shadow-none space-y-6"
+                        className="border-none shadow-none"
                     >
-                        <div className="grid gap-6 md:grid-cols-2">
+                        <div className="grid gap-6 md:grid-cols-2 px-6 py-2">
                             <SettingsField 
                                 label={t('frontend.settings.editor.option.fontSize')} 
                                 description="Adjust the editor font size."
@@ -304,9 +291,9 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                         title={t('frontend.settings.editor.layoutTitle')}
                         description="Visual appearance and geometry."
                         icon={IconLayersLinked}
-                        className="border-none bg-transparent p-0 shadow-none space-y-6"
+                        className="border-none  shadow-none "
                     >
-                        <div className="grid gap-6 md:grid-cols-2">
+                        <div className="grid gap-6 md:grid-cols-2 px-6 py-2">
                             <SettingsField label={t('frontend.settings.editor.option.tabSize')}>
                                 <Select
                                     value={editorSettings.tabSize.toString()}
@@ -414,9 +401,9 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                         title={t('frontend.settings.editor.behaviorTitle')}
                         description="Intelligent features and interactions."
                         icon={IconBolt}
-                        className="border-none bg-transparent p-0 shadow-none space-y-6"
+                        className="border-none   shadow-none "
                     >
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-4 md:grid-cols-2 px-6 py-2">
                              <MonacoToggleRow
                                 label={t('frontend.settings.editor.option.minimap')}
                                 description="High-level code overview"
@@ -490,14 +477,53 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                         </div>
                     </SettingsPanel>
 
+                    {/* LSP Intelligence */}
+                    <SettingsPanel
+                        title="LSP Intelligence"
+                        description="Language Server Protocol settings."
+                        icon={IconCode}
+                        className="border-none shadow-none"
+                    >
+                        <div className="grid gap-4 md:grid-cols-2 px-6 py-2">
+                             <MonacoToggleRow
+                                label="Inlay Hints"
+                                description="Show inline type and parameter hints"
+                                checked={editorSettings.inlayHints}
+                                icon={IconBolt}
+                                onCheckedChange={checked => { void updateEditor({ inlayHints: checked }); }}
+                            />
+                             <MonacoToggleRow
+                                label="Code Lens"
+                                description="Show references and actions above symbols"
+                                checked={editorSettings.codeLens}
+                                icon={IconActivity}
+                                onCheckedChange={checked => { void updateEditor({ codeLens: checked }); }}
+                            />
+                             <MonacoToggleRow
+                                label="Format on Paste"
+                                description="Automatically format code when pasting"
+                                checked={editorSettings.formatOnPaste}
+                                icon={IconAlignLeft}
+                                onCheckedChange={checked => { void updateEditor({ formatOnPaste: checked }); }}
+                            />
+                             <MonacoToggleRow
+                                label="Format on Type"
+                                description="Format code as you type"
+                                checked={editorSettings.formatOnType}
+                                icon={IconCode}
+                                onCheckedChange={checked => { void updateEditor({ formatOnType: checked }); }}
+                            />
+                        </div>
+                    </SettingsPanel>
+
                     {/* Advanced Controls */}
                     <SettingsPanel
                         title="Advanced Customization"
                         description="Deep hooks into the Monaco engine."
                         icon={IconSettings2}
-                        className="border-none bg-transparent p-0 shadow-none space-y-6"
+                        className="border-none   shadow-none "
                     >
-                        <div className="grid gap-6">
+                        <div className="grid gap-6 px-6 py-2">
                             <div className="grid gap-6 md:grid-cols-2">
                                 <SettingsField label={t('frontend.settings.editor.option.cursorStyle')}>
                                     <Select
@@ -666,15 +692,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                         className="h-full"
                                     />
                                 </div>
-                            </div>
-
-                            {/* Floating hint */}
-                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-xl transition-all duration-500 group-hover:-translate-y-2">
-                                <div className="flex items-center gap-2 typo-caption font-bold">
-                                    <IconActivity className="h-3.5 w-3.5" />
-                                    UPDATED IN REAL-TIME
-                                </div>
-                            </div>
+                            </div> 
                         </div>
                     </div>
                 </div>

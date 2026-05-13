@@ -23,6 +23,8 @@ import { WebSocket } from 'ws';
  * Connects to the Tengra C++ backend WebSocket endpoints.
  */
 export class UserCollaborationService extends BaseService {
+    static readonly serviceName = 'userCollaborationService';
+    static readonly dependencies = ['authService', 'eventBus'] as const;
     private websockets: Map<string, WebSocket> = new Map();
     private readonly backendUrl = process.env['COLLABORATION_WS_URL'] ?? NETWORK_DEFAULTS.COLLABORATION_WS_URL;
 

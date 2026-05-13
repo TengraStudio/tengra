@@ -46,6 +46,8 @@ interface PendingUtilityProcessRequest {
  * These are more efficient than full BrowserWindow workers and isolated from the main process.
  */
 export class UtilityProcessService extends BaseService {
+    static readonly serviceName = 'utilityProcessService';
+    static readonly dependencies = [] as const;
     private readonly processes = new Map<string, UtilityProcess>();
     private readonly pendingRequests = new Map<string, PendingUtilityProcessRequest>();
     private readonly messageListeners = new Map<string, Set<(message: RuntimeValue) => void>>();

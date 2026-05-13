@@ -47,6 +47,8 @@ interface ExportedTerminalProfilePayload {
 }
 
 export class TerminalProfileService extends BaseService {
+    static readonly serviceName = 'terminalProfileService';
+    static readonly dependencies = [] as const;
     private profiles: Map<string, TerminalProfile> = new Map();
     private persistencePath: string;
 

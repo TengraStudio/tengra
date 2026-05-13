@@ -8,12 +8,6 @@
  * (at your option) any later version.
  */
 
-/**
- * Tab Navigation Component
- *
- * Renders the tab navigation for switching between pending, confirmed, archived memories and stats.
- */
-
 import type { Icon } from '@tabler/icons-react';
 import { IconArchive, IconCircleCheck, IconClock, IconGauge, IconLayoutGrid } from '@tabler/icons-react';
 import React from 'react';
@@ -24,62 +18,65 @@ import { cn } from '@/lib/utils';
 type TabType = 'pending' | 'confirmed' | 'archived' | 'stats' | 'visualization';
 
 interface TabNavigationProps {
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
-  pendingCount: number;
-  confirmedCount: number;
-  archivedCount: number;
+    activeTab: TabType;
+    onTabChange: (tab: TabType) => void;
+    pendingCount: number;
+    confirmedCount: number;
+    archivedCount: number;
 }
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({
-  activeTab,
-  onTabChange,
-  pendingCount,
-  confirmedCount,
-  archivedCount,
+    activeTab,
+    onTabChange,
+    pendingCount,
+    confirmedCount,
+    archivedCount,
 }) => {
-  const { t } = useTranslation();
-  const tabs: Array<{
-    id: TabType;
-    label: string;
-    icon: Icon;
-    count?: number;
-  }> = [
-      { id: 'pending', label: t('frontend.memory.tabs.pending'), icon: IconClock, count: pendingCount },
-      { id: 'confirmed', label: t('frontend.memory.tabs.confirmed'), icon: IconCircleCheck, count: confirmedCount },
-      { id: 'archived', label: t('frontend.memory.tabs.archived'), icon: IconArchive, count: archivedCount },
-      { id: 'visualization', label: t('frontend.memory.tabs.visualization'), icon: IconLayoutGrid },
-      { id: 'stats', label: t('frontend.memory.tabs.stats'), icon: IconGauge },
+    const { t } = useTranslation();
+
+    const tabs: Array<{
+        id: TabType;
+        label: string;
+        icon: Icon;
+        count?: number;
+    }> = [
+        { id: 'pending', label: t('frontend.memory.tabs.pending'), icon: IconClock, count: pendingCount },
+        { id: 'confirmed', label: t('frontend.memory.tabs.confirmed'), icon: IconCircleCheck, count: confirmedCount },
+        { id: 'archived', label: t('frontend.memory.tabs.archived'), icon: IconArchive, count: archivedCount },
+        { id: 'visualization', label: t('frontend.memory.tabs.visualization'), icon: IconLayoutGrid },
+        { id: 'stats', label: t('frontend.memory.tabs.stats'), icon: IconGauge },
     ];
 
-  return (
-    <div className="flex gap-1 p-1 bg-muted/30 rounded-lg w-fit border border-border/40">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onTabChange(tab.id)}
-          className={cn(
-            'px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2',
-            activeTab === tab.id
-              ? 'bg-primary text-primary-foreground shadow-lg'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-          )}
-        >
-          <tab.icon className="w-4 h-4" />
-          {tab.label}
-          {tab.count !== undefined && tab.count > 0 && (
-            <span
-              className={cn(
-                'ml-1 px-1.5 py-0.5 rounded-full text-sm font-bold',
-                activeTab === tab.id ? 'bg-muted/50' : 'bg-primary/20 text-primary'
-              )}
-            >
-              {tab.count}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
+    return (
+        <div className="w-full overflow-x-auto">
+            <div className="inline-flex min-w-full gap-1 rounded-2xl border border-border/40 bg-card/80 p-1">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => onTabChange(tab.id)}
+                        className={cn(
+                            'inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                            activeTab === tab.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                        )}
+                    >
+                        <tab.icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                        {tab.count !== undefined && (
+                            <span className={cn(
+                                'ml-1 rounded-full px-2 py-0.5 text-xs',
+                                activeTab === tab.id
+                                    ? 'bg-primary-foreground/15 text-primary-foreground'
+                                    : 'bg-muted text-muted-foreground'
+                            )}>
+                                {tab.count}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
 };
-

@@ -33,6 +33,8 @@ export interface ImageMetadata {
 
 
 export class ImagePersistenceService {
+    static readonly serviceName = 'imagePersistenceService';
+    static readonly dependencies = ['dataService', 'databaseService'] as const;
     private galleryPath: string;
 
     constructor(

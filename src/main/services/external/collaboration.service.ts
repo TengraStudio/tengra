@@ -25,6 +25,8 @@ export interface AgentMessage {
 }
 
 export class CollaborationService {
+    static readonly serviceName = 'collaborationService';
+    static readonly dependencies = [] as const;
     private wss: WebSocketServer | null = null;
     private clients: Map<string, WebSocket[]> = new Map(); // sessionId -> sockets
     private takeoverClient: WebSocket | null = null;

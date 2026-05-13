@@ -154,6 +154,8 @@ function computeModelRef(request: ModelDownloadRequest): string {
 }
 
 export class ModelDownloaderService extends BaseService {
+    static readonly serviceName = 'modelDownloaderService';
+    static readonly dependencies = ['deps'] as const;
     private readonly tasks = new Map<string, ActiveDownloadTask>();
     private readonly modelRefToDownloadId = new Map<string, string>();
     private readonly providerLimits: Record<DownloadProvider, number> = {

@@ -11,6 +11,8 @@
 import { BaseService } from '@main/services/base.service';
 
 export class CopilotService extends BaseService {
+    static readonly serviceName = 'copilotService';
+    static readonly dependencies = [] as const;
     private githubToken: string | null = null;
     private copilotToken: string | null = null;
 

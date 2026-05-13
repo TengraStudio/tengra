@@ -12,6 +12,7 @@ pub mod claude;
 pub mod completions;
 pub mod embeddings;
 pub mod management;
+pub mod management_support;
 pub mod models;
 pub mod responses;
 pub mod skills;

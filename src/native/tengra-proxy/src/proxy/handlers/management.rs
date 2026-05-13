@@ -7,14 +7,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-use crate::auth::antigravity::client::AntigravityClient;
-use crate::auth::claude::client::ClaudeClient;
-use crate::auth::codex::client::CodexClient;
-use crate::auth::copilot::CopilotClient;
-use crate::auth::ollama::client::OllamaClient;
+use crate::auth::copilot::client::CopilotClient;
 use crate::auth::session::{
-    cancel_session, complete_external_session, create_session, ensure_callback_server,
-    get_session_status_for, handle_manual_callback_request, ManualOAuthCallback,
+    cancel_session, create_session, ensure_callback_server, get_session_status_for,
+    handle_manual_callback_request, ManualOAuthCallback,
+};
+use crate::proxy::handlers::management_support::{
+    build_auth_url, build_quota_snapshot, decrypt_access_token, get_cursor_machine_ids,
 };
 use crate::proxy::server::AppState;
 use axum::{
@@ -28,8 +27,6 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_stream::{wrappers::IntervalStream, StreamExt};
-
-const OLLAMA_AUTHORIZED_FALLBACK_URL: &str = "https://ollama.com/connect";
 
 #[derive(Deserialize)]
 pub struct PollQuery {
@@ -64,10 +61,6 @@ pub struct CancelAuthRequest {
     pub account_id: String,
 }
 
-#[derive(Deserialize, Default)]
-pub struct OllamaSignoutRequest {
-    pub account_id: Option<String>,
-}
 
 #[derive(Serialize)]
 pub struct LoginResponse {
@@ -97,6 +90,14 @@ pub struct AuthUrlResponse {
     pub url: String,
     pub state: String,
     pub account_id: String,
+}
+
+#[derive(Deserialize)]
+pub struct CursorCompleteRequest {
+    pub session: String,
+    pub account_id: Option<String>,
+    pub machine_id: Option<String>,
+    pub mac_machine_id: Option<String>,
 }
 
 pub async fn handle_copilot_login(
@@ -173,8 +174,6 @@ pub async fn handle_copilot_poll(
                 }));
             }
 
-            // After getting GitHub token, we should also try to get the Copilot session token
-            // to verify they actually have Copilot.
             let session_res = client.exchange_for_copilot_token(&access_token).await;
 
             match session_res {
@@ -215,23 +214,21 @@ pub async fn handle_copilot_poll(
                 })),
             }
         }
-        Err(e) => {
-            // Still waiting or error
-            Ok(Json(PollResponse {
-                success: false,
-                access_token: None,
-                refresh_token: None,
-                refresh_token_expires_in: None,
-                token_type: None,
-                scope: None,
-                session_token: None,
-                expires_at: None,
-                copilot_plan: None,
-                error: Some(e.to_string()),
-            }))
-        }
+        Err(e) => Ok(Json(PollResponse {
+            success: false,
+            access_token: None,
+            refresh_token: None,
+            refresh_token_expires_in: None,
+            token_type: None,
+            scope: None,
+            session_token: None,
+            expires_at: None,
+            copilot_plan: None,
+            error: Some(e.to_string()),
+        })),
     }
 }
+
 pub async fn handle_list_accounts(
     _state: State<Arc<AppState>>,
 ) -> Result<Json<Vec<serde_json::Value>>, (axum::http::StatusCode, String)> {
@@ -273,15 +270,8 @@ pub async fn handle_get_quota(
             )
         })?;
 
-    let master_key = crate::security::load_master_key()
+    let decrypted_token = decrypt_access_token(access_token)
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-    let decrypted_token = if access_token.starts_with("Tengra:v1:") {
-        crate::security::decrypt_token(access_token, &master_key)
-            .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-    } else {
-        access_token.to_string()
-    };
 
     match crate::quota::check_quota(&query.provider, &decrypted_token).await {
         Ok(mut res) => {
@@ -343,157 +333,6 @@ pub async fn handle_stream_quota(
     )
 }
 
-async fn build_quota_snapshot(state: Arc<AppState>) -> anyhow::Result<Value> {
-    let accounts = crate::db::get_all_linked_accounts().await?;
-    let tasks = accounts.into_iter().filter_map(|account| {
-        let provider_raw = account
-            .get("provider")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .trim()
-            .to_ascii_lowercase();
-        if provider_raw.is_empty() {
-            return None;
-        }
-        if !matches!(
-            provider_raw.as_str(),
-            "antigravity" | "google" | "codex" | "openai" | "claude" | "anthropic" | "copilot"
-        ) {
-            return None;
-        }
-
-        let access_token = account
-            .get("access_token")
-            .and_then(Value::as_str)
-            .map(str::trim)
-            .unwrap_or("")
-            .to_string();
-        if access_token.is_empty() {
-            return None;
-        }
-
-        let account_id = account
-            .get("id")
-            .and_then(Value::as_str)
-            .map(str::to_string);
-        let email = account
-            .get("email")
-            .and_then(Value::as_str)
-            .map(str::to_string);
-        let is_active = parse_is_active(&account);
-
-        Some(async move {
-            let token = match decrypt_access_token(access_token.as_str()) {
-                Ok(value) => value,
-                Err(error) => {
-                    return json!({
-                        "provider": provider_raw,
-                        "account_id": account_id,
-                        "email": email,
-                        "is_active": is_active,
-                        "success": false,
-                        "error": format!("token_decrypt_failed: {}", error)
-                    });
-                }
-            };
-
-            match tokio::time::timeout(
-                Duration::from_millis(4000),
-                crate::quota::check_quota(provider_raw.as_str(), token.as_str()),
-            )
-            .await
-            {
-                Ok(Ok(mut quota_res)) => {
-                    // Sanitize f64 values to avoid serialization failure (NaN/Infinity)
-                    if let Some(q) = &mut quota_res.quota {
-                        q.sanitize();
-                    }
-                    if let Some(models) = &mut quota_res.models {
-                        for m in models {
-                            m.sanitize();
-                        }
-                    }
-
-                    let mut res = json!({
-                        "provider": provider_raw,
-                        "account_id": account_id,
-                        "email": email,
-                        "is_active": is_active,
-                        "success": true,
-                    });
-
-                    // Set fields from QuotaResult explicitly
-                    res["quota"] = json!(quota_res.quota);
-                    res["models"] = json!(quota_res.models);
-                    res["error"] = json!(quota_res.error);
-
-                    res
-                }
-                Ok(Err(error)) => json!({
-                    "provider": provider_raw,
-                    "account_id": account_id,
-                    "email": email,
-                    "is_active": is_active,
-                    "success": false,
-                    "error": error.to_string()
-                }),
-                Err(_) => json!({
-                    "provider": provider_raw,
-                    "account_id": account_id,
-                    "email": email,
-                    "is_active": is_active,
-                    "success": false,
-                    "error": "quota_check_timeout"
-                }),
-            }
-        })
-    });
-
-    let results: Vec<Value> = futures::future::join_all(tasks).await;
-
-    let mut merged_results = Vec::new();
-    let usage_cache = state.copilot_usage_cache.lock().await;
-
-    for mut res in results {
-        if let Some(account_id) = res.get("account_id").and_then(Value::as_str) {
-            if let Some(usage) = usage_cache.get(account_id) {
-                if let Some(quota) = res.get_mut("quota") {
-                    if let Some(limits) = usage.get("session_limits") {
-                        quota["session_limits"] = limits.clone();
-                    }
-                    if let Some(session_usage) = usage.get("session_usage") {
-                        quota["session_usage"] = session_usage.clone();
-                    }
-                }
-            }
-        }
-        merged_results.push(res);
-    }
-
-    Ok(json!({
-        "timestamp_ms": chrono::Utc::now().timestamp_millis(),
-        "accounts": merged_results
-    }))
-}
-
-fn parse_is_active(account: &Value) -> bool {
-    match account.get("is_active") {
-        Some(Value::Bool(value)) => *value,
-        Some(Value::Number(value)) => value.as_i64().unwrap_or(0) != 0,
-        Some(Value::String(value)) => matches!(value.as_str(), "1" | "true" | "TRUE"),
-        _ => true,
-    }
-}
-
-fn decrypt_access_token(access_token: &str) -> anyhow::Result<String> {
-    if !access_token.starts_with("Tengra:v1:") {
-        return Ok(access_token.to_string());
-    }
-    let master_key = crate::security::load_master_key()?;
-    let token = crate::security::decrypt_token(access_token, &master_key)?;
-    Ok(token)
-}
-
 pub async fn handle_manual_oauth_callback(
     _state: State<Arc<AppState>>,
     Json(payload): Json<ManualOAuthCallback>,
@@ -504,18 +343,46 @@ pub async fn handle_manual_oauth_callback(
     Ok(Json(json!(status)))
 }
 
+pub async fn handle_cursor_complete(
+    _state: State<Arc<AppState>>,
+    Json(payload): Json<CursorCompleteRequest>,
+) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
+    let account_id = payload.account_id.as_deref().unwrap_or("cursor_default");
+
+    let (det_machine_id, det_mac_machine_id) =
+        if payload.machine_id.is_none() || payload.mac_machine_id.is_none() {
+            get_cursor_machine_ids()
+        } else {
+            ("".to_string(), "".to_string())
+        };
+
+    let machine_id = payload.machine_id.as_deref().unwrap_or(&det_machine_id);
+    let mac_machine_id = payload
+        .mac_machine_id
+        .as_deref()
+        .unwrap_or(&det_mac_machine_id);
+
+    let status = crate::auth::session::complete_cursor_session(
+        &payload.session,
+        account_id,
+        machine_id,
+        mac_machine_id,
+    )
+    .await
+    .map_err(|error| (axum::http::StatusCode::BAD_REQUEST, error.to_string()))?;
+    Ok(Json(json!(status)))
+}
+
 pub async fn handle_provider_auth_url(
     provider: &str,
     account_id: Option<&str>,
 ) -> Result<Json<AuthUrlResponse>, (axum::http::StatusCode, String)> {
-    if provider != "ollama" {
-        ensure_callback_server(provider).await.map_err(|error| {
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                error.to_string(),
-            )
-        })?;
-    }
+    ensure_callback_server(provider).await.map_err(|error| {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            error.to_string(),
+        )
+    })?;
     let needs_pkce = matches!(provider, "codex" | "claude");
     let (state, account_id, verifier) = create_session(provider, account_id, needs_pkce)
         .await
@@ -526,24 +393,6 @@ pub async fn handle_provider_auth_url(
             )
         })?;
 
-    if provider == "ollama" && should_eagerly_complete_ollama_session() {
-        let already_authorized =
-            complete_ollama_session_if_authorized(state.as_str(), account_id.as_str())
-                .await
-                .map_err(|error| {
-                    (
-                        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                        error.to_string(),
-                    )
-                })?;
-        if already_authorized {
-            return Ok(Json(AuthUrlResponse {
-                url: OLLAMA_AUTHORIZED_FALLBACK_URL.to_string(),
-                state,
-                account_id,
-            }));
-        }
-    }
 
     let url = build_auth_url(
         provider,
@@ -564,37 +413,6 @@ pub async fn handle_provider_auth_url(
         state,
         account_id,
     }))
-}
-
-async fn build_auth_url(
-    provider: &str,
-    state: &str,
-    verifier: Option<&str>,
-    account_id: Option<&str>,
-) -> anyhow::Result<String> {
-    match provider {
-        "codex" => {
-            let pkce = verifier
-                .map(|code_verifier| crate::auth::codex::pkce::PKCECodes {
-                    code_verifier: code_verifier.to_string(),
-                    code_challenge: crate::auth::codex::pkce::generate_challenge(code_verifier),
-                })
-                .ok_or_else(|| anyhow::anyhow!("Missing PKCE verifier for codex auth"))?;
-            Ok(CodexClient::new().await?.generate_auth_url(state, &pkce))
-        }
-        "claude" => {
-            let pkce = verifier
-                .map(|code_verifier| crate::auth::codex::pkce::PKCECodes {
-                    code_verifier: code_verifier.to_string(),
-                    code_challenge: crate::auth::codex::pkce::generate_challenge(code_verifier),
-                })
-                .ok_or_else(|| anyhow::anyhow!("Missing PKCE verifier for claude auth"))?;
-            Ok(ClaudeClient::new().await?.generate_auth_url(state, &pkce))
-        }
-        "antigravity" => Ok(AntigravityClient::new(None).await?.generate_auth_url(state)),
-        "ollama" => build_ollama_auth_url(account_id).await,
-        _ => Err(anyhow::anyhow!("Unsupported auth provider: {}", provider)),
-    }
 }
 
 pub async fn handle_codex_auth_url(
@@ -618,84 +436,35 @@ pub async fn handle_antigravity_auth_url(
     handle_provider_auth_url("antigravity", query.account_id.as_deref()).await
 }
 
-pub async fn handle_ollama_auth_url(
+
+pub async fn handle_cursor_auth_url(
     _state: State<Arc<AppState>>,
     Query(query): Query<AuthUrlQuery>,
 ) -> Result<Json<AuthUrlResponse>, (axum::http::StatusCode, String)> {
-    handle_provider_auth_url("ollama", query.account_id.as_deref()).await
+    let account_id = query
+        .account_id
+        .as_deref()
+        .unwrap_or("cursor_default")
+        .to_string();
+    Ok(Json(AuthUrlResponse {
+        url: "https://cursor.com/login".to_string(),
+        state: "cursor-direct".to_string(),
+        account_id,
+    }))
 }
 
-pub async fn handle_ollama_signout(
-    _state: State<Arc<AppState>>,
-    Json(payload): Json<OllamaSignoutRequest>,
-) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
-    let base_url = resolve_ollama_base_url(payload.account_id.as_deref()).await;
-    let client = OllamaClient::new(base_url.as_deref(), None).map_err(|error| {
-        (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            error.to_string(),
-        )
-    })?;
-    let already_signed_out = match client.signout().await {
-        Ok(()) => false,
-        Err(error) => {
-            if is_ollama_not_authorized_error(error.to_string().as_str()) {
-                true
-            } else {
-                return Err((
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    error.to_string(),
-                ));
-            }
-        }
-    };
-
-    Ok(Json(json!({
-        "success": true,
-        "already_signed_out": already_signed_out
-    })))
-}
 
 pub async fn handle_get_auth_status(
     _state: State<Arc<AppState>>,
     Query(query): Query<AuthStatusQuery>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
-    let mut session_status = get_session_status_for(
+    let session_status = get_session_status_for(
         query.provider.as_str(),
         query.state.as_str(),
         query.account_id.as_str(),
     )
     .await;
 
-    if query.provider.eq_ignore_ascii_case("ollama")
-        && session_status
-            .as_ref()
-            .map(|status| status.status == "wait")
-            .unwrap_or(false)
-    {
-        match complete_ollama_session_if_authorized(query.state.as_str(), query.account_id.as_str())
-            .await
-        {
-            Ok(true) => {
-                session_status = get_session_status_for(
-                    query.provider.as_str(),
-                    query.state.as_str(),
-                    query.account_id.as_str(),
-                )
-                .await;
-            }
-            Ok(false) => {}
-            Err(error) => {
-                return Ok(Json(json!({
-                    "status": "error",
-                    "provider": query.provider,
-                    "state": query.state,
-                    "account_id": query.account_id,
-                    "error": error.to_string()
-                })));
-            }
-        }
-    }
 
     if let Some(status) = session_status.clone() {
         if status.status == "ok" || status.status == "error" {
@@ -735,113 +504,6 @@ pub async fn handle_get_auth_status(
     })))
 }
 
-async fn build_ollama_auth_url(account_id: Option<&str>) -> anyhow::Result<String> {
-    let base_url = resolve_ollama_base_url(account_id).await;
-    let client = OllamaClient::new(base_url.as_deref(), None)?;
-    match client.fetch_signin_url().await {
-        Ok(url) => Ok(url),
-        Err(error) => {
-            if is_ollama_already_authorized_error(error.to_string().as_str()) {
-                return Ok(OLLAMA_AUTHORIZED_FALLBACK_URL.to_string());
-            }
-            Err(error)
-        }
-    }
-}
-
-fn should_eagerly_complete_ollama_session() -> bool {
-    false
-}
-
-async fn complete_ollama_session_if_authorized(
-    state: &str,
-    account_id: &str,
-) -> anyhow::Result<bool> {
-    let base_url = resolve_ollama_base_url(Some(account_id)).await;
-    let client = OllamaClient::new(base_url.as_deref(), None)?;
-    let profile = match client.fetch_profile().await {
-        Ok(profile) => profile,
-        Err(error) => {
-            if is_ollama_not_authorized_error(error.to_string().as_str()) {
-                return Ok(false);
-            }
-            return Err(error);
-        }
-    };
-
-    let profile_json = json!({
-        "id": profile.id,
-        "email": profile.email,
-        "name": profile.name,
-        "username": profile.username,
-        "image_url": profile.image_url
-    });
-    let display_name = profile
-        .name
-        .as_deref()
-        .or(profile.username.as_deref())
-        .map(str::to_string);
-    let token_json = json!({
-        "email": profile.email,
-        "display_name": display_name,
-        "avatar_url": profile.image_url,
-        "oauth_provider": "ollama",
-        "external_account_id": profile.id,
-        "base_url": base_url,
-        "provider_profile": profile_json
-    });
-
-    crate::db::save_token_with_retry(token_json, account_id, "ollama", 3).await?;
-    crate::db::delete_provider_accounts_except("ollama", account_id).await?;
-    complete_external_session("ollama", state, account_id).await?;
-    Ok(true)
-}
-
-fn is_ollama_already_authorized_error(message: &str) -> bool {
-    message.to_ascii_lowercase().contains("already authorized")
-}
-
-fn is_ollama_not_authorized_error(message: &str) -> bool {
-    let normalized = message.to_ascii_lowercase();
-    normalized.contains("status 401")
-        || normalized.contains("status 403")
-        || normalized.contains("unauthorized")
-}
-
-async fn resolve_ollama_base_url(account_id: Option<&str>) -> Option<String> {
-    if let Some(id) = account_id {
-        if let Ok(Some(account)) = crate::db::get_linked_account("ollama", id).await {
-            if let Some(url) = extract_ollama_base_url_from_account(&account) {
-                return Some(url);
-            }
-        }
-    }
-
-    resolve_ollama_base_url_from_env()
-}
-
-fn resolve_ollama_base_url_from_env() -> Option<String> {
-    std::env::var("TENGRA_OLLAMA_BASE_URL")
-        .ok()
-        .or_else(|| std::env::var("OLLAMA_HOST").ok())
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty())
-}
-
-fn extract_ollama_base_url_from_account(account: &Value) -> Option<String> {
-    let metadata = match account.get("metadata") {
-        Some(Value::Object(map)) => Value::Object(map.clone()),
-        Some(Value::String(text)) => serde_json::from_str::<Value>(text).ok()?,
-        _ => Value::Null,
-    };
-    metadata
-        .get("base_url")
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_string)
-}
-
 pub async fn handle_cancel_auth(
     _state: State<Arc<AppState>>,
     Json(payload): Json<CancelAuthRequest>,
@@ -865,11 +527,79 @@ pub async fn handle_cancel_auth(
     })))
 }
 
+pub async fn handle_debug_tokens(
+    _state: State<Arc<AppState>>,
+) -> Result<Json<Value>, (axum::http::StatusCode, String)> {
+    let accounts = crate::db::get_all_linked_accounts()
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let master_key = crate::security::load_master_key()
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let mut debug_info = Vec::new();
+
+    for account in accounts {
+        let id = account
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown");
+        let provider = account
+            .get("provider")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown");
+
+        let access_token = account
+            .get("access_token")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let refresh_token = account.get("refresh_token").and_then(Value::as_str);
+        let session_token = account.get("session_token").and_then(Value::as_str);
+
+        let decrypted_access = if access_token.starts_with("Tengra:v1:") {
+            crate::security::decrypt_token(access_token, &master_key)
+                .unwrap_or_else(|_| "DECRYPT_FAILED".to_string())
+        } else {
+            access_token.to_string()
+        };
+
+        let decrypted_refresh = refresh_token.map(|rt| {
+            if rt.starts_with("Tengra:v1:") {
+                crate::security::decrypt_token(rt, &master_key)
+                    .unwrap_or_else(|_| "DECRYPT_FAILED".to_string())
+            } else {
+                rt.to_string()
+            }
+        });
+
+        let decrypted_session = session_token.map(|st| {
+            if st.starts_with("Tengra:v1:") {
+                crate::security::decrypt_token(st, &master_key)
+                    .unwrap_or_else(|_| "DECRYPT_FAILED".to_string())
+            } else {
+                st.to_string()
+            }
+        });
+
+        debug_info.push(json!({
+            "id": id,
+            "provider": provider,
+            "access_token": decrypted_access,
+            "refresh_token": decrypted_refresh,
+            "session_token": decrypted_session,
+            "metadata": account.get("metadata")
+        }));
+    }
+
+    Ok(Json(json!(debug_info)))
+}
+
 #[cfg(test)]
 mod tests {
+
     use super::{
-        extract_ollama_base_url_from_account, is_ollama_not_authorized_error,
-        should_eagerly_complete_ollama_session, AuthStatusQuery, CancelAuthRequest,
+        AuthStatusQuery,
+        CancelAuthRequest,
     };
 
     #[test]
@@ -894,29 +624,5 @@ mod tests {
         assert_eq!(payload.provider, "claude");
         assert_eq!(payload.state, "xyz");
         assert_eq!(payload.account_id, "claude_456");
-    }
-
-    #[test]
-    fn parses_ollama_base_url_from_stringified_metadata() {
-        let account = serde_json::json!({
-            "metadata": "{\"base_url\":\"http://127.0.0.1:11434\"}"
-        });
-        let base_url = extract_ollama_base_url_from_account(&account);
-        assert_eq!(base_url.as_deref(), Some("http://127.0.0.1:11434"));
-    }
-
-    #[test]
-    fn classifies_ollama_unauthorized_errors() {
-        assert!(is_ollama_not_authorized_error(
-            "Ollama profile fetch failed with status 401 Unauthorized"
-        ));
-        assert!(is_ollama_not_authorized_error(
-            "Ollama profile fetch failed with status 403 Forbidden"
-        ));
-    }
-
-    #[test]
-    fn defers_ollama_profile_persistence_until_after_signin() {
-        assert!(!should_eagerly_complete_ollama_session());
     }
 }

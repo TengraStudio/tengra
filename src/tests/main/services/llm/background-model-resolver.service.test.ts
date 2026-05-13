@@ -17,12 +17,14 @@ function createResolver(options: {
     accountsByProvider?: Record<string, Array<{ accessToken?: string; refreshToken?: string; sessionToken?: string; metadata?: Record<string, unknown> }>>;
 }) {
     const accountsByProvider = options.accountsByProvider ?? {};
-    return new BackgroundModelResolver({
-        authService: {
+    return new BackgroundModelResolver(
+        {
             getAccountsByProviderFull: vi.fn(async (provider: string) => accountsByProvider[provider] ?? [])
         } as never,
-        getModels: vi.fn(async () => options.models ?? []),
-    });
+        {
+            getAllModels: vi.fn(async () => options.models ?? []),
+        } as never
+    );
 }
 
 describe('BackgroundModelResolver', () => {

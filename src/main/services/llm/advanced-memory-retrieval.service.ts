@@ -57,6 +57,8 @@ interface RetrievalDependencies {
 }
 
 export class AdvancedMemoryRetrievalService {
+    static readonly serviceName = 'advancedMemoryRetrievalService';
+    static readonly dependencies = ['deps'] as const;
     constructor(private readonly deps: RetrievalDependencies) {}
 
     async performRecall(

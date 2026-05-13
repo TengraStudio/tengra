@@ -37,7 +37,7 @@ interface AccountRowProps {
     creditUsageMode?: AntigravityCreditUsageMode
     onUnlink: (accountId: string) => Promise<void>
     onSetActive: (providerId: string, accountId: string) => Promise<void>
-    onShowManualSession: (accountId: string, email?: string) => void
+    onShowManualSession: (accountId: string, email?: string, provider?: string) => void
     onCreditUsageModeChange?: (accountId: string, mode: AntigravityCreditUsageMode) => void
     t: (key: string) => string
 }
@@ -148,7 +148,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            onShowManualSession(account.id, account.email);
+                            onShowManualSession(account.id, account.email, providerId);
                         }}
                         disabled={isBusy}
                         className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-primary/10"

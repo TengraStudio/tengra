@@ -32,6 +32,8 @@ interface ExternalRuntimeDependencyProbe {
 }
 
 export class RuntimeHealthService extends BaseService {
+    static readonly serviceName = 'runtimeHealthService';
+    static readonly dependencies = ['externalRuntimeDependencyService'] as const;
     private static readonly MESSAGE_KEY = {
         UNSUPPORTED: 'runtime.health.unsupportedTarget',
         INSTALL_PATH_MISSING: 'runtime.health.installPathMissing',

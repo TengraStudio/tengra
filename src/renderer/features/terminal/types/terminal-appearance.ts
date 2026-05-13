@@ -22,6 +22,8 @@ export type TerminalAppearancePreferences = {
     cursorBlink: boolean;
     fontSize: number;
     lineHeight: number;
+    bellEnabled: boolean;
+    bellStyle: 'none' | 'sound' | 'visual' | 'both';
     customTheme: Partial<ITheme> | null;
 };
 
@@ -32,6 +34,8 @@ export type ResolvedTerminalAppearance = {
     cursorBlink: boolean;
     fontSize: number;
     lineHeight: number;
+    bellEnabled: boolean;
+    bellStyle: 'none' | 'sound' | 'visual' | 'both';
 };
 
 

@@ -20,12 +20,16 @@ import { DatabaseService } from '@main/services/data/database.service';
 import { FileSearchResult } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
-import { scanDirForSymbols, scanDirForText, scanDirRecursively } from './file-scanner.util';
+import { fastFileSearch,fastTextSearch } from './fast-search.util';
+import { scanDirForSymbols, scanDirRecursively } from './file-scanner.util';
 
 const CODE_FILE_PATTERN = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i;
 const MAX_FILE_PATH_RESULTS = 80;
 
 function normalizeSearchValue(value: string): string {
+    if (!value || typeof value !== 'string') {
+        return '';
+    }
     return value.trim().toLowerCase().replace(/\\/g, '/');
 }
 
@@ -50,6 +54,9 @@ function calculateSubsequenceScore(candidate: string, query: string): number {
 }
 
 export function scoreFilePathMatch(relativePath: string, query: string): number {
+    if (!relativePath || typeof relativePath !== 'string' || !query || typeof query !== 'string') {
+        return -1;
+    }
     const normalizedQuery = normalizeSearchValue(query);
     const normalizedPath = normalizeSearchValue(relativePath);
     const fileName = path.basename(normalizedPath);
@@ -147,21 +154,27 @@ export async function findSymbols(
     return results;
 }
 
-/** Hybrid search: indexed + semantic + regex fallback */
+/** Hybrid search: indexed + fast parallel text + file name match */
 export async function searchFiles(
     db: DatabaseService,
     rootPath: string,
     query: string,
     workspaceId: string | undefined,
-    isRegex: boolean = false
+    isRegex: boolean = false,
+    matchCase: boolean = false,
+    matchWholeWord: boolean = false
 ): Promise<FileSearchResult[]> {
     const results: FileSearchResult[] = [];
+    if (!query || typeof query !== 'string') {
+        return [];
+    }
     const trimmedQuery = query.trim();
     if (!trimmedQuery) {
         return [];
     }
-    appLogger.info('SymbolNavigation', `Starting search for "${query}" (regex=${isRegex}) workspace=${workspaceId} root=${rootPath}`);
+    appLogger.info('SymbolNavigation', `Starting search for "${trimmedQuery}" (regex=${isRegex}, case=${matchCase}, word=${matchWholeWord}) workspace=${workspaceId} root=${rootPath}`);
 
+    // 1. Indexed symbol search (from DB — instant)
     try {
         if (workspaceId || rootPath) {
             const symbols = await db.findCodeSymbolsByName(rootPath, trimmedQuery);
@@ -180,20 +193,27 @@ export async function searchFiles(
         appLogger.warn('SymbolNavigation', `Indexed search failed: ${getErrorMessage(e as Error)}`);
     }
 
+    // 2. File name matching (fuzzy, like Ctrl+P)
+    if (!isRegex) {
+        try {
+            const fileMatches = await fastFileSearch(rootPath, trimmedQuery);
+            results.push(...fileMatches);
+        } catch (error) {
+            appLogger.warn('SymbolNavigation', `File name search failed: ${getErrorMessage(error as Error)}`);
+        }
+    }
+
+    // 3. Fast parallel text search across all files
     try {
-        results.push(...await findFilePathMatches(rootPath, trimmedQuery));
+        const textResults = await fastTextSearch(rootPath, trimmedQuery, {
+            isRegex, matchCase, matchWholeWord
+        });
+        results.push(...textResults);
     } catch (error) {
-        appLogger.warn(
-            'SymbolNavigation',
-            `File path search failed for ${trimmedQuery}: ${getErrorMessage(error as Error)}`
-        );
+        appLogger.warn('SymbolNavigation', `Text search failed: ${getErrorMessage(error as Error)}`);
     }
 
-    if (results.length < 20 || isRegex) {
-        await scanDirForText(rootPath, trimmedQuery, isRegex, results);
-    }
-
-    return deduplicateResults(results, 500);
+    return deduplicateResults(results, 2000);
 }
 
 /** Find definition of a symbol */
@@ -202,6 +222,9 @@ export async function findDefinition(
     rootPath: string,
     symbol: string
 ): Promise<FileSearchResult | null> {
+    if (!symbol || typeof symbol !== 'string') {
+        return null;
+    }
     const trimmed = symbol.trim();
     if (!trimmed) { return null; }
 
@@ -230,10 +253,7 @@ export async function findUsage(
     rootPath: string,
     symbol: string
 ): Promise<FileSearchResult[]> {
-    const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const results: FileSearchResult[] = [];
-    await scanDirForText(rootPath, `\\b${escapedSymbol}\\b`, true, results);
-    return results;
+    return fastTextSearch(rootPath, symbol, { matchWholeWord: true });
 }
 
 /** Scan a single file for implementation patterns */
@@ -282,6 +302,9 @@ export async function findImplementations(
     rootPath: string,
     symbol: string
 ): Promise<FileSearchResult[]> {
+    if (!symbol || typeof symbol !== 'string') {
+        return [];
+    }
     const trimmed = symbol.trim();
     if (!trimmed) { return []; }
 
@@ -308,6 +331,9 @@ export async function getSymbolRelationships(
     symbol: string,
     maxItems: number = 200
 ): Promise<FileSearchResult[]> {
+    if (!symbol || typeof symbol !== 'string') {
+        return [];
+    }
     const trimmed = symbol.trim();
     if (!trimmed) { return []; }
 

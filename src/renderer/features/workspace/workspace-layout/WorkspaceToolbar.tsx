@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconArrowLeft, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLayoutSidebarRightCollapse, IconLayoutSidebarRightExpand, IconPencil } from '@tabler/icons-react';
+import { IconArrowLeft, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLayoutSidebarRightCollapse, IconLayoutSidebarRightExpand, IconPencil, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -19,7 +19,6 @@ import { DashboardTabs } from './DashboardTabs';
 
 /* Batch-02: Extracted Long Classes */
 const C_WORKSPACETOOLBAR_1 = "bg-muted/60 text-sm font-medium px-1.5 py-0.5 rounded border border-border/60 focus:outline-none focus:border-primary/50 text-foreground min-w-200";
-
 
 interface WorkspaceToolbarProps {
     workspaceName: string;
@@ -145,7 +144,20 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                 />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+                {dashboardTab !== 'editor' && (
+                    <>
+                        <button
+                            onClick={() => onDashboardTabChange?.('editor')}
+                            className="flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-colors text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                            title="Close Dashboard"
+                        >
+                            <span className="text-xs font-medium">Close Panel</span>
+                            <IconX className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="w-px h-4 bg-border/40 mx-1" />
+                    </>
+                )}
                 <button
                     onClick={toggleAgentPanel}
                     className={cn(

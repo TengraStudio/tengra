@@ -10,7 +10,6 @@
 
 export * from './AIAssistantSidebar';
 export * from './ChatErrorBanner';
-export * from './CommandStrip';
 export * from './DashboardTabs';
 export * from './EditorBreadcrumb';
 export * from './EditorTabContextMenu';
@@ -29,6 +28,7 @@ export * from './WorkspaceContextMenu';
 export * from './WorkspaceDialogs';
 export * from './WorkspaceEditor';
 export * from './WorkspaceExplorerPanel';
+export * from './WorkspaceFooter';
 export * from './WorkspaceMain';
 export * from './WorkspaceModals';
 export * from './WorkspaceMountItem';

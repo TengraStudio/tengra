@@ -521,11 +521,6 @@ fn default_limits(provider: &str) -> (u32, u32) {
         "openai" => (128_000, 16_384),
         "openrouter" => (128_000, 8_192),
         "xai" => (256_000, 8_192),
-        "cohere" => (128_000, 8_000),
-        "perplexity" => (128_000, 8_000),
-        "mistral" => (32_000, 8_192),
-        "groq" => (128_000, 8_192),
-        "together" => (128_000, 8_192),
         "deepseek" => (64_000, 8_192),
         _ => (128_000, 8_192),
     }
@@ -549,7 +544,7 @@ fn normalize_model_id(provider: &str, model: &str) -> String {
             .to_string(),
         "openrouter" => trimmed.trim_start_matches("openrouter/").to_string(),
         "antigravity" => trimmed.trim_start_matches("antigravity/").to_string(),
-        "together" => trimmed.trim_start_matches("together/").to_string(),
+
         _ => trimmed.to_string(),
     }
 }
@@ -723,7 +718,7 @@ mod tests {
         for index in 0..30 {
             messages.push(ChatMessage {
                 role: if index % 2 == 0 { "user" } else { "assistant" }.to_string(),
-                content: json!(format!("message {} {}", index, "x".repeat(4000))),
+                content: json!(format!("message {} {}", index, "x".repeat(10000))),
                 name: None,
                 tool_calls: None,
                 tool_call_id: None,
@@ -782,10 +777,10 @@ mod tests {
     fn compacts_raw_claude_payload() {
         let payload = json!({
             "model": "claude-3-7-sonnet-20250219",
-            "max_tokens": 1024,
+            "max_tokens": 100000,
             "messages": (0..24).map(|index| json!({
                 "role": if index % 2 == 0 { "user" } else { "assistant" },
-                "content": [{ "type": "text", "text": format!("turn {} {}", index, "x".repeat(2000)) }]
+                "content": [{ "type": "text", "text": format!("turn {} {}", index, "x".repeat(20000)) }]
             })).collect::<Vec<_>>()
         });
 

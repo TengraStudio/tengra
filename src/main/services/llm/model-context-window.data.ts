@@ -62,6 +62,13 @@ const EXACT_CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
     'gemini-3.1-flash-lite': 1048576,
     'gemini-3.1-flash-image': 65536,
     'gemini-3-pro-image': 65536,
+    // xAI Grok
+    'grok-4.3': 1000000,
+    'grok-4.20-multi-agent-0309': 2000000,
+    'grok-4.20-0309-reasoning': 2000000,
+    'grok-4.20-0309-non-reasoning': 2000000,
+    'grok-4-1-fast-reasoning': 2000000,
+    'grok-4-1-fast-non-reasoning': 2000000,
 };
 
 const CONTEXT_PATTERNS: ReadonlyArray<{ pattern: RegExp; size: number }> = [
@@ -85,9 +92,10 @@ const CONTEXT_PATTERNS: ReadonlyArray<{ pattern: RegExp; size: number }> = [
 
     // Qwen / DeepSeek / GLM / Mistral defaults for hosted variants in this app
     { pattern: /qwen2\.5|qwen\/qwen2\.5|qwen3|qwq-32b/i, size: 32768 },
-    { pattern: /deepseek-r1|deepseek-v3/i, size: 32768 },
+    { pattern: /deepseek-r1|deepseek-v3/i, size: 65536 },
     { pattern: /glm[-_.]?4\.7|chatglm/i, size: 32768 },
-    { pattern: /mixtral-8x22b|mistral-large|codestral/i, size: 32768 },
+    { pattern: /mixtral-8x22b|mistral-large|codestral|mistral-small|ministral/i, size: 128000 },
+    { pattern: /grok/i, size: 128000 },
 
     // Retrieval/embedding/reranker models
     { pattern: /embed|embedding|rerank|bge|arctic-embed|nvclip/i, size: 8192 },

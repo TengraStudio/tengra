@@ -181,6 +181,7 @@ export function buildAssistantPresentationMetadata(options: {
     sources?: string[];
     isStreaming?: boolean;
     language?: string;
+    systemMode?: import('@shared/types/ai-runtime').AiRuntimeSystemMode;
     evidenceSnapshot?: import('@shared/types/ai-runtime').AiEvidenceStoreSnapshot;
 }): Message['metadata'] {
     return {
@@ -195,6 +196,7 @@ export function buildAssistantPresentationMetadata(options: {
             sources: options.sources,
             isStreaming: options.isStreaming,
             language: options.language,
+            systemMode: options.systemMode,
             evidenceSnapshot: options.evidenceSnapshot,
         }),
     };

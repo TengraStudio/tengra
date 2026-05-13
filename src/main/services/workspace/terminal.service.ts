@@ -16,6 +16,7 @@ import * as path from 'path';
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { getDataFilePath, getDataSubPath } from '@main/services/system/app-layout-paths.util';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -189,6 +190,8 @@ interface ImportTerminalSessionResult {
 }
 
 export class TerminalService extends BaseService {
+    static readonly serviceName = 'terminalService';
+    static readonly dependencies = ['eventBus', 'settingsService', 'authService', 'proxyService', 'getMainWindow'] as const;
     private sessions: Map<string, TerminalSession> = new Map();
     private backends: Map<string, ITerminalBackend> = new Map();
     private persistencePath: string;
@@ -212,18 +215,21 @@ export class TerminalService extends BaseService {
     private discoverySnapshot: TerminalDiscoverySnapshot | null = null;
     private cleanupTimer: NodeJS.Timeout | null = null;
     private powerStateUnsubscribe: (() => void) | null = null;
+    private initializePromise: Promise<void> | null = null;
+    private isInitialized = false;
 
     constructor(
         private readonly eventBus: EventBusService,
         private readonly settingsService: SettingsService,
         private readonly authService: AuthService,
+        private readonly proxyService: ProxyService,
         private readonly getMainWindow: () => BrowserWindow | null
     ) {
         super('TerminalService');
         
         // Register default backends
         if (this.authService) {
-            const proxyTerminalBackend = new ProxyTerminalBackend(this.authService);
+            const proxyTerminalBackend = new ProxyTerminalBackend(this.authService, this.proxyService);
             this.backends.set(proxyTerminalBackend.id, proxyTerminalBackend);
             
             // Docker backend also needs auth for proxy communication
@@ -268,28 +274,41 @@ export class TerminalService extends BaseService {
     }
 
     async initialize(): Promise<void> {
-        this.logInfo('Initializing TerminalService...');
-        await this.loadSnapshots();
-        await this.loadCommandHistory();
-        await this.loadScrollbackMarkers();
-        await this.loadSessionTemplates();
-        await this.loadSearchState();
-        const currentSettings = this.settingsService.getSettings();
-        this.handlePowerStateChange(currentSettings.window?.lowPowerMode ?? false);
+        if (this.isInitialized) {return;}
+        if (this.initializePromise) {return this.initializePromise;}
 
-        // Subscribe to power state changes for adaptive throttling
-        this.powerStateUnsubscribe?.();
-        this.powerStateUnsubscribe = this.eventBus.on('power:state-changed', (payload) => {
-            this.handlePowerStateChange(payload.isLowPowerMode);
-        });
+        this.initializePromise = (async () => {
+            try {
+                this.logInfo('Initializing TerminalService...');
+                await this.loadSnapshots();
+                await this.loadCommandHistory();
+                await this.loadScrollbackMarkers();
+                await this.loadSessionTemplates();
+                await this.loadSearchState();
+                const currentSettings = this.settingsService.getSettings();
+                this.handlePowerStateChange(currentSettings.window?.lowPowerMode ?? false);
 
-        // Start periodic cleanup
-        if (this.cleanupTimer) {
-            clearInterval(this.cleanupTimer);
-        }
-        this.cleanupTimer = setInterval(() => {
-            void this.performPeriodicCleanup();
-        }, CLEANUP_INTERVAL_MS);
+                // Subscribe to power state changes for adaptive throttling
+                this.powerStateUnsubscribe?.();
+                this.powerStateUnsubscribe = this.eventBus.on('power:state-changed', (payload) => {
+                    this.handlePowerStateChange(payload.isLowPowerMode);
+                });
+
+                // Start periodic cleanup
+                if (this.cleanupTimer) {
+                    clearInterval(this.cleanupTimer);
+                }
+                this.cleanupTimer = setInterval(() => {
+                    void this.performPeriodicCleanup();
+                }, CLEANUP_INTERVAL_MS);
+
+                this.isInitialized = true;
+            } finally {
+                this.initializePromise = null;
+            }
+        })();
+
+        return this.initializePromise;
     }
 
     private handlePowerStateChange(isLowPowerMode: boolean) {
@@ -588,16 +607,33 @@ export class TerminalService extends BaseService {
         let backend = this.backends.get(backendId);
 
         if (!backend || !availableBackendIds.has(backendId)) {
-            this.logInfo(`Backend ${backendId} is not available, trying fallback backend`);
-            backend = undefined;
-            for (const backendInfo of discoverySnapshot.backends) {
-                if (!backendInfo.available) {
-                    continue;
+            // OPT-009: Wait for proxy if it's the requested backend
+            if (backendId === 'proxy-terminal' && this.backends.has('proxy-terminal')) {
+                const proxy = this.backends.get('proxy-terminal')!;
+                let retries = 20;
+                while (retries > 0) {
+                    if (await proxy.isAvailable()) {
+                        backend = proxy;
+                        availableBackendIds.add('proxy-terminal');
+                        break;
+                    }
+                    await new Promise(r => setTimeout(r, 25));
+                    retries--;
                 }
-                backendId = backendInfo.id;
-                backend = this.backends.get(backendId);
-                if (backend) {
-                    break;
+            }
+
+            if (!backend || !availableBackendIds.has(backendId)) {
+                this.logInfo(`Backend ${backendId} is not available, trying fallback backend`);
+                backend = undefined;
+                for (const backendInfo of discoverySnapshot.backends) {
+                    if (!backendInfo.available) {
+                        continue;
+                    }
+                    backendId = backendInfo.id;
+                    backend = this.backends.get(backendId);
+                    if (backend) {
+                        break;
+                    }
                 }
             }
         }
@@ -607,6 +643,8 @@ export class TerminalService extends BaseService {
             return false;
         }
 
+        appLogger.info('TerminalService', `Creating session ${options.id} with backend ${backendId}`);
+
         if (this.sessions.has(options.id)) {
             this.logInfo(`Replacing existing session: ${options.id}`);
             this.kill(options.id);
@@ -615,16 +653,20 @@ export class TerminalService extends BaseService {
         const snapshot = this.snapshots.get(options.id);
         const isRestoring = !!snapshot;
 
+        appLogger.debug('TerminalService', `Resolving config for session ${options.id}`);
         const { shell, args } = await this.getShellConfig(options, snapshot);
         const cwd = await this.getCwdConfig(options, snapshot);
         const cols = options.cols ?? snapshot?.cols ?? 80;
         const rows = options.rows ?? snapshot?.rows ?? 24;
+
+        appLogger.debug('TerminalService', `Config resolved: shell=${shell}, cwd=${cwd}, geometry=${cols}x${rows}`);
 
         // Create log stream
         const logPath = this.getLogPath(options.id);
         const logStream = fs.createWriteStream(logPath, { flags: 'a' });
 
         try {
+            appLogger.info('TerminalService', `Requesting backend.create for ${options.id}`);
             const process = await backend.create({
                 id: options.id,
                 shell,
@@ -647,7 +689,7 @@ export class TerminalService extends BaseService {
                     if (emitter) {
                         emitter.emitBatched(data);
                     } else {
-                        options.onData(data);
+                        this.broadcastEvent(TERMINAL_CHANNELS.DATA, { id: options.id, data });
                     }
                 },
                 onExit: code => {
@@ -659,6 +701,8 @@ export class TerminalService extends BaseService {
                         emitter.dispose();
                         this.dataEmitters.delete(options.id);
                     }
+
+                    this.broadcastEvent(TERMINAL_CHANNELS.EXIT, { id: options.id, code });
 
                     const session = this.sessions.get(options.id);
                     // Close log stream
@@ -678,7 +722,13 @@ export class TerminalService extends BaseService {
                     this.snapshots.delete(options.id);
                     this.lineBuffers.delete(options.id);
 
-                    options.onExit(code);
+                    if (options.onExit) {
+                        try {
+                            options.onExit(code);
+                        } catch (e) {
+                            appLogger.error('TerminalService', 'Failed to call onExit callback', e as Error);
+                        }
+                    }
                     void this.saveSnapshots();
                 },
             });
@@ -708,7 +758,7 @@ export class TerminalService extends BaseService {
                 merger: (batch) => batch.join('')
             });
             dataEmitter.on('batch', (mergedData: string) => {
-                options.onData(mergedData);
+                this.broadcastEvent(TERMINAL_CHANNELS.DATA, { id: options.id, data: mergedData });
             });
             this.dataEmitters.set(options.id, dataEmitter);
 
@@ -718,7 +768,10 @@ export class TerminalService extends BaseService {
                     const tail = await this.readLogTail(options.id);
                     if (tail) {
                         // Small delay to ensure xterm is ready or just sending it directly
-                        options.onData(tail + '\r\n\x1b[90m[Session Restored]\x1b[0m\r\n');
+                        this.broadcastEvent(TERMINAL_CHANNELS.DATA, { 
+                            id: options.id, 
+                            data: tail + '\r\n\x1b[90m[Session Restored]\x1b[0m\r\n' 
+                        });
                     }
                 } catch (e) {
                     appLogger.error('TerminalService', 'Failed to restore session log', e as Error);

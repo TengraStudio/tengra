@@ -249,6 +249,8 @@ export const DATABASE_PERFORMANCE_BUDGETS = {
 } as const;
 
 export class DatabaseService extends BaseService {
+    static readonly serviceName = 'databaseService';
+    static readonly dependencies = ['dataService', 'eventBus', 'dbClient', 'mainWindowProvider', 'allowedFileRoots'] as const;
     private initPromise: Promise<void> | null = null;
     private initError: Error | null = null;
     private isInitializing = false;

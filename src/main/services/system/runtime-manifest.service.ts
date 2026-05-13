@@ -22,6 +22,8 @@ import {
 } from '@shared/types/runtime-manifest';
 
 export class RuntimeManifestService extends BaseService {
+    static readonly serviceName = 'runtimeManifestService';
+    static readonly dependencies = [] as const;
     private static readonly BUILTIN_COMPONENTS: RuntimeManifestComponent[] = [
         {
             id: 'ollama',
@@ -66,37 +68,37 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-win32-x64.exe',
                     assetName: 'biome-win32-x64.exe',
                     executableRelativePath: 'biome.exe',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '6aad48b69bb0699394f93c34fc700bf1b20130aeb7101e52fccf5d306b65ab92',
                     archiveFormat: 'raw',
                     installSubdirectory: 'bin'
                 },
                 {
                     platform: 'darwin',
                     arch: 'arm64',
-                    downloadUrl: 'https://github.com/biomejs/biome/releases/download/cli%2Fv2.4.14/biome-darwin-arm64',
+                    downloadUrl: 'https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-darwin-arm64',
                     assetName: 'biome-darwin-arm64',
                     executableRelativePath: 'biome',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '13895170d26b0a9818532b84f33e04a2980b46cbb7e86d43ecc606c6bd1b1e63',
                     archiveFormat: 'raw',
                     installSubdirectory: 'bin'
                 },
                 {
                     platform: 'darwin',
                     arch: 'x64',
-                    downloadUrl: 'https://github.com/biomejs/biome/releases/download/cli%2Fv2.4.14/biome-darwin-x64',
+                    downloadUrl: 'https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-darwin-x64',
                     assetName: 'biome-darwin-x64',
                     executableRelativePath: 'biome',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: 'dc835f90255a5c9c1734d3adb07ac142396187953545029e0aeab82177e466c6',
                     archiveFormat: 'raw',
                     installSubdirectory: 'bin'
                 },
                 {
                     platform: 'linux',
                     arch: 'x64',
-                    downloadUrl: 'https://github.com/biomejs/biome/releases/download/cli%2Fv2.4.14/biome-linux-x64',
+                    downloadUrl: 'https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-linux-x64',
                     assetName: 'biome-linux-x64',
                     executableRelativePath: 'biome',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '77b36a64b00589020e8e8c7ecb869f1721ed2b933dad186077490fb5cdc173cc',
                     archiveFormat: 'raw',
                     installSubdirectory: 'bin'
                 }
@@ -120,7 +122,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/astral-sh/ruff/releases/download/0.9.10/ruff-x86_64-pc-windows-msvc.zip',
                     assetName: 'ruff-x86_64-pc-windows-msvc.zip',
                     executableRelativePath: 'ruff.exe',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: 'f1e75b080ea1c83737d0ada30a1338ba87d7792ce1dadd67daade720b539f8f7',
                     archiveFormat: 'zip',
                     installSubdirectory: 'bin'
                 },
@@ -130,7 +132,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/astral-sh/ruff/releases/download/0.9.10/ruff-aarch64-apple-darwin.tar.gz',
                     assetName: 'ruff-aarch64-apple-darwin.tar.gz',
                     executableRelativePath: 'ruff',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '1fccbd53431eaa596f2322494edbdc444f99db651566188fa0a9820c26bbef77',
                     archiveFormat: 'tar.gz',
                     installSubdirectory: 'bin'
                 },
@@ -140,7 +142,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/astral-sh/ruff/releases/download/0.9.10/ruff-x86_64-apple-darwin.tar.gz',
                     assetName: 'ruff-x86_64-apple-darwin.tar.gz',
                     executableRelativePath: 'ruff',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '1e5080489fdf483e7111bb1575f045ec13da2fdbfc6ac5fd58b5d55cf9cd7668',
                     archiveFormat: 'tar.gz',
                     installSubdirectory: 'bin'
                 },
@@ -150,7 +152,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/astral-sh/ruff/releases/download/0.9.10/ruff-x86_64-unknown-linux-gnu.tar.gz',
                     assetName: 'ruff-x86_64-unknown-linux-gnu.tar.gz',
                     executableRelativePath: 'ruff',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '1612de28c132b9605da220014177c5c9963f3ed3db203951f22968306f183f97',
                     archiveFormat: 'tar.gz',
                     installSubdirectory: 'bin'
                 }
@@ -174,7 +176,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/golangci/golangci-lint/releases/download/v2.12.2/golangci-lint-2.12.2-windows-amd64.zip',
                     assetName: 'golangci-lint-2.12.2-windows-amd64.zip',
                     executableRelativePath: 'golangci-lint-2.12.2-windows-amd64/golangci-lint.exe',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: 'bd42e3ebc8cb4ececb86941983baaf1dc221bbb04d838e94ce63b49cc91e02bb',
                     archiveFormat: 'zip',
                     installSubdirectory: 'bin'
                 },
@@ -184,7 +186,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/golangci/golangci-lint/releases/download/v2.12.2/golangci-lint-2.12.2-darwin-arm64.tar.gz',
                     assetName: 'golangci-lint-2.12.2-darwin-arm64.tar.gz',
                     executableRelativePath: 'golangci-lint-2.12.2-darwin-arm64/golangci-lint',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: 'a9c54498731b3128f79e090be6110f3e5fffccc617b08142ed244d4126c73f29',
                     archiveFormat: 'tar.gz',
                     installSubdirectory: 'bin'
                 },
@@ -194,7 +196,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/golangci/golangci-lint/releases/download/v2.12.2/golangci-lint-2.12.2-linux-amd64.tar.gz',
                     assetName: 'golangci-lint-2.12.2-linux-amd64.tar.gz',
                     executableRelativePath: 'golangci-lint-2.12.2-linux-amd64/golangci-lint',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '8df580d2670fed8fa984aac0507099af8df275e665215f5c7a2ae3943893a553',
                     archiveFormat: 'tar.gz',
                     installSubdirectory: 'bin'
                 }
@@ -218,7 +220,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/rust-lang/rust-analyzer/releases/download/2026-05-04/rust-analyzer-x86_64-pc-windows-msvc.zip',
                     assetName: 'rust-analyzer-win.zip',
                     executableRelativePath: 'rust-analyzer.exe',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: 'a9703da68a13ca5a4fab7dbcd4d3cc868fad52725fa819b1b9f8d92a7196bc84',
                     archiveFormat: 'zip',
                     installSubdirectory: 'bin'
                 },
@@ -228,7 +230,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/rust-lang/rust-analyzer/releases/download/2025-03-03/rust-analyzer-aarch64-apple-darwin.gz',
                     assetName: 'rust-analyzer-darwin-arm64.gz',
                     executableRelativePath: 'rust-analyzer',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: 'f46723b97c974a658f763462f608d008a6278d99d615375dfd4c726de59ffb7c',
                     archiveFormat: 'gz',
                     installSubdirectory: 'bin'
                 },
@@ -238,7 +240,7 @@ export class RuntimeManifestService extends BaseService {
                     downloadUrl: 'https://github.com/rust-lang/rust-analyzer/releases/download/2025-03-03/rust-analyzer-x86_64-unknown-linux-gnu.gz',
                     assetName: 'rust-analyzer-linux.gz',
                     executableRelativePath: 'rust-analyzer',
-                    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+                    sha256: '6cf40211f9755c63ac2f8f5fbeb4370d124aae7b1b082d501669b83e607762be',
                     archiveFormat: 'gz',
                     installSubdirectory: 'bin'
                 }

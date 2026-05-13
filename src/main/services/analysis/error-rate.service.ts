@@ -40,6 +40,8 @@ interface ServiceErrorEntry {
  * Monitors error rates per service and emits warnings when thresholds are exceeded.
  */
 export class ErrorRateService extends BaseService {
+    static readonly serviceName = 'errorRateService';
+    static readonly dependencies = [] as const;
     private serviceErrors = new Map<string, ServiceErrorEntry>();
     private eventBus: EventBusService | null = null;
 

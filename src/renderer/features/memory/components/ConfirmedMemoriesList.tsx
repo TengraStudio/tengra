@@ -18,11 +18,11 @@ import { AdvancedSemanticFragment } from '@shared/types/advanced-memory';
 import { IconArchive, IconCheck, IconCircleCheck, IconClock, IconEdit, IconGauge, IconHistory, IconRotate, IconShare2, IconSquare, IconSquareCheck, IconTag, IconTrash, IconX } from '@tabler/icons-react';
 import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
-import { Virtuoso } from 'react-virtuoso';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -64,7 +64,7 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* Bulk actions */}
       {memories.length > 0 && (
         <div className="flex gap-2">
@@ -108,7 +108,7 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
       )}
 
       {/* List */}
-      <div className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         {memories.length === 0 ? (
           <EmptyState
             icon={isArchiveTab ? IconArchive : IconCircleCheck}
@@ -120,27 +120,24 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
             }
           />
         ) : (
-          <Virtuoso
-            className="h-full"
-            data={memories}
-            itemContent={(_index, memory) => (
-              <div className="pb-4">
-                <ConfirmedMemoryCard
-                  memory={memory}
-                  isSelected={selectedIds.has(memory.id)}
-                  onToggleSelect={() => onToggleSelect(memory.id)}
-                  onEdit={() => onEdit(memory)}
-                  onDelete={() => onDelete(memory.id)}
-                  onArchive={() => onArchive(memory.id)}
-                  onRestore={() => onRestore(memory.id)}
-                  onShowHistory={() => onShowHistory(memory.id)}
-                  onShare={() => onShare(memory.id)}
-                />
-              </div>
-            )}
-          />
+          <div className="grid grid-cols-1 gap-4 pb-6">
+            {memories.map(memory => (
+              <ConfirmedMemoryCard
+                key={memory.id}
+                memory={memory}
+                isSelected={selectedIds.has(memory.id)}
+                onToggleSelect={() => onToggleSelect(memory.id)}
+                onEdit={() => onEdit(memory)}
+                onDelete={() => onDelete(memory.id)}
+                onArchive={() => onArchive(memory.id)}
+                onRestore={() => onRestore(memory.id)}
+                onShowHistory={() => onShowHistory(memory.id)}
+                onShare={() => onShare(memory.id)}
+              />
+            ))}
+          </div>
         )}
-      </div>
+      </ScrollArea>
     </div>
   );
 };
@@ -170,148 +167,93 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const config = CATEGORY_CONFIG[memory.category];
+  const sourceLabel = t(`frontend.memory.sources.${memory.source}`);
+  const createdLabel = t('frontend.memory.storedAgo', {
+    time: formatDistanceToNow(new Date(memory.createdAt)),
+  });
 
   return (
     <Card
       className={cn(
-        'group p-4 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all relative overflow-hidden',
+        'rounded-xl border border-border/30 bg-card p-4 transition-colors hover:border-border/40',
         memory.status === 'archived' && 'opacity-60',
-        isSelected && 'border-primary/50 bg-primary/5'
+        isSelected && 'border-primary/40 bg-primary/5'
       )}
     >
-      {/* Importance indicator */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-t from-primary/20 to-primary"
-        style={{ opacity: memory.importance }}
-      />
-
-      <div className="flex flex-col gap-2 pl-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {/* Selection checkbox */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
               onClick={onToggleSelect}
-              className="p-1 hover:bg-muted/40 rounded transition-colors"
+              className="rounded-md border border-border/30 p-1.5 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+              aria-label={t('frontend.memory.select')}
             >
-              {isSelected ? (
-                <IconSquareCheck className="w-4 h-4 text-primary" />
-              ) : (
-                <IconSquare className="w-4 h-4 text-muted-foreground/50" />
-              )}
+              {isSelected ? <IconSquareCheck className="h-4 w-4 text-primary" /> : <IconSquare className="h-4 w-4" />}
             </button>
-
-            <Badge className={cn('border-none text-sm font-bold', config.color)}>
-              <config.icon className="w-3 h-3 mr-1" />
+            <Badge variant="secondary" className={cn('text-xs font-medium', config.color)}>
+              <config.icon className="mr-1 h-3 w-3" />
               {t(config.labelKey)}
             </Badge>
             {memory.status === 'archived' && (
-              <Badge variant="secondary" className="text-sm">
-                <IconArchive className="w-3 h-3 mr-1" />
+              <Badge variant="secondary" className="text-xs font-medium">
+                <IconArchive className="mr-1 h-3 w-3" />
                 {t('frontend.memory.archived')}
               </Badge>
             )}
             {memory.validatedBy === 'user' && (
-              <Badge variant="outline" className="border-success/30 text-success text-sm">
-                <IconCheck className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="border-success/30 text-xs font-medium text-success">
+                <IconCheck className="mr-1 h-3 w-3" />
                 {t('frontend.memory.userVerified')}
               </Badge>
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onEdit}
-              className="h-7 w-7 p-0"
-              title={t('common.edit')}
-            >
-              <IconEdit className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 w-8 p-0" title={t('common.edit')}>
+              <IconEdit className="h-4 w-4" />
             </Button>
             {memory.status === 'archived' ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRestore}
-                className="h-7 w-7 p-0"
-                title={t('frontend.memory.restore')}
-              >
-                <IconRotate className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="sm" onClick={onRestore} className="h-8 w-8 p-0" title={t('frontend.memory.restore')}>
+                <IconRotate className="h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onArchive}
-                className="h-7 w-7 p-0"
-                title={t('frontend.memory.archive')}
-              >
-                <IconArchive className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="sm" onClick={onArchive} className="h-8 w-8 p-0" title={t('frontend.memory.archive')}>
+                <IconArchive className="h-4 w-4" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDelete}
-              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-              title={t('common.delete')}
-            >
-              <IconTrash className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onShowHistory}
-              className="h-7 w-7 p-0"
-              title={t('frontend.memory.showHistory')}
-            >
-              <IconHistory className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onShare}
-              className="h-7 w-7 p-0"
-              title={t('frontend.memory.shareToWorkspace')}
-            >
-              <IconShare2 className="w-3.5 h-3.5" />
+            <Button variant="ghost" size="sm" onClick={onDelete} className="h-8 w-8 p-0 text-destructive hover:text-destructive" title={t('common.delete')}>
+              <IconTrash className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <p className="text-sm leading-relaxed">{memory.content}</p>
+        <p className="text-sm leading-6 text-foreground/90">{memory.content}</p>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <IconGauge className="w-3 h-3" />
-            {t('frontend.memory.importance', { percent: (memory.importance * 100).toFixed(0) })}
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="rounded-full border border-border/40 bg-muted/20 px-2 py-1">
+            {t('frontend.memory.source')}: {sourceLabel}
           </span>
-          <span className="flex items-center gap-1">
-            <IconCircleCheck className="w-3 h-3" />
-            {t('frontend.memory.confidence', { percent: (memory.confidence * 100).toFixed(0) })}
-          </span>
-          <span className="flex items-center gap-1">
-            <IconClock className="w-3 h-3" />
-            {t('frontend.memory.accessed', { count: memory.accessCount })}
+          <span className="rounded-full border border-border/40 bg-muted/20 px-2 py-1">
+            {createdLabel}
           </span>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-border/40">
+        <div className="flex items-center justify-between border-t border-border/30 pt-3">
           <div className="flex flex-wrap gap-1">
             {memory.tags.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-1 text-sm bg-muted/30 px-2 py-0.5 rounded-full text-muted-foreground"
+                className="rounded-full border border-border/30 bg-muted/20 px-2 py-0.5 text-xs text-muted-foreground"
               >
-                <IconTag className="w-3 h-3" />
                 {tag}
               </span>
             ))}
           </div>
-          <span className="text-sm text-muted-foreground/50">
-            {t('frontend.memory.timeAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })} • {memory.source}
-          </span>
+          <Button variant="ghost" size="sm" onClick={onShowHistory} className="h-8 px-2 text-xs text-muted-foreground" title={t('frontend.memory.showHistory')}>
+            <IconHistory className="mr-1 h-3.5 w-3.5" />
+            {t('frontend.memory.showHistory')}
+          </Button>
         </div>
       </div>
     </Card>

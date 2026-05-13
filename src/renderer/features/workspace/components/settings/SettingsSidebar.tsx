@@ -26,9 +26,9 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
     <button
         onClick={onClick}
         className={cn(
-            'flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
+            'flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-sm font-medium transition-all duration-200',
             active
-                ? 'bg-primary/10 text-primary border border-primary/10'
+                ? 'border border-primary/10 bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground'
         )}
     >
@@ -47,8 +47,8 @@ export const SettingsSidebar: React.FC<{
     setActiveSection: (section: WorkspaceSettingsSection) => void;
     t: (key: string) => string;
 }> = ({ activeSection, setActiveSection, t }) => (
-    <div className="w-56 border-r border-border/5 flex flex-col p-2 gap-1 shrink-0 bg-muted/5">
-        <div className="px-3 py-2 text-sm font-semibold text-muted-foreground/30 uppercase  mb-1">
+    <div className="flex w-64 shrink-0 flex-col gap-1 border-r border-border/10 bg-muted/5 p-3">
+        <div className="mb-1 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">
             {t('frontend.workspaces.workspaceSettings')}
         </div>
 

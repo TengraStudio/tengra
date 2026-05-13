@@ -363,6 +363,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         checkOllama: auth.checkOllama,
         refreshAuthStatus: auth.refreshAuthStatus,
         connectCopilot: auth.connectCopilot,
+        connectCursor: auth.connectCursor,
         connectBrowserProvider: auth.connectBrowserProvider,
         cancelAuthFlow: auth.cancelAuthFlow,
         disconnectProvider: auth.disconnectProvider,
@@ -371,6 +372,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         manualSessionModal: auth.manualSessionModal,
         setManualSessionModal: auth.setManualSessionModal,
         handleSaveClaudeSession: auth.handleSaveClaudeSession,
+        handleSaveCursorSession: auth.handleSaveCursorSession,
 
         // Linked Accounts (new multi-account system)
         linkedAccounts,

@@ -72,7 +72,7 @@ import { createWorkspaceBridge } from './preload/domains/workspace.preload';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
 
-const BOOTSTRAP_IPC_MAX_ATTEMPTS = 60;
+const BOOTSTRAP_IPC_MAX_ATTEMPTS = 1000;
 const BOOTSTRAP_IPC_RETRY_DELAY_MS = 50;
 const originalInvoke = ipcRenderer.invoke.bind(ipcRenderer);
 
@@ -264,4 +264,3 @@ const api = {
 };
 
 contextBridge.exposeInMainWorld('electron', api);
-

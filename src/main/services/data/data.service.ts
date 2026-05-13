@@ -57,6 +57,8 @@ interface MigrationEntry {
 }
 
 export class DataService extends BaseService {
+    static readonly serviceName = 'dataService';
+    static readonly dependencies = [] as const;
     private baseDir: string;
     private paths: Record<DataType, string>;
     private initialized = false;

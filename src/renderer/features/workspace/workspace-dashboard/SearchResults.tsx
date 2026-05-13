@@ -9,7 +9,7 @@
  */
 
 import { FileSearchResult } from '@shared/types/common';
-import { IconChevronDown, IconChevronRight, IconFileCode2 } from '@tabler/icons-react';
+import { IconChevronDown, IconFileCode2 } from '@tabler/icons-react';
 import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -20,6 +20,11 @@ interface SearchResultsProps {
     workspaceRoot: string;
     searchQuery: string;
     onSelect: (path: string, line?: number) => void;
+    searchOptions?: {
+        isRegex?: boolean;
+        matchCase?: boolean;
+        matchWholeWord?: boolean;
+    };
 }
 
 interface GroupedSearchResults {
@@ -27,60 +32,71 @@ interface GroupedSearchResults {
     items: FileSearchResult[];
 }
 
-function getSearchResultBadge(result: FileSearchResult): string {
-    if (result.type === 'file') {
-        return 'FILE';
-    }
-    if (result.type === 'content') {
-        return 'TEXT';
-    }
-    return (result.type ?? 'SYMBOL').slice(0, 12).toUpperCase();
-}
-
 function isFileResult(result: FileSearchResult): boolean {
     return result.type === 'file';
 }
 
 /**
- * Highlights matching substrings in a snippet.
- * Returns React nodes with `<mark>` around matches.
+ * Highlights matching substrings in a snippet using regex for accuracy.
+ * Handles isRegex, matchCase, and matchWholeWord options.
  */
-const renderHighlightedSnippet = (text: string, query: string): React.ReactNode => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
-        return text;
+const renderHighlightedSnippet = (
+    text: string, 
+    query: string, 
+    options?: SearchResultsProps['searchOptions']
+): React.ReactNode => {
+    if (!query.trim()) {
+        return <span className="text-foreground/80">{text}</span>;
     }
 
-    const normalizedText = text.toLowerCase();
-    const fragments: React.ReactNode[] = [];
-    let startIndex = 0;
-    let matchCount = 0;
-    const MAX_MATCHES = 200;
-
-    while (startIndex < text.length && matchCount < MAX_MATCHES) {
-        const matchIndex = normalizedText.indexOf(normalizedQuery, startIndex);
-        if (matchIndex === -1) {
-            fragments.push(text.slice(startIndex));
-            break;
+    try {
+        const { isRegex = false, matchCase = false, matchWholeWord = false } = options || {};
+        let pattern = query;
+        if (!isRegex) {
+            pattern = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        if (matchWholeWord && !isRegex) {
+            pattern = `\\b${pattern}\\b`;
         }
 
-        if (matchIndex > startIndex) {
-            fragments.push(text.slice(startIndex, matchIndex));
+        const regex = new RegExp(pattern, matchCase ? 'g' : 'gi');
+        const fragments: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let match;
+        let matchCount = 0;
+        const MAX_MATCHES = 50;
+
+        while ((match = regex.exec(text)) !== null && matchCount < MAX_MATCHES) {
+            if (match.index > lastIndex) {
+                fragments.push(<span key={`f-${lastIndex}`} className="text-foreground/80">{text.slice(lastIndex, match.index)}</span>);
+            }
+
+            fragments.push(
+                <mark
+                    key={`m-${matchCount}`}
+                    className="rounded-sm bg-primary/15 text-primary font-medium px-0.5"
+                >
+                    {match[0]}
+                </mark>
+            );
+
+            lastIndex = regex.lastIndex;
+            matchCount++;
+            
+            if (match[0].length === 0) {
+                regex.lastIndex++;
+            }
         }
 
-        fragments.push(
-            <mark
-                key={`m-${matchCount}`}
-                className="rounded-sm bg-warning/25 text-foreground"
-            >
-                {text.slice(matchIndex, matchIndex + normalizedQuery.length)}
-            </mark>
-        );
-        startIndex = matchIndex + normalizedQuery.length;
-        matchCount += 1;
+        if (lastIndex < text.length) {
+            fragments.push(<span key={`f-${lastIndex}`} className="text-foreground/80">{text.slice(lastIndex)}</span>);
+        }
+
+        return fragments.length > 0 ? fragments : <span className="text-foreground/80">{text}</span>;
+    } catch (e) {
+        return <span className="text-foreground/80">{text}</span>;
     }
-
-    return fragments.length > 0 ? fragments : text;
 };
 
 /**
@@ -92,65 +108,58 @@ const FileGroup = React.memo(({
     workspaceRoot,
     searchQuery,
     onSelect,
+    searchOptions,
 }: {
     group: GroupedSearchResults;
     workspaceRoot: string;
     searchQuery: string;
     onSelect: (path: string, line?: number) => void;
+    searchOptions?: SearchResultsProps['searchOptions'];
 }) => {
     const [collapsed, setCollapsed] = React.useState(false);
     const relativePath = group.file.replace(workspaceRoot, '').replace(/^[\\/]+/, '') || group.file;
     const fileName = relativePath.split(/[\\/]/).pop() ?? relativePath;
-    const dirPath = relativePath.slice(0, Math.max(0, relativePath.length - fileName.length - 1));
+    const dirPath = relativePath.slice(0, Math.max(0, relativePath.length - fileName.length - 1)).replace(/\\/g, '/');
 
     return (
-        <div className="border-b border-border/20">
+        <div className="group/file flex flex-col border-b border-border/5 last:border-0">
             {/* File header */}
             <button
                 type="button"
-                onClick={() => setCollapsed(prev => !prev)}
-                className="flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors hover:bg-accent/40"
+                onClick={() => setCollapsed(!collapsed)}
+                className="flex items-center gap-1.5 px-3 py-1 hover:bg-accent/30 transition-colors text-left group"
             >
-                {collapsed
-                    ? <IconChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                    : <IconChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                }
-                <IconFileCode2 className="h-3.5 w-3.5 shrink-0 text-info/70" />
-                <span className="truncate typo-caption font-medium text-foreground">
-                    {fileName}
+                <span className="text-muted-foreground/40 transition-transform duration-150" style={{ transform: collapsed ? 'rotate(-90deg)' : 'none' }}>
+                    <IconChevronDown className="h-3.5 w-3.5" />
                 </span>
+                <IconFileCode2 className="h-4 w-4 text-info/60 shrink-0" />
+                <span className="typo-caption font-semibold text-foreground/90 truncate">{fileName}</span>
                 {dirPath && (
-                    <span className="truncate text-sm text-muted-foreground/60">
+                    <span className="typo-caption text-[11px] text-muted-foreground/40 truncate ml-1">
                         {dirPath}
                     </span>
                 )}
-                <span className="ml-auto shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-sm font-medium tabular-nums text-muted-foreground">
+                <span className="ml-auto text-[10px] tabular-nums bg-muted/40 text-muted-foreground px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
                     {group.items.length}
                 </span>
             </button>
 
-            {/* Match lines */}
+            {/* Match items */}
             {!collapsed && (
-                <div>
-                    {group.items.map((result, idx) => (
+                <div className="flex flex-col">
+                    {group.items.map((item, idx) => (
                         <button
-                            key={`${result.file}:${result.line}:${idx}`}
+                            key={`${item.file}-${item.line}-${idx}`}
                             type="button"
-                            onClick={() => onSelect(result.file, result.line)}
-                            className="flex w-full items-start gap-2 py-0.5 pl-8 pr-2 text-left transition-colors hover:bg-accent/40"
+                            onClick={() => onSelect(item.file, item.line)}
+                            className="flex items-start gap-3 pl-10 pr-3 py-0.5 hover:bg-accent/40 transition-colors text-left group/item"
                         >
-                            <span className="mt-px w-8 shrink-0 text-right font-mono text-sm tabular-nums text-muted-foreground/50">
-                                {isFileResult(result) ? '' : result.line}
+                            <span className="typo-caption text-[11px] font-mono text-muted-foreground/30 min-w-[24px] text-right group-hover/item:text-muted-foreground/60 transition-colors pt-0.5">
+                                {isFileResult(item) ? '' : item.line}
                             </span>
-                            <span className="mt-px shrink-0 rounded bg-muted/50 px-1.5 py-0.5 text-sm font-semibold text-muted-foreground/80">
-                                {getSearchResultBadge(result)}
-                            </span>
-                            <span className="min-w-0 flex-1 truncate font-mono typo-caption leading-5 text-foreground/85">
-                                {renderHighlightedSnippet(
-                                    (isFileResult(result) ? result.name : result.text)?.trim() || result.text.trim(),
-                                    searchQuery
-                                )}
-                            </span>
+                            <div className="typo-caption text-foreground/75 font-mono whitespace-pre overflow-hidden text-ellipsis leading-5">
+                                {renderHighlightedSnippet(item.text.trim(), searchQuery, searchOptions)}
+                            </div>
                         </button>
                     ))}
                 </div>
@@ -160,63 +169,63 @@ const FileGroup = React.memo(({
 });
 FileGroup.displayName = 'FileGroup';
 
-/**
- * VS Code-style search results component.
- * Renders results grouped by file with collapsible sections.
- * Uses Virtuoso for large result sets.
- */
 export const SearchResults: React.FC<SearchResultsProps> = ({
     results,
     workspaceRoot,
     searchQuery,
     onSelect,
+    searchOptions,
 }) => {
     const { t } = useTranslation();
-    const VIRTUALIZATION_THRESHOLD = 120;
-
-    const normalizedResults = React.useMemo(
-        () => (Array.isArray(results) ? results : []),
-        [results]
-    );
+    const VIRTUALIZATION_THRESHOLD = 100;
 
     const groupedResults = React.useMemo(() => {
-        const groups = new Map<string, FileSearchResult[]>();
-        for (const result of normalizedResults) {
-            const fileResults = groups.get(result.file) ?? [];
-            fileResults.push(result);
-            groups.set(result.file, fileResults);
-        }
-        return Array.from(groups.entries()).map(([file, items]) => ({ file, items }));
-    }, [normalizedResults]);
+        if (!results || !Array.isArray(results)) {return [];}
+        
+        const groupedMap = new Map<string, FileSearchResult[]>();
+        results.forEach(r => {
+            const items = groupedMap.get(r.file) || [];
+            items.push(r);
+            groupedMap.set(r.file, items);
+        });
 
-    if (normalizedResults.length === 0) {
+        return Array.from(groupedMap.entries()).map(([file, items]) => ({
+            file,
+            items: items.sort((a, b) => a.line - b.line)
+        }));
+    }, [results]);
+
+    if (groupedResults.length === 0) {
         return (
-            <div className="flex items-center justify-center p-6 typo-caption text-muted-foreground/60">
-                {t('frontend.workspaceDashboard.noResults')}
+            <div className="flex flex-col items-center justify-center p-12 text-center opacity-40">
+                <span className="typo-caption text-foreground">{t('frontend.workspaceDashboard.noResults')}</span>
             </div>
         );
     }
 
-    if (normalizedResults.length >= VIRTUALIZATION_THRESHOLD) {
+    if (groupedResults.length > VIRTUALIZATION_THRESHOLD) {
         return (
-            <Virtuoso
-                className="h-full"
-                data={groupedResults}
-                itemContent={(_index, group) => (
-                    <FileGroup
-                        key={group.file}
-                        group={group}
-                        workspaceRoot={workspaceRoot}
-                        searchQuery={searchQuery}
-                        onSelect={onSelect}
-                    />
-                )}
-            />
+            <div className="flex-1 overflow-hidden h-full">
+                <Virtuoso
+                    style={{ height: '100%' }}
+                    data={groupedResults}
+                    itemContent={(_, group) => (
+                        <FileGroup
+                            key={group.file}
+                            group={group}
+                            workspaceRoot={workspaceRoot}
+                            searchQuery={searchQuery}
+                            onSelect={onSelect}
+                            searchOptions={searchOptions}
+                        />
+                    )}
+                />
+            </div>
         );
     }
 
     return (
-        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/15">
+        <div className="flex flex-col h-full overflow-y-auto pb-4 custom-scrollbar">
             {groupedResults.map(group => (
                 <FileGroup
                     key={group.file}
@@ -224,10 +233,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                     workspaceRoot={workspaceRoot}
                     searchQuery={searchQuery}
                     onSelect={onSelect}
+                    searchOptions={searchOptions}
                 />
             ))}
         </div>
     );
 };
-
-

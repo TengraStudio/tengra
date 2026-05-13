@@ -266,15 +266,15 @@ function resolveActiveModelSelection(options: {
     return { model: selectedModel, provider: selectedProvider };
 }
 
-function resolveSystemModeFromSettings(appSettings: AppSettings | undefined): 'thinking' | 'agent' | 'fast' {
+function resolveSystemModeFromSettings(appSettings: AppSettings | undefined): 'instant' | 'thinking' | 'agent' | 'fast' {
     const persistedMode = appSettings?.general.chatMode;
-    if (persistedMode === 'thinking' || persistedMode === 'agent') {
+    if (persistedMode === 'instant' || persistedMode === 'thinking' || persistedMode === 'agent') {
         return persistedMode;
     }
     return 'fast';
 }
 
-function toPersistedChatMode(systemMode: 'thinking' | 'agent' | 'fast'): 'instant' | 'thinking' | 'agent' {
+function toPersistedChatMode(systemMode: 'instant' | 'thinking' | 'agent' | 'fast'): 'instant' | 'thinking' | 'agent' {
     if (systemMode === 'thinking' || systemMode === 'agent') {
         return systemMode;
     }
@@ -445,13 +445,14 @@ export function useChatManager(options: UseChatManagerOptions) {
         return () => cancelAnimationFrame(rafId);
     }, [appSettings]);
 
-    const setSystemMode = useCallback((nextMode: 'thinking' | 'agent' | 'fast') => {
+    const setSystemMode = useCallback((nextMode: 'instant' | 'ask' | 'thinking' | 'agent' | 'fast') => {
         const currentSettings = getSettingsSnapshot().settings ?? appSettings;
         if (!currentSettings) {
             return;
         }
 
-        const persistedMode = toPersistedChatMode(nextMode);
+        const normalizedMode = nextMode === 'ask' ? 'instant' : nextMode;
+        const persistedMode = toPersistedChatMode(normalizedMode);
         if (currentSettings.general.chatMode === persistedMode) {
             return;
         }
@@ -498,7 +499,8 @@ export function useChatManager(options: UseChatManagerOptions) {
     
     const { 
         createNewChat, deleteChat, clearMessages, deleteFolder, moveChatToFolder, 
-        addMessage, updateChat, togglePin, toggleFavorite, bulkDeleteChats 
+        addMessage, updateChat, togglePin, toggleFavorite, bulkDeleteChats, deleteAllChats
+ 
     } = useChatCRUD({ 
         currentChatId, 
         setCurrentChatId, 
@@ -777,12 +779,13 @@ export function useChatManager(options: UseChatManagerOptions) {
         streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, contextWindow, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
-        t, handleSpeak, systemMode, setSystemMode, imageRequestCount, setImageRequestCount, regenerateMessage, bulkDeleteChats,
+        t, handleSpeak, systemMode, setSystemMode, imageRequestCount, setImageRequestCount, regenerateMessage, bulkDeleteChats, deleteAllChats,
+
         permissionPolicy, setPermissionPolicy, antigravityCreditConfirmation, confirmAntigravityCreditUsage, cancelAntigravityCreditUsage
     }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, contextWindow,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
-        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, setSystemMode, imageRequestCount, regenerateMessage, bulkDeleteChats,
+        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, setSystemMode, imageRequestCount, regenerateMessage, bulkDeleteChats, deleteAllChats,
         permissionPolicy, setPermissionPolicy, antigravityCreditConfirmation, confirmAntigravityCreditUsage, cancelAntigravityCreditUsage]);
 }
 

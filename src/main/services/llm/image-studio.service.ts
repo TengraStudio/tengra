@@ -18,6 +18,7 @@ import type { LLMService } from '@main/services/llm/llm.service';
 import type { LocalImageService } from '@main/services/llm/local/local-image.service';
 import type { ImageProvider } from '@main/services/llm/local/local-image.types';
 import type { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { IMAGE_STUDIO_CHANNELS } from '@shared/constants/ipc-channels';
 import { MessageContentPart } from '@shared/types/chat';
@@ -71,10 +72,13 @@ type ImageModelCandidate = {
 type ImageModelRecord = ModelProviderInfo & ImageModelCandidate;
 
 export class ImageStudioService extends BaseService {
+    static readonly serviceName = 'imageStudioService';
+    static readonly dependencies = ['llmService', 'localImageService', 'modelRegistryService', 'modelSelectionService', 'imagePersistenceService'] as const;
     constructor(
         private readonly llmService: LLMService,
         private readonly localImageService: LocalImageService,
         private readonly modelRegistryService: ModelRegistryService,
+        private readonly modelSelectionService: ModelSelectionService,
         private readonly imagePersistenceService: ImagePersistenceService
     ) {
         super('ImageStudioService');
@@ -104,7 +108,12 @@ export class ImageStudioService extends BaseService {
     @ipc(IMAGE_STUDIO_CHANNELS.GENERATE)
     async generateImage(raw: RuntimeValue): Promise<RuntimeValue> {
         const payload = this.validateGenerateRequest(raw);
-        const { prompt, modelId, count, width, height } = payload;
+        let { prompt, modelId, count, width, height } = payload;
+
+        if (!modelId) {
+            const selection = await this.modelSelectionService.selectImageModel();
+            modelId = selection?.model ?? 'gpt-image-1';
+        }
 
         const allModels = await this.modelRegistryService.getAllModels();
         const model = allModels.find((m: { id?: string; provider?: string }) => m.id === modelId);
@@ -145,7 +154,6 @@ export class ImageStudioService extends BaseService {
         const prompt = typeof payload.prompt === 'string' ? payload.prompt.trim() : '';
         const modelId = typeof payload.modelId === 'string' ? payload.modelId.trim() : '';
         if (!prompt) { throw new Error('Missing prompt'); }
-        if (!modelId) { throw new Error('Missing modelId'); }
         
         return {
             prompt,

@@ -698,8 +698,7 @@ export class ApiServerService extends BaseService {
             }
 
             const { messages, model, provider } = parseResult.data;
-
-            const selectedModel = model ?? 'gpt-4o';
+            const selectedModel = model || 'gpt-4o';
             const detectedProvider = this.detectProvider(selectedModel, provider);
             appLogger.info(this.name, `Chat request: model=${selectedModel}, provider=${detectedProvider}`);
 
@@ -758,8 +757,7 @@ export class ApiServerService extends BaseService {
             }
 
             const { messages, model, provider } = parseResult.data;
-
-            const selectedModel = model ?? 'gpt-4o';
+            const selectedModel = model || 'gpt-4o';
             const detectedProvider = this.detectProvider(selectedModel, provider);
             appLogger.info(this.name, `Streaming chat: model=${selectedModel}, provider=${detectedProvider}`);
 
@@ -932,7 +930,7 @@ export class ApiServerService extends BaseService {
             const {
                 image,
                 prompt,
-                model = 'gpt-4o',
+                model,
                 provider
             } = parseResult.data;
 
@@ -955,12 +953,13 @@ export class ApiServerService extends BaseService {
                 }
             ];
 
+            const selectedModel = model || 'gpt-4o';
             // Send to LLM with vision capability
-            appLogger.info(this.name, `Vision analysis with ${model} (${detectedProvider})`);
+            appLogger.info(this.name, `Vision analysis with ${selectedModel} (${detectedProvider})`);
 
             const response = await this.options.llmService.chat(
                 messages,
-                model,
+                selectedModel,
                 undefined, // tools
                 detectedProvider,
                 { temperature: 0.7 }
@@ -1037,14 +1036,14 @@ export class ApiServerService extends BaseService {
     /**
      * Detect provider from model name
      */
-    private detectProvider(model: string, provider?: string): string {
+    private detectProvider(model: string | undefined, provider?: string): string {
         const normalizedProvider = provider?.trim().toLowerCase();
         if (normalizedProvider) {
             if (normalizedProvider === 'claude') { return 'anthropic'; }
             return normalizedProvider;
         }
 
-        const normalizedModel = model.trim().toLowerCase();
+        const normalizedModel = model?.trim().toLowerCase() ?? '';
         if (normalizedModel.includes('codex') || normalizedModel.startsWith('gpt-5') || normalizedModel.startsWith('o1') || normalizedModel.startsWith('o3')) { return 'codex'; }
         if (normalizedModel.startsWith('antigravity/')) { return 'antigravity'; }
         if (normalizedModel.startsWith('claude-') || normalizedModel.startsWith('anthropic/')) { return 'anthropic'; }

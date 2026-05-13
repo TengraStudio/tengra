@@ -154,9 +154,14 @@ interface LibraryModel {
 }
 
 export class OllamaService {
+    static readonly serviceName = 'ollamaService';
+    static readonly dependencies = ['settingsService', 'eventBusService', 'authService'] as const;
     private host: string = '127.0.0.1';
     private port: number = 11434;
     private currentRequest: http.ClientRequest | null = null;
+    private getModelsPromise: Promise<OllamaModel[]> | null = null;
+    private lastGetModelsOfflineAt: number = 0;
+    private readonly getModelsOfflineCacheMs: number = 10000;
     private settingsService: SettingsService;
 
     // OLLAMA-02: Connection pooling
@@ -306,14 +311,46 @@ export class OllamaService {
     }
 
     async getModels(): Promise<OllamaModel[]> {
+        if (this.isRecentlyOffline()) {
+            return [];
+        }
+
+        if (this.getModelsPromise) {
+            return this.getModelsPromise;
+        }
+
+        this.getModelsPromise = this.fetchModels();
+        try {
+            return await this.getModelsPromise;
+        } finally {
+            this.getModelsPromise = null;
+        }
+    }
+
+    private async fetchModels(): Promise<OllamaModel[]> {
         try {
             const response = await this.httpRequest({ path: '/api/tags', timeout: 5000 });
             const data = safeJsonParse<{ models?: OllamaModel[] }>(response.data, { models: [] });
             return data.models ?? [];
         } catch (error) {
+            if (this.isConnectionRefusedError(error)) {
+                this.lastGetModelsOfflineAt = Date.now();
+                appLogger.debug('OllamaService', 'Ollama is offline; skipping model fetch');
+                return [];
+            }
+
             appLogger.error('OllamaService', 'Failed to get models', error as Error);
             return [];
         }
+    }
+
+    private isRecentlyOffline(): boolean {
+        return Date.now() - this.lastGetModelsOfflineAt < this.getModelsOfflineCacheMs;
+    }
+
+    private isConnectionRefusedError(error: unknown): boolean {
+        const maybeError = error as { code?: string; cause?: { code?: string } };
+        return maybeError?.code === 'ECONNREFUSED' || maybeError?.cause?.code === 'ECONNREFUSED';
     }
 
     async ps(): Promise<JsonObject[]> {

@@ -9,6 +9,11 @@
  */
 use serde_json::{json, Value};
 
+use crate::proxy::handlers::chat::compat::openai::{
+    build_chat_completion, normalize_generic_chat_response, normalize_responses_usage,
+    nullable_array, nullable_string,
+};
+
 pub fn translate_response(provider: &str, upstream_response: Value) -> Value {
     match provider {
         "antigravity" => translate_gemini_response(upstream_response),
@@ -16,8 +21,15 @@ pub fn translate_response(provider: &str, upstream_response: Value) -> Value {
         "codex" => translate_codex_response(upstream_response),
         "openai" => translate_openai_response(upstream_response),
         "copilot" => translate_copilot_response(upstream_response),
-        _ => upstream_response,
+        "nvidia" => translate_nvidia_response(upstream_response),
+        "groq" | "mistral" | "opencode" => translate_openai_response(upstream_response),
+        _ => translate_openai_response(upstream_response),
     }
+}
+
+fn translate_nvidia_response(v: Value) -> Value {
+    // NVIDIA NIM is largely OpenAI compatible, but we ensure it matches our internal standard.
+    normalize_generic_chat_response(v)
 }
 
 fn translate_openai_response(v: Value) -> Value {
@@ -64,50 +76,36 @@ fn translate_image_api_response(v: Value) -> Value {
         })
         .unwrap_or_default();
 
-    json!({
-        "id": format!("image-{}", uuid::Uuid::new_v4()),
-        "object": "chat.completion",
-        "created": v.get("created").and_then(Value::as_i64).unwrap_or_else(|| chrono::Utc::now().timestamp()),
-        "model": "image",
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": "",
-                    "images": if images.is_empty() { Value::Null } else { Value::Array(images) }
-                },
-                "finish_reason": "stop"
-            }
-        ],
-        "usage": v.get("usage").cloned().unwrap_or_else(|| json!({}))
-    })
+    build_chat_completion(
+        format!("image-{}", uuid::Uuid::new_v4()).as_str(),
+        v.get("created")
+            .and_then(Value::as_i64)
+            .unwrap_or_else(|| chrono::Utc::now().timestamp()),
+        "image",
+        json!(""),
+        Value::Null,
+        Value::Null,
+        nullable_array(images),
+        "stop",
+        v.get("usage").cloned().unwrap_or_else(|| json!({})),
+    )
 }
 
 fn translate_responses_api_response(v: Value) -> Value {
     let (content, reasoning, tool_calls, images) = extract_responses_output(&v);
-    let usage = normalize_responses_usage(v.get("usage"));
-
-    json!({
-        "id": v.get("id").and_then(Value::as_str).unwrap_or("resp_local"),
-        "object": "chat.completion",
-        "created": v.get("created_at").and_then(Value::as_i64).unwrap_or_else(|| chrono::Utc::now().timestamp()),
-        "model": v.get("model").and_then(Value::as_str).unwrap_or_default(),
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": content,
-                    "reasoning_content": reasoning,
-                    "tool_calls": tool_calls,
-                    "images": images
-                },
-                "finish_reason": "stop"
-            }
-        ],
-        "usage": usage
-    })
+    build_chat_completion(
+        v.get("id").and_then(Value::as_str).unwrap_or("resp_local"),
+        v.get("created_at")
+            .and_then(Value::as_i64)
+            .unwrap_or_else(|| chrono::Utc::now().timestamp()),
+        v.get("model").and_then(Value::as_str).unwrap_or_default(),
+        nullable_string(content),
+        nullable_string(reasoning),
+        tool_calls,
+        images,
+        "stop",
+        normalize_responses_usage(v.get("usage")),
+    )
 }
 
 fn image_from_image_api_item(item: &Value) -> Option<Value> {
@@ -266,21 +264,9 @@ fn image_from_responses_image_item(item: &Value) -> Option<Value> {
     None
 }
 
-fn normalize_responses_usage(usage: Option<&Value>) -> Value {
-    let Some(usage) = usage else {
-        return json!({});
-    };
-    if usage.get("prompt_tokens").is_some() {
-        return usage.clone();
-    }
-    json!({
-        "prompt_tokens": usage.get("input_tokens").and_then(Value::as_u64).unwrap_or(0),
-        "completion_tokens": usage.get("output_tokens").and_then(Value::as_u64).unwrap_or(0),
-        "total_tokens": usage.get("total_tokens").and_then(Value::as_u64).unwrap_or(0)
-    })
-}
+fn translate_copilot_response(v: Value) -> Value {
+    let mut v = normalize_generic_chat_response(v);
 
-fn translate_copilot_response(mut v: Value) -> Value {
     let Some(choices) = v.get_mut("choices").and_then(Value::as_array_mut) else {
         return v;
     };
@@ -352,30 +338,21 @@ fn translate_gemini_response(v: Value) -> Value {
         .as_u64()
         .unwrap_or(0);
 
-    json!({
-        "id": format!("gemini-{}", uuid::Uuid::new_v4()),
-        "object": "chat.completion",
-        "created": chrono::Utc::now().timestamp(),
-        "model": gemini_response["modelVersion"].as_str().unwrap_or("gemini"),
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": content,
-                    "reasoning_content": reasoning,
-                    "tool_calls": tool_calls,
-                    "images": images
-                },
-                "finish_reason": finish_reason
-            }
-        ],
-        "usage": {
+    build_chat_completion(
+        format!("gemini-{}", uuid::Uuid::new_v4()).as_str(),
+        chrono::Utc::now().timestamp(),
+        gemini_response["modelVersion"].as_str().unwrap_or("gemini"),
+        nullable_string(content),
+        nullable_string(reasoning),
+        tool_calls,
+        images,
+        finish_reason.as_str(),
+        json!({
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": total_tokens
-        }
-    })
+        }),
+    )
 }
 
 fn unwrap_gemini_response(value: &Value) -> &Value {
@@ -395,30 +372,21 @@ fn translate_claude_response(v: Value) -> Value {
         _ => "stop",
     };
 
-    json!({
-        "id": v["id"].as_str().unwrap_or_default(),
-        "object": "chat.completion",
-        "created": chrono::Utc::now().timestamp(),
-        "model": v["model"].as_str().unwrap_or("claude"),
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": content,
-                    "reasoning_content": reasoning,
-                    "tool_calls": tool_calls,
-                    "images": images
-                },
-                "finish_reason": finish_reason
-            }
-        ],
-        "usage": {
+    build_chat_completion(
+        v["id"].as_str().unwrap_or_default(),
+        chrono::Utc::now().timestamp(),
+        v["model"].as_str().unwrap_or("claude"),
+        nullable_string(content),
+        nullable_string(reasoning),
+        tool_calls,
+        images,
+        finish_reason,
+        json!({
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": prompt_tokens + completion_tokens
-        }
-    })
+        }),
+    )
 }
 
 fn extract_gemini_parts(v: &Value) -> (String, String, Value, Value) {

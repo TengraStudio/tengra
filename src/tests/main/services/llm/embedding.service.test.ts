@@ -12,6 +12,7 @@ import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LlamaService } from '@main/services/llm/local/llama.service';
 import { OllamaService } from '@main/services/llm/local/ollama.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { AppSettings } from '@shared/types/settings';
 import { describe, expect, it, vi } from 'vitest';
@@ -56,7 +57,8 @@ function createService(provider: 'ollama' | 'openai' | 'llama' | 'none', model?:
         ollama as OllamaService,
         llm as LLMService,
         llama as LlamaService,
-        settingsService as SettingsService
+        settingsService as SettingsService,
+        { selectEmbeddingModel: vi.fn() } as never as ModelSelectionService
     );
 
     return { service, mocks };

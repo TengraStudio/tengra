@@ -84,7 +84,9 @@ export function TerminalSplitView({
     createDefaultTerminal,
     renderTabContent,
 }: TerminalSplitViewProps) {
-    const sessionTabs = tabs.filter(tab => tab.id !== TERMINAL_WORKSPACE_ISSUES_TAB_ID);
+    const sessionTabs = tabs.filter(tab => 
+        tab.id !== TERMINAL_WORKSPACE_ISSUES_TAB_ID
+    );
     const splitTabIds = new Set(
         splitView ? [splitView.primaryId, splitView.secondaryId] : []
     );
@@ -142,7 +144,7 @@ export function TerminalSplitView({
                     {isGalleryView && tabs.length > 0 && (
                         <div className="absolute inset-0 p-2 overflow-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 auto-rows-260">
-                                {tabs.map(tab => (
+                                {sessionTabs.map(tab => (
                                     <div
                                         key={tab.id}
                                         className={cn(

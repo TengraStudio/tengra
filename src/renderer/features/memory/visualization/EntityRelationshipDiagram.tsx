@@ -150,49 +150,52 @@ export const EntityRelationshipDiagram: React.FC = () => {
     }, [loadData]);
 
     return (
-        <div className="w-full h-full flex flex-col bg-background/50 relative overflow-hidden rounded-2xl border border-border/40">
+        <div className="w-full h-full min-h-[32rem] flex flex-col bg-background/50 relative overflow-hidden rounded-2xl border border-border/40">
             {loading && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
                 </div>
             )}
 
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                nodeTypes={nodeTypes}
-                fitView
-                colorMode={isLight ? 'light' : 'dark'}
-            >
-                <Background color={relationshipGridColor} gap={20} />
-                <Controls />
-                <MiniMap />
+            <div className="flex-1 min-h-[32rem]">
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    style={{ width: '100%', height: '100%' }}
+                    colorMode={isLight ? 'light' : 'dark'}
+                >
+                    <Background color={relationshipGridColor} gap={20} />
+                    <Controls />
+                    <MiniMap />
 
-                <Panel position="top-left" className="m-4">
-                    <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-border/50 shadow-xl">
-                        <div className="p-2 bg-success/20 rounded-xl text-success">
-                            <IconDatabase className="w-5 h-5" />
+                    <Panel position="top-left" className="m-4">
+                        <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-border/50 shadow-xl">
+                            <div className="p-2 bg-success/20 rounded-xl text-success">
+                                <IconDatabase className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-bold">{t('frontend.memory.erDiagram')}</h2>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('frontend.memory.entitiesTracked', { count: nodes.length })}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-sm font-bold">{t('frontend.memory.erDiagram')}</h2>
-                            <p className="text-sm text-muted-foreground">
-                                {t('frontend.memory.entitiesTracked', { count: nodes.length })}
-                            </p>
-                        </div>
-                    </div>
-                </Panel>
+                    </Panel>
 
-                <Panel position="top-right" className="m-4">
-                    <button
-                        onClick={() => void loadData()}
-                        className={C_ENTITYRELATIONSHIPDIAGRAM_1}
-                    >
-                        <IconRotate className="w-4 h-4" />
-                    </button>
-                </Panel>
-            </ReactFlow>
+                    <Panel position="top-right" className="m-4">
+                        <button
+                            onClick={() => void loadData()}
+                            className={C_ENTITYRELATIONSHIPDIAGRAM_1}
+                        >
+                            <IconRotate className="w-4 h-4" />
+                        </button>
+                    </Panel>
+                </ReactFlow>
+            </div>
         </div>
     );
 };

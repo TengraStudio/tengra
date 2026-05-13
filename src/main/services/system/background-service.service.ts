@@ -18,6 +18,8 @@ import { getManagedRuntimeBinaryPath } from '@main/services/system/runtime-path.
 const execAsync = promisify(exec);
 
 export class BackgroundServiceService extends BaseService {
+    static readonly serviceName = 'backgroundServiceService';
+    static readonly dependencies = [] as const;
     constructor() {
         super('BackgroundServiceService');
     }

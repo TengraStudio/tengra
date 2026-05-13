@@ -140,6 +140,8 @@ type ExtensionStateEvent =
  * Manages extension lifecycle, development, and profiling
  */
 export class ExtensionService extends BaseService {
+    static readonly serviceName = 'extensionService';
+    static readonly dependencies = ['settingsService'] as const;
     private state: ExtensionServiceState = {
         extensions: new Map(),
         watchers: new Map(),
@@ -149,29 +151,41 @@ export class ExtensionService extends BaseService {
         extensionsPath: '',
     };
 
+    private initializePromise: Promise<void> | null = null;
+    private isInitialized = false;
+
     constructor(private settingsService: SettingsService) {
         super('ExtensionService');
     }
 
     override async initialize(): Promise<void> {
-        this.logInfo('Initializing Extension Runtime...');
-        
-        const userDataPath = app.getPath('userData');
-        this.state.extensionsPath = path.join(userDataPath, 'extensions');
+        if (this.isInitialized) {return;}
+        if (this.initializePromise) {return this.initializePromise;}
 
-        try {
-            await fs.promises.access(this.state.extensionsPath, fs.constants.F_OK);
-        } catch {
-            await fs.promises.mkdir(this.state.extensionsPath, { recursive: true });
-        }
+        this.initializePromise = (async () => {
+            try {
+                this.logInfo('Initializing Extension Runtime...');
+                
+                const userDataPath = app.getPath('userData');
+                this.state.extensionsPath = path.join(userDataPath, 'extensions');
 
-        // Extension IPC handlers are now registered centrally in @main/startup/ipc.ts
-        // so that they are available as soon as the app starts.
-        
-        // Asynchronously scan the local extensions library
-        void this.scanExtensions();
+                try {
+                    await fs.promises.access(this.state.extensionsPath, fs.constants.F_OK);
+                } catch {
+                    await fs.promises.mkdir(this.state.extensionsPath, { recursive: true });
+                }
 
-        this.logInfo('Extension Runtime initialized successfully');
+                // Asynchronously scan the local extensions library
+                void this.scanExtensions();
+
+                this.isInitialized = true;
+                this.logInfo('Extension Runtime initialized successfully');
+            } finally {
+                this.initializePromise = null;
+            }
+        })();
+
+        return this.initializePromise;
     }
 
     /** Scan extensions directory and install all found extensions */

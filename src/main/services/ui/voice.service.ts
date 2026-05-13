@@ -191,6 +191,8 @@ type VoiceResponse<T extends Record<string, RuntimeValue> = Record<string, Runti
  * This service coordinates state and handles command execution
  */
 export class VoiceService extends BaseService {
+    static readonly serviceName = 'voiceService';
+    static readonly dependencies = [] as const;
     private state: VoiceServiceState = {
         settings: { ...DEFAULT_VOICE_SETTINGS },
         commands: [...DEFAULT_VOICE_COMMANDS],

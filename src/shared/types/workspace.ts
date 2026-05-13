@@ -23,6 +23,7 @@ export type WorkspaceDashboardTab =
     | 'environment'
     | 'settings'
     | 'chat'
+    | 'file_history'
     | 'editor';
 
 export interface WorkspaceFilesPageMeta {
@@ -58,6 +59,8 @@ export interface WorkspaceEntry {
     isDirectory: boolean;
     mountId: string;
     isGitIgnored?: boolean;
+    gitStatus?: string;
+    gitRawStatus?: string;
     size?: number;
     lastModified?: Date;
     children?: WorkspaceEntry[];
@@ -182,8 +185,11 @@ export interface EditorTab {
     type: 'code' | 'image' | 'diff';
     initialLine?: number;
     readOnly?: boolean;
+    gitStatus?: string;
+    gitRawStatus?: string;
     originalContent?: string;
     diffId?: string;
+    diff?: { oldValue: string; newValue: string };
 }
 
 export interface WorkspaceDefinitionLocation {
@@ -400,8 +406,7 @@ export interface WorkspaceAnalysis {
         packages: string[];
     };
     todos: string[];
-    issues?: WorkspaceIssue[];
-    annotations?: CodeAnnotation[];
+    issues?: WorkspaceIssue[]; 
     lspDiagnostics?: WorkspaceIssue[];
     lspServers?: WorkspaceLspServerSupport[];
     diagnosticsStatus?: WorkspaceDiagnosticsStatus;

@@ -71,6 +71,15 @@ const AppSettingsSchema = z.object({
         sleepIdleSeconds: z.number().int().min(0).max(86400).optional(),
         extraArgs: z.string().max(2048).optional(),
     }).optional(),
+    terminal: z.object({
+        fontSize: z.number().int().min(4).max(72).optional(),
+        fontFamily: z.string().max(1024).optional(),
+        lineHeight: z.number().min(0.5).max(3).optional(),
+        letterSpacing: z.number().min(-5).max(20).optional(),
+        cursorStyle: z.enum(['bar', 'block', 'underline']).optional(),
+        cursorBlink: z.boolean().optional(),
+        scrollback: z.number().int().min(1).max(1000000).optional(),
+    }).passthrough().optional(),
     openai: SettingsCredentialSchema.optional(),
     anthropic: SettingsCredentialSchema.optional(),
     groq: SettingsCredentialSchema.optional(),
@@ -104,8 +113,8 @@ const DEFAULT_SETTINGS: AppSettings = {
         extraArgs: '',
     },
     embeddings: {
-        provider: 'ollama',
-        model: 'all-minilm',
+        provider: 'none',
+        model: '', // Dynamically resolved
     },
     autoUpdate: {
         enabled: true,
@@ -115,7 +124,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     images: {
         provider: 'antigravity',
-        ollamaModel: 'stable-diffusion-v1-5',
+        ollamaModel: '', // Dynamically resolved
         sdWebUIUrl: 'http://127.0.0.1:7860',
         comfyUIUrl: 'http://127.0.0.1:8188',
         sdCppBinaryPath: '',
@@ -131,7 +140,7 @@ const DEFAULT_SETTINGS: AppSettings = {
         fontFamily: 'system',
         typographyScale: 'balanced',
 
-        defaultModel: 'gpt-4o',
+        defaultModel: '', // Dynamically resolved
         defaultTerminalBackend: 'node-pty',
         lastModel: '',
         lastProvider: '',
@@ -149,26 +158,35 @@ const DEFAULT_SETTINGS: AppSettings = {
         inlineSuggestionsEnabled: true,
         inlineSuggestionsSource: 'custom',
         inlineSuggestionsProvider: 'openai',
-        inlineSuggestionsModel: 'gpt-4o-mini',
+        inlineSuggestionsModel: '', // Dynamically resolved
         hiddenModels: [],
         dismissedRuntimeInstallPrompts: [],
         completedRuntimeInstalls: [],
+    },
+    aiPromptOverrides: {
+        global: {
+            enabled: false,
+            systemInstructions: '',
+            userPromptPrefix: '',
+            userPromptSuffix: '',
+        },
+        byModel: {},
     },
     github: {
         username: '',
     },
     openai: {
-        model: 'gpt-4o',
+        model: '',
     },
     anthropic: {
-        model: 'claude-3-opus-20240229',
+        model: '',
     },
 
     groq: {
-        model: 'llama3-70b-8192',
+        model: '',
     },
     nvidia: {
-        model: 'nvidia/llama3-chatqa-1.5-70b',
+        model: '',
     },
     antigravity: {
         connected: false,
@@ -177,6 +195,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     copilot: {
         connected: false,
     },
+
     proxy: {
         enabled: false,
         url: 'http://127.0.0.1:8317/v1',
@@ -293,9 +312,6 @@ const API_KEY_PROVIDER_PATHS = [
     'gemini',
     'mistral',
     'groq',
-    'together',
-    'perplexity',
-    'cohere',
     'xai',
     'deepseek',
     'openrouter',
@@ -348,6 +364,8 @@ import { OllamaHealthService } from '@main/services/llm/local/ollama-health.serv
 import { SETTINGS_CHANNELS } from '@shared/constants/ipc-channels';
 
 export class SettingsService extends BaseService {
+    static readonly serviceName = 'settingsService';
+    static readonly dependencies = ['dataService', 'authService', 'ollamaHealthService'] as const;
     private static readonly ERROR_CODES = {
         SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
         SAVE_RETRY_EXHAUSTED: 'SETTINGS_SAVE_RETRY_EXHAUSTED',
@@ -682,6 +700,7 @@ export class SettingsService extends BaseService {
             anthropic: this.mergeProvider(authAccounts, 'anthropic', loaded.anthropic),
             antigravity: this.mergeOAuthProviderState(authAccounts, 'antigravity', loaded.antigravity),
             copilot: this.mergeOAuthProviderState(authAccounts, 'copilot', loaded.copilot),
+
             groq: this.mergeProvider(authAccounts, 'groq', loaded.groq),
             nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia),
             remoteAccounts: this.mergeRemoteAccounts(authAccounts, loaded.remoteAccounts),
@@ -699,6 +718,16 @@ export class SettingsService extends BaseService {
                 },
             },
             window: this.sanitizeWindowSettings(loaded.window),
+            aiPromptOverrides: {
+                global: {
+                    ...(DEFAULT_SETTINGS.aiPromptOverrides?.global ?? {}),
+                    ...(loaded.aiPromptOverrides?.global ?? {}),
+                },
+                byModel: {
+                    ...(DEFAULT_SETTINGS.aiPromptOverrides?.byModel ?? {}),
+                    ...(loaded.aiPromptOverrides?.byModel ?? {}),
+                },
+            },
         };
 
         this.migrateDeprecatedSettings(res);
@@ -860,9 +889,9 @@ export class SettingsService extends BaseService {
             embeddings &&
             (embeddings.provider === 'antigravity' || embeddings.provider === 'gemini')
         ) {
-            appLogger.info('SettingsService', 'Migrating deprecated embedding provider to Ollama');
-            settings.embeddings.provider = 'ollama';
-            settings.embeddings.model = 'all-minilm';
+            appLogger.info('SettingsService', 'Migrating deprecated embedding provider to auto mode');
+            settings.embeddings.provider = 'none';
+            settings.embeddings.model = '';
         }
     }
 
@@ -1585,10 +1614,7 @@ export class SettingsService extends BaseService {
         preserveToken('claude', 'apiKey');
         preserveToken('gemini', 'apiKey');
         preserveToken('mistral', 'apiKey');
-        preserveToken('groq', 'apiKey');
-        preserveToken('together', 'apiKey');
-        preserveToken('perplexity', 'apiKey');
-        preserveToken('cohere', 'apiKey');
+        preserveToken('groq', 'apiKey'); 
         preserveToken('xai', 'apiKey');
         preserveToken('deepseek', 'apiKey');
         preserveToken('openrouter', 'apiKey');

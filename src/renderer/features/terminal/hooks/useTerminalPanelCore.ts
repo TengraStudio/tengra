@@ -19,6 +19,7 @@ import type { TerminalPanelProps } from '../components/TerminalPanel';
 import {
     DEFAULT_TERMINAL_APPEARANCE,
     TERMINAL_APPEARANCE_STORAGE_KEY,
+    TERMINAL_DIFF_TAB_ID,
     TERMINAL_PASTE_HISTORY_LIMIT,
     TERMINAL_PASTE_HISTORY_STORAGE_KEY,
     TERMINAL_PREFERRED_BACKEND_STORAGE_KEY,
@@ -64,7 +65,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         isMaximized: isMaximizedProp = false,
         onMaximizeChange: onMaximizeChangeProp,
         workspaceId, workspacePath,
-        activeFilePath, activeFileContent, activeFileType,
+        activeFilePath, activeFileContent, activeFileType, activeFileDiff,
         tabs, activeTabId,
         setTabs, setActiveTabId,
         onOpenFile,
@@ -149,10 +150,28 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         };
     }, [workspacePath, t]);
 
-    const displayTabs = useMemo(
-        () => (workspaceIssuesTab ? [workspaceIssuesTab, ...tabs] : tabs),
-        [workspaceIssuesTab, tabs]
-    );
+
+    const terminalDiffTab = useMemo<TerminalTab | null>(() => {
+        if (!workspacePath || activeFileType !== 'diff') {
+            return null;
+        }
+        return {
+            id: TERMINAL_DIFF_TAB_ID,
+            name: 'Diff',
+            type: 'panel',
+            status: 'idle',
+            history: [],
+            command: '',
+            metadata: { panelType: 'terminal-diff', closable: true },
+        };
+    }, [workspacePath, activeFileType]);
+
+    const displayTabs = useMemo(() => {
+        const extraTabs: TerminalTab[] = [];
+        if (workspaceIssuesTab) {extraTabs.push(workspaceIssuesTab);}
+        if (terminalDiffTab) {extraTabs.push(terminalDiffTab);}
+        return [...extraTabs, ...tabs];
+    }, [workspaceIssuesTab, terminalDiffTab, tabs]);
     const hasActiveSession = Boolean(activeTabId && tabs.some(tab => tab.id === activeTabId));
 
     const tabById = useMemo(() => {
@@ -297,7 +316,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     return {
         // Props passthrough
         isOpen, onToggle,
-        workspaceId, workspacePath, activeFilePath, activeFileContent, activeFileType,
+        workspaceId, workspacePath, activeFilePath, activeFileContent, activeFileType, activeFileDiff,
         tabs, activeTabId,
         setTabs, setActiveTabId, onOpenFile,
         // Core
@@ -335,7 +354,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         appearanceImportInputRef, shortcutImportInputRef,
         isCreatingRef, hasAutoCreatedRef,
         // Computed
-        workspaceIssuesTab, displayTabs, hasActiveSession, tabById,
+        workspaceIssuesTab, terminalDiffTab, displayTabs, hasActiveSession, tabById,
         // Sub-hook results
         recording, tabActions, inputBroadcast, clipboard,
         aiActions, preferences, splitActions,

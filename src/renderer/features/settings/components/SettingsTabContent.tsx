@@ -25,13 +25,13 @@ const EditorTab = React.lazy(() => import('@/features/settings/components/Editor
 const GeneralTab = React.lazy(() => import('@/features/settings/components/GeneralTab').then(m => ({ default: m.GeneralTab })));
 const ImageSettingsTab = React.lazy(() => import('@/features/settings/components/ImageSettingsTab').then(m => ({ default: m.ImageSettingsTab })));
 const ModelsTab = React.lazy(() => import('@/features/settings/components/ModelsTab').then(m => ({ default: m.ModelsTab })));
+const AiInstructionsTab = React.lazy(() => import('@/features/settings/components/AiInstructionsTab').then(m => ({ default: m.AiInstructionsTab })));
 const MemoryInspector = React.lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })));
 const ModelUsageLimitsTab = React.lazy(() => import('@/features/settings/components/ModelUsageLimitsTab').then(m => ({ default: m.ModelUsageLimitsTab })));
 const QuotasTab = React.lazy(() => import('@/features/settings/components/QuotasTab').then(m => ({ default: m.QuotasTab })));
 const SpeechTab = React.lazy(() => import('@/features/settings/components/SpeechTab').then(m => ({ default: m.SpeechTab })));
 const StatisticsTab = React.lazy(() => import('@/features/settings/components/StatisticsTab').then(m => ({ default: m.StatisticsTab })));
 const SystemTab = React.lazy(() => import('@/features/settings/components/SystemTab').then(m => ({ default: m.SystemTab })));
-
 const SocialMediaTab = React.lazy(() => import('@/features/settings/components/SocialMediaTab').then(m => ({ default: m.SocialMediaTab })));
 
 // Extensions Category Tabs
@@ -66,6 +66,7 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'appearance': return <AppearanceTab {...sharedProps} />;
         case 'system': return <SystemTab {...sharedProps} />;
         case 'models': return <ModelsTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} onRefreshModels={onRefreshModels} />;
+        case 'ai-instructions': return <AiInstructionsTab {...sharedProps} groupedModels={groupedModels} />;
         case 'memory': return <MemoryInspector />;
         case 'quotas': return <QuotasTab {...sharedProps} />;
         case 'statistics': return <StatisticsTab {...sharedProps} />;
@@ -76,20 +77,18 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'usage-limits': return <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels} />;
         case 'images': return <ImageSettingsTab {...sharedProps} />;
         case 'social-media': return <SocialMediaTab {...sharedProps} />;
-        
+
         // Extension Category
         case 'extensions-plugins': return <ExtensionPluginsTab {...sharedProps} />;
         case 'extensions-mcp': return (
-            <div className="rounded-lg border border-border/40 bg-card/30 p-1">
-                <MCPServersTab />
-            </div>
+            <MCPServersTab />
         );
         case 'extensions-skills': return <SkillsTab {...sharedProps} />;
-        
+
         // Legacy/Fallback cases
         case 'skills': return <SkillsTab {...sharedProps} />;
         case 'extensions': return <ExtensionPluginsTab {...sharedProps} />;
-        
+
         default: return null;
     }
 };

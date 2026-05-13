@@ -13,6 +13,7 @@ import { appLogger } from '@main/logging/logger';
 import { EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service';
 import { AdvancedMemoryService, PersonalitySettings, SummarizationResult } from '@main/services/llm/advanced-memory.service';
 import { MEMORY_CHANNELS } from '@shared/constants/ipc-channels';
+import { RuntimeValue } from '@shared/types/common';
 import { IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
@@ -23,6 +24,10 @@ const MemoryFieldSchema = z.string().min(1).max(256);
 const MemoryTagsSchema = z.array(z.string().min(1).max(64)).max(20).default([]);
 
 export class MemoryService {
+    static readonly serviceName = 'memoryService';
+    static readonly category = 'lazy';
+    static readonly dependencies = ['advancedMemoryService'] as const;
+    
     constructor(
         private advancedMemory: AdvancedMemoryService
     ) { }
@@ -175,7 +180,7 @@ export class MemoryService {
     }
 
     // --- Active Memory Implementation ---
-    async extractFactsFromMessage(_userId: string, content: string, _provider?: string, _model: string = 'gpt-4o'): Promise<SemanticFragment[]> {
+    async extractFactsFromMessage(_userId: string, content: string, _provider?: string, _model: string = ''): Promise<SemanticFragment[]> {
         // Delegate to advanced extraction (which stages)
         // Note: Returns PendingMemory[] but we cast to SemanticFragment for compatibility if needed
         // Actually, we should probably just call the extraction but maybe not save it immediately if it's "Active Memory"
@@ -184,5 +189,3 @@ export class MemoryService {
         return [];
     }
 }
-
-

@@ -155,6 +155,7 @@ fn provider_supports_background_refresh(provider: &str) -> bool {
             || value.contains("anthropic")
             || value.contains("antigravity")
             || value.contains("google")
+            || value.contains("cursor")
     )
 }
 

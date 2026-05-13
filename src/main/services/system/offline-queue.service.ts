@@ -34,6 +34,8 @@ export interface QueuedPrompt {
  * The queue is persisted to disk for crash safety.
  */
 export class OfflineQueueService extends BaseService {
+    static readonly serviceName = 'offlineQueueService';
+    static readonly dependencies = ['eventBus'] as const;
     private queue: QueuedPrompt[] = [];
     private readonly filePath: string;
     private processing = false;

@@ -35,7 +35,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
     updateCopilotLimit,
 }) => {
     const { t } = useTranslation();
-    const periodLabel = t(`settings.usageLimits.periods.${period}`);
+    const periodLabel = t(`frontend.settings.usageLimits.periods.${period}`);
     const Icon = period === 'hourly' ? IconClock : period === 'daily' ? IconCalendar : IconTrendingUp;
 
     return (

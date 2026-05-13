@@ -10,7 +10,7 @@
 
 
 import { loader } from '@monaco-editor/react';
-import * as Monaco from 'monaco-editor';
+import * as Monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
@@ -19,12 +19,10 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 import { appLogger } from './renderer-logger';
 
-import 'monaco-editor/esm/vs/editor/editor.all.js';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import 'monaco-editor/esm/vs/language/css/monaco.contribution';
 import 'monaco-editor/esm/vs/language/html/monaco.contribution';
 import 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
-import 'monaco-editor/esm/vs/basic-languages/monaco.contribution';
 
 type MonacoModule = typeof Monaco;
 type MonacoWorkerFactory = new () => Worker;
@@ -249,6 +247,8 @@ export function applyMonacoTheme(monaco: typeof Monaco, isLight: boolean): strin
         tokenNumber: MonacoColorResolver.resolve('--editor-token-number', '--code-number'),
         tokenType: MonacoColorResolver.resolve('--editor-token-type', '--code-function'),
         tokenInvalid: MonacoColorResolver.resolve('--editor-token-invalid', '--destructive'),
+        diffInserted: MonacoColorResolver.resolve('--git-diff-added-bg'),
+        diffRemoved: MonacoColorResolver.resolve('--git-diff-deleted-bg'),
     };
 
     const themeConfig = JSON.stringify({ isLight, ...colors });
@@ -284,6 +284,8 @@ export function applyMonacoTheme(monaco: typeof Monaco, isLight: boolean): strin
                 'editorBracketHighlight.foreground1': colors.tokenType,
                 'editorBracketHighlight.foreground2': colors.tokenString,
                 'editorBracketHighlight.foreground3': colors.tokenKeyword,
+                'diffEditor.insertedTextBackground': colors.diffInserted,
+                'diffEditor.removedTextBackground': colors.diffRemoved,
             },
         });
         lastThemeConfig = themeConfig;

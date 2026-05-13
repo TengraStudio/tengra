@@ -59,6 +59,9 @@ export interface BrainContext {
 
 
 export class BrainService {
+    static readonly serviceName = 'brainService';
+    static readonly category = 'lazy';
+    static readonly dependencies = ['databaseService', 'embeddingService', 'llmService', 'processManagerService', 'backgroundModelResolver'] as const;
     private isInitialized = false;
     private userId = 'default-user'; // Can be expanded to multi-user
     private lastExtractionTime = 0;

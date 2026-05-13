@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import AntigravityIcon from '@assets/antigravity.svg?url';
 import React from 'react';
 
+import { ProviderIcon } from '@/components/shared/ProviderIcon';
 import { formatReset } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { ModelQuotaItem, QuotaResponse } from '@/types/quota';
@@ -84,15 +84,19 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
     t,
     quotaData,
     locale = 'en-US',
-    activeAccountId: _activeAccountId,
-    activeAccountEmail: _activeAccountEmail
+    activeAccountId,
+    activeAccountEmail
 }) => {
     if (!quotaData?.accounts || quotaData.accounts.length === 0) { return null; }
 
     return (
         <div className="col-span-full space-y-4">
             {quotaData.accounts.map((acc, idx: number) => { 
-                const isActiveAccount = acc.isActive === true;  
+                const isActiveAccount = (
+                    (activeAccountId && acc.accountId === activeAccountId) ||
+                    (activeAccountEmail && acc.email === activeAccountEmail) ||
+                    acc.isActive === true
+                );
                 
                 const models = dedupeAccountModels(acc.models); 
                 
@@ -103,9 +107,12 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                         {/* Account Header */}
                         <div className="flex items-center justify-between border-b border-border/10 bg-muted/5 px-4 py-3">
                             <div className="flex items-center gap-3 min-w-0">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                                    <img src={AntigravityIcon} alt="Antigravity Icon" className="w-6 h-6" />
-                                </div>
+                                <ProviderIcon 
+                                    provider="antigravity" 
+                                    variant="minimal" 
+                                    size="100%"
+                                    containerClassName="w-8 h-8 p-1"
+                                />
                                 <div className="flex flex-col min-w-0">
                                     <span className="truncate text-sm font-semibold text-foreground">
                                         {acc.email ?? t('frontend.statistics.defaultAccount')}
@@ -162,5 +169,3 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
         </div>
     );
 };
-
-

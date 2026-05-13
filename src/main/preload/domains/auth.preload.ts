@@ -34,7 +34,10 @@ export interface AuthBridge {
     }>;
     createAccount: (name: string) => Promise<{ success: boolean; error?: string }>;
     switchAccount: (id: string) => Promise<{ success: boolean; error?: string }>;
+    cursorSeamlessLogin: () => Promise<{ success: boolean; accountId?: string; error?: string }>;
+    completeCursorAuth: (session: string) => Promise<{ success: boolean; error?: string }>;
     onAccountChanged: (callback: () => void) => () => void;
+    onQuotaUpdate: (callback: (payload: unknown) => void) => () => void;
 }
 
 export function createAuthBridge(ipc: IpcRenderer): AuthBridge {
@@ -44,10 +47,17 @@ export function createAuthBridge(ipc: IpcRenderer): AuthBridge {
             ipc.invoke(AUTH_CHANNELS.POLL_TOKEN, deviceCode, interval),
         createAccount: (name: string) => ipc.invoke(AUTH_CHANNELS.CREATE_ACCOUNT, name),
         switchAccount: (id: string) => ipc.invoke(AUTH_CHANNELS.SWITCH_ACCOUNT, id),
+        cursorSeamlessLogin: () => ipc.invoke(AUTH_CHANNELS.CURSOR_SEAMLESS_LOGIN),
+        completeCursorAuth: (session: string) => ipc.invoke(AUTH_CHANNELS.CURSOR_COMPLETE_AUTH, session),
         onAccountChanged: callback => {
             const listener = () => callback();
             ipc.on(AUTH_CHANNELS.ACCOUNT_CHANGED_EVENT, listener);
             return () => ipc.removeListener(AUTH_CHANNELS.ACCOUNT_CHANGED_EVENT, listener);
+        },
+        onQuotaUpdate: callback => {
+            const listener = (_event: unknown, payload: unknown) => callback(payload);
+            ipc.on('proxy:quota:updated', listener);
+            return () => ipc.removeListener('proxy:quota:updated', listener);
         },
     };
 }

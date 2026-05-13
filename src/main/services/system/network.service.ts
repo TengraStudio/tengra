@@ -35,6 +35,8 @@ const NETWORK_ERROR_MESSAGE = {
 } as const;
 
 export class NetworkService implements INetworkService {
+    static readonly serviceName = 'networkService';
+    static readonly dependencies = [] as const;
     private readonly wssInstances: WebSocketServer[] = [];
 
     /**

@@ -16,6 +16,9 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { z } from 'zod';
 
 export class DockerService {
+    static readonly serviceName = 'dockerService';
+    static readonly category = 'lazy';
+    static readonly dependencies = ['commandService', 'sshService'] as const;
     constructor(
         private command: CommandService,
         private ssh: SSHService

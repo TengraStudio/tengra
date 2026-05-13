@@ -141,9 +141,4 @@ mod tests {
         assert!(error.to_string().contains("between 10 and 600"));
         std::env::remove_var("TENGRA_OAUTH_TIMEOUT_SECS");
     }
-
-    #[test]
-    fn uses_extended_default_timeout_for_ollama() {
-        assert_eq!(super::default_oauth_timeout_secs("ollama"), 300);
-    }
 }

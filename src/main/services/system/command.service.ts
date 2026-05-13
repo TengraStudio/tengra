@@ -31,6 +31,8 @@ interface CommandResult {
 }
 
 export class CommandService {
+    static readonly serviceName = 'commandService';
+    static readonly dependencies = [] as const;
     private maxTimeout = 60000; // 60 seconds default timeout
     private activeProcesses: Map<string, ChildProcess> = new Map();
     private static readonly MAX_ACTIVE_PROCESSES = 50;

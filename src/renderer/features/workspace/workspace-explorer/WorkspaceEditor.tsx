@@ -551,6 +551,9 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                         }}
                         diffMode={activeTab?.type === 'diff'}
                         originalValue={activeTab?.originalContent}
+                        gitStatus={activeTab?.gitStatus}
+                        gitRawStatus={activeTab?.gitRawStatus}
+                        originalContent={activeTab?.originalContent}
                     />
                 </div>
             )}

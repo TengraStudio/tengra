@@ -74,6 +74,14 @@ function loadTerminalAppearance(
                 1,
                 2
             ),
+            bellEnabled:
+                typeof parsed.bellEnabled === 'boolean'
+                    ? parsed.bellEnabled
+                    : defaultAppearance.bellEnabled,
+            bellStyle:
+                typeof parsed.bellStyle === 'string' && ['none', 'sound', 'visual', 'both'].includes(parsed.bellStyle)
+                    ? parsed.bellStyle
+                    : defaultAppearance.bellStyle,
             customTheme:
                 parsed.customTheme && typeof parsed.customTheme === 'object'
                     ? parsed.customTheme

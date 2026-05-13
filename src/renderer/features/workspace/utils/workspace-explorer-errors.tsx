@@ -207,7 +207,7 @@ export const WorkspaceErrorMessages: Record<string, string> = {
 export function getUserErrorMessage(code: string, resolveMessage: (key: string) => string): string {
     const messageKey = WorkspaceErrorMessages[code];
     if (!messageKey) {
-        return resolveMessage('workspace.errors.explorer.unexpected');
+        return resolveMessage('frontend.workspace.errors.explorer.unexpected');
     }
     return resolveMessage(messageKey);
 }

@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import { useTerminalSmartSuggestions } from '../hooks/useTerminalSmartSuggestions';
+
 
 
 const TERMINAL_SCROLLBACK_LINES = 10000;
@@ -62,13 +62,6 @@ export const TerminalSession = memo(
                 xtermRef.current.options.theme = getTerminalTheme();
             }
         }, [theme]);
-        useTerminalSmartSuggestions({
-            xtermRef,
-            tabId: tab.id,
-            shell: tab.type,
-            cwd: workspacePath,
-            enabled: isReady,
-        });
 
         const safeFit = useCallback(() => {
             if (!fitAddonRef.current || !containerRef.current || !isActive) {

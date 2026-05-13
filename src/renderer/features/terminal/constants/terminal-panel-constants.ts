@@ -30,7 +30,8 @@ export const TERMINAL_SYNC_INPUT_STORAGE_KEY = 'terminal.sync-input.v1';
 export const TERMINAL_SPLIT_PRESETS_STORAGE_KEY = 'terminal.split-presets.v1';
 export const TERMINAL_SPLIT_LAYOUT_STORAGE_KEY = 'terminal.split-layout.v1';
 export const TERMINAL_SPLIT_ANALYTICS_STORAGE_KEY = 'terminal.split-analytics.v1';
-export const TERMINAL_WORKSPACE_ISSUES_TAB_ID = '__workspace-issues-tab__';
+export const TERMINAL_WORKSPACE_ISSUES_TAB_ID = 'terminal-panel-workspace-issues';
+export const TERMINAL_DIFF_TAB_ID = 'terminal-panel-diff';
 export const TERMINAL_MANAGER_MODULE_VERSION = serializeTerminalModuleVersion();
 
 // ── Regex ───────────────────────────────────────────────────────────────────────
@@ -182,6 +183,8 @@ export const DEFAULT_TERMINAL_APPEARANCE: TerminalAppearancePreferences = {
     cursorBlink: true,
     fontSize: 13,
     lineHeight: 1.2,
+    bellEnabled: false,
+    bellStyle: 'none',
     customTheme: null,
 };
 
@@ -222,6 +225,7 @@ export function resolveTerminalAppearance(
         cursorBlink: appearance.cursorBlink,
         fontSize: appearance.fontSize,
         lineHeight: appearance.lineHeight,
+        bellEnabled: appearance.bellEnabled ?? false,
+        bellStyle: appearance.bellStyle ?? 'none',
     };
 }
-

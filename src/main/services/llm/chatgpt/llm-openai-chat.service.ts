@@ -114,6 +114,8 @@ export interface OpenAIStreamYield {
  * Handles OpenAI-compatible chat completions (both streaming and non-streaming).
  */
 export class LLMOpenAIChatService {
+    static readonly serviceName = 'llmOpenAIChatService';
+    static readonly dependencies = ['deps', 'breaker', 'getNormalizedModelName', 'getDispatcher'] as const;
     private imagePersistence: ImagePersistenceService;
 
     constructor(

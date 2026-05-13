@@ -602,8 +602,8 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                     setIsExpanded(prev => !prev);
                 }}
                 className={cn(
-                    'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
-                    expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
+                    'flex w-full items-center justify-between gap-3 rounded border border-border bg-background px-2.5 py-1.5 text-left transition-colors',
+                    expanded ? 'bg-muted/20' : 'hover:bg-muted/10'
                 )}
                 aria-label={expanded ? t('frontend.chat.collapse') : t('frontend.chat.expand')}
             >
@@ -624,14 +624,14 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                 </div>
                 <div className="flex items-center gap-2">
                     <IconChevronDown className={cn(
-                        'h-4 w-4 text-muted-foreground/60 transition-transform',
+                        'h-3.5 w-3.5 text-muted-foreground/70 transition-transform',
                         expanded && 'rotate-180'
                     )} />
                 </div>
             </button>
 
             {expanded && (
-                <div className="px-3 pb-2 pt-2">
+                <div className="px-2.5 pb-2 pt-1.5">
                     {isExecuting && !result && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <IconLoader2 className="h-3 w-3 animate-spin" />

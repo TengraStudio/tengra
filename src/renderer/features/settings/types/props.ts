@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota'; 
+import { ClaudeQuota, CodexUsage, CopilotQuota, CursorQuota, QuotaResponse } from '@shared/types/quota'; 
 
 import { AppSettings } from '@/types/settings';
 
@@ -40,9 +40,10 @@ export interface SettingsSharedProps {
     checkOllama: () => Promise<void>
     refreshAuthStatus: () => Promise<void>
     connectCopilot: () => Promise<void>
-    connectBrowserProvider: (provider: 'codex' | 'claude' | 'antigravity' | 'ollama') => Promise<void>
+    connectCursor: () => Promise<void>
+    connectBrowserProvider: (provider: 'codex' | 'claude' | 'antigravity' | 'ollama' | 'cursor') => Promise<void>
     cancelAuthFlow: () => void
-    disconnectProvider: (provider: 'copilot' | 'codex' | 'claude' | 'antigravity' | 'ollama') => Promise<void>
+    disconnectProvider: (provider: 'copilot' | 'codex' | 'claude' | 'antigravity' | 'ollama' | 'cursor') => Promise<void>
     statsLoading: boolean
     statsPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly'
     setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => void
@@ -51,6 +52,7 @@ export interface SettingsSharedProps {
     copilotQuota: AccountWrapper<CopilotQuota> | null
     codexUsage: AccountWrapper<{ usage: CodexUsage }> | null
     claudeQuota: AccountWrapper<ClaudeQuota> | null
+    cursorQuota: AccountWrapper<CursorQuota> | null
     setReloadTrigger: (trigger: number | ((prev: number) => number)) => void
     benchmarkResult: { tokensPerSec: number; latency: number } | null
     isBenchmarking: boolean

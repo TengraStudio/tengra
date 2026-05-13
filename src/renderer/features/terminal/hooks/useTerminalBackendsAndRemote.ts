@@ -423,8 +423,9 @@ export function useTerminalBackendsAndRemote({
     useEffect(() => {
         queueMicrotask(() => {
             void loadPreferredBackendPreference();
+            void fetchDiscoverySnapshot();
         });
-    }, [loadPreferredBackendPreference]);
+    }, [loadPreferredBackendPreference, fetchDiscoverySnapshot]);
 
     /**
      * Auto-persist backend when backends become available

@@ -190,10 +190,7 @@ async function checkApiKeyConfigured(
         groq: ['groq'],
         gemini: ['gemini', 'google', 'antigravity'],
         nvidia: ['nvidia'],
-        mistral: ['mistral'],
-        together: ['together'],
-        perplexity: ['perplexity'],
-        cohere: ['cohere'],
+        mistral: ['mistral'], 
         xai: ['xai'],
         deepseek: ['deepseek'],
         openrouter: ['openrouter']

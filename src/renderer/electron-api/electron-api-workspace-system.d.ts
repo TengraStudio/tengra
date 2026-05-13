@@ -142,8 +142,23 @@ export interface ElectronApiWorkspaceSystemDomain {
             rootPath: string,
             query: string,
             workspaceId?: string,
-            isRegex?: boolean
+            isRegex?: boolean,
+            matchCase?: boolean,
+            matchWholeWord?: boolean
         ) => Promise<FileSearchResult[]>;
+        searchFilesStream: (
+            rootPath: string,
+            query: string,
+            requestId: string,
+            options?: {
+                isRegex?: boolean;
+                matchCase?: boolean;
+                matchWholeWord?: boolean;
+                includeGlob?: string;
+                excludeGlob?: string;
+            }
+        ) => Promise<void>;
+        searchFilesCancel: (requestId: string) => Promise<void>;
         indexWorkspace: (rootPath: string, workspaceId: string) => Promise<void>;
         queryIndexedSymbols: (
             query: string
@@ -317,9 +332,12 @@ export interface ElectronApiWorkspaceSystemDomain {
         unstageAll: (cwd: string) => Promise<{ success: boolean; error?: string }>;
         getDetailedStatus: (cwd: string) => Promise<{
             success: boolean;
-            staged?: Array<{ path: string; status: string }>;
-            unstaged?: Array<{ path: string; status: string }>;
-            untracked?: Array<{ path: string; status: string }>;
+            staged?: Array<{ path: string; status: string; staged: boolean }>;
+            unstaged?: Array<{ path: string; status: string; staged: boolean }>;
+            untracked?: Array<{ path: string; status: string; staged: boolean }>;
+            allFiles?: Array<{ path: string; status: string; staged: boolean }>;
+            stagedFiles?: Array<{ path: string; status: string; staged: boolean }>;
+            unstagedFiles?: Array<{ path: string; status: string; staged: boolean }>;
             error?: string;
         }>;
         checkout: (cwd: string, branch: string) => Promise<{ success: boolean; error?: string }>;
@@ -367,7 +385,7 @@ export interface ElectronApiWorkspaceSystemDomain {
             strategy: 'ours' | 'theirs' | 'manual'
         ) => Promise<{ success: boolean; error?: string }>;
         openMergeTool: (cwd: string, filePath?: string) => Promise<{ success: boolean; error?: string }>;
-        getBlame: (cwd: string, filePath: string) => Promise<{ success: boolean; lines?: GitBlameLine[]; error?: string }>;
+        getBlame: (cwd: string, filePath: string, lineNumber?: number) => Promise<{ success: boolean; lines?: GitBlameLine[]; error?: string }>;
         getCommitDetails: (cwd: string, hash: string) => Promise<{ success: boolean; details?: GitCommitDetails; error?: string }>;
         getRebaseStatus: (cwd: string) => Promise<{
             success: boolean;

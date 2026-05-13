@@ -38,15 +38,7 @@ describe('TerminalWorkspaceIssuesTab', () => {
                             line: 1,
                             source: 'static-analysis',
                         },
-                    ],
-                    annotations: [
-                        {
-                            file: 'src/index.ts',
-                            line: 2,
-                            message: '// TODO: tighten validation',
-                            type: 'todo',
-                        },
-                    ],
+                    ], 
                     lspDiagnostics: [
                         {
                             severity: 'error',
@@ -61,7 +53,7 @@ describe('TerminalWorkspaceIssuesTab', () => {
         } as never;
     });
 
-    it('renders terminal, annotation, and LSP sections from workspace analysis', async () => {
+    it('renders terminal and LSP sections from workspace analysis', async () => {
         render(
             <TerminalWorkspaceIssuesTab
                 workspacePath="C:/repo"
@@ -74,7 +66,6 @@ describe('TerminalWorkspaceIssuesTab', () => {
         });
 
         expect(screen.getByText('frontend.terminal.workspaceIssuesTerminal (1)')).toBeInTheDocument();
-        expect(screen.getByText('frontend.terminal.workspaceIssuesAnnotations (1)')).toBeInTheDocument();
         expect(screen.getByText('Type error')).toBeInTheDocument();
         expect(screen.getByText('// TODO: tighten validation')).toBeInTheDocument();
     });

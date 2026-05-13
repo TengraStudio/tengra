@@ -56,6 +56,8 @@ const compareRequestSchema = z.object({
 });
 
 export class MultiModelComparisonService extends BaseService {
+    static readonly serviceName = 'multiModelComparisonService';
+    static readonly dependencies = ['llmService', 'orchestrator', 'advancedMemoryService'] as const;
     private readonly memoryContext: MemoryContextService;
     private readonly history: ComparisonHistoryEntry[] = [];
 

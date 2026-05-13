@@ -4,33 +4,31 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
 
-import { IconBolt,IconHeadphones, IconMicrophone, IconMusic, IconPlayerPlay, IconRadio, IconRipple, IconVolume } from '@tabler/icons-react';
+import { IconPlayerPlay, IconRadio, IconRipple, IconVolume } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { AppSettings } from '@/types/settings';
 import { appLogger } from '@/utils/renderer-logger';
 
-/* Batch-02: Extracted Long Classes */
-const C_SPEECHTAB_1 = "p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20";
-const C_SPEECHTAB_2 = "bg-card rounded-card-xl border border-border/40 p-8 pt-10 space-y-10 shadow-sm relative overflow-hidden group/voice hover:border-border/60 transition-all duration-500 lg:p-10";
-const C_SPEECHTAB_3 = "absolute -inset-2 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 rounded-2xl blur-xl opacity-0 group-hover/preview:opacity-100 transition duration-1000";
-const C_SPEECHTAB_4 = "relative p-6 rounded-2xl bg-muted/10 border border-border/20 backdrop-blur-sm shadow-inner group-hover/preview:border-primary/20 transition-all lg:p-8";
-const C_SPEECHTAB_5 = "h-14 rounded-2xl bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30 transition-all duration-500 font-bold typo-body shadow-lg shadow-primary/5 group/btn";
-
+import {
+    SettingsField,
+    SettingsPanel,
+    SettingsSelectContent,
+    SettingsSelectItem,
+    SettingsSelectTrigger,
+    SettingsTabHeader,
+    SettingsTabLayout,
+} from './SettingsPrimitives';
 
 interface SpeechTabProps {
     settings: AppSettings | null;
@@ -60,7 +58,7 @@ function useSpeechDevices(t: (key: string) => string) {
                 await navigator.mediaDevices
                     .getUserMedia({ audio: true })
                     .catch((err: Error) =>
-                        appLogger.warn('SpeechTab', 'IconMicrophone permission denied:', err)
+                        appLogger.warn('SpeechTab', 'Microphone permission denied:', err)
                     );
                 const d = await navigator.mediaDevices.enumerateDevices();
                 setDevices(d);
@@ -124,55 +122,48 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
     updateSpeech,
     t,
 }) => (
-    <div className="space-y-10">
-        <div className="px-1">
-            <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
-                <IconMusic className="w-3 h-3 text-primary/60" />
-                {t('frontend.speech.voiceSelection')}
-            </label>
+    <div className="space-y-5 px-6 py-2">
+        <SettingsField label={t('frontend.speech.voiceSelection')}>
             <Select
                 value={settings?.speech?.voiceURI ?? ''}
                 onValueChange={val => updateSpeech({ voiceURI: val })}
             >
-                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
+                <SettingsSelectTrigger>
                     <SelectValue placeholder={t('frontend.speech.systemDefault')} />
-                </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-300">
-                    <SelectItem value="system-default" className="typo-body font-bold">{t('frontend.speech.systemDefault')}</SelectItem>
+                </SettingsSelectTrigger>
+                <SettingsSelectContent>
+                    <SettingsSelectItem value="system-default">
+                        {t('frontend.speech.systemDefault')}
+                    </SettingsSelectItem>
                     {voices.map(v => (
-                        <SelectItem key={v.voiceURI} value={v.voiceURI} className="typo-body font-bold">
+                        <SettingsSelectItem key={v.voiceURI} value={v.voiceURI}>
                             {v.name} ({v.lang})
-                        </SelectItem>
+                        </SettingsSelectItem>
                     ))}
-                </SelectContent>
+                </SettingsSelectContent>
             </Select>
-        </div>
-        <div className="px-1">
-            <div className="flex justify-between items-center mb-4">
-                <label className="typo-body font-bold text-foreground flex items-center gap-2">
-                    <IconBolt className="w-3 h-3 text-primary/60" />
-                    {t('frontend.speech.speed')}
-                </label>
-                <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary tabular-nums">
-                    {settings?.speech?.rate ?? 1}x
-                </Badge>
-            </div>
-            <div className="pt-2 px-1">
+        </SettingsField>
+
+        <SettingsField label={t('frontend.speech.speed')}>
+            <div className="flex items-center gap-4">
                 <Slider
                     min={0.5}
                     max={2}
                     step={0.1}
                     value={[settings?.speech?.rate ?? 1]}
                     onValueChange={([val]) => updateSpeech({ rate: val })}
-                    className="w-full"
+                    className="flex-1"
                 />
-                <div className="flex justify-between mt-3 typo-body font-bold text-muted-foreground/30">
-                    <span>{t('frontend.speech.rateHalf')}</span>
-                    <span>{t('frontend.speech.rateNormal')}</span>
-                    <span>{t('frontend.speech.rateDouble')}</span>
-                </div>
+                <Badge variant="outline" className="h-6 shrink-0 border-primary/20 px-3 font-mono text-sm font-semibold text-primary tabular-nums">
+                    {settings?.speech?.rate ?? 1}x
+                </Badge>
             </div>
-        </div>
+            <div className="mt-3 flex justify-between text-xs font-medium text-muted-foreground/50">
+                <span>{t('frontend.speech.rateHalf')}</span>
+                <span>{t('frontend.speech.rateNormal')}</span>
+                <span>{t('frontend.speech.rateDouble')}</span>
+            </div>
+        </SettingsField>
     </div>
 );
 
@@ -191,51 +182,48 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
     updateSpeech,
     t,
 }) => (
-    <div className="space-y-8">
-        <div className="px-1">
-            <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
-                <IconMicrophone className="w-3 h-3 text-primary/60" />
-                {t('frontend.speech.microphone')}
-            </label>
+    <div className="space-y-5">
+        <SettingsField label={t('frontend.speech.microphone')}>
             <Select
                 value={settings?.speech?.audioInputDeviceId ?? 'default'}
                 onValueChange={val => updateSpeech({ audioInputDeviceId: val })}
             >
-                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
+                <SettingsSelectTrigger>
                     <SelectValue placeholder={t('frontend.speech.systemDefault')} />
-                </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                    <SelectItem value="default" className="typo-body font-bold">{t('frontend.speech.systemDefault')}</SelectItem>
+                </SettingsSelectTrigger>
+                <SettingsSelectContent>
+                    <SettingsSelectItem value="default">
+                        {t('frontend.speech.systemDefault')}
+                    </SettingsSelectItem>
                     {inputDevices.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
+                        <SettingsSelectItem key={opt.value} value={opt.value}>
                             {opt.label}
-                        </SelectItem>
+                        </SettingsSelectItem>
                     ))}
-                </SelectContent>
+                </SettingsSelectContent>
             </Select>
-        </div>
-        <div className="px-1">
-            <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
-                <IconHeadphones className="w-3 h-3 text-primary/60" />
-                {t('frontend.speech.speakerSelection')}
-            </label>
+        </SettingsField>
+
+        <SettingsField label={t('frontend.speech.speakerSelection')}>
             <Select
                 value={settings?.speech?.audioOutputDeviceId ?? 'default'}
                 onValueChange={val => updateSpeech({ audioOutputDeviceId: val })}
             >
-                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
+                <SettingsSelectTrigger>
                     <SelectValue placeholder={t('frontend.speech.systemDefault')} />
-                </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                    <SelectItem value="default" className="typo-body font-bold">{t('frontend.speech.systemDefault')}</SelectItem>
+                </SettingsSelectTrigger>
+                <SettingsSelectContent>
+                    <SettingsSelectItem value="default">
+                        {t('frontend.speech.systemDefault')}
+                    </SettingsSelectItem>
                     {outputDevices.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
+                        <SettingsSelectItem key={opt.value} value={opt.value}>
                             {opt.label}
-                        </SelectItem>
+                        </SettingsSelectItem>
                     ))}
-                </SelectContent>
+                </SettingsSelectContent>
             </Select>
-        </div>
+        </SettingsField>
     </div>
 );
 
@@ -257,38 +245,12 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
     }, [t, voices, settings?.speech?.voiceURI, settings?.speech?.rate]);
 
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-20">
-            {/* Page Header */}
-            <div className="relative group px-1">
-                <div className="flex items-center gap-4 mb-3">
-                    <div className={C_SPEECHTAB_1}>
-                        <IconRipple className="w-7 h-7" />
-                    </div>
-                    <div>
-                        <h3 className="text-2xl font-bold text-foreground leading-none">
-                            {t('frontend.speech.title')}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-2">
-                            <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
-                            <p className="typo-body font-bold text-muted-foreground opacity-50">
-                                {t('frontend.speech.sonicInterface')}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <p className="typo-caption text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
-                    {t('frontend.speech.subtitle')}
-                </p>
-            </div>
-
-            {/* Voice & Config Section */}
-            <div className={C_SPEECHTAB_2}>
-                <div className="flex items-center gap-3 px-1 relative z-10">
-                    <IconRadio className="w-4 h-4 text-primary" />
-                    <h4 className="typo-body font-bold text-muted-foreground/40">{t('frontend.speech.synthesizerMatrix')}</h4>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
+        <SettingsTabLayout className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <SettingsPanel
+                title={t('frontend.speech.synthesizerMatrix')}
+                icon={IconRadio}
+            >
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <VoiceSection
                         settings={settings}
                         voices={voices}
@@ -304,38 +266,33 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                     />
                 </div>
 
-                <div className="pt-10 border-t border-border/10 relative z-10">
-                    <div className="flex flex-col gap-6">
-                        <div className="group/preview relative">
-                            <div className={C_SPEECHTAB_3} />
-                            <div className={C_SPEECHTAB_4}>
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2 rounded-lg bg-primary/20 text-primary mt-1">
-                                        <IconVolume className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <p className="typo-body font-bold text-muted-foreground/40 mb-2">{t('frontend.speech.auralPreview')}</p>
-                                        <p className="typo-caption leading-relaxed text-foreground font-medium opacity-80">
-                                            "{t('frontend.speech.previewText')}"
-                                        </p>
-                                    </div>
-                                </div>
+                <div className="space-y-4 border-t border-border/10 px-6 py-2">
+                    <div className="rounded-2xl border border-border/15 bg-muted/10 p-5">
+                        <div className="flex items-start gap-4">
+                            <div className="mt-1 rounded-xl bg-primary/10 p-2 text-primary">
+                                <IconVolume className="h-4 w-4" />
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-muted-foreground/70">
+                                    {t('frontend.speech.auralPreview')}
+                                </p>
+                                <p className="text-sm leading-relaxed text-foreground/90">
+                                    "{t('frontend.speech.previewText')}"
+                                </p>
                             </div>
                         </div>
-
-                        <Button
-                            onClick={handleTest}
-                            variant="outline"
-                            className={C_SPEECHTAB_5}
-                        >
-                            <IconPlayerPlay className="w-3.5 h-3.5 mr-3 group-hover:scale-125 transition-transform" />
-                            {t('frontend.speech.test')}
-                        </Button>
                     </div>
+
+                    <Button
+                        onClick={handleTest}
+                        variant="outline"
+                        className="h-11 rounded-2xl border-primary/20 bg-primary/5 px-5 font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                    >
+                        <IconPlayerPlay className="mr-2 h-4 w-4" />
+                        {t('frontend.speech.test')}
+                    </Button>
                 </div>
-                <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-            </div>
-        </div>
+            </SettingsPanel>
+        </SettingsTabLayout>
     );
 };
-

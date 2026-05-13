@@ -20,7 +20,7 @@ vi.mock('@/i18n', () => ({
 }));
 
 describe('MemorySearchFilter', () => {
-    it('stores and clears search history from UX controls', () => {
+    it('submits search with the simplified controls', () => {
         const onSearch = vi.fn();
         const onSearchChange = vi.fn();
 
@@ -37,11 +37,8 @@ describe('MemorySearchFilter', () => {
         fireEvent.submit(screen.getByRole('button', { name: 'common.search' }).closest('form') as HTMLFormElement);
         expect(onSearch).toHaveBeenCalledTimes(1);
 
-        fireEvent.click(screen.getByRole('button', { name: 'memory graph' }));
-        expect(onSearchChange).toHaveBeenCalledWith('memory graph');
-
-        fireEvent.click(screen.getByRole('button', { name: 'common.clear' }));
-        expect(screen.queryByRole('button', { name: 'memory graph' })).not.toBeInTheDocument();
+        fireEvent.change(screen.getByPlaceholderText('frontend.memory.searchPlaceholder'), { target: { value: 'memory map' } });
+        expect(onSearchChange).toHaveBeenCalledWith('memory map');
     });
 });
 

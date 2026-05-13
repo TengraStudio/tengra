@@ -16,6 +16,8 @@ import { JobSchedulerService } from '@main/services/system/job-scheduler.service
 import { SERVICE_INTERVALS } from '@shared/constants';
 
 export class TokenService extends BaseService {
+    static readonly serviceName = 'tokenService';
+    static readonly dependencies = ['databaseService', 'authService', 'eventBus', 'options'] as const;
     private static readonly PERFORMANCE_BUDGET = { fastMs: 30, executeMs: 260 };
 
     private static readonly UI_MESSAGE_KEYS = {

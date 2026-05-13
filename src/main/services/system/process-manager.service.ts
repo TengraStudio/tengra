@@ -34,6 +34,8 @@ interface ProcessOptions {
 }
 
 export class ProcessManagerService extends EventEmitter implements LifecycleAware {
+    static readonly serviceName = 'processManagerService';
+    static readonly dependencies = [] as const;
     private processes: Map<string, ChildProcess> = new Map();
     private persistentServices: Set<string> = new Set();
     private servicePorts: Map<string, number> = new Map();

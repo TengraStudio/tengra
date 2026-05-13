@@ -31,6 +31,8 @@ import { WorkspaceContextSessionModule } from './modules/workspace-context-sessi
 import { SessionRuntimeModule } from './base-session-engine.service';
 
 export class SessionModuleRegistryService extends BaseService {
+    static readonly serviceName = 'sessionModuleRegistryService';
+    static readonly dependencies = ['eventBus', 'councilCapabilityService'] as const;
     private readonly modules = new Map<SessionCapability, SessionRuntimeModule>();
 
     constructor(

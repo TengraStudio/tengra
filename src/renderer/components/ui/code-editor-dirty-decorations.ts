@@ -9,6 +9,7 @@
  */
 
 import type { Monaco } from '@monaco-editor/react';
+import { diffLines } from 'diff';
 import type { editor } from 'monaco-editor';
 import React from 'react';
 
@@ -22,37 +23,32 @@ interface UseCodeEditorDirtyDecorationsOptions {
 }
 
 function computeModifiedLineNumbers(savedValue: string, currentValue: string): number[] {
-    const savedLines = savedValue.split(/\r?\n/);
-    const currentLines = currentValue.split(/\r?\n/);
+    if (savedValue === currentValue) {return [];}
+    
+    const normOriginal = savedValue.replace(/\r\n/g, '\n');
+    const normModified = currentValue.replace(/\r\n/g, '\n');
 
-    let startIndex = 0;
-    const maxPrefix = Math.min(savedLines.length, currentLines.length);
-    while (startIndex < maxPrefix && savedLines[startIndex] === currentLines[startIndex]) {
-        startIndex += 1;
-    }
+    const changes = diffLines(normOriginal, normModified);
+    const modifiedLines: number[] = [];
+    let currentLine = 1;
 
-    if (startIndex === savedLines.length && startIndex === currentLines.length) {
-        return [];
+    for (let i = 0; i < changes.length; i++) {
+        const change = changes[i];
+        if (change.added || change.removed) {
+            // For dirty decorations, we just mark all lines in the added/removed block
+            const count = change.count ?? 1;
+            for (let j = 0; j < count; j++) {
+                modifiedLines.push(currentLine + j);
+            }
+            if (change.added) {
+                currentLine += count;
+            }
+        } else {
+            currentLine += change.count ?? 0;
+        }
     }
-
-    let savedEndIndex = savedLines.length - 1;
-    let currentEndIndex = currentLines.length - 1;
-    while (
-        savedEndIndex >= startIndex &&
-        currentEndIndex >= startIndex &&
-        savedLines[savedEndIndex] === currentLines[currentEndIndex]
-    ) {
-        savedEndIndex -= 1;
-        currentEndIndex -= 1;
-    }
-
-    const firstLineNumber = Math.max(1, startIndex + 1);
-    const lastLineNumber = Math.max(firstLineNumber, currentEndIndex + 1);
-    const modifiedLineNumbers: number[] = [];
-    for (let lineNumber = firstLineNumber; lineNumber <= lastLineNumber; lineNumber += 1) {
-        modifiedLineNumbers.push(lineNumber);
-    }
-    return modifiedLineNumbers;
+    
+    return [...new Set(modifiedLines)];
 }
 
 export function useCodeEditorDirtyDecorations({
@@ -121,4 +117,3 @@ export function useCodeEditorDirtyDecorations({
         };
     }, [dirtyDecorationColor, editorMounted, editorRef, monacoRef, savedValue]);
 }
-

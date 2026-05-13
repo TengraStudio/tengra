@@ -593,7 +593,6 @@ function MainApp() {
                                     </>
                                 }
                             />
-                        <StatusBar workspaceId={selectedWorkspace?.id} />
                     </div>
                     <SessionLockOverlay
                         isOpen={sessionTimeout.isEnabled && sessionTimeout.isLocked}

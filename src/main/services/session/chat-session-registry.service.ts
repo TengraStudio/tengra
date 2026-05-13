@@ -52,6 +52,8 @@ const buildRecoveryState = (state: SessionState): SessionState['recovery'] => ({
 });
 
 export class ChatSessionRegistryService extends BaseService implements SessionRegistryReader {
+    static readonly serviceName = 'chatSessionRegistryService';
+    static readonly dependencies = ['eventBus', 'sessionModuleRegistryService'] as const;
     private readonly sessions = new Map<string, ConversationSessionEngine>();
 
     constructor(

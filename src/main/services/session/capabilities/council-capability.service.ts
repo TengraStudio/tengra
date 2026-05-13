@@ -27,24 +27,24 @@ import { randomUUID } from 'node:crypto';
 
 /** Default model routing rules based on task type */
 const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
-    { taskType: 'code_generation', provider: 'openai', model: 'gpt-4o', priority: 100 },
-    { taskType: 'code_generation', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
-    { taskType: 'code_review', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
-    { taskType: 'code_review', provider: 'openai', model: 'gpt-4o', priority: 80 },
-    { taskType: 'research', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
-    { taskType: 'research', provider: 'google', model: 'gemini-1.5-pro', priority: 85 },
-    { taskType: 'documentation', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 95 },
-    { taskType: 'documentation', provider: 'openai', model: 'gpt-4o', priority: 90 },
-    { taskType: 'debugging', provider: 'openai', model: 'gpt-4o', priority: 100 },
-    { taskType: 'debugging', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
-    { taskType: 'testing', provider: 'openai', model: 'gpt-4o', priority: 95 },
-    { taskType: 'testing', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
-    { taskType: 'refactoring', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
-    { taskType: 'refactoring', provider: 'openai', model: 'gpt-4o', priority: 85 },
-    { taskType: 'planning', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
-    { taskType: 'planning', provider: 'openai', model: 'o1', priority: 95 },
-    { taskType: 'general', provider: 'openai', model: 'gpt-4o', priority: 90 },
-    { taskType: 'general', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
+    { taskType: 'code_generation', provider: 'openai', model: '', priority: 100 },
+    { taskType: 'code_generation', provider: 'anthropic', model: '', priority: 90 },
+    { taskType: 'code_review', provider: 'anthropic', model: '', priority: 100 },
+    { taskType: 'code_review', provider: 'openai', model: '', priority: 80 },
+    { taskType: 'research', provider: 'anthropic', model: '', priority: 100 },
+    { taskType: 'research', provider: 'google', model: '', priority: 85 },
+    { taskType: 'documentation', provider: 'anthropic', model: '', priority: 95 },
+    { taskType: 'documentation', provider: 'openai', model: '', priority: 90 },
+    { taskType: 'debugging', provider: 'openai', model: '', priority: 100 },
+    { taskType: 'debugging', provider: 'anthropic', model: '', priority: 90 },
+    { taskType: 'testing', provider: 'openai', model: '', priority: 95 },
+    { taskType: 'testing', provider: 'anthropic', model: '', priority: 90 },
+    { taskType: 'refactoring', provider: 'anthropic', model: '', priority: 100 },
+    { taskType: 'refactoring', provider: 'openai', model: '', priority: 85 },
+    { taskType: 'planning', provider: 'anthropic', model: '', priority: 100 },
+    { taskType: 'planning', provider: 'openai', model: '', priority: 95 },
+    { taskType: 'general', provider: 'openai', model: '', priority: 90 },
+    { taskType: 'general', provider: 'anthropic', model: '', priority: 90 },
 ];
 
 export interface CouncilCapabilityDependencies {
@@ -181,6 +181,8 @@ function toTimelineEvent(log: { id: string; created_at: number; role: string; co
  * session mode can opt into the same behavior without inheriting workflow-only names.
  */
 export class CouncilCapabilityService extends BaseService {
+    static readonly serviceName = 'councilCapabilityService';
+    static readonly dependencies = ['deps'] as const;
     private rules: ModelRoutingRule[] = [...DEFAULT_ROUTING_RULES];
 
     constructor(private readonly deps: CouncilCapabilityDependencies) {
@@ -316,7 +318,7 @@ export class CouncilCapabilityService extends BaseService {
 
         return {
             provider: availableProviders[0] || 'openai',
-            model: 'gpt-4o',
+            model: '',
             reason: 'Default fallback: No matching routing rules found'
         };
     }

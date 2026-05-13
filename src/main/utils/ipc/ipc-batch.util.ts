@@ -27,7 +27,7 @@ import { ipcMain, IpcMainInvokeEvent } from 'electron';
  * Maximum number of IPC calls allowed in a single batch.
  * Enforces NASA Power of Ten Rule 2 (Fixed loop bounds).
  */
-const MAX_BATCH_SIZE = 50;
+const MAX_BATCH_SIZE = 500;
 
 /**
  * Represents a single request within an IPC batch.

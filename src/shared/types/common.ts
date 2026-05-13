@@ -45,6 +45,7 @@ export interface AuthStatus {
 export interface FileSearchResult {
     file: string;
     line: number;
+    column?: number;
     text: string;
     type?: string;
     name?: string;

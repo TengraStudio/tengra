@@ -115,7 +115,7 @@ async function persistAssistantPlaceholderMessage(message: Message & { chatId: s
 
 export const useChatGenerator = (
     props: UseChatGeneratorProps & {
-        systemMode: 'thinking' | 'agent' | 'fast';
+        systemMode: 'instant' | 'ask' | 'thinking' | 'agent' | 'fast';
     }
 ): {
     streamingStates: Record<string, StreamStreamingState>;
@@ -248,6 +248,7 @@ export const useChatGenerator = (
                 intent: intentClassification,
                 isStreaming: true,
                 language,
+                systemMode,
             }),
             variants: isMultiModel
                 ? modelsToUse.map((m, idx) => ({
@@ -295,6 +296,10 @@ export const useChatGenerator = (
         const isMultiModel = modelsToUse.length > 1;
         const shouldUseDirectImageFlow = isImageOnlyModel(initialModel) || isExplicitImageRequest(userMessage);
         const intentClassification = classifyAiIntent(userMessage, systemMode);
+        const compatibilitySystemMode: 'thinking' | 'agent' | 'fast' =
+            systemMode === 'instant' || systemMode === 'ask'
+                ? 'fast'
+                : systemMode;
         const shouldAttachTools = !shouldUseDirectImageFlow && (systemMode === 'agent' || intentClassification.requiresTooling);
         const shouldUseAgentPrompting = systemMode === 'agent';
 
@@ -336,7 +341,7 @@ export const useChatGenerator = (
                 await generateMultiModelResponse({
                     chatId, assistantId, userMessage, models: modelsToUse, allTools, chats,
                     appSettings, language, activeWorkspacePath, workspaceId,
-                    autoReadEnabled, handleSpeak, t, formatChatError, systemMode, intentClassification,
+                    autoReadEnabled, handleSpeak, t, formatChatError, systemMode: compatibilitySystemMode, intentClassification,
                     getReasoningEffort, createModelToolList, prepareMessages
                 });
             } else {
@@ -347,20 +352,20 @@ export const useChatGenerator = (
 
                 const { allMessages, presetOptions } = prepareMessages({
                     chatId, chats, userMessage, appSettings, selectedModel: initialModel,
-                    selectedProvider: effectiveProvider, language, activeWorkspacePath, systemMode, toolingEnabled: shouldUseAgentPrompting,
+                    selectedProvider: effectiveProvider, language, activeWorkspacePath, systemMode: compatibilitySystemMode, toolingEnabled: shouldUseAgentPrompting,
                     workspaceTitle: props.workspaceTitle,
                     workspaceDescription: props.workspaceDescription
                 });
 
                 const reasoningEffort = getReasoningEffort(initialModel, appSettings);
                 const fullOptions = buildProviderOptions(effectiveProvider, {
-                    ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking',
+                    ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode: compatibilitySystemMode, thinking: compatibilitySystemMode === 'thinking',
                     agentToolsEnabled: shouldUseAgentPrompting, reasoningEffort
                 });
                 await executeToolTurnLoop({
                     initialMessages: allMessages,
                     chatId, assistantId, activeModel: initialModel, selectedProvider: effectiveProvider, tools, fullOptions, workspaceId,
-                    autoReadEnabled, handleSpeak, t, language, activeWorkspacePath, systemMode,
+                    autoReadEnabled, handleSpeak, t, language, activeWorkspacePath, systemMode: compatibilitySystemMode,
                     intentClassification,
                     confirmAntigravityCreditUsage: requestAntigravityCreditConfirmation,
                     onStreamingUpdate: (update) => {

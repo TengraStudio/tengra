@@ -23,6 +23,7 @@ export interface TerminalPanelProps {
     activeFilePath?: string;
     activeFileContent?: string;
     activeFileType?: 'code' | 'image' | 'diff';
+    activeFileDiff?: { oldValue: string; newValue: string };
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;

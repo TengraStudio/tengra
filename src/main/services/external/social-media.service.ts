@@ -33,6 +33,8 @@ const SOCIAL_MEMORY_MATCH_LIMIT = 3;
  * and routes incoming messages through the LLM pipeline for AI-powered responses.
  */
 export class SocialMediaService extends BaseService {
+    static readonly serviceName = 'socialMediaService';
+    static readonly dependencies = ['settingsService', 'llmService', 'eventBusService', 'advancedMemoryService'] as const;
     private providers: Map<string, SocialMediaProvider> = new Map();
     private readonly memoryContext: MemoryContextService;
 
@@ -158,7 +160,7 @@ export class SocialMediaService extends BaseService {
     private async routeToLLM(message: SocialMediaMessage): Promise<void> {
         try {
             const settings = this.settingsService.getSettings();
-            const model = settings.general?.defaultModel ?? settings.general?.lastModel ?? 'gpt-4o';
+            const model = settings.general?.defaultModel ?? settings.general?.lastModel ?? '';
             const provider = settings.general?.lastProvider ?? 'antigravity';
 
             const messages: Message[] = [

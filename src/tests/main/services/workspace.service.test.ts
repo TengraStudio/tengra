@@ -141,7 +141,7 @@ describe('WorkspaceService core behavior', () => {
         const result = await workspaceService.analyzeDirectory(mockDirPath);
 
         expect(result.hasPackageJson).toBe(false);
-        expect(result.pkg).toEqual({}); 
+        expect(result.pkg).toEqual({});
         expect(result.stats.fileCount).toBe(0);
         expect(result.stats.totalSize).toBe(0);
     });
@@ -416,32 +416,6 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         expect(analysis.frameworks).toContain('GitHub Actions');
     });
 
-    it('does not create workspace issues or annotations from static heuristics and comments', async () => {
-        vi.mocked(fs.readdir).mockResolvedValueOnce([
-            mockDirent('src', true),
-        ] as never).mockResolvedValueOnce([
-            mockDirent('index.ts', false),
-        ] as never);
-
-        vi.mocked(fs.readFile).mockResolvedValue([
-            'console.error("not a workspace issue");',
-            '// TODO: tighten validation',
-            'console.warn("not a warning issue");',
-            '// FIXME: recover from failure',
-        ].join('\n'));
-        vi.mocked(fs.stat).mockResolvedValue({
-            size: 64,
-            mtimeMs: Date.now(),
-            isDirectory: () => false,
-            isFile: () => true,
-        } as never as import('fs').Stats);
-
-        const analysis = await workspaceService.analyzeWorkspace('/mock/workspace');
-
-        expect(analysis.issues).toEqual([]);
-        expect(analysis.annotations).toEqual([]);
-    });
-
     it('skips files and directories declared in .gitignore during workspace analysis', async () => {
         vi.mocked(fs.readdir)
             .mockResolvedValueOnce([
@@ -616,7 +590,7 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
         const mockLspService = {
             getLanguageIdForFile: vi.fn().mockReturnValue('typescript'),
             startServer: vi.fn().mockResolvedValue(undefined),
-            openDocument: vi.fn().mockResolvedValue(undefined), 
+            openDocument: vi.fn().mockResolvedValue(undefined),
             getDiagnostics: vi.fn().mockReturnValue([
                 {
                     uri: pathToFileURL(path.resolve('/mock/workspace/packages/app/src/index.tsx')).toString(),

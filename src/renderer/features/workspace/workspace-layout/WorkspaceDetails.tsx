@@ -12,9 +12,7 @@ import { IconSquare } from '@tabler/icons-react';
 import React from 'react';
 
 import { useQuickSwitch } from '@/features/workspace/hooks/useQuickSwitch';
-import {
-    COLLAPSED_EXPLORER_LEFT_INSET_PX,
-    EXPANDED_EXPLORER_LEFT_INSET_PX,
+import { 
     useTerminalLayout
 } from '@/features/workspace/hooks/useTerminalLayout';
 import { useWorkspaceBranchState } from '@/features/workspace/hooks/useWorkspaceBranchState';
@@ -24,9 +22,9 @@ import { useWorkspaceDetailsController } from '@/features/workspace/hooks/useWor
 import { WORKSPACE_NAVIGATE_EVENT, WorkspaceNavigationAction } from '@/features/workspace/utils/workspace-navigation';
 import { runWorkspaceStartupPreflight, WorkspaceStartupPreflightResult } from '@/features/workspace/utils/workspace-startup-preflight';
 import { WorkspaceExplorerPanel } from '@/features/workspace/workspace-explorer/WorkspaceExplorerPanel';
-import { CommandStrip } from '@/features/workspace/workspace-layout/CommandStrip';
 import { ShortcutHelpOverlay } from '@/features/workspace/workspace-layout/ShortcutHelpOverlay';
 import { WorkspaceDialogs } from '@/features/workspace/workspace-layout/WorkspaceDialogs';
+import { WorkspaceFooter } from '@/features/workspace/workspace-layout/WorkspaceFooter';
 import { WorkspaceMain } from '@/features/workspace/workspace-layout/WorkspaceMain';
 import { WorkspaceNotifications } from '@/features/workspace/workspace-layout/WorkspaceNotifications';
 import { WorkspaceQuickSwitch } from '@/features/workspace/workspace-layout/WorkspaceQuickSwitch';
@@ -76,8 +74,8 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     const { onRender } = useWorkspaceProfiler();
     const [branchStateEnabled, setBranchStateEnabled] = React.useState(false);
     const [preflightResult, setPreflightResult] = React.useState<WorkspaceStartupPreflightResult | null>(null);
-    const [commandStripHeightPx, setCommandStripHeightPx] = React.useState(32);
-    const commandStripRef = React.useRef<HTMLDivElement | null>(null);
+    const [workspaceFooterHeightPx, setWorkspaceFooterHeightPx] = React.useState(32);
+    const workspaceFooterRef = React.useRef<HTMLDivElement | null>(null);
     const workspacePath = workspace.path;
 
     React.useEffect(() => {
@@ -112,7 +110,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     const initialMount = React.useRef(true);
     React.useEffect(() => {
         if (initialMount.current) {
-            ps.setSidebarCollapsed(true);
+            ps.setSidebarCollapsed(false);
             initialMount.current = false;
         }
     }, [ps]);
@@ -130,7 +128,9 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         onTerminalLayoutStateChange: ps.setTerminalLayoutState,
         showAgentPanel: ps.showAgentPanel,
         sidebarCollapsed: ps.sidebarCollapsed,
-        tabsCount: tabs.length,
+        tabs,
+        activeTabId,
+        setActiveTabId,
     });
 
     const qs = useQuickSwitch(wm.openTabs);
@@ -177,11 +177,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
 
     const openWorkspaceFile = React.useCallback(
         (path: string, line?: number, readOnly?: boolean) => {
-            const mountId = wm.mounts[0]?.id;
-            if (!mountId) {
-                return;
-            }
-            const mountRoot = wm.mounts[0]?.rootPath ?? '';
+            if (wm.mounts.length === 0) {return;}
 
             const isAbsolutePath = (p: string) => (
                 /^[a-zA-Z]:[\\/]/.test(p) // Windows drive
@@ -189,22 +185,31 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 || p.startsWith('/') // POSIX
             );
 
-            const normalizedPath = (() => {
-                const raw = (path ?? '').trim();
-                if (!raw) {
-                    return raw;
-                }
-                if (isAbsolutePath(raw) || !mountRoot) {
-                    return raw;
-                }
-                const sep = mountRoot.includes('\\') ? '\\' : '/';
-                return `${mountRoot.replace(/[\\/]+$/g, '')}${sep}${raw.replace(/^[\\/]+/g, '')}`;
-            })();
+            // 1. Find the correct mount for this path
+            const rawPath = (path ?? '').trim();
+            let selectedMount = wm.mounts[0];
+            let finalPath = rawPath;
 
-            const name = normalizedPath.split(/[\\/]/).pop() ?? 'file';
+            if (isAbsolutePath(rawPath)) {
+                // Try to find a mount that contains this absolute path
+                const matchingMount = wm.mounts.find(m => 
+                    rawPath.toLowerCase().startsWith(m.rootPath.toLowerCase())
+                );
+                if (matchingMount) {
+                    selectedMount = matchingMount;
+                }
+            } else {
+                // For relative paths, assume first mount or try to be smart?
+                // Most dashboard searches return absolute paths from fast-search.
+                const mountRoot = selectedMount.rootPath;
+                const sep = mountRoot.includes('\\') ? '\\' : '/';
+                finalPath = `${mountRoot.replace(/[\\/]+$/g, '')}${sep}${rawPath.replace(/^[\\/]+/g, '')}`;
+            }
+
+            const name = finalPath.split(/[\\/]/).pop() ?? 'file';
             const entry = {
-                mountId,
-                path: normalizedPath,
+                mountId: selectedMount.id,
+                path: finalPath,
                 name,
                 isDirectory: false,
                 initialLine: line,
@@ -212,6 +217,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
             };
             void wm.openFile(entry);
             ps.setSelectedEntries([entry]);
+            wm.setDashboardTab('editor');
         },
         [ps, wm]
     );
@@ -256,14 +262,14 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     }, [workspace]);
 
     React.useEffect(() => {
-        const element = commandStripRef.current;
+        const element = workspaceFooterRef.current;
         if (!element) {
             return;
         }
 
         const measure = () => {
             const measuredHeight = Math.ceil(element.getBoundingClientRect().height);
-            setCommandStripHeightPx(Math.max(0, measuredHeight));
+            setWorkspaceFooterHeightPx(Math.max(0, measuredHeight));
         };
 
         measure();
@@ -277,7 +283,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         };
     }, []);
 
-    const commandStripStatus: 'ready' | 'busy' | 'error' = React.useMemo(() => {
+    const workspaceFooterStatus: 'ready' | 'busy' | 'error' = React.useMemo(() => {
         if (preflightResult?.issues.some(issue => issue.blocking || issue.severity === 'error')) {
             return 'error';
         }
@@ -286,10 +292,6 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         }
         return 'ready';
     }, [preflightResult, taskRunner.runningTaskCount]);
-    const commandStripLeftInsetPx = React.useMemo(
-        () => (ps.sidebarCollapsed ? COLLAPSED_EXPLORER_LEFT_INSET_PX : EXPANDED_EXPLORER_LEFT_INSET_PX),
-        [ps.sidebarCollapsed]
-    );
     React.useEffect(() => {
         const handler = (e: Event) => {
             const customEvent = e as CustomEvent<WorkspaceNavigationAction>;
@@ -303,6 +305,11 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                     wm.setDashboardTab('git');
                     window.dispatchEvent(new CustomEvent('tengra:workspace-git-open-diff', { detail: { path: action.path } }));
                 }
+            } else if (action.type === 'open_file_history') {
+                wm.setDashboardTab('file_history');
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('tengra:workspace-git-open-file-history', { detail: { path: action.path } }));
+                }, 50);
             }
         };
 
@@ -311,120 +318,202 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     }, [openWorkspaceFile, wm]);
 
     return (
-        <div className="h-full flex flex-col bg-background relative overflow-hidden">
-            <React.Profiler id="WorkspaceToolbar" onRender={onRender}>
-                <WorkspaceToolbar
-                    workspaceName={workspace.title}
-                    onNameChange={title => {
-                        void handleUpdateWorkspace({ title });
-                    }}
-                    handleRunWorkspace={() => {
-                        performanceMonitor.mark('workspace:terminal:requested');
-                        ps.setShowTerminal(true);
-                    }}
-                    onBack={onBack}
-                    language={language}
-                    dashboardTab={wm.dashboardTab}
-                    onDashboardTabChange={wm.setDashboardTab}
-                    sidebarCollapsed={ps.sidebarCollapsed}
-                    toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
-                    showAgentPanel={ps.showAgentPanel}
-                    toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
-                />
-            </React.Profiler>
-
-            <div className="flex-1 flex overflow-hidden relative">
-                <React.Profiler id="WorkspaceExplorerPanel" onRender={onRender}>
-                    <WorkspaceExplorerPanel
-                        workspaceId={workspace.id}
-                        workspacePath={workspace.path}
-                        ps={ps}
-                        wm={wm}
-                        language={language}
-                        activeFilePath={wm.activeTab?.path}
-                        onMove={handleExplorerMove}
-                    />
-                </React.Profiler>
-
-                <React.Profiler id="WorkspaceMain" onRender={onRender}>
-                    <WorkspaceMain
-                        dashboardTab={wm.dashboardTab}
-                        openTabs={wm.openTabs}
-                        activeTabId={wm.activeTabId}
-                        setActiveEditorTabId={wm.setActiveEditorTabId}
-                        closeTab={wm.closeTab}
-                        togglePinTab={wm.togglePinTab}
-                        closeAllTabs={wm.closeAllTabs}
-                        closeTabsToRight={wm.closeTabsToRight}
-                        closeOtherTabs={wm.closeOtherTabs}
-                        copyTabAbsolutePath={wm.copyTabAbsolutePath}
-                        copyTabRelativePath={wm.copyTabRelativePath}
-                        revealTabInExplorer={async (tabId: string) => {
-                            wm.revealTabInExplorer(tabId);
-                        }}
-                        activeTab={wm.activeTab}
-                        updateTabContent={wm.updateTabContent}
-                        revertTab={wm.revertTab}
-                        saveActiveTab={wm.saveActiveTab}
-                        workspace={workspace}
-                        handleUpdateWorkspace={handleUpdateWorkspace}
-                        onAddMount={() => ps.setShowMountModal(true)}
-                        onUploadLogo={() => {
-                            void handleManualLogoUpload();
-                        }}
-                        t={t}
-                        language={language}
-                        setDashboardTab={wm.setDashboardTab}
-                        onDeleteWorkspace={onDeleteWorkspace}
-                        selectedEntry={ps.selectedEntries[0]}
-                        onOpenFile={openWorkspaceFile}
-                        editorBottomInsetPx={
-                            ps.showTerminal
-                                ? Math.max(0, ps.terminalHeight + commandStripHeightPx - 1)
-                                : 0
-                        }
-                    />
-                </React.Profiler>
-
-                <React.Profiler id="WorkspaceSidebar" onRender={onRender}>
-                    <WorkspaceSidebar
-                        workspace={workspace}
-                        showAgentPanel={ps.showAgentPanel}
-                        agentPanelWidth={ps.agentPanelWidth}
-                        setAgentPanelWidth={ps.setAgentPanelWidth}
-                        t={t}
-                        language={language}
-                        onSourceClick={handleSidebarSourceClick}
-                    />
-                </React.Profiler>
-            </div>
-
-            <React.Profiler id="WorkspaceTerminalLayer" onRender={onRender}>
-                <WorkspaceTerminalLayer
-                    showTerminal={ps.showTerminal}
-                    isMaximizedTerminal={tl.isMaximizedTerminal}
-                    isResizingTerminal={tl.isResizingTerminal}
-                    sidebarCollapsed={ps.sidebarCollapsed}
-                    terminalHeight={ps.terminalHeight}
-                    dockedTerminalRightInsetPx={tl.dockedTerminalRightInsetPx}
-                    dockedTerminalBottomOffsetPx={Math.max(0, commandStripHeightPx - 1)}
-                    lastExpandedTerminalHeightRef={tl.lastExpandedTerminalHeightRef}
-                    setShowTerminal={ps.setShowTerminal}
-                    setIsMaximizedTerminal={tl.setIsMaximizedTerminal}
-                    setIsResizingTerminal={tl.setIsResizingTerminal}
-                    setTerminalHeight={ps.setTerminalHeight}
+        <div className="h-full flex bg-background relative overflow-hidden">
+            {/* Left: Sidebar (Full Height) */}
+            <React.Profiler id="WorkspaceExplorerPanel" onRender={onRender}>
+                <WorkspaceExplorerPanel
                     workspaceId={workspace.id}
-                    workspacePath={workspacePath}
+                    workspacePath={workspace.path}
+                    ps={ps}
+                    wm={wm}
+                    language={language}
                     activeFilePath={wm.activeTab?.path}
-                    activeFileContent={wm.activeTab?.content}
-                    activeFileType={wm.activeTab?.type}
-                    tabs={tabs}
-                    activeTabId={activeTabId}
-                    setTabs={setTabs}
-                    setActiveTabId={setActiveTabId}
-                    onOpenFile={openWorkspaceFile}
+                    onMove={handleExplorerMove}
                 />
             </React.Profiler>
+
+            {/* Right: Main Content Area */}
+            <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
+                <React.Profiler id="WorkspaceToolbar" onRender={onRender}>
+                    <WorkspaceToolbar
+                        workspaceName={workspace.title}
+                        onNameChange={title => {
+                            void handleUpdateWorkspace({ title });
+                        }}
+                        handleRunWorkspace={() => {
+                            performanceMonitor.mark('workspace:terminal:requested');
+                            ps.setShowTerminal(true);
+                        }}
+                        onBack={onBack}
+                        language={language}
+                        dashboardTab={wm.dashboardTab}
+                        onDashboardTabChange={wm.setDashboardTab}
+                        sidebarCollapsed={ps.sidebarCollapsed}
+                        toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
+                        showAgentPanel={ps.showAgentPanel}
+                        toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
+                    />
+                </React.Profiler>
+
+                <div className="flex-1 flex overflow-hidden relative">
+                    <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                        <div className="flex-1 flex overflow-hidden relative">
+                            <React.Profiler id="WorkspaceMain" onRender={onRender}>
+                                <WorkspaceMain
+                                    dashboardTab={wm.dashboardTab}
+                                    openTabs={wm.openTabs}
+                                    activeTabId={wm.activeTabId}
+                                    setActiveEditorTabId={wm.setActiveEditorTabId}
+                                    closeTab={wm.closeTab}
+                                    togglePinTab={wm.togglePinTab}
+                                    closeAllTabs={wm.closeAllTabs}
+                                    closeTabsToRight={wm.closeTabsToRight}
+                                    closeOtherTabs={wm.closeOtherTabs}
+                                    copyTabAbsolutePath={wm.copyTabAbsolutePath}
+                                    copyTabRelativePath={wm.copyTabRelativePath}
+                                    revealTabInExplorer={async (tabId: string) => {
+                                        wm.revealTabInExplorer(tabId);
+                                    }}
+                                    activeTab={wm.activeTab}
+                                    updateTabContent={wm.updateTabContent}
+                                    revertTab={wm.revertTab}
+                                    saveActiveTab={wm.saveActiveTab}
+                                    workspace={workspace}
+                                    handleUpdateWorkspace={handleUpdateWorkspace}
+                                    onAddMount={() => ps.setShowMountModal(true)}
+                                    onUploadLogo={() => {
+                                        void handleManualLogoUpload();
+                                    }}
+                                    t={t}
+                                    language={language}
+                                    setDashboardTab={wm.setDashboardTab}
+                                    onDeleteWorkspace={onDeleteWorkspace}
+                                    selectedEntry={ps.selectedEntries[0]}
+                                    onOpenFile={openWorkspaceFile}
+                                    editorBottomInsetPx={0}
+                                />
+                            </React.Profiler>
+                        </div>
+
+                        <React.Profiler id="WorkspaceTerminalLayer" onRender={onRender}>
+                            <WorkspaceTerminalLayer
+                                showTerminal={ps.showTerminal}
+                                isMaximizedTerminal={tl.isMaximizedTerminal}
+                                isResizingTerminal={tl.isResizingTerminal}
+                                sidebarCollapsed={ps.sidebarCollapsed}
+                                terminalHeight={ps.terminalHeight}
+                                lastExpandedTerminalHeightRef={tl.lastExpandedTerminalHeightRef}
+                                setShowTerminal={ps.setShowTerminal}
+                                setIsMaximizedTerminal={tl.setIsMaximizedTerminal}
+                                setIsResizingTerminal={tl.setIsResizingTerminal}
+                                setTerminalHeight={ps.setTerminalHeight}
+                                workspaceId={workspace.id}
+                                workspacePath={workspacePath}
+                                activeFilePath={wm.activeTab?.path}
+                                activeFileContent={wm.activeTab?.content}
+                                activeFileType={wm.activeTab?.type}
+                                activeFileDiff={wm.activeTab?.diff}
+                                tabs={tabs}
+                                activeTabId={activeTabId}
+                                setTabs={setTabs}
+                                setActiveTabId={setActiveTabId}
+                                onOpenFile={openWorkspaceFile}
+                            />
+                        </React.Profiler>
+
+                        {taskRunner.tasks.length > 0 && (
+                            <div className="shrink-0 border-t border-border/30 bg-background/70 px-3 py-2">
+                                <div className="flex items-center gap-2 overflow-x-auto">
+                                    {taskRunner.tasks.map(task => {
+                                        const latestLine = task.output.trim().split(/\r?\n/).filter(Boolean).slice(-1)[0] ?? '';
+                                        return (
+                                            <div
+                                                key={task.id}
+                                                className="min-w-220 max-w-320 rounded-lg border border-border/40 bg-background/80 px-3 py-2"
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <div className="truncate typo-overline font-semibold text-foreground">
+                                                            {task.command}
+                                                        </div>
+                                                        {latestLine && (
+                                                            <div className="truncate typo-overline text-muted-foreground">
+                                                                {latestLine}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {task.status === 'running' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                void taskRunner.stopTask(task.id);
+                                                            }}
+                                                            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                                                            title={t('common.stop')}
+                                                        >
+                                                            <IconSquare className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <div ref={workspaceFooterRef} className="shrink-0 relative">
+                            <div
+                                role="presentation"
+                                aria-hidden="true"
+                                className="absolute bottom-full z-20 h-3 cursor-ns-resize w-full"
+                                onMouseDown={tl.handleWorkspaceFooterResizeStart}
+                            />
+                            <WorkspaceFooter
+                                className="transition-margin duration-200"
+                                language={language}
+                                workspaceId={workspace.id}
+                                branchName={currentBranchName}
+                                branches={availableBranches}
+                                isBranchLoading={isBranchLoading}
+                                isBranchSwitching={isBranchSwitching}
+                                notificationCount={ps.notifications.length}
+                                status={workspaceFooterStatus}
+                                activeFilePath={wm.activeTab?.path}
+                                activeFileContent={wm.activeTab?.content}
+                                activeFileType={wm.activeTab?.type}
+                                runningTaskCount={taskRunner.runningTaskCount}
+                                onRunWorkspace={() => {
+                                    void taskRunner.runDefaultTask();
+                                }}
+                                onBranchSelect={handleBranchSelect}
+                                onCommandClick={() => {
+                                    qs.setShowQuickSwitch(true);
+                                    qs.setQuickSwitchQuery('');
+                                    qs.setQuickSwitchIndex(0);
+                                }}
+                                onQuickSwitchClick={() => {
+                                    qs.setShowQuickSwitch(true);
+                                    qs.setQuickSwitchQuery('');
+                                    qs.setQuickSwitchIndex(0);
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <React.Profiler id="WorkspaceSidebar" onRender={onRender}>
+                        <WorkspaceSidebar
+                            workspace={workspace}
+                            showAgentPanel={ps.showAgentPanel}
+                            agentPanelWidth={ps.agentPanelWidth}
+                            setAgentPanelWidth={ps.setAgentPanelWidth}
+                            t={t}
+                            language={language}
+                            onSourceClick={handleSidebarSourceClick}
+                        />
+                    </React.Profiler>
+                </div>
+            </div>
 
             <WorkspaceDialogs
                 ps={ps}
@@ -435,89 +524,6 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 language={language}
                 handleUpdateWorkspace={handleUpdateWorkspace}
             />
-            {taskRunner.tasks.length > 0 && (
-                <div className="border-t border-border/30 bg-background/70 px-3 py-2">
-                    <div className="flex items-center gap-2 overflow-x-auto">
-                        {taskRunner.tasks.map(task => {
-                            const latestLine = task.output.trim().split(/\r?\n/).filter(Boolean).slice(-1)[0] ?? '';
-                            return (
-                                <div
-                                    key={task.id}
-                                    className="min-w-220 max-w-320 rounded-lg border border-border/40 bg-background/80 px-3 py-2"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <div className="truncate typo-overline font-semibold text-foreground">
-                                                {task.command}
-                                            </div>
-                                            {latestLine && (
-                                                <div className="truncate typo-overline text-muted-foreground">
-                                                    {latestLine}
-                                                </div>
-                                            )}
-                                        </div>
-                                        {task.status === 'running' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    void taskRunner.stopTask(task.id);
-                                                }}
-                                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                                                title={t('common.stop')}
-                                            >
-                                                <IconSquare className="h-3.5 w-3.5" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-            <div ref={commandStripRef} className="relative">
-                <div
-                    role="presentation"
-                    aria-hidden="true"
-                    className="absolute bottom-full z-20 h-3 cursor-ns-resize"
-                    style={{
-                        left: `${commandStripLeftInsetPx}px`,
-                        right: 0,
-                    }}
-                    onMouseDown={tl.handleCommandStripResizeStart}
-                />
-                <CommandStrip
-                    className="transition-margin duration-200"
-                    language={language}
-                    branchName={currentBranchName}
-                    branches={availableBranches}
-                    isBranchLoading={isBranchLoading}
-                    isBranchSwitching={isBranchSwitching}
-                    notificationCount={ps.notifications.length}
-                    status={commandStripStatus}
-                    activeFilePath={wm.activeTab?.path}
-                    activeFileContent={wm.activeTab?.content}
-                    activeFileType={wm.activeTab?.type}
-                    runningTaskCount={taskRunner.runningTaskCount}
-                    onRunWorkspace={() => {
-                        void taskRunner.runDefaultTask();
-                    }}
-                    onBranchSelect={handleBranchSelect}
-                    onCommandClick={() => {
-                        qs.setShowQuickSwitch(true);
-                        qs.setQuickSwitchQuery('');
-                        qs.setQuickSwitchIndex(0);
-                    }}
-                    onQuickSwitchClick={() => {
-                        qs.setShowQuickSwitch(true);
-                        qs.setQuickSwitchQuery('');
-                        qs.setQuickSwitchIndex(0);
-                    }}
-                    style={{
-                        marginLeft: `${commandStripLeftInsetPx}px`,
-                    }}
-                />
-            </div>
 
             <ShortcutHelpOverlay visible={qs.showShortcutHelp} t={t} />
 

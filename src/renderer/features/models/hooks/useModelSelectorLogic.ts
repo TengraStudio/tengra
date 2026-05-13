@@ -25,6 +25,7 @@ interface UseModelSelectorLogicProps {
     activeClaudeQuota?: ClaudeQuota | null;
     activeCopilotQuota?: (CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }) | null;
     activeAntigravityQuota?: QuotaResponse | null;
+    activeCursorQuota?: { weekly?: unknown; fiveHour?: unknown; accounts?: unknown[] } | null;
 }
 
 const ANTIGRAVITY_QUOTA_GROUPS = {
@@ -216,7 +217,8 @@ export function useModelSelectorLogic({
     activeCodexUsage,
     activeClaudeQuota,
     activeCopilotQuota,
-    activeAntigravityQuota
+    activeAntigravityQuota,
+    activeCursorQuota
 }: UseModelSelectorLogicProps) {
     const [usageLimitChecks, setUsageLimitChecks] = useState<Record<string, { allowed: boolean; reason?: string }>>({});
 
@@ -349,14 +351,34 @@ export function useModelSelectorLogic({
         return false;
     }, [activeAntigravityQuota, quotas, settings]);
 
+    const isCursorDisabled = useCallback(() => {
+        const UTILIZATION_THRESHOLD = 100;
+        if (!activeCursorQuota) { return false; }
+
+        const checkExhausted = (q: unknown): boolean => {
+            const typedQ = q as { utilization?: number; resetsAt?: string } | null;
+            if (!typedQ) { return false; }
+            const now = Date.now();
+            const exhausted = (typedQ.utilization ?? 0) >= UTILIZATION_THRESHOLD;
+            const resetPassed = typedQ.resetsAt ? new Date(typedQ.resetsAt).getTime() <= now : false;
+            return exhausted && !resetPassed;
+        };
+
+        if (checkExhausted(activeCursorQuota.weekly)) { return true; }
+        if (checkExhausted(activeCursorQuota.fiveHour)) { return true; }
+
+        return false;
+    }, [activeCursorQuota]);
+
     const isProviderSpecificDisabled = useCallback((p: string, modelId: string, lowerModelId: string) => {
         if (isOpenAIProvider(p)) { return isCodexDisabled(modelId, lowerModelId); }
         if (p === 'copilot') { return isCopilotDisabled(); }
         if (isClaudeProvider(p)) { return isClaudeDisabled(); }
         if (p === 'antigravity') { return isAntigravityDisabled(modelId, lowerModelId); }
+        if (p === 'cursor') { return isCursorDisabled(); }
         if (['local', 'lm_studio', 'ollama', 'gemini'].includes(p)) { return false; }
         return false;
-    }, [isCodexDisabled, isCopilotDisabled, isClaudeDisabled, isAntigravityDisabled]);
+    }, [isCodexDisabled, isCopilotDisabled, isClaudeDisabled, isAntigravityDisabled, isCursorDisabled]);
 
     // handleModelChange removed as unused
 

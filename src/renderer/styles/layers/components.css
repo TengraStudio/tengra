@@ -461,16 +461,6 @@
         /* #4EAA25 - Shell */
     }
 
-    /* BLACK THEME (Dark) - Same HSL values, can be overridden if needed */
-    [data-theme='tengra-black'] {
-        /* Icons remain the same in dark mode - brand colors */
-    }
-
-    /* WHITE THEME (Light) - Same HSL values */
-    [data-theme='tengra-white'] {
-        /* Icons remain the same in light mode - brand colors */
-    }
-
     /* High Contrast Mode */
     .high-contrast {
         --icon-source: 217 100% 50%;

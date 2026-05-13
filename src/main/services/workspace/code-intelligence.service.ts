@@ -49,8 +49,8 @@ import {
     generateWorkspaceDocumentation as createWorkspaceDocumentation,
     getFileOutline as readFileOutline
 } from './code-intelligence/documentation-generator.util';
+import { streamTextSearch } from './code-intelligence/fast-search.util';
 import {
-    scanDirForTodos,
     scanDirRecursively
 } from './code-intelligence/file-scanner.util';
 import { renameSymbol as renameWorkspaceSymbol } from './code-intelligence/rename-symbol.util';
@@ -191,16 +191,20 @@ function resolveWorkspaceDependencyTarget(
 }
 
 export class CodeIntelligenceService {
+    static readonly serviceName = 'codeIntelligenceService';
+    static readonly dependencies = ['db', 'embedding', 'mainWindowProvider'] as const;
     private readonly indexingInProgress = new Set<string>();
     private readonly indexedWorkspaces = new Set<string>();
     private readonly derivedArtifactsInProgress = new Set<string>();
     private readonly dependencyGraphCache = new Map<string, WorkspaceDependencyGraph>();
     private readonly codeMapCache = new Map<string, WorkspaceCodeMap>();
+    private readonly activeSearchControllers = new Map<string, AbortController>();
     private manifestPath = '';
 
     constructor(
         private readonly db: DatabaseService,
-        private readonly embedding: EmbeddingService
+        private readonly embedding: EmbeddingService,
+        private readonly mainWindowProvider: () => BrowserWindow | null
     ) {
         try {
             this.manifestPath = getDataFilePath('workspace', 'code-intel-manifests.json');
@@ -408,8 +412,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.INDEX_WORKSPACE)
-    async indexWorkspaceIpc(payload: { rootPath: string; workspaceId: string; force?: boolean }): Promise<boolean> {
-        const { rootPath, workspaceId, force } = payload;
+    async indexWorkspaceIpc(rootPath: string, workspaceId: string, force?: boolean): Promise<boolean> {
         await this.indexWorkspace(rootPath, workspaceId, force);
         return true;
     }
@@ -441,12 +444,12 @@ export class CodeIntelligenceService {
             await scanDirRecursively(rootPath, files, ignoreMatcher);
 
             const total = files.length;
-            
+
             const allManifests = await this.loadManifest();
             const manifest = allManifests[workspaceId] ?? { files: {} };
             const newFileManifest: Record<string, number> = {};
             const filesToIndex: string[] = [];
-            
+
             appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${total} total files. Checking index manifest...`);
 
             // Identify changed and removed files
@@ -494,7 +497,7 @@ export class CodeIntelligenceService {
                     await new Promise(r => setImmediate(r));
                 }
             }
-            
+
             allManifests[workspaceId] = { files: newFileManifest };
             await this.saveManifest(allManifests);
 
@@ -803,73 +806,63 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.SEARCH_FILES)
-    async searchFilesIpc(payload: { rootPath: string; query: string; workspaceId?: string; isRegex?: boolean }): Promise<RuntimeValue> {
-        const { rootPath, query, workspaceId, isRegex } = payload;
-        const result = await this.searchFiles(rootPath, query, workspaceId, isRegex);
+    async searchFilesIpc(rootPath: string, query: string, workspaceId?: string, isRegex?: boolean, matchCase?: boolean, matchWholeWord?: boolean): Promise<RuntimeValue> {
+        const result = await this.searchFiles(rootPath, query, workspaceId, isRegex, matchCase, matchWholeWord);
         return serializeToIpc(result);
     }
 
-    async searchFiles(rootPath: string, query: string, workspaceId?: string, isRegex: boolean = false): Promise<FileSearchResult[]> {
-        return await searchWorkspaceFiles(this.db, rootPath, query, workspaceId, isRegex);
+    async searchFiles(rootPath: string, query: string, workspaceId?: string, isRegex: boolean = false, matchCase: boolean = false, matchWholeWord: boolean = false): Promise<FileSearchResult[]> {
+        return await searchWorkspaceFiles(this.db, rootPath, query, workspaceId, isRegex, matchCase, matchWholeWord);
     }
 
-    @ipc(CODE_CHANNELS.SCAN_TODOS)
-    async scanTodosIpc(rootPath: string): Promise<RuntimeValue> {
-        const result = await this.scanTodos(rootPath);
-        return serializeToIpc(result);
-    }
+    @ipc(CODE_CHANNELS.SEARCH_FILES_STREAM)
+    async searchFilesStreamIpc(
+        rootPath: string, 
+        query: string, 
+        requestId: string,
+        options: { 
+            isRegex?: boolean; 
+            matchCase?: boolean; 
+            matchWholeWord?: boolean;
+            includeGlob?: string;
+            excludeGlob?: string;
+        } = {}
+    ): Promise<void> {
+        // Cancel existing with same requestId if any
+        this.searchFilesCancelIpc(requestId);
 
-    async scanTodos(rootPath: string): Promise<FileSearchResult[]> {
-        const todos: FileSearchResult[] = [];
-        await scanDirForTodos(rootPath, todos);
-        return todos;
-    }
+        const controller = new AbortController();
+        this.activeSearchControllers.set(requestId, controller);
 
-    async scanWorkspaceTodos(rootPath: string): Promise<Array<{
-        path: string;
-        relativePath: string;
-        items: Array<{
-            id: string;
-            text: string;
-            completed: boolean;
-            line: number;
-            filePath: string;
-            relativePath: string;
-        }>;
-    }>> {
-        const results = await this.scanTodos(rootPath);
-        const fileMap = new Map<string, {
-            path: string;
-            relativePath: string;
-            items: Array<{
-                id: string;
-                text: string;
-                completed: boolean;
-                line: number;
-                filePath: string;
-                relativePath: string;
-            }>;
-        }>();
-
-        for (const item of results) {
-            let entry = fileMap.get(item.file);
-            if (!entry) {
-                const relativePath = path.relative(rootPath, item.file).replace(/\\/g, '/');
-                entry = { path: item.file, relativePath, items: [] };
-                fileMap.set(item.file, entry);
-            }
-
-            entry.items.push({
-                id: `${item.file}-${item.line}`,
-                text: item.text,
-                completed: false,
-                line: item.line,
-                filePath: item.file,
-                relativePath: entry.relativePath
+        try {
+            await streamTextSearch(rootPath, query, (results) => {
+                const window = this.mainWindowProvider();
+                if (window) {
+                    window.webContents.send('code:search-results-chunk', {
+                        requestId,
+                        results: serializeToIpc(results)
+                    });
+                }
+            }, {
+                ...options,
+                signal: controller.signal
             });
+        } finally {
+            this.activeSearchControllers.delete(requestId);
+            const window = this.mainWindowProvider();
+            if (window) {
+                window.webContents.send('code:search-complete', { requestId });
+            }
         }
+    }
 
-        return Array.from(fileMap.values());
+    @ipc(CODE_CHANNELS.SEARCH_FILES_CANCEL)
+    searchFilesCancelIpc(requestId: string): void {
+        const controller = this.activeSearchControllers.get(requestId);
+        if (controller) {
+            controller.abort();
+            this.activeSearchControllers.delete(requestId);
+        }
     }
 
     async getFileDimensions(filePath: string): Promise<FileSearchResult[]> {
@@ -887,8 +880,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.FIND_DEFINITION)
-    async findDefinitionIpc(payload: { rootPath: string; symbol: string }): Promise<RuntimeValue> {
-        const { rootPath, symbol } = payload;
+    async findDefinitionIpc(rootPath: string, symbol: string): Promise<RuntimeValue> {
         const result = await this.findDefinition(rootPath, symbol);
         return serializeToIpc(result);
     }
@@ -902,8 +894,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.FIND_REFERENCES)
-    async findReferencesIpc(payload: { rootPath: string; symbol: string }): Promise<RuntimeValue> {
-        const { rootPath, symbol } = payload;
+    async findReferencesIpc(rootPath: string, symbol: string): Promise<RuntimeValue> {
         const result = await this.findReferences(rootPath, symbol);
         return serializeToIpc(result);
     }
@@ -913,8 +904,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.FIND_IMPLEMENTATIONS)
-    async findImplementationsIpc(payload: { rootPath: string; symbol: string }): Promise<RuntimeValue> {
-        const { rootPath, symbol } = payload;
+    async findImplementationsIpc(rootPath: string, symbol: string): Promise<RuntimeValue> {
         const result = await this.findImplementations(rootPath, symbol);
         return serializeToIpc(result);
     }
@@ -924,8 +914,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.GET_SYMBOL_RELATIONSHIPS)
-    async getSymbolRelationshipsIpc(payload: { rootPath: string; symbol: string; maxItems?: number }): Promise<RuntimeValue> {
-        const { rootPath, symbol, maxItems } = payload;
+    async getSymbolRelationshipsIpc(rootPath: string, symbol: string, maxItems?: number): Promise<RuntimeValue> {
         const result = await this.getSymbolRelationships(rootPath, symbol, maxItems);
         return serializeToIpc(result);
     }
@@ -935,15 +924,13 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.PREVIEW_RENAME_SYMBOL)
-    async previewRenameSymbolIpc(payload: { rootPath: string; symbol: string; newSymbol: string; maxFiles?: number }): Promise<RuntimeValue> {
-        const { rootPath, symbol, newSymbol, maxFiles } = payload;
+    async previewRenameSymbolIpc(rootPath: string, symbol: string, newSymbol: string, maxFiles?: number): Promise<RuntimeValue> {
         const result = await this.renameSymbol(rootPath, symbol, newSymbol, false, maxFiles);
         return serializeToIpc(result);
     }
 
     @ipc(CODE_CHANNELS.APPLY_RENAME_SYMBOL)
-    async applyRenameSymbolIpc(payload: { rootPath: string; symbol: string; newSymbol: string; maxFiles?: number }): Promise<RuntimeValue> {
-        const { rootPath, symbol, newSymbol, maxFiles } = payload;
+    async applyRenameSymbolIpc(rootPath: string, symbol: string, newSymbol: string, maxFiles?: number): Promise<RuntimeValue> {
         const result = await this.renameSymbol(rootPath, symbol, newSymbol, true, maxFiles);
         return serializeToIpc(result);
     }
@@ -959,8 +946,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.GENERATE_FILE_DOCUMENTATION)
-    async generateFileDocumentationIpc(payload: { filePath: string; format?: 'markdown' | 'jsdoc-comments' }): Promise<RuntimeValue> {
-        const { filePath, format } = payload;
+    async generateFileDocumentationIpc(filePath: string, format?: 'markdown' | 'jsdoc-comments'): Promise<RuntimeValue> {
         const result = await this.generateFileDocumentation(filePath, format);
         return serializeToIpc(result);
     }
@@ -973,8 +959,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.GENERATE_WORKSPACE_DOCUMENTATION)
-    async generateWorkspaceDocumentationIpc(payload: { rootPath: string; maxFiles?: number }): Promise<RuntimeValue> {
-        const { rootPath, maxFiles } = payload;
+    async generateWorkspaceDocumentationIpc(rootPath: string, maxFiles?: number): Promise<RuntimeValue> {
         const result = await this.generateWorkspaceDocumentation(rootPath, maxFiles);
         return serializeToIpc(result);
     }
@@ -987,8 +972,7 @@ export class CodeIntelligenceService {
     }
 
     @ipc(CODE_CHANNELS.ANALYZE_QUALITY)
-    async analyzeCodeQualityIpc(payload: { rootPath: string; maxFiles?: number }): Promise<RuntimeValue> {
-        const { rootPath, maxFiles } = payload;
+    async analyzeCodeQualityIpc(rootPath: string, maxFiles?: number): Promise<RuntimeValue> {
         const result = await this.analyzeCodeQuality(rootPath, maxFiles);
         return serializeToIpc(result);
     }

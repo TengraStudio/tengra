@@ -15,7 +15,6 @@ export * from './GitCommitCard';
 export * from './GitCommitDiffView';
 export * from './GitCommitHistory';
 export * from './GitCommitSection';
-export * from './GitDiffLine';
 export * from './GitQuickActions';
 export * from './GitRemotes';
 export * from './GitStatusHeader';

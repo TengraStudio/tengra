@@ -44,6 +44,8 @@ const DEFAULT_RECURRING_JOB_OPTIONS: RecurringJobOptions = {
 };
 
 export class JobSchedulerService extends BaseService {
+    static readonly serviceName = 'jobSchedulerService';
+    static readonly dependencies = ['databaseService', 'eventBus'] as const;
     private tasks: Map<string, NodeJS.Timeout> = new Map();
     private recurringJobs: Map<string, RecurringJob> = new Map();
     private recurringTimers: Map<string, NodeJS.Timeout> = new Map();

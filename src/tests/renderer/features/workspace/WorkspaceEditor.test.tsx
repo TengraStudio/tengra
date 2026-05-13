@@ -344,7 +344,7 @@ describe('WorkspaceEditor', () => {
             });
 
             const persistedState = JSON.parse(
-                localStorage.getItem('workspace.editor.viewstate:test-workspace') ?? '{}'
+                localStorage.getItem('frontend.workspace.editor.viewstate:test-workspace') ?? '{}'
             ) as Record<string, { lineNumber: number; column: number; scrollTop: number }>;
 
             expect(persistedState['C:\\workspace\\file.ts']).toMatchObject({

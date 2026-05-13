@@ -17,3 +17,10 @@ strip = true
 opt-level = 2
 lto = "thin"
 codegen-units = 16
+
+[profile.fast-release]
+inherits = "release"
+strip = true
+opt-level = 1
+lto = false
+codegen-units = 32

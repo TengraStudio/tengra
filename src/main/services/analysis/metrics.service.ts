@@ -52,6 +52,8 @@ export interface ProviderMetrics {
 }
 
 export class MetricsService extends EventEmitter {
+    static readonly serviceName = 'metricsService';
+    static readonly dependencies = [] as const;
     private metrics: Map<string, MetricData[]> = new Map();
     private providerStats: Map<string, ProviderMetrics> = new Map();
     private readonly maxDataPoints = 1000; // Per metric

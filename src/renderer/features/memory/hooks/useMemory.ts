@@ -136,109 +136,118 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             return;
         }
 
-        const maxAttempts = 2;
-        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            try {
-                const [pendingRes, statsRes, analyticsRes, contextRes, healthRes] = await Promise.all([
-                    window.electron.advancedMemory.getPending(),
-                    window.electron.advancedMemory.getStats(),
-                    window.electron.advancedMemory.getSearchAnalytics(),
-                    window.electron.advancedMemory.recall({
-                        query: searchQuery,
-                        limit: 8,
-                        includeArchived: activeTab === 'archived'
-                    }),
-                    window.electron.advancedMemory.health()
-                ]);
-
-                const pendingResponse = pendingRes as MemoryIpcResponse<PendingMemory[]>;
-                const statsResponse = statsRes as MemoryIpcResponse<MemoryStatistics>;
-                const analyticsResponse = analyticsRes as MemoryIpcResponse<MemorySearchAnalytics>;
-                const contextResponse = contextRes as MemoryIpcResponse<{ memories: AdvancedSemanticFragment[]; totalMatches: number }>;
-                const healthResponse = healthRes as MemoryIpcResponse<AdvancedMemoryHealthSummary>;
-
-                if (pendingResponse.success && Array.isArray(pendingResponse.data)) {
-                    setPendingMemories(pendingResponse.data);
-                }
-                if (statsResponse.success && statsResponse.data) {
-                    setStats(statsResponse.data);
-                }
-                if (analyticsResponse.success && analyticsResponse.data) {
-                    setSearchAnalytics(analyticsResponse.data);
-                }
-                if (contextResponse.success && contextResponse.data) {
-                    setContextPreview(contextResponse.data.memories);
-                }
-                if (healthResponse.success && healthResponse.data) {
-                    setMemoryHealth(healthResponse.data);
-                    recordMemoryInspectorRuntimeHealth(healthResponse.data);
-                }
-
-                const confirmedResponse = searchQuery
-                    ? await window.electron.advancedMemory.search(searchQuery, 50)
-                    : await window.electron.advancedMemory.recall({
-                        query: '',
-                        limit: 100,
-                        includeArchived: activeTab === 'archived'
-                    });
-
-                const confirmedResult = confirmedResponse as MemoryIpcResponse<AdvancedSemanticFragment[] | { memories: AdvancedSemanticFragment[]; totalMatches: number }>;
-                if (confirmedResult.success && confirmedResult.data) {
-                    if (Array.isArray(confirmedResult.data)) {
-                        setConfirmedMemories(confirmedResult.data);
-                    } else {
-                        setConfirmedMemories(confirmedResult.data.memories);
-                    }
-                }
-
-                const failures: MemoryIpcResponse<object | object[] | string | number | boolean | null>[] = [
-                    pendingResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
-                    statsResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
-                    analyticsResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
-                    contextResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
-                    healthResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
-                    confirmedResult as MemoryIpcResponse<object | object[] | string | number | boolean | null>
-                ].filter(response => response.success === false);
-
-                if (failures.length === 0) {
-                    recordMemoryInspectorHealthEvent({
-                        channel: 'memory.loadData',
-                        status: 'success',
-                        durationMs: Date.now() - startedAt,
-                    });
-                    setIsLoading(false);
-                    return;
-                }
-
-                const shouldRetry = failures.some(response => response.retryable !== false);
-                if (attempt < maxAttempts && shouldRetry) {
-                    continue;
-                }
-
-                const firstFailure = failures[0];
-                const errorCode = firstFailure?.errorCode ?? memoryInspectorErrorCodes.loadFailed;
-                const message = resolveIpcMessage(firstFailure ?? {}, unexpectedMessage);
+        const recordFailure = (payload: MemoryIpcMetadata | null | undefined, surfaceError: boolean): void => {
+            if (!payload) { return; }
+            const errorCode = payload.errorCode ?? memoryInspectorErrorCodes.loadFailed;
+            if (surfaceError) {
+                const message = resolveIpcMessage(payload, unexpectedMessage);
                 setHookError(errorCode, message);
+            }
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.loadData',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
+        };
+
+        try {
+            let criticalFailure = false;
+
+            const confirmedResponse = searchQuery
+                ? await window.electron.advancedMemory.search(searchQuery, 50)
+                : await window.electron.advancedMemory.getAllAdvancedMemories();
+
+            const confirmedResult = confirmedResponse as MemoryIpcResponse<
+                AdvancedSemanticFragment[] | { memories: AdvancedSemanticFragment[]; totalMatches: number }
+            >;
+            if (confirmedResult.success && confirmedResult.data) {
+                if (Array.isArray(confirmedResult.data)) {
+                    setConfirmedMemories(confirmedResult.data);
+                } else {
+                    setConfirmedMemories(confirmedResult.data.memories);
+                }
+            } else {
+                criticalFailure = true;
+                recordFailure(confirmedResult, true);
+            }
+
+            const [pendingRes, statsRes, analyticsRes, contextRes, healthRes] = await Promise.allSettled([
+                window.electron.advancedMemory.getPending(),
+                window.electron.advancedMemory.getStats(),
+                window.electron.advancedMemory.getSearchAnalytics(),
+                window.electron.advancedMemory.recall({
+                    query: searchQuery,
+                    limit: 8,
+                    includeArchived: activeTab === 'archived'
+                }),
+                window.electron.advancedMemory.health()
+            ]);
+
+            const pendingResponse = pendingRes.status === 'fulfilled'
+                ? pendingRes.value as MemoryIpcResponse<PendingMemory[]>
+                : null;
+            const statsResponse = statsRes.status === 'fulfilled'
+                ? statsRes.value as MemoryIpcResponse<MemoryStatistics>
+                : null;
+            const analyticsResponse = analyticsRes.status === 'fulfilled'
+                ? analyticsRes.value as MemoryIpcResponse<MemorySearchAnalytics>
+                : null;
+            const contextResponse = contextRes.status === 'fulfilled'
+                ? contextRes.value as MemoryIpcResponse<{ memories: AdvancedSemanticFragment[]; totalMatches: number }>
+                : null;
+            const healthResponse = healthRes.status === 'fulfilled'
+                ? healthRes.value as MemoryIpcResponse<AdvancedMemoryHealthSummary>
+                : null;
+
+            if (pendingResponse?.success && Array.isArray(pendingResponse.data)) {
+                setPendingMemories(pendingResponse.data);
+            } else if (pendingResponse) {
+                recordFailure(pendingResponse, false);
+            }
+
+            if (statsResponse?.success && statsResponse.data) {
+                setStats(statsResponse.data);
+            } else if (statsResponse) {
+                recordFailure(statsResponse, false);
+            }
+
+            if (analyticsResponse?.success && analyticsResponse.data) {
+                setSearchAnalytics(analyticsResponse.data);
+            } else if (analyticsResponse) {
+                recordFailure(analyticsResponse, false);
+            }
+
+            if (contextResponse?.success && contextResponse.data) {
+                setContextPreview(contextResponse.data.memories);
+            } else if (contextResponse) {
+                recordFailure(contextResponse, false);
+            }
+
+            if (healthResponse?.success && healthResponse.data) {
+                setMemoryHealth(healthResponse.data);
+                recordMemoryInspectorRuntimeHealth(healthResponse.data);
+            } else if (healthResponse) {
+                recordFailure(healthResponse, false);
+            }
+
+            if (!criticalFailure) {
                 recordMemoryInspectorHealthEvent({
                     channel: 'memory.loadData',
-                    status: 'failure',
+                    status: 'success',
                     durationMs: Date.now() - startedAt,
-                    errorCode,
                 });
-                break;
-            } catch (error) {
-                if (attempt === maxAttempts) {
-                    const errorCode = memoryInspectorErrorCodes.loadFailed;
-                    const errorMessage = error instanceof Error ? error.message : unexpectedMessage;
-                    setHookError(errorCode, errorMessage);
-                    recordMemoryInspectorHealthEvent({
-                        channel: 'memory.loadData',
-                        status: 'failure',
-                        durationMs: Date.now() - startedAt,
-                        errorCode,
-                    });
-                }
             }
+        } catch (error) {
+            const errorCode = memoryInspectorErrorCodes.loadFailed;
+            const errorMessage = error instanceof Error ? error.message : unexpectedMessage;
+            setHookError(errorCode, errorMessage);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.loadData',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
         }
         setIsLoading(false);
     }, [activeTab, resolveIpcMessage, searchQuery, setHookError, unexpectedMessage]);

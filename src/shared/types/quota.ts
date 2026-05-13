@@ -148,6 +148,16 @@ export interface CodexUsage {
     error?: string;
 }
 
+export interface CursorQuota {
+    success: boolean;
+    fiveHour?: { utilization: number; resetsAt: string };
+    weekly?: { utilization: number; resetsAt: string };
+    accountId?: string;
+    email?: string;
+    isActive?: boolean;
+    error?: string;
+}
+
 export interface ModelGroup {
     provider: string;
     models: string[];

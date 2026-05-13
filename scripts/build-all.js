@@ -372,7 +372,9 @@ async function runCoreBuild(options) {
     const tasks = [];
 
     if (!options.skipNative) {
-        tasks.push(runCommand('node', ['scripts/compile-native.js'], 'NativeBuild'));
+        tasks.push(runCommand('node', ['scripts/compile-native.js'], 'NativeBuild', options.fast ? {
+            TENGRA_BUILD_FAST: 'true',
+        } : {}));
     } else {
         stdout('[NativeBuild] Skipped.');
     }
@@ -380,10 +382,12 @@ async function runCoreBuild(options) {
     if (!options.skipVite) {
         tasks.push(runCommand('npx', ['vite', 'build'], 'Vite:Main', {
             TENGRA_BUILD_TARGET: 'main',
+            ...(options.fast ? { TENGRA_BUILD_FAST: 'true' } : {}),
         }));
 
         tasks.push(runCommand('npx', ['vite', 'build'], 'Vite:Renderer', {
             TENGRA_BUILD_TARGET: 'renderer',
+            ...(options.fast ? { TENGRA_BUILD_FAST: 'true' } : {}),
         }));
     } else {
         stdout('[Vite] Skipped.');

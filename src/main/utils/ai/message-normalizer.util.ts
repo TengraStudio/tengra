@@ -48,6 +48,27 @@ type ToolCallLike = NonNullable<Message['toolCalls']>[number];
  * Ensures compatibility across OpenAI, Anthropic, and OpenCode formats.
  */
 export class MessageNormalizer {
+    private static shouldStripImagesForModel(model?: string): boolean {
+        if (!model) {return false;}
+        const normalized = model.toLowerCase();
+        
+        // Models that definitely do not support vision/images
+        return (
+            normalized.includes('text-only') ||
+            normalized.includes('o1-preview') ||
+            normalized.includes('o1-mini') ||
+            normalized.includes('deepseek-chat') ||
+            normalized.includes('deepseek-coder') ||
+            normalized.includes('codestral') ||
+            normalized.includes('mistral-tiny') ||
+            normalized.includes('mistral-small') ||
+            normalized.includes('mistral-medium') ||
+            (normalized.includes('llama-3') && !normalized.includes('vision')) ||
+            normalized.includes('qwen-2.5') ||
+            normalized.includes('gemini-3-pro-high') // User specific model
+        );
+    }
+
     private static sanitizeToolCalls(toolCalls: Message['toolCalls'] | ChatMessage['tool_calls']): ChatMessage['tool_calls'] {
         if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
             return undefined;
@@ -129,26 +150,13 @@ export class MessageNormalizer {
             }
         }
 
-        return openAIMessages.filter(m => this.isValidOpenAIMessage(m));
+        return openAIMessages;
     }
 
     /**
-     * Checks if images should be stripped for a specific model.
+     * Normalizes a message with array/object content into OpenAI content parts.
      *
-     * @param model - The model identifier.
-     * @returns True if images should be removed, false otherwise.
-     */
-    private static shouldStripImagesForModel(model?: string): boolean {
-        return !!model && (
-            model.includes('gemini-3-pro-high') ||
-            model.includes('gemini-3-pro-low')
-        );
-    }
-
-    /**
-     * Normalizes a message with array content.
-     *
-     * @param message - The message with array content.
+     * @param message - The source message.
      * @param shouldStripImages - Whether to remove image parts.
      * @returns An OpenAI-compatible message.
      */
@@ -439,7 +447,7 @@ export class MessageNormalizer {
      * @param content - The content (string or array).
      * @param role - The role of the message sender.
      */
-    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content'] | RuntimeValue[], role: 'user' | 'assistant'): void {
+    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content'] | unknown[], role: 'user' | 'assistant'): void {
         const text = typeof content === 'string' ? content : '';
         const textType = role === 'assistant' ? 'output_text' : 'input_text';
 

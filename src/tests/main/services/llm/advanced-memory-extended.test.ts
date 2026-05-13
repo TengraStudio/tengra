@@ -57,13 +57,11 @@ describe('AdvancedMemoryService Extended Scenarios', () => {
         };
 
         service = new AdvancedMemoryService(
-            {
-                db: mockDb as DatabaseService,
-                embedding: mockEmbedding as EmbeddingService,
-                llmService: mockLlm as LLMService,
-                settings: mockSettings as SettingsService,
-                backgroundModelResolver: mockResolver as any
-            }
+            mockDb as DatabaseService,
+            mockEmbedding as EmbeddingService,
+            mockLlm as LLMService,
+            mockSettings as SettingsService,
+            mockResolver as any
         );
     });
 

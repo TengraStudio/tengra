@@ -9,7 +9,9 @@
  */
 
 import crypto from 'crypto';
+import * as fsp from 'fs/promises';
 import http, { ClientRequest } from 'http';
+import * as path from 'path';
 
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
@@ -18,16 +20,17 @@ import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { validateInterval, validateOAuthTimeoutMs, validatePort, validateToken } from '@main/services/proxy/proxy-validation.util';
-import { AuthService } from '@main/services/security/auth.service';
+import type { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
+import { CacheService } from '@main/services/system/cache.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { getMainWindow } from '@main/startup/window';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { proxyAccountIdSchema, sessionKeySchema } from '@main/utils/ipc-validation';
-import { PROXY_CHANNELS, PROXY_EMBED_CHANNELS } from '@shared/constants/ipc-channels';
+import { AUTH_CHANNELS, PROXY_CHANNELS, PROXY_EMBED_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, JsonValue, RuntimeValue } from '@shared/types/common';
-import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
+import { ClaudeQuota, CodexUsage, CopilotQuota, CursorQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import {
   ProxyMarketplaceSkillInstallInput,
   ProxySkill,
@@ -38,16 +41,13 @@ import {
 } from '@shared/types/skill';
 import { AppErrorCode, getErrorMessage, ProxyServiceError, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net, shell } from 'electron';
 
 type UnsafeValue = ReturnType<typeof JSON.parse>;
 
 /**
  * Check if file/directory exists using async fs.access
  */
-
-
-
 export interface ModelItem {
   id: string;
   name?: string;
@@ -147,7 +147,7 @@ export interface TokenResponse {
   error_description?: string;
 }
 
-type BrowserAuthProvider = 'antigravity' | 'claude' | 'codex' | 'ollama';
+type BrowserAuthProvider = 'antigravity' | 'claude' | 'codex' | 'ollama' | 'cursor';
 type OAuthTimeoutProvider = BrowserAuthProvider | 'default';
 
 interface OAuthTimeoutConfig {
@@ -156,6 +156,7 @@ interface OAuthTimeoutConfig {
   claude?: number;
   antigravity?: number;
   ollama?: number;
+  cursor?: number;
 }
 
 interface ProxyRequestExecutionOptions {
@@ -170,6 +171,7 @@ interface QuotaCollectors {
   copilotAccounts: Array<CopilotQuota & { accountId?: string; email?: string }>;
   codexAccounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }>;
   claudeAccounts: ClaudeQuota[];
+  cursorAccounts: CursorQuota[];
 }
 
 interface BrowserAuthUrlResponse {
@@ -229,6 +231,7 @@ interface ProxyQuotaBroadcastPayload {
   copilotQuota: { accounts: Array<CopilotQuota & { accountId?: string; email?: string }> };
   codexUsage: { accounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }> };
   claudeQuota: { accounts: Array<ClaudeQuota> };
+  cursorQuota: { accounts: Array<CursorQuota> };
   error?: string;
 }
 
@@ -238,7 +241,6 @@ interface ProxyToolDispatchResponse {
   error?: string;
 }
 
-
 export interface ProxyServiceOptions {
   settingsService: SettingsService;
   dataService: DataService;
@@ -247,9 +249,24 @@ export interface ProxyServiceOptions {
   authService: AuthService;
   eventBus: EventBusService;
   databaseService: DatabaseService;
+  cacheService: CacheService;
 }
 
 export class ProxyService extends BaseService {
+  static readonly serviceName = 'proxyService';
+  static readonly category = 'deferred';
+  static readonly dependencies = [
+    'settingsService',
+    'dataService',
+    'securityService',
+    'proxyProcessManager',
+    'authService',
+    'eventBusService',
+    'databaseService',
+    'cacheService'
+  ] as const;
+
+  private options: ProxyServiceOptions;
   private currentPort: number = 8317;
   private operationLock: Promise<void> = Promise.resolve();
   private quotaStreamRequest: ClientRequest | null = null;
@@ -264,9 +281,37 @@ export class ProxyService extends BaseService {
   private proxyModelsCacheAt = 0;
   private proxyModelsInFlight: Promise<ModelItem[]> | null = null;
 
-  constructor(private options: ProxyServiceOptions) {
+  constructor(
+    settingsService: SettingsService,
+    dataService: DataService,
+    securityService: SecurityService,
+    processManager: ProxyProcessManager,
+    authService: AuthService,
+    eventBus: EventBusService,
+    databaseService: DatabaseService,
+    cacheService: CacheService
+  ) {
     super('ProxyService');
+    this.options = {
+      settingsService,
+      dataService,
+      securityService,
+      processManager,
+      authService,
+      eventBus,
+      databaseService,
+      cacheService
+    };
   }
+
+  get settingsService(): SettingsService { return this.options.settingsService; }
+  get dataService(): DataService { return this.options.dataService; }
+  get securityService(): SecurityService { return this.options.securityService; }
+  get processManager(): ProxyProcessManager { return this.options.processManager; }
+  get authService(): AuthService { return this.options.authService; }
+  get eventBus(): EventBusService { return this.options.eventBus; }
+  get databaseService(): DatabaseService { return this.options.databaseService; }
+  get cacheService(): CacheService { return this.options.cacheService; }
 
   private getOAuthTimeoutMs(provider: OAuthTimeoutProvider): number {
     const settings = this.settingsService.getSettings();
@@ -281,14 +326,6 @@ export class ProxyService extends BaseService {
     return resolved;
   }
 
-  get settingsService(): SettingsService { return this.options.settingsService; }
-  get dataService(): DataService { return this.options.dataService; }
-  get securityService(): SecurityService { return this.options.securityService; }
-  get processManager(): ProxyProcessManager { return this.options.processManager; }
-  get authService(): AuthService { return this.options.authService; }
-  get eventBus(): EventBusService { return this.options.eventBus; }
-  get databaseService(): DatabaseService { return this.options.databaseService; }
-
   override async initialize(): Promise<void> {
     const start = performance.now();
     await super.initialize();
@@ -300,6 +337,21 @@ export class ProxyService extends BaseService {
 
     await this.ensureAuthStoreKey();
     await this.ensureProxyKey();
+
+    // Load quota from persistent cache
+    const cached = await this.cacheService.get<ProxyQuotaBroadcastPayload>('proxy', 'quota_snapshot');
+    if (cached) {
+      this.logInfo('Loaded quota data from persistent cache');
+      this.latestQuotaBroadcast = cached;
+      this.latestQuotaFingerprint = this.buildQuotaFingerprint(cached);
+
+      // Broadcast immediately to renderer to prevent empty state on boot
+      const mainWindow = getMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(QUOTA_STREAM_CHANNEL, cached);
+      }
+      this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, cached as UnsafeValue as RuntimeValue);
+    }
 
     const elapsed = performance.now() - start;
     if (elapsed > PROXY_PERFORMANCE_BUDGETS.INITIALIZE_MS) {
@@ -425,6 +477,9 @@ export class ProxyService extends BaseService {
         mainWindow.webContents.send(QUOTA_STREAM_CHANNEL, payload);
       }
       this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as UnsafeValue as RuntimeValue);
+      if (!(payload.quotaData === null && payload.copilotQuota?.accounts.length === 0 && payload.error)) {
+        void this.cacheService.set('proxy', 'quota_snapshot', payload);
+      }
     } catch (error) {
       const message = getErrorMessage(error);
       if (message.includes('ECONNREFUSED')) {
@@ -506,18 +561,14 @@ export class ProxyService extends BaseService {
       mainWindow.webContents.send(QUOTA_STREAM_CHANNEL, payload);
     }
     this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as UnsafeValue as RuntimeValue);
+    if (!(payload.quotaData === null && payload.copilotQuota?.accounts.length === 0 && payload.error)) {
+      void this.cacheService.set('proxy', 'quota_snapshot', payload);
+    }
   }
 
   private buildQuotaFingerprint(payload: ProxyQuotaBroadcastPayload): string {
-    // Fingerprint excludes timestampMs to prevent identical snapshots from re-rendering the UI.
     try {
-      return JSON.stringify({
-        quotaData: payload.quotaData,
-        copilotQuota: payload.copilotQuota,
-        codexUsage: payload.codexUsage,
-        claudeQuota: payload.claudeQuota,
-        error: payload.error ?? null,
-      }) ?? '';
+      return crypto.createHash('md5').update(JSON.stringify(payload.quotaData) + JSON.stringify(payload.copilotQuota) + JSON.stringify(payload.codexUsage) + JSON.stringify(payload.claudeQuota) + JSON.stringify(payload.cursorQuota)).digest('hex');
     } catch {
       return '';
     }
@@ -531,10 +582,22 @@ export class ProxyService extends BaseService {
       copilotAccounts: [],
       codexAccounts: [],
       claudeAccounts: [],
+      cursorAccounts: [],
     };
 
     for (const account of accounts) {
       this.processAccountQuota(account, collectors);
+    }
+
+    // Merge with latest broadcast to prevent UI flickering/disappearing cards during partial refreshes
+    if (collectors.quotaAccounts.length === 0 && this.latestQuotaBroadcast?.quotaData?.accounts) {
+      collectors.quotaAccounts = [...this.latestQuotaBroadcast.quotaData.accounts];
+    }
+    if (collectors.copilotAccounts.length === 0 && this.latestQuotaBroadcast?.copilotQuota?.accounts) {
+      collectors.copilotAccounts = [...this.latestQuotaBroadcast.copilotQuota.accounts];
+    }
+    if (collectors.cursorAccounts.length === 0 && this.latestQuotaBroadcast?.cursorQuota?.accounts) {
+      collectors.cursorAccounts = [...this.latestQuotaBroadcast.cursorQuota.accounts];
     }
 
     return {
@@ -543,6 +606,7 @@ export class ProxyService extends BaseService {
       copilotQuota: { accounts: collectors.copilotAccounts },
       codexUsage: { accounts: collectors.codexAccounts },
       claudeQuota: { accounts: collectors.claudeAccounts },
+      cursorQuota: { accounts: collectors.cursorAccounts },
       error: typeof snapshot.error === 'string' ? snapshot.error : undefined,
     };
   }
@@ -561,8 +625,11 @@ export class ProxyService extends BaseService {
       this.processCodexQuota(account, quotaObject, collectors.codexAccounts);
     } else if (provider === 'claude' || provider === 'anthropic') {
       this.processClaudeQuota(account, quotaObject, collectors.claudeAccounts);
+    } else if (provider === 'cursor') {
+      this.processCursorQuota(account, quotaObject, collectors.cursorAccounts);
     }
   }
+
 
   private processAntigravityQuota(
     account: ProxyQuotaStreamAccount,
@@ -588,7 +655,7 @@ export class ProxyService extends BaseService {
     const modelsRaw = (Array.isArray(quotaObject?.models) ? quotaObject.models : []) as RuntimeValue[];
     const models: ModelQuotaItem[] = modelsRaw.map((item) => {
       const modelObj = this.asObject(item);
-      const remainingFraction = this.asNumber(modelObj?.remaining_fraction ?? modelObj?.remainingFraction) ?? 0;
+      const remainingFraction = this.asNumber(modelObj?.remaining_fraction ?? modelObj?.remainingFraction) ?? 1.0;
       const remainingQuota = this.asNumber(modelObj?.remaining_quota ?? modelObj?.remainingQuota);
       const totalQuota = this.asNumber(modelObj?.total_quota ?? modelObj?.totalQuota);
       const resetTime = this.asString(modelObj?.reset_time ?? modelObj?.resetTime);
@@ -614,10 +681,13 @@ export class ProxyService extends BaseService {
       };
     });
 
+    const quotaInfo = this.asObject(quotaObject?.quota);
+    const accountReset = this.asString(quotaInfo?.reset_at ?? quotaInfo?.resetAt);
     const firstReset = models.find((model) => typeof model.quotaInfo?.resetTime === 'string')?.quotaInfo?.resetTime ?? '-';
+    
     target.push({
       status: 'Success',
-      next_reset: firstReset ?? '-',
+      next_reset: accountReset ?? firstReset ?? '-',
       models,
       success: true,
       authExpired: false,
@@ -729,34 +799,34 @@ export class ProxyService extends BaseService {
   private processClaudeQuota(
     account: ProxyQuotaStreamAccount,
     quotaObject: Record<string, RuntimeValue> | null,
-    target: ClaudeQuota[]
+    target: Array<ClaudeQuota>
   ): void {
-    const accountId = account.account_id;
-    const email = account.email;
-
-    if (account.success !== true) {
-      target.push({
-        success: false,
-        error: account.error ?? 'Quota stream fetch failed',
-        accountId,
-        email,
-        isActive: account.is_active,
-      });
-      return;
-    }
-
-    const quotaInfo = this.asObject(quotaObject?.quota);
-    const remaining = this.asNumber(quotaInfo?.remaining) ?? 0;
-    const total = this.asNumber(quotaInfo?.total) ?? 0;
-    const utilization = total > 0 ? Math.max(0, Math.min(100, ((total - remaining) / total) * 100)) : 0;
-    const resetAt = this.asString(quotaInfo?.reset_at) ?? '';
-
+    const q = this.asObject(quotaObject?.quota);
     target.push({
-      success: true,
-      fiveHour: resetAt ? { utilization, resetsAt: resetAt } : undefined,
-      accountId,
-      email,
+      success: account.success === true,
+      fiveHour: q?.five_hour_used_percent !== undefined ? { utilization: this.asNumber(q.five_hour_used_percent) ?? 0, resetsAt: this.asString(q.five_hour_reset_at) ?? '' } : undefined,
+      sevenDay: q?.weekly_used_percent !== undefined ? { utilization: this.asNumber(q.weekly_used_percent) ?? 0, resetsAt: this.asString(q.weekly_reset_at) ?? '' } : undefined,
+      accountId: account.account_id,
+      email: account.email,
       isActive: account.is_active,
+      error: account.error,
+    });
+  }
+
+  private processCursorQuota(
+    account: ProxyQuotaStreamAccount,
+    quotaObject: Record<string, RuntimeValue> | null,
+    target: Array<CursorQuota>
+  ): void {
+    const q = this.asObject(quotaObject?.quota);
+    target.push({
+      success: account.success === true,
+      fiveHour: q?.five_hour_used_percent !== undefined ? { utilization: this.asNumber(q.five_hour_used_percent) ?? 0, resetsAt: this.asString(q.five_hour_reset_at) ?? '' } : undefined,
+      weekly: q?.weekly_used_percent !== undefined ? { utilization: this.asNumber(q.weekly_used_percent) ?? 0, resetsAt: this.asString(q.weekly_reset_at) ?? '' } : undefined,
+      accountId: account.account_id,
+      email: account.email,
+      isActive: account.is_active,
+      error: account.error,
     });
   }
 
@@ -812,7 +882,7 @@ export class ProxyService extends BaseService {
    */
   async initiateCopilotAuth(): Promise<DeviceCodeResponse> {
     this.eventBus.emitCustom(ProxyUsageStatsEvent.AUTH_INITIATED, { provider: 'copilot' });
-    
+
     const response = await this.makeRequest<{
       device_code: string;
       user_code: string;
@@ -832,13 +902,13 @@ export class ProxyService extends BaseService {
     }
 
     const copilotResponse = response as {
-        device_code: string;
-        user_code: string;
-        verification_uri: string;
-        expires_in: number;
-        interval: number;
+      device_code: string;
+      user_code: string;
+      verification_uri: string;
+      expires_in: number;
+      interval: number;
     };
-    
+
     return {
       device_code: copilotResponse.device_code,
       user_code: copilotResponse.user_code,
@@ -958,8 +1028,8 @@ export class ProxyService extends BaseService {
         const alreadySignedOut = ('alreadySignedOut' in response && typeof response.alreadySignedOut === 'boolean')
           ? response.alreadySignedOut
           : ('already_signed_out' in response && typeof response.already_signed_out === 'boolean')
-              ? response.already_signed_out
-              : undefined;
+            ? response.already_signed_out
+            : undefined;
         return { success: true, alreadySignedOut };
       }
 
@@ -1046,7 +1116,8 @@ export class ProxyService extends BaseService {
       codex: ['codex', 'openai'],
       claude: ['claude', 'anthropic'],
       antigravity: ['antigravity', 'google', 'gemini'],
-      ollama: ['ollama']
+      ollama: ['ollama'],
+      cursor: ['cursor']
     };
     const aliases = new Set(providerAliases[provider]);
     const account = (await this.databaseService.getLinkedAccounts())
@@ -1204,7 +1275,7 @@ export class ProxyService extends BaseService {
       }
       return this.startEmbeddedProxyInternal(options);
     })();
-    this.operationLock = current.then(() => {}, () => {});
+    this.operationLock = current.then(() => { }, () => { });
     return current;
   }
 
@@ -1235,7 +1306,12 @@ export class ProxyService extends BaseService {
     return status;
   }
 
-  private async ensureEmbeddedProxyReady(): Promise<boolean> {
+  /**
+   * Ensures the embedded proxy is running.
+   * Starts it if not already running.
+   * @returns true if proxy is ready, false otherwise
+   */
+  public async ensureEmbeddedProxyReady(): Promise<boolean> {
     const status = this.processManager.getStatus();
     if (status.running) {
       if (status.port) {
@@ -1245,8 +1321,18 @@ export class ProxyService extends BaseService {
       return true;
     }
 
-    const started = await this.startEmbeddedProxy({ port: this.currentPort });
-    return started.running === true;
+    this.logInfo('ensureEmbeddedProxyReady: Proxy not running, initiating startup...');
+    const start = performance.now();
+    try {
+      const started = await this.startEmbeddedProxy({ port: this.currentPort });
+      const elapsed = performance.now() - start;
+      this.logInfo(`ensureEmbeddedProxyReady: Startup completed in ${elapsed.toFixed(1)}ms. Running: ${started.running}`);
+      return started.running === true;
+    } catch (error) {
+      const elapsed = performance.now() - start;
+      this.logError(`ensureEmbeddedProxyReady: Startup failed after ${elapsed.toFixed(1)}ms: ${getErrorMessage(error)}`);
+      return false;
+    }
   }
 
   /** Stops the embedded proxy process. @throws ProxyServiceError on failure */
@@ -1261,7 +1347,7 @@ export class ProxyService extends BaseService {
       }
       return this.stopEmbeddedProxyInternal();
     })();
-    this.operationLock = current.then(() => {}, () => {});
+    this.operationLock = current.then(() => { }, () => { });
     return await current;
   }
 
@@ -1320,21 +1406,12 @@ export class ProxyService extends BaseService {
 
   /** Fetches quota information for all linked accounts. @returns Quota data or null */
   async getQuota(): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
-    if (this.latestQuotaBroadcast?.quotaData) {
-      void this.triggerQuotaSnapshotRefresh(false);
-      return this.latestQuotaBroadcast.quotaData;
-    }
-    await this.triggerQuotaSnapshotRefresh(true);
+    void this.triggerQuotaSnapshotRefresh(false);
     return this.latestQuotaBroadcast?.quotaData ?? null;
   }
 
-  /** Fetches Codex usage data for linked accounts. */
   async getCodexUsage(): Promise<{ accounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }> }> {
-    if (this.latestQuotaBroadcast?.codexUsage.accounts.length) {
-      void this.triggerQuotaSnapshotRefresh(false);
-      return this.latestQuotaBroadcast.codexUsage;
-    }
-    await this.triggerQuotaSnapshotRefresh(true);
+    void this.triggerQuotaSnapshotRefresh(false);
     return this.latestQuotaBroadcast?.codexUsage ?? { accounts: [] };
   }
 
@@ -1385,23 +1462,142 @@ export class ProxyService extends BaseService {
 
   /** Fetches Copilot quota for linked accounts. */
   async getCopilotQuota(): Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }> {
-    if (this.latestQuotaBroadcast?.copilotQuota.accounts.length) {
-      void this.triggerQuotaSnapshotRefresh(false);
-      return this.latestQuotaBroadcast.copilotQuota;
-    }
-    await this.triggerQuotaSnapshotRefresh(true);
+    void this.triggerQuotaSnapshotRefresh(false);
     return this.latestQuotaBroadcast?.copilotQuota ?? { accounts: [] };
   }
 
   /** Fetches Claude quota for linked accounts. */
   async getClaudeQuota(): Promise<{ accounts: Array<ClaudeQuota> }> {
-    if (this.latestQuotaBroadcast?.claudeQuota.accounts.length) {
-      void this.triggerQuotaSnapshotRefresh(false);
-      return this.latestQuotaBroadcast.claudeQuota;
-    }
-    await this.triggerQuotaSnapshotRefresh(true);
+    void this.triggerQuotaSnapshotRefresh(false);
     return this.latestQuotaBroadcast?.claudeQuota ?? { accounts: [] };
   }
+
+  async getCursorQuota(): Promise<{ accounts: Array<CursorQuota> }> {
+    void this.triggerQuotaSnapshotRefresh(false);
+    return this.latestQuotaBroadcast?.cursorQuota ?? { accounts: [] };
+  }
+
+
+
+  @ipc(AUTH_CHANNELS.CURSOR_COMPLETE_AUTH)
+  async completeCursorAuth(session: string, accountId?: string): Promise<{ success: boolean; error?: string }> {
+    const res = await this.makeRequest<{ status: string }>(
+      '/v0/management/cursor-complete',
+      undefined,
+      'POST',
+      {
+        session,
+        account_id: accountId
+      }
+    );
+    if (typeof res === 'object' && res !== null && 'status' in res && (res as { status: string }).status === 'ok') {
+      // Notify AuthService to reload from DB and alert the renderer
+      await this.authService.refreshLinkedAccountsCache();
+      this.eventBus.emit('account:updated', { 
+        provider: 'cursor', 
+        accountId: accountId || 'cursor-account'
+      });
+      return { success: true };
+    } else if (res && typeof res === 'object' && 'success' in res) {
+      return res as { success: boolean; error?: string };
+    }
+    return { success: false, error: (res as { error?: string })?.error || 'Proxy request failed' };
+
+  }
+
+
+  @ipc(AUTH_CHANNELS.CURSOR_SEAMLESS_LOGIN)
+  async startCursorSeamlessLogin(): Promise<{ success: boolean; accountId?: string; error?: string }> {
+    try {
+      this.logInfo('Starting seamless Cursor PKCE login via system browser...');
+
+      const verifierBytes = crypto.randomBytes(32);
+      const verifier = verifierBytes.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+
+      const hash = crypto.createHash('sha256').update(verifier).digest();
+      const challenge = hash.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+
+      const uuid = crypto.randomUUID();
+
+      const loginUrl = `https://www.cursor.com/loginDeepControl?challenge=${challenge}&uuid=${uuid}&mode=login`;
+      this.logDebug(`Generated PKCE challenge=${challenge}, uuid=${uuid}`);
+
+      await shell.openExternal(loginUrl);
+      this.logInfo('Opened system browser for Cursor login');
+
+      const accountId = `cursor_${crypto.randomUUID().replace(/-/g, '')}`;
+
+      this.pollCursorAuth(uuid, verifier, accountId).catch(e => {
+        this.logError('Cursor PKCE polling failed', e);
+      });
+
+      return { success: true, accountId };
+    } catch (error) {
+      this.logError('Failed to start seamless login', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+
+  private async pollCursorAuth(uuid: string, verifier: string, accountId: string): Promise<void> {
+    const maxRetries = 300; 
+    const interval = 1000;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const url = `https://api2.cursor.sh/auth/poll?uuid=${uuid}&verifier=${verifier}`;
+        const res = await fetch(url, {
+          headers: {
+            'x-ghost-mode': 'false',
+            'x-new-onboarding-completed': 'true',
+            'x-cursor-client-version': '3.3.40'
+          }
+        });
+
+        if (res.status === 200) {
+          const text = await res.text();
+          this.logInfo('Cursor polling successful, completing auth...');
+
+          let sessionStr = text;
+          try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed === 'object') {
+                const accessToken = parsed.accessToken || parsed.access_token;
+                const refreshToken = parsed.refreshToken || parsed.refresh_token;
+
+                if (accessToken) {
+                    sessionStr = JSON.stringify({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
+                } else if (parsed.session) {
+                    sessionStr = parsed.session;
+                }
+            }
+          } catch(e) {
+            this.logError('Cursor polling JSON parse error', e);
+          }
+
+          const completeRes = await this.completeCursorAuth(sessionStr, accountId);
+          if (!completeRes.success) {
+            this.logError('Failed to complete Cursor auth on backend: ' + completeRes.error);
+          }
+          return;
+        }
+      } catch (err) {
+        // ignore errors
+      }
+
+      await new Promise(r => setTimeout(r, interval));
+    }
+    this.logError('Cursor login polling timed out.');
+  }
+
 
   /** Fetches and merges model data from all providers. @returns Aggregated model response */
   async getModels(): Promise<ProxyModelResponse> {
@@ -1413,6 +1609,7 @@ export class ProxyService extends BaseService {
     const codexDataRaw = this.latestQuotaBroadcast?.codexUsage ?? { accounts: [] };
     const copilotDataRaw = this.latestQuotaBroadcast?.copilotQuota ?? { accounts: [] };
     const claudeDataRaw = this.latestQuotaBroadcast?.claudeQuota ?? { accounts: [] };
+    const cursorDataRaw = this.latestQuotaBroadcast?.cursorQuota ?? { accounts: [] };
 
     // Use the first account's quota for normalization (legacy behavior)
     const codexData = codexDataRaw.accounts[0] && !('error' in codexDataRaw.accounts[0].usage)
@@ -1420,8 +1617,9 @@ export class ProxyService extends BaseService {
       : null;
     const copilotData = copilotDataRaw.accounts[0] ? { success: true, ...copilotDataRaw.accounts[0] } : null;
     const claudeData = claudeDataRaw.accounts[0] ?? null;
+    const cursorData = cursorDataRaw.accounts[0] ?? null;
 
-    const quotas = this.normalizeQuota(codexData, copilotData, claudeData);
+    const quotas = this.normalizeQuota(codexData, copilotData, claudeData, cursorData);
 
     let extra: ModelQuotaItem[] = [];
     let antigravityError: string | undefined;
@@ -1584,13 +1782,27 @@ export class ProxyService extends BaseService {
   private normalizeQuota(
     codexData: CodexUsage | null,
     copilotData: { success: boolean; limit?: number; remaining?: number; percentage?: number | null } | null,
-    claudeData: { success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null
+    claudeData: { success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null,
+    cursorData: { success: boolean; quota?: { five_hour_used_percent?: number; five_hour_reset_at?: string; weekly_used_percent?: number; weekly_reset_at?: string } } | null
   ) {
     const codexQuotaFn = this.normalizeCodexQuota(codexData);
     const copilotQuotaFn = this.normalizeCopilotQuota(copilotData);
     const claudeQuotaFn = this.normalizeClaudeQuota(claudeData);
+    const cursorQuotaFn = this.normalizeCursorQuota(cursorData);
 
-    return { codexQuotaFn, copilotQuotaFn, claudeQuotaFn };
+    return { codexQuotaFn, copilotQuotaFn, claudeQuotaFn, cursorQuotaFn };
+  }
+
+  private normalizeCursorQuota(cursorData: { success: boolean; quota?: { five_hour_used_percent?: number; five_hour_reset_at?: string; weekly_used_percent?: number; weekly_reset_at?: string } } | null): QuotaInfo | undefined {
+    if (!cursorData?.success || !cursorData.quota) { return undefined; }
+    const q = cursorData.quota;
+    const utilization = q.five_hour_used_percent ?? q.weekly_used_percent ?? 0;
+    return {
+      remainingQuota: Math.round(100 - utilization),
+      totalQuota: 100,
+      remainingFraction: (100 - utilization) / 100,
+      resetTime: q.five_hour_reset_at ?? q.weekly_reset_at
+    };
   }
 
   private normalizeCodexQuota(codexData: CodexUsage | null): QuotaInfo | undefined {
@@ -1655,6 +1867,7 @@ export class ProxyService extends BaseService {
         const idValue = m.id.toLowerCase();
         if (idValue.includes('claude') || idValue.includes('anthropic')) { provider = 'anthropic'; }
         else if (idValue.includes('gemini-3')) { provider = 'copilot'; }
+        else if (idValue.includes('cursor')) { provider = 'cursor'; }
         else if (idValue.startsWith('gemini-') || idValue.includes('google')) { provider = 'gemini'; }
         else { provider = 'antigravity'; }
       }
@@ -1695,7 +1908,7 @@ export class ProxyService extends BaseService {
     });
   }
 
-  private enrichModelWithQuota(m: ModelItem, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo }): ModelItem {
+  private enrichModelWithQuota(m: ModelItem, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo, cursorQuotaFn?: QuotaInfo }): ModelItem {
     const provider = m.provider.toLowerCase();
     const model = { ...m };
 
@@ -1712,8 +1925,8 @@ export class ProxyService extends BaseService {
     return model;
   }
 
-  private applyQuotaInfo(model: ModelItem, provider: string, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo }) {
-    const { codexQuotaFn, copilotQuotaFn, claudeQuotaFn } = quotas;
+  private applyQuotaInfo(model: ModelItem, provider: string, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo, cursorQuotaFn?: QuotaInfo }) {
+    const { codexQuotaFn, copilotQuotaFn, claudeQuotaFn, cursorQuotaFn } = quotas;
     const id = model.id.toLowerCase();
 
     if (this.isCodexModel(id, provider) && codexQuotaFn) {
@@ -1722,6 +1935,8 @@ export class ProxyService extends BaseService {
       model.quotaInfo = copilotQuotaFn;
     } else if (this.isClaudeModel(id, provider) && claudeQuotaFn) {
       model.quotaInfo = claudeQuotaFn;
+    } else if (this.isCursorModel(id, provider) && cursorQuotaFn) {
+      model.quotaInfo = cursorQuotaFn;
     }
   }
 
@@ -1731,6 +1946,10 @@ export class ProxyService extends BaseService {
 
   private isClaudeModel(id: string, provider: string): boolean {
     return provider === 'anthropic' || provider === 'claude' || id.startsWith('claude-');
+  }
+
+  private isCursorModel(id: string, provider: string): boolean {
+    return provider === 'cursor' || id.includes('cursor');
   }
 
   private calculateQuotaFromInfo(model: ModelItem) {
@@ -1932,7 +2151,7 @@ export class ProxyService extends BaseService {
   /** Returns the proxy API key, generating one if needed. @returns Proxy API key string */
   async getProxyKey(): Promise<string> { return await this.ensureProxyKey(); }
 
-    public async getRuntimeProxyApiKey(): Promise<string> {
+  public async getRuntimeProxyApiKey(): Promise<string> {
 
     const runtimeKey = await this.authService.getActiveToken('proxy_key');
     if (runtimeKey && runtimeKey.trim().length > 0) {
@@ -2075,6 +2294,11 @@ export class ProxyService extends BaseService {
   @ipc(PROXY_CHANNELS.GET_CLAUDE_QUOTA)
   async getClaudeQuotaIpc(): Promise<RuntimeValue> {
     return serializeToIpc(await this.getClaudeQuota());
+  }
+
+  @ipc(PROXY_CHANNELS.GET_CURSOR_QUOTA)
+  async getCursorQuotaIpc(): Promise<RuntimeValue> {
+    return serializeToIpc(await this.getCursorQuota());
   }
 
   @ipc(PROXY_CHANNELS.ANTIGRAVITY_LOGIN)

@@ -44,7 +44,7 @@
 
         /* Git Related Colors (shared) */
         --git-modified: #81b88b;
-        --git-added: #2ea043;
+        --git-added: #1a5b29;
         --git-deleted: #c74e39;
         --git-untracked: #73c991;
         --git-ignored: #8e8e8e;
@@ -226,108 +226,8 @@
         --council-board-message-stroke: hsl(var(--info) / 35%);
     }
 
-    /* WHITE THEME (Light) */
-    [data-theme='tengra-white'] {
-        --background: 0 0% 100%;
-        --foreground: 0 0% 0%;
-
-        --card: 0 0% 98%;
-        --card-foreground: 0 0% 10%;
-
-        --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 0%;
-
-        /* Vibrant Electric Purple/Blue for Light Mode */
-        --primary: 250 100% 65%;
-        --primary-foreground: 0 0% 100%;
-
-        --secondary: 0 0% 96%;
-        --secondary-foreground: 0 0% 10%;
-
-        --muted: 0 0% 96%;
-        --muted-foreground: 0 0% 35%;
-
-        --accent: 0 0% 96%;
-        --accent-foreground: 250 100% 40%;
-
-        --destructive: 0 84% 60%;
-        --destructive-foreground: 0 0% 98%;
-
-        --border: 0 0% 90%;
-        --input: 0 0% 90%;
-        --ring: 250 100% 65%;
-
-        --glow-color: 250 100% 65%;
-
-        /* Semantic Colors */
-        --success: 160 84% 39%;
-        --success-foreground: 0 0% 100%;
-        --warning: 38 92% 50%;
-        --warning-foreground: 0 0% 0%;
-        --info: 199 89% 48%;
-        --info-foreground: 0 0% 100%;
-        --error: 0 84% 60%;
-        --error-foreground: 0 0% 100%;
-
-        /* Additional Semantic Colors */
-        --success-light: 160 60% 55%;
-        --info-light: 199 70% 65%;
-        --warning-light: 38 80% 65%;
-        --neutral: 0 0% 50%;
-        --neutral-light: 0 0% 70%;
-        --neutral-dark: 0 0% 30%;
-
-        /* Brand Accent Colors */
-        --indigo: 239 84% 67%;
-        --purple: 270 95% 75%;
-        --cyan: 180 100% 45%;
-        --orange: 25 95% 53%;
-        --fuchsia: 295 82% 80%;
-
-        /* Code Syntax Highlighting - Light Theme */
-        --code-keyword: 262 90% 60%;
-        --code-function: 211 60% 48%;
-        --code-string: 142 71% 35%;
-        --code-comment: 0 0% 45%;
-        --code-variable: 0 72% 55%;
-        --code-number: 30 80% 50%;
-        --code-operator: 250 100% 65%;
-
-        /* Monaco Editor Tokens */
-        --editor-background: var(--background);
-        --editor-foreground: var(--foreground);
-        --editor-gutter-background: var(--background);
-        --editor-line-number: var(--muted-foreground);
-        --editor-line-number-active: var(--foreground);
-        --editor-cursor: var(--primary);
-        --editor-selection: var(--primary);
-        --editor-selection-inactive: var(--accent);
-        --editor-line-highlight: var(--card);
-        --editor-widget-background: var(--card);
-        --editor-widget-border: var(--border);
-        --editor-indent-guide: var(--border);
-        --editor-indent-guide-active: var(--ring);
-        --editor-token-comment: var(--code-comment);
-        --editor-token-keyword: var(--code-keyword);
-        --editor-token-string: var(--code-string);
-        --editor-token-number: var(--code-number);
-        --editor-token-type: var(--code-function);
-        --editor-token-invalid: var(--destructive);
-
-        /* Glass/Overlay Colors */
-        --glass-bg: 0 0% 100%;
-        --glass-border: 0 0% 0%;
-        --shadow-color: 250 20% 10%;
-
-        /* Standardized Shadows - HSL based */
-        --shadow-sm: 0 1px 2px 0 hsl(var(--shadow-color) / 0.04);
-        --shadow-md: 0 2px 4px -2px hsl(var(--shadow-color) / 0.08);
-        --shadow-lg: 0 4px 8px -4px hsl(var(--shadow-color) / 0.12);
-        --shadow-xl: 0 8px 16px -8px hsl(var(--shadow-color) / 0.16);
-        --shadow-premium: 0 10px 24px -12px hsl(var(--shadow-color) / 0.18);
-    }
-
-    /* BLACK THEME (Dark) */
+    /* Default theme tokens. Actual built-in palettes are supplied at runtime
+       from the JSON manifests and should remain the single source of truth. */
     :root,
     [data-theme='tengra-black'] {
         --background: 0 0% 0%;
@@ -363,7 +263,7 @@
         --premium-gradient: linear-gradient(135deg, hsl(190 100% 60%) 0%, hsl(250 100% 65%) 100%);
 
         /* Semantic Colors - Dark Theme */
-        --success: 160 84% 45%;
+        --success: 160 84% 35%;
         --success-foreground: 0 0% 0%;
         --warning: 38 92% 55%;
         --warning-foreground: 0 0% 0%;
@@ -373,7 +273,7 @@
         --error-foreground: 0 0% 100%;
 
         /* Additional Semantic Colors - Dark */
-        --success-light: 160 70% 60%;
+        --success-light: 160 70% 50%;
         --info-light: 199 80% 70%;
         --warning-light: 38 85% 70%;
         --neutral: 0 0% 50%;

@@ -10,9 +10,9 @@
 
 import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
+import { DatabaseService } from '@main/services/data/database.service';
 import { HttpService } from '@main/services/external/http.service';
 import { LLMOpenAIChatService, OpenAIStreamYield } from '@main/services/llm/chatgpt/llm-openai-chat.service';
-import { LLMAltProvidersService } from '@main/services/llm/llm-alt-providers.service';
 import { LLMEmbeddingsService } from '@main/services/llm/llm-embeddings.service';
 import { HuggingFaceService } from '@main/services/llm/local/huggingface.service';
 import { LlamaService } from '@main/services/llm/local/llama.service';
@@ -21,12 +21,14 @@ import {
     resolveLocalRuntimeBaseUrl,
 } from '@main/services/llm/local/local-model-runtime-router.service';
 import { ModelFallbackService } from '@main/services/llm/model-fallback.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ConfigService } from '@main/services/system/config.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, ContentPart, OpenAIResponse } from '@main/types/llm.types';
 import { sanitizePrompt } from '@main/utils/prompt-sanitizer.util';
@@ -41,8 +43,8 @@ import { Agent } from 'undici';
 import { getContextWindowService } from './context-window.service';
 
 const DEFAULT_MODELS = {
-    OPENAI: 'gpt-4o',
-    EMBEDDING: 'text-embedding-3-small'
+    OPENAI: '', // Dynamically resolved via ModelSelectionService
+    EMBEDDING: '' // Dynamically resolved via ModelSelectionService
 } as const;
 
 export interface LLMChatOptions {
@@ -97,6 +99,9 @@ export interface LLMServiceDependencies {
     llamaService?: LlamaService;
     fallbackService: ModelFallbackService;
     cacheService: ResponseCacheService;
+    modelSelectionService: ModelSelectionService;
+    databaseService: DatabaseService;
+    eventBusService: EventBusService;
 }
 
 /**
@@ -104,6 +109,23 @@ export interface LLMServiceDependencies {
  * Delegates provider-specific logic to extracted sub-services.
  */
 export class LLMService {
+    static readonly serviceName = 'llmService';
+    static readonly dependencies = [
+        'httpService',
+        'configService',
+        'keyRotationService',
+        'settingsService',
+        'authService',
+        'proxyService',
+        'tokenService',
+        'huggingFaceService',
+        'llamaService',
+        'modelFallbackService',
+        'responseCacheService',
+        'modelSelectionService',
+        'databaseService',
+        'eventBusService',
+    ] as const;
     private static readonly PERFORMANCE_BUDGET = {
         chatCompletionMs: 30000,
         cacheLookupMs: 50,
@@ -115,13 +137,7 @@ export class LLMService {
         failure: 'serviceHealth.llm.failure',
     } as const;
 
-    private openaiApiKey: string = '';
     private openaiBaseUrl: string = 'https://api.openai.com/v1';
-    private anthropicApiKey: string = '';
-    private groqApiKey: string = '';
-    private nvidiaApiKey: string = '';
-    private kimiApiKey: string = '';
-    private opencodeApiKey: string = '';
     private dispatcher: Agent | null = null;
 
     private usageStats = {
@@ -134,50 +150,103 @@ export class LLMService {
     };
 
     private breakers: Record<string, CircuitBreaker>;
+    private deps: LLMServiceDependencies;
 
     // Extracted sub-services
     private openaiChat: LLMOpenAIChatService;
-    private altProviders: LLMAltProvidersService;
     private embeddingsService: LLMEmbeddingsService;
 
-    constructor(private deps: LLMServiceDependencies) {
+    constructor(
+        httpService: HttpService,
+        configService: ConfigService,
+        keyRotationService: KeyRotationService,
+        settingsService: SettingsService,
+        authService: AuthService,
+        proxyService: ProxyService,
+        tokenService: TokenService | undefined,
+        huggingFaceService: HuggingFaceService,
+        llamaService: LlamaService | undefined,
+        fallbackService: ModelFallbackService,
+        cacheService: ResponseCacheService,
+        modelSelectionService: ModelSelectionService,
+        databaseService: DatabaseService,
+        eventBusService: EventBusService
+    ) {
+        this.deps = {
+            httpService,
+            configService,
+            keyRotationService,
+            settingsService,
+            authService,
+            proxyService,
+            tokenService,
+            huggingFaceService,
+            llamaService,
+            fallbackService,
+            cacheService,
+            modelSelectionService,
+            databaseService,
+            eventBusService,
+        };
         this.breakers = {
             openai: new CircuitBreaker({ failureThreshold: 5, resetTimeoutMs: 60000, serviceName: 'OpenAI' }),
             anthropic: new CircuitBreaker({ failureThreshold: 5, resetTimeoutMs: 60000, serviceName: 'Anthropic' }),
-            groq: new CircuitBreaker({ failureThreshold: 5, resetTimeoutMs: 60000, serviceName: 'Groq' })
+            groq: new CircuitBreaker({ failureThreshold: 5, resetTimeoutMs: 60000, serviceName: 'Groq' }),
         };
 
-        const { configService } = this.deps;
-        this.openaiApiKey = configService.get('OPENAI_API_KEY', '');
-        this.anthropicApiKey = configService.get('ANTHROPIC_API_KEY', '');
-        this.groqApiKey = configService.get('GROQ_API_KEY', '');
-        this.nvidiaApiKey = configService.get('NVIDIA_API_KEY', '');
-        this.kimiApiKey = configService.get('KIMI_API_KEY', '');
-        this.opencodeApiKey = configService.get('OPENCODE_API_KEY', 'public');
-
         this.openaiChat = new LLMOpenAIChatService(
-            { httpService: deps.httpService, keyRotationService: deps.keyRotationService, tokenService: deps.tokenService },
+            { httpService, keyRotationService, tokenService },
             this.breakers.openai,
             (model: string, provider?: string) => this.normalizeModelName(model, provider),
             () => this.getDispatcher()
         );
 
-        this.altProviders = new LLMAltProvidersService(
-            { httpService: deps.httpService, keyRotationService: deps.keyRotationService },
-            this.breakers,
-            {
-                getAnthropicApiKey: () => this.getApiKey('anthropic'),
-                getGroqApiKey: () => this.getApiKey('groq'),
-                getNvidiaApiKey: () => this.getApiKey('nvidia'),
-                getOpenCodeApiKey: () => this.getApiKey('opencode'),
-            }
-        );
-
         this.embeddingsService = new LLMEmbeddingsService(
-            { httpService: deps.httpService, keyRotationService: deps.keyRotationService },
-            () => this.openaiApiKey,
+            { httpService, keyRotationService },
             () => this.openaiBaseUrl
         );
+    }
+
+    /**
+     * Initializes the service by loading API keys from the database.
+     */
+    async initialize(): Promise<void> {
+        await this.reloadKeys();
+
+        // Listen for account changes to reload keys
+        this.deps.eventBusService.on('account:linked', () => this.reloadKeys());
+        this.deps.eventBusService.on('account:updated', () => this.reloadKeys());
+        this.deps.eventBusService.on('account:unlinked', () => this.reloadKeys());
+    }
+
+    /**
+     * Reloads keys from the database.
+     */
+    private async reloadKeys(): Promise<void> {
+        try {
+            const accounts = await this.deps.databaseService.getLinkedAccounts();
+            const providerKeys: Record<string, string[]> = {};
+            
+            for (const account of accounts) {
+                if (account.isActive && (account.accessToken || account.sessionToken)) {
+                    const provider = account.provider.toLowerCase();
+                    const key = account.accessToken || account.sessionToken;
+                    if (key) {
+                        providerKeys[provider] = providerKeys[provider] || [];
+                        providerKeys[provider].push(key);
+                    }
+                }
+            }
+
+            for (const [provider, keys] of Object.entries(providerKeys)) {
+                if (keys.length > 0) {
+                    this.deps.keyRotationService.initializeProviderKeys(provider, keys);
+                }
+            }
+            appLogger.debug('LLMService', 'API keys reloaded due to account change');
+        } catch (error) {
+            appLogger.error('LLMService', `Failed to reload API keys: ${getErrorMessage(error as Error)}`);
+        }
     }
 
     // --- Content safety ---
@@ -244,32 +313,103 @@ export class LLMService {
         return result;
     }
 
+    private applyUserPromptOverrides(
+        messages: Array<Message | ChatMessage>,
+        model: string,
+    ): Array<Message | ChatMessage> {
+        const settings = this.deps.settingsService.getSettings();
+        const overrides = settings.aiPromptOverrides;
+        if (!overrides) {
+            return messages;
+        }
+
+        const globalOverride = overrides.global;
+        const providerScopedModelKey = Object.keys(overrides.byModel ?? {})
+            .find(key => key === model || key.endsWith(`:${model}`));
+
+        const modelOverride = providerScopedModelKey
+            ? overrides.byModel?.[providerScopedModelKey]
+            : undefined;
+
+        const enabledOverrides = [globalOverride, modelOverride]
+            .filter(override => override?.enabled === true);
+
+        if (enabledOverrides.length === 0) {
+            return messages;
+        }
+
+        let result = [...messages];
+
+        for (const override of enabledOverrides) {
+            if (!override) {
+                continue;
+            }
+
+            const systemInstructions = override.systemInstructions?.trim();
+            if (systemInstructions) {
+                const systemMsgIndex = result.findIndex(message => message.role === 'system');
+
+                if (systemMsgIndex >= 0) {
+                    const existing = result[systemMsgIndex];
+
+                    if (
+                        typeof existing.content === 'string'
+                        && !existing.content.includes(systemInstructions)
+                    ) {
+                        result[systemMsgIndex] = {
+                            ...existing,
+                            content: `${existing.content}\n\n${systemInstructions}`,
+                        } as Message | ChatMessage;
+                    }
+                } else {
+                    result.unshift({
+                        role: 'system',
+                        content: systemInstructions,
+                    } as Message | ChatMessage);
+                }
+            }
+
+            const prefix = override.userPromptPrefix?.trim();
+            const suffix = override.userPromptSuffix?.trim();
+
+            if (prefix || suffix) {
+                result = result.map(message => {
+                    if (message.role !== 'user' || typeof message.content !== 'string') {
+                        return message;
+                    }
+
+                    return {
+                        ...message,
+                        content: `${prefix ? `${prefix}\n\n` : ''}${message.content}${suffix ? `\n\n${suffix}` : ''}`,
+                    } as Message | ChatMessage;
+                });
+            }
+        }
+
+        return result;
+    }
+
     // --- Configuration setters ---
 
     setOpenAIApiKey(key: string) {
-        this.openaiApiKey = key;
         this.deps.keyRotationService.initializeProviderKeys('openai', key);
     }
     setOpenAIBaseUrl(url: string) { this.openaiBaseUrl = url.replace(/\/$/, ''); }
     setAnthropicApiKey(key: string) {
-        this.anthropicApiKey = key;
         this.deps.keyRotationService.initializeProviderKeys('anthropic', key);
     }
     setGroqApiKey(key: string) {
-        this.groqApiKey = key;
         this.deps.keyRotationService.initializeProviderKeys('groq', key);
     }
     setNvidiaApiKey(key: string) {
-        this.nvidiaApiKey = key;
         this.deps.keyRotationService.initializeProviderKeys('nvidia', key);
     }
     setKimiApiKey(key: string) {
-        this.kimiApiKey = key;
         this.deps.keyRotationService.initializeProviderKeys('kimi', key);
     }
 
     isOpenAIConnected(): boolean {
-        return !!this.openaiApiKey || !!this.deps.keyRotationService.getCurrentKey('openai');
+        return !!this.deps.keyRotationService.getCurrentKey('openai');
     }
 
     private getDispatcher(): Agent | null {
@@ -328,12 +468,19 @@ export class LLMService {
 
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
         this.validateMessagesInput(messages);
-        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, stream = false, n, signal, systemMode, reasoningEffort, workspaceRoot, metadata, accountId } = options;
+        let { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, stream = false, n, signal, systemMode, reasoningEffort, workspaceRoot, metadata, accountId } = options;
+        
+        if (!model) {
+            const selection = await this.deps.modelSelectionService.selectChatModel();
+            model = selection?.model ?? '';
+        }
+
         const provider = this.resolveProvider(model, requestedProvider);
         this.usageStats.openAiRequests += 1;
         this.usageStats.lastRequestAt = Date.now();
         this.recordUsageStatsEvent('llm.openai.request', provider);
-        const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
+        const overridden = this.applyUserPromptOverrides(messages, model);
+        const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(overridden));
         const preparedMessages = this.prepareMessagesForContextWindow(sanitized as Message[], model);
 
         const config = await this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
@@ -375,7 +522,7 @@ export class LLMService {
 
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<OpenAIStreamYield> {
         this.validateMessagesInput(messages);
-        const {
+        let {
             model = DEFAULT_MODELS.OPENAI,
             tools,
             baseUrl: baseUrlOverride,
@@ -389,8 +536,15 @@ export class LLMService {
             accountId,
             persistImages,
         } = options;
+
+        if (!model) {
+            const selection = await this.deps.modelSelectionService.selectChatModel();
+            model = selection?.model ?? '';
+        }
+
         const provider = this.resolveProvider(model, requestedProvider);
-        const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
+        const overridden = this.applyUserPromptOverrides(messages, model);
+        const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(overridden));
         const preparedMessages = this.prepareMessagesForContextWindow(sanitized as Message[], model);
 
         const config = await this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
@@ -411,41 +565,6 @@ export class LLMService {
         );
     }
 
-    // --- Alt Provider Chat (delegates to LLMAltProvidersService) ---
-
-    /** Sends a chat completion to the Anthropic API. */
-    async chatAnthropic(messages: Array<Message | ChatMessage>, model?: string): Promise<OpenAIResponse> {
-        return this.altProviders.chatAnthropic(messages, model);
-    }
-
-    /** Sends a chat completion to the Groq API. */
-    async chatGroq(messages: Array<Message | ChatMessage>, model?: string): Promise<OpenAIResponse> {
-        return this.altProviders.chatGroq(
-            messages, model,
-            (msgs, opts) => this.openaiChat.buildOpenAIBody(msgs, opts),
-            (json) => this.openaiChat.processOpenAIResponse(json as RuntimeValue as OpenAIChatCompletion)
-        );
-    }
-
-    /** Sends a chat completion to Nvidia via OpenAI-compatible endpoint. */
-    async chatNvidia(messages: Array<Message | ChatMessage>, model: string): Promise<OpenAIResponse> {
-        const key = await this.altProviders.getNvidiaKey();
-        return this.chatOpenAI(messages, { model, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: key, provider: 'nvidia' });
-    }
-
-    /** Sends a chat completion to the OpenCode API. */
-    async chatOpenCode(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): Promise<OpenAIResponse> {
-        return this.altProviders.chatOpenCode(messages, model, tools,
-            (msgs, opts) => this.chatOpenAI(msgs, opts)
-        );
-    }
-
-    /** Streams a chat response from the OpenCode API. */
-    async *chatOpenCodeStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], signal?: AbortSignal): AsyncGenerator<OpenAIStreamYield> {
-        yield* this.altProviders.chatOpenCodeStream(messages, model, tools, signal,
-            (msgs, opts) => this.chatOpenAIStream(msgs, opts as LLMChatOptions)
-        );
-    }
 
     // --- Unified chat routing ---
 
@@ -455,25 +574,21 @@ export class LLMService {
         const p = effectiveProvider.toLowerCase();
         const config = await this.getRouteConfig(p, model, tools, options);
 
-        if (p.includes('opencode')) {
-            yield* this.chatOpenCodeStream(messages, model, tools, options?.signal);
-        } else {
-            yield* this.chatOpenAIStream(messages, {
-                model, tools,
-                baseUrl: config.baseUrl,
-                apiKey: config.apiKey,
-                provider: config.provider,
-                temperature: config.temperature,
-                systemMode: options?.systemMode,
-                reasoningEffort: options?.reasoningEffort,
-                metadata: options?.metadata,
-                persistImages: options?.persistImages,
-                signal: options?.signal,
-                workspaceRoot: options?.workspaceRoot,
-                accountId: options?.accountId,
-                numCtx: (config as { numCtx?: number }).numCtx
-            });
-        }
+        yield* this.chatOpenAIStream(messages, {
+            model, tools,
+            baseUrl: config.baseUrl,
+            apiKey: config.apiKey,
+            provider: config.provider,
+            temperature: config.temperature,
+            systemMode: options?.systemMode,
+            reasoningEffort: options?.reasoningEffort,
+            metadata: options?.metadata,
+            persistImages: options?.persistImages,
+            signal: options?.signal,
+            workspaceRoot: options?.workspaceRoot,
+            accountId: options?.accountId,
+            numCtx: (config as { numCtx?: number }).numCtx
+        });
     }
 
     /** Unified non-streaming chat across all providers. */
@@ -523,19 +638,10 @@ export class LLMService {
 
     private async executeChatRoute(provider: string, model: string, messages: Array<Message | ChatMessage>, tools?: ToolDefinition[], options?: { temperature?: number; workspaceRoot?: string; n?: number; metadata?: JsonObject; accountId?: string; stream?: boolean }): Promise<OpenAIResponse> {
         const p = provider.toLowerCase();
-
-        if (p.includes('anthropic') || p.includes('claude')) {
-            return this.chatAnthropic(messages, model);
-        } else if (p.includes('groq')) {
-            return this.chatGroq(messages, model);
-        } else if (p.includes('opencode')) {
-            return this.chatOpenCode(messages, model, tools);
-        } else if (p.includes('nvidia')) {
-            return this.chatNvidia(messages, model);
-        }
+        const routedMessages = this.applyUserPromptOverrides(messages, model);
 
         const config = await this.getRouteConfig(p, model, tools, options);
-        return this.chatOpenAI(messages, {
+        return this.chatOpenAI(routedMessages, {
             ...config,
             stream: options?.stream,
             n: options?.n,
@@ -552,7 +658,7 @@ export class LLMService {
     // --- Embeddings (delegates to LLMEmbeddingsService) ---
 
     /** Generates an embedding vector for the given input text. */
-    async getEmbeddings(input: string, model: string = DEFAULT_MODELS.EMBEDDING): Promise<number[]> {
+    async getEmbeddings(input: string, model?: string): Promise<number[]> {
         return this.embeddingsService.getEmbeddings(input, model);
     }
 
@@ -619,10 +725,14 @@ export class LLMService {
     async getAvailableProviders(): Promise<string[]> {
         const providers: string[] = [];
         if (this.isOpenAIConnected()) { providers.push('openai'); }
-        if (this.anthropicApiKey || this.deps.keyRotationService.getCurrentKey('anthropic') || (await this.deps.authService.getActiveToken('anthropic'))) { providers.push('anthropic'); }
-        if (this.groqApiKey || this.deps.keyRotationService.getCurrentKey('groq') || (await this.deps.authService.getActiveToken('groq'))) { providers.push('groq'); }
-        if (this.nvidiaApiKey || this.deps.keyRotationService.getCurrentKey('nvidia') || (await this.deps.authService.getActiveToken('nvidia'))) { providers.push('nvidia'); }
-        if (this.kimiApiKey || this.deps.keyRotationService.getCurrentKey('kimi') || (await this.deps.authService.getActiveToken('kimi'))) { providers.push('kimi'); }
+        if (this.deps.keyRotationService.getCurrentKey('anthropic') || (await this.deps.authService.getActiveToken('anthropic'))) { providers.push('anthropic'); }
+        if (this.deps.keyRotationService.getCurrentKey('groq') || (await this.deps.authService.getActiveToken('groq'))) { providers.push('groq'); }
+        if (this.deps.keyRotationService.getCurrentKey('nvidia') || (await this.deps.authService.getActiveToken('nvidia'))) { providers.push('nvidia'); }
+        if (this.deps.keyRotationService.getCurrentKey('kimi') || (await this.deps.authService.getActiveToken('kimi'))) { providers.push('kimi'); }
+        if (await this.deps.authService.getActiveToken('mistral')) { providers.push('mistral'); }
+        if (await this.deps.authService.getActiveToken('xai')) { providers.push('xai'); }
+        if (await this.deps.authService.getActiveToken('deepseek')) { providers.push('deepseek'); }
+        if (await this.deps.authService.getActiveToken('openrouter')) { providers.push('openrouter'); }
 
         const proxyKey = await this.deps.proxyService.getProxyKey().catch(() => null);
         if (proxyKey) {
@@ -715,6 +825,24 @@ export class LLMService {
         if (normalizedModel.startsWith('ollama/')) {
             return 'ollama';
         }
+        if (normalizedModel.startsWith('local/')) {
+            return 'local';
+        }
+        if (normalizedModel.startsWith('mistral/')) {
+            return 'mistral';
+        }
+        if (normalizedModel.startsWith('groq/')) {
+            return 'groq';
+        }
+        if (normalizedModel.startsWith('xai/') || normalizedModel.startsWith('grok/')) {
+            return 'xai';
+        }
+        if (normalizedModel.startsWith('deepseek/')) {
+            return 'deepseek';
+        }
+        if (normalizedModel.startsWith('opencode/')) {
+            return 'opencode';
+        }
         return 'openai';
     }
 
@@ -730,29 +858,14 @@ export class LLMService {
     }
 
     private async getApiKey(provider: string): Promise<string> {
-        // 1. Rotation service
+        // 1. Rotation service (DB accounts are loaded here)
         const rotatedKey = this.deps.keyRotationService.getCurrentKey(provider);
-        if (rotatedKey) {return rotatedKey;}
+        if (rotatedKey) { return rotatedKey; }
 
-        // 2. Local variables (initialized from configService or set manually)
-        let localKey = '';
-        const p = provider.toLowerCase();
-        if (p === 'openai') {localKey = this.openaiApiKey;}
-        else if (p === 'anthropic' || p === 'claude') {localKey = this.anthropicApiKey;}
-        else if (p === 'groq') {localKey = this.groqApiKey;}
-        else if (p === 'nvidia') {localKey = this.nvidiaApiKey;}
-        else if (p === 'kimi') {localKey = this.kimiApiKey;}
-        else if (p === 'opencode') {localKey = this.opencodeApiKey;}
+        // 2. Opencode fallback
+        if (provider.toLowerCase() === 'opencode') { return 'public'; }
 
-        if (localKey && localKey !== 'public') {return localKey;}
-
-        // 3. AuthService (DB accounts)
-        if (this.deps.authService) {
-            const authKey = await this.deps.authService.getActiveToken(provider);
-            if (authKey) {return authKey;}
-        }
-
-        return localKey; // fallback to 'public' or ''
+        return '';
     }
 
     private prepareMessagesForContextWindow(messages: Message[], model: string): Message[] {
@@ -787,20 +900,10 @@ export class LLMService {
             return `http://127.0.0.1:${port}/v1`;
         };
 
-        if (p.includes('nvidia')) {
-            return { model, tools, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: await this.altProviders.getNvidiaKey(), provider: 'nvidia', temperature: temp, workspaceRoot };
-        }
-
-        if (p.includes('antigravity')) {
+        if (p.includes('antigravity') || p.includes('gemini') || p.includes('google')) {
             const proxyUrl = buildProxyBaseUrl();
             const proxyKey = await this.deps.proxyService.getProxyKey();
-            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
-        }
-
-        if (p.includes('gemini') || p.includes('google')) {
-            const proxyUrl = buildProxyBaseUrl();
-            const proxyKey = await this.deps.proxyService.getProxyKey();
-            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'gemini', temperature: temp, workspaceRoot };
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: p.includes('antigravity') ? provider : 'gemini', temperature: temp, workspaceRoot };
         }
 
         if (p.includes('ollama')) {
@@ -832,19 +935,6 @@ export class LLMService {
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
         }
 
-        if (p.includes('kimi') || p.includes('moonshot')) {
-            const apiKey = this.deps.keyRotationService.getCurrentKey('kimi') ?? this.kimiApiKey;
-            return {
-                model,
-                tools,
-                baseUrl: 'https://api.moonshot.ai/v1',
-                apiKey,
-                provider: 'kimi',
-                temperature: temp,
-                workspaceRoot
-            };
-        }
-
         if (p.includes('copilot')) {
             const proxyUrl = buildProxyBaseUrl();
             const proxyKey = await this.deps.proxyService.getProxyKey();
@@ -854,10 +944,26 @@ export class LLMService {
         if (p.includes('cursor')) {
             const proxyUrl = buildProxyBaseUrl();
             const proxyKey = await this.deps.proxyService.getProxyKey();
-            // Compatibility-only integration point:
-            // Cursor auth and private APIs are intentionally not reverse-engineered in this project.
-            // We only route explicit "cursor" provider traffic through the local proxy path.
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'cursor', temperature: temp, workspaceRoot };
+        }
+
+        if (['mistral', 'groq', 'xai', 'deepseek', 'openrouter', 'opencode', 'claude', 'anthropic', 'nvidia', 'kimi', 'moonshot'].some(ext => p.includes(ext))) {
+            const proxyUrl = buildProxyBaseUrl();
+            const proxyKey = await this.deps.proxyService.getProxyKey();
+            const normalizedProvider = p.includes('anthropic') || p.includes('claude') ? 'claude' : 
+                                      p.includes('kimi') || p.includes('moonshot') ? 'kimi' : p;
+            
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: normalizedProvider, temperature: temp, workspaceRoot };
+        }
+
+        if (p.includes('local')) {
+            const account = await this.deps.authService.getActiveAccount(p);
+            let baseUrl = (account?.metadata as JsonObject | undefined)?.base_url as string || 'http://localhost:8080/v1';
+            if (baseUrl.endsWith('/chat/completions')) {
+                baseUrl = baseUrl.replace(/\/chat\/completions$/, '');
+            }
+            const apiKey = await this.getApiKey(p);
+            return { model, tools, baseUrl, apiKey: apiKey || 'local', provider: p, temperature: temp, workspaceRoot };
         }
 
         return { model, tools, provider, temperature: temp, workspaceRoot, baseUrl: undefined, apiKey: undefined };

@@ -58,6 +58,8 @@ const LOGO_MEMORY_MATCH_LIMIT = 3;
 const LOGO_MEMORY_MIN_QUERY_LENGTH = 24;
 
 export class LogoService {
+    static readonly serviceName = 'logoService';
+    static readonly dependencies = ['deps'] as const;
     private readonly llmService: LLMService;
     private readonly workspaceService: WorkspaceService;
     private readonly localImageService: LocalImageService;

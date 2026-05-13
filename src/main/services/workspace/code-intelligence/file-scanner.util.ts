@@ -23,8 +23,7 @@ import {
 } from '@main/services/workspace/workspace-ignore.util';
 import { FileSearchResult } from '@shared/types/common';
 
-const CODE_FILE_PATTERN = /\.(ts|tsx|js|jsx|py|go|rs|java|c|cpp|h|hpp|md|txt|json)$/;
-const TODO_FILE_PATTERN = /\.(ts|js|py|kt|java|go|rs|cpp|h|gradle)$/;
+const CODE_FILE_PATTERN = /\.(ts|tsx|js|jsx|py|go|rs|java|c|cpp|h|hpp|md|txt|json)$/; 
 const SYMBOL_SCAN_PATTERN = /\.(ts|tsx|js|jsx|py|kt|java|go|rs|cpp|h|cs)$/;
 const BINARY_FILE_PATTERN = /\.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|mp4|webm)$/i;
 
@@ -65,52 +64,7 @@ export async function scanDirRecursively(
         appLogger.error('FileScanner', `Failed to scan dir ${dir}`, error as Error);
     }
 }
-
-/** Scan directory for TODO/FIXME/HACK comments */
-export async function scanDirForTodos(
-    dir: string,
-    results: FileSearchResult[],
-    matcher?: WorkspaceIgnoreMatcher
-): Promise<void> {
-    try {
-        const activeMatcher = await resolveIgnoreMatcher(dir, matcher);
-        const entries = await fs.readdir(dir, { withFileTypes: true });
-        for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
-            if (activeMatcher.ignoresAbsolute(fullPath)) {
-                continue;
-            }
-
-            if (entry.isDirectory()) {
-                await scanDirForTodos(fullPath, results, activeMatcher);
-            } else if (entry.isFile() && TODO_FILE_PATTERN.test(entry.name)) {
-                await scanFileForTodos(fullPath, results);
-            }
-        }
-    } catch (error) {
-        appLogger.error('FileScanner', `Failed to scan todos in ${dir}`, error as Error);
-    }
-}
-
-/** Scan a single file for TODO-like comments */
-async function scanFileForTodos(filePath: string, results: FileSearchResult[]): Promise<void> {
-    const content = await fs.readFile(filePath, 'utf-8');
-    const lines = content.split('\n');
-    const todoRegex = /(:?\/\/|#)\s*(TODO|FIXME|BUG|HACK|NOTE|XXX)\b\s*:?(.*)/i;
-
-    lines.forEach((line, index) => {
-        const match = line.match(todoRegex);
-        if (match) {
-            results.push({
-                file: filePath,
-                line: index + 1,
-                text: match[3].trim() || line.trim(),
-                type: match[2].toUpperCase()
-            });
-        }
-    });
-}
-
+  
 /** Scan directory for symbol definitions matching a query */
 export async function scanDirForSymbols(
     dir: string,
@@ -147,20 +101,24 @@ async function scanFileForSymbols(
     const content = await fs.readFile(filePath, 'utf-8');
     const lines = content.split('\n');
     const symbolRegex = new RegExp(
-        `(function|class|const|let|var|interface|type|fun|object|interface|void|public|private|protected|internal)\\s+(${query}\\w*)`,
+        `(?:export\\s+)?(?:async\\s+)?(function|class|const|let|var|interface|type|fun|object|void|public|private|protected|internal|def|fn|func|method|val)\\s+(${query}\\w*)`,
         'i'
     );
 
     lines.forEach((line, index) => {
         const match = line.match(symbolRegex);
-        if (match?.[1] && match[2]) {
-            results.push({
-                file: filePath,
-                line: index + 1,
-                text: line.trim(),
-                type: match[1],
-                name: match[2]
-            });
+        if (match) {
+            const kind = match[1];
+            const name = match[2];
+            if (kind && name) {
+                results.push({
+                    file: filePath,
+                    line: index + 1,
+                    text: line.trim(),
+                    type: kind,
+                    name: name
+                });
+            }
         }
     });
 }
@@ -171,7 +129,9 @@ export async function scanDirForText(
     query: string,
     isRegex: boolean,
     results: FileSearchResult[],
-    matcher?: WorkspaceIgnoreMatcher
+    matcher?: WorkspaceIgnoreMatcher,
+    matchCase: boolean = false,
+    matchWholeWord: boolean = false
 ): Promise<void> {
     try {
         const activeMatcher = await resolveIgnoreMatcher(dir, matcher);
@@ -183,9 +143,9 @@ export async function scanDirForText(
             }
 
             if (entry.isDirectory()) {
-                await scanDirForText(fullPath, query, isRegex, results, activeMatcher);
+                await scanDirForText(fullPath, query, isRegex, results, activeMatcher, matchCase, matchWholeWord);
             } else if (entry.isFile() && !BINARY_FILE_PATTERN.test(entry.name)) {
-                await scanFileForText(fullPath, query, isRegex, results);
+                await scanFileForText(fullPath, query, isRegex, results, matchCase, matchWholeWord);
             }
         }
     } catch (error) {
@@ -198,7 +158,9 @@ async function scanFileForText(
     filePath: string,
     query: string,
     isRegex: boolean,
-    results: FileSearchResult[]
+    results: FileSearchResult[],
+    matchCase: boolean = false,
+    matchWholeWord: boolean = false
 ): Promise<void> {
     const content = await fs.readFile(filePath, 'utf-8');
     const lines = content.split('\n');
@@ -209,10 +171,18 @@ async function scanFileForText(
 
         if (isRegex) {
             try {
-                if (new RegExp(query, 'i').test(line)) { matched = true; }
+                const flags = matchCase ? '' : 'i';
+                if (new RegExp(query, flags).test(line)) { matched = true; }
             } catch { /* ignore invalid regex */ }
         } else {
-            if (line.toLowerCase().includes(query.toLowerCase())) { matched = true; }
+            const haystack = matchCase ? line : line.toLowerCase();
+            const needle = matchCase ? query : query.toLowerCase();
+            if (matchWholeWord) {
+                const wordBoundaryRegex = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, matchCase ? '' : 'i');
+                if (wordBoundaryRegex.test(line)) { matched = true; }
+            } else {
+                if (haystack.includes(needle)) { matched = true; }
+            }
         }
 
         if (matched) {

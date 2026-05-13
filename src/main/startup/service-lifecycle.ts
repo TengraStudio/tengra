@@ -23,6 +23,7 @@ interface ServiceGroupRegistrations {
     registerLLMServices: () => void;
     registerWorkspaceServices?: () => void;
     registerAnalysisServices: () => void;
+    registerProxyServices: () => void;
     registerMcpServices: () => void;
     registerLazyServices: () => void;
     registerLazyProxies: () => void;
@@ -48,6 +49,7 @@ export function registerServiceGroups(registrations: ServiceGroupRegistrations):
     registrations.registerLLMServices();
     registrations.registerWorkspaceServices?.();
     registrations.registerAnalysisServices();
+    registrations.registerProxyServices();
     registrations.registerMcpServices();
     registrations.registerLazyServices();
     registrations.registerLazyProxies();
@@ -116,6 +118,27 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'modelRegistryDeps',
     'modelRegistryService',
     'modelSelectionService',
+    'workspaceService',
+    'toolsService',
+    'databaseService',
+    'databaseClientService',
+    'authService',
+    'securityService',
+    'networkService',
+    'httpService',
+    'configService',
+    'windowService',
+    'systemService',
+    'usageService',
+    'dialogService',
+    'processService',
+    'processManagerService',
+    'webService',
+    'fileManagementService',
+    'featureFlagService',
+    'runtimeManifestService',
+    'runtimeHealthService',
+    'runtimeBootstrapService',
 
     'agentService',
     'councilCapabilityService',

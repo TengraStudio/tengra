@@ -220,7 +220,7 @@ export function useTerminalRecording({
     /**
      * Get text for selected recording
      */
-    const selectedRecordingText = selectedRecording
+    const selectedRecordingText = (selectedRecording && selectedRecording.events)
         ? selectedRecording.events
               .filter(event => event.type === 'data')
               .map(event => event.data)
@@ -237,7 +237,10 @@ export function useTerminalRecording({
             stopReplay();
             setReplayText('');
 
-            const playbackEvents = recording.events.filter(event => event.type === 'data');
+            const playbackEvents = (recording && recording.events)
+                ? recording.events.filter(event => event.type === 'data')
+                : [];
+            
             if (playbackEvents.length === 0) {
                 setIsReplayRunning(false);
                 return;

@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 
-import { MountForm } from '@/types';
+import { MountForm } from '../../../../shared/types/workspace';
 
 const nonEmptyStringSchema = z.string().trim().min(1);
 const absolutePathSchema = z.string().regex(/^(?:[a-zA-Z]:[\\/]|\/|\\\\)/);

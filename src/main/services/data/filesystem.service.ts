@@ -71,6 +71,8 @@ type PdfParseResult = { text?: string };
 type PdfParseFunction = (dataBuffer: Buffer) => Promise<PdfParseResult>;
 
 export class FileSystemService {
+    static readonly serviceName = 'fileSystemService';
+    static readonly dependencies = ['allowedRoots', 'fileChangeTracker', 'auditLogService'] as const;
     private static readonly MAX_SEARCH_DIRECTORIES = 100000;
     private allowedRoots: Set<string> = new Set();
     private readonly allowedDownloadHosts = new Set([

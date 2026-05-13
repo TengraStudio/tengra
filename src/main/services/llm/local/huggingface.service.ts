@@ -222,6 +222,8 @@ interface HFDownloadTask {
  * Provides model search, metadata retrieval, and file downloads.
  */
 export class HuggingFaceService extends BaseService {
+    static readonly serviceName = 'huggingFaceService';
+    static readonly dependencies = ['httpService', 'mainWindowProvider'] as const;
     private searchCache: Map<string, { data: { models: HFModel[]; total: number }; timestamp: number }> = new Map();
     private readonly CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
     private readonly MAX_CACHE_ENTRIES = 200;

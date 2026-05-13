@@ -79,6 +79,8 @@ const collaborationRequestSchema = z.object({
  * Service for coordinating multiple LLMs to work together
  */
 export class ModelCollaborationService extends BaseService {
+    static readonly serviceName = 'modelCollaborationService';
+    static readonly dependencies = ['llmService', 'advancedMemoryService'] as const;
     private readonly memoryContext: MemoryContextService;
 
     constructor(

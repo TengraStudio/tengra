@@ -261,7 +261,7 @@ export function GalleryView({ language }: GalleryViewProps) {
     return (
         <div className="flex flex-col h-full bg-background select-none">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-b border-border/50 bg-card/30 backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-b border-border/50 bg-card/70 backdrop-blur-md">
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-bold ">{t('frontend.gallery.title')}</h2>
                     <Badge variant="secondary" className="font-mono typo-overline h-5">
@@ -310,7 +310,7 @@ export function GalleryView({ language }: GalleryViewProps) {
             {/* Grid Area */}
             <div
                 ref={scrollContainerRef}
-                className="flex-1 overflow-y-auto p-4 custom-scrollbar lg:p-6"
+                className="flex-1 overflow-y-auto p-4 custom-scrollbar lg:p-6 bg-card/50"
             >
                 {filteredImages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-20 grayscale">

@@ -7,14 +7,30 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
+pub mod antigravity;
 pub mod compact;
+pub mod compat;
+pub mod cursor;
+pub mod dispatch;
 pub mod headers;
+pub mod rate_limit;
 pub mod request;
+pub mod request_claude;
+pub mod request_codex;
+pub mod request_gemini;
+pub mod request_openai;
+pub mod request_support;
 pub mod response;
 pub mod stream;
+pub mod stream_claude;
+pub mod stream_copilot;
+pub mod stream_cursor;
+pub mod stream_gemini;
+pub mod stream_support;
+pub mod support;
 
-use crate::proxy::antigravity::fallback_base_urls;
-use crate::proxy::model_catalog::resolve_provider;
+use crate::proxy::handlers::chat::support::*;
+use crate::proxy::model_catalog::{providers_for_model, resolve_provider};
 use crate::proxy::server::AppState;
 use crate::proxy::types::ChatCompletionRequest;
 use axum::{
@@ -23,64 +39,107 @@ use axum::{
     response::{sse::Sse, IntoResponse, Response},
     Json,
 };
-use reqwest::Client;
-use serde_json::{json, Map, Value};
-use std::sync::{Arc, OnceLock};
-use tokio::sync::Mutex;
-use tokio::time::{sleep, Duration};
-
-static UPSTREAM_HTTP_CLIENT: OnceLock<Client> = OnceLock::new();
-static COPILOT_RATE_LIMITER: OnceLock<Mutex<CopilotRateLimitState>> = OnceLock::new();
-static ANTIGRAVITY_RATE_LIMITER: OnceLock<Mutex<AntigravityRateLimitState>> = OnceLock::new();
-
-const COPILOT_MIN_API_INTERVAL_MS: i64 = 1000;
-const COPILOT_MAX_QUEUED_REQUESTS: usize = 30;
-
-const ANTIGRAVITY_MIN_API_INTERVAL_MS: i64 = 2000;
-const ANTIGRAVITY_MAX_QUEUED_REQUESTS: usize = 12;
-
-#[derive(Default)]
-struct CopilotRateLimitState {
-    last_api_call_at_ms: i64,
-    pending_requests: usize,
-}
-
-#[derive(Default)]
-struct AntigravityRateLimitState {
-    last_api_call_at_ms: i64,
-    pending_requests: usize,
-}
+use serde_json::{json, Value};
+use std::sync::Arc;
 
 pub async fn handle_chat_completions(
     state: State<Arc<AppState>>,
-    _headers: HeaderMap,
+    headers: HeaderMap,
     Json(payload): Json<ChatCompletionRequest>,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
-    execute_chat_completion_payload(state, payload).await
+    execute_chat_completion_payload(state, headers, payload).await
 }
 
 pub async fn execute_chat_completion_payload(
     state: State<Arc<AppState>>,
+    headers: HeaderMap,
     payload: ChatCompletionRequest,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
-    // 1. Resolve Provider
-    let provider = payload
+    // 1. Resolve Provider candidates (to handle duplicate model IDs across providers)
+    let requested_provider = payload.provider.clone();
+    let resolved_provider = payload
         .provider
         .as_deref()
         .or_else(|| resolve_provider(&payload.model))
         .unwrap_or("codex")
         .to_string();
-    let payload = compact::compact_chat_request(provider.as_str(), payload);
+    let mut provider_candidates = vec![resolved_provider.clone()];
+    if requested_provider.is_none() {
+        for candidate in providers_for_model(&payload.model) {
+            if !provider_candidates.iter().any(|p| p == candidate) {
+                provider_candidates.push(candidate.to_string());
+            }
+        }
+        let lower_model = payload.model.to_lowercase();
+        if lower_model.starts_with("gpt-")
+            || lower_model.starts_with("o1")
+            || lower_model.starts_with("o3")
+            || lower_model.starts_with("o4")
+        {
+            for candidate in ["copilot", "codex", "openai", "cursor"] {
+                if !provider_candidates.iter().any(|p| p == candidate) {
+                    provider_candidates.push(candidate.to_string());
+                }
+            }
+        }
+        if lower_model.starts_with("claude-") {
+            for candidate in ["cursor", "copilot", "claude"] {
+                if !provider_candidates.iter().any(|p| p == candidate) {
+                    provider_candidates.push(candidate.to_string());
+                }
+            }
+        }
+    }
 
-    // 2. Load and decrypt key
-    let accounts = crate::db::get_provider_accounts(&provider)
-        .await
-        .map_err(|e| {
-            (
+    let mut cursor_token = None;
+
+    if let Some(test_token) = headers.get("x-test-cursor-token") {
+        if let Ok(token) = test_token.to_str() {
+            cursor_token = Some(token.to_string());
+        }
+    }
+
+    let mut provider = resolved_provider.clone();
+    let mut accounts = Vec::<serde_json::Value>::new();
+    let mut accounts_error: Option<String> = None;
+    for candidate in provider_candidates.iter() {
+        match crate::db::get_provider_accounts(candidate).await {
+            Ok(accs) if !accs.is_empty() => {
+                provider = candidate.clone();
+                accounts = accs;
+                break;
+            }
+            Ok(_) => {}
+            Err(e) => {
+                accounts_error = Some(e.to_string());
+            }
+        }
+    }
+    if accounts.is_empty() && provider == "cursor" && cursor_token.is_some() {
+        accounts = vec![json!({
+            "id": "test_account",
+            "provider": "cursor",
+            "is_active": true,
+            "access_token": "",
+            "metadata": "{}"
+        })];
+    }
+    if accounts.is_empty() {
+        if let Some(error) = accounts_error {
+            return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": e.to_string()})),
-            )
-        })?;
+                Json(json!({"error": error})),
+            ));
+        }
+        return Err(openai_error_response(
+            StatusCode::UNAUTHORIZED,
+            format!("No key for {}", requested_provider.unwrap_or(resolved_provider)),
+            "authentication_error",
+            Some("missing_account"),
+        ));
+    }
+
+    let payload = compact::compact_chat_request(provider.as_str(), payload.clone());
 
     let mut active_keys: Vec<&serde_json::Value> = accounts
         .iter()
@@ -91,9 +150,11 @@ pub async fn execute_chat_completion_payload(
     }
 
     if active_keys.is_empty() {
-        return Err((
+        return Err(openai_error_response(
             StatusCode::UNAUTHORIZED,
-            Json(json!({"error": format!("No key for {}", provider)})),
+            format!("No key for {}", provider),
+            "authentication_error",
+            Some("missing_account"),
         ));
     }
 
@@ -113,131 +174,49 @@ pub async fn execute_chat_completion_payload(
         })
         .or_else(|| active_keys.first().copied());
     let Some(active_key_row) = active_key_row else {
-        return Err((
+        return Err(openai_error_response(
             StatusCode::UNAUTHORIZED,
-            Json(json!({"error": format!("No active account for {}", provider)})),
+            format!("No active account for {}", provider),
+            "authentication_error",
+            Some("missing_active_account"),
         ));
     };
 
     // 3. Quota check
     if is_quota_exhausted(active_key_row) {
-        return Err((
+        return Err(openai_error_response(
             StatusCode::TOO_MANY_REQUESTS,
-            Json(json!({"error": "Quota exhausted"})),
+            "Quota exhausted".to_string(),
+            "insufficient_quota",
+            Some("quota_exhausted"),
         ));
     }
 
     let raw_token = active_key_row["access_token"].as_str().unwrap_or("");
-    let auth_token = decrypt_if_needed(raw_token)?;
-
-    if provider == "copilot" {
-        return execute_copilot_rate_limited(
-            state,
-            payload,
-            &provider,
-            &auth_token,
-            active_key_row,
-        )
-        .await;
-    }
-
-    if provider == "antigravity" {
-        return execute_antigravity_rate_limited(
-            state,
-            payload,
-            &provider,
-            &auth_token,
-            active_key_row,
-        )
-        .await;
-    }
-
-    execute_upstream_request(state, payload, &provider, &auth_token, active_key_row).await
-}
-
-async fn execute_antigravity_rate_limited(
-    state: State<Arc<AppState>>,
-    payload: ChatCompletionRequest,
-    provider: &str,
-    auth_token: &str,
-    active_key_row: &serde_json::Value,
-) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
-    let wait_ms = {
-        let limiter = antigravity_rate_limiter();
-        let mut state = limiter.lock().await;
-
-        if state.pending_requests >= ANTIGRAVITY_MAX_QUEUED_REQUESTS {
-            return Err((
-                StatusCode::TOO_MANY_REQUESTS,
-                Json(json!({
-                    "error": "Antigravity request queue full"
-                })),
-            ));
+    let auth_token = match decrypt_if_needed(raw_token) {
+        Ok(token) => token,
+        Err(_) => {
+            return Err(openai_error_response(
+                StatusCode::UNAUTHORIZED,
+                format!("Failed to decrypt {} credentials", provider),
+                "authentication_error",
+                Some("token_decrypt_failed"),
+            ))
         }
-
-        state.pending_requests += 1;
-        let now = chrono::Utc::now().timestamp_millis();
-        let wait_ms = (state.last_api_call_at_ms + ANTIGRAVITY_MIN_API_INTERVAL_MS - now).max(0);
-        state.last_api_call_at_ms = now + wait_ms;
-        wait_ms
     };
 
-    if wait_ms > 0 {
-        sleep(Duration::from_millis(wait_ms as u64)).await;
-    }
+    eprintln!("[PROXY] Handing request for provider: {}", provider);
 
-    let result =
-        execute_upstream_request(state, payload, provider, auth_token, active_key_row).await;
-
-    {
-        let limiter = antigravity_rate_limiter();
-        let mut state = limiter.lock().await;
-        state.pending_requests = state.pending_requests.saturating_sub(1);
-    }
-
-    result
-}
-
-async fn execute_copilot_rate_limited(
-    state: State<Arc<AppState>>,
-    payload: ChatCompletionRequest,
-    provider: &str,
-    auth_token: &str,
-    active_key_row: &serde_json::Value,
-) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
-    let wait_ms = {
-        let limiter = copilot_rate_limiter();
-        let mut state = limiter.lock().await;
-        if state.pending_requests >= COPILOT_MAX_QUEUED_REQUESTS {
-            return Err((
-                StatusCode::TOO_MANY_REQUESTS,
-                Json(json!({
-                    "error": "Copilot request queue full"
-                })),
-            ));
-        }
-
-        state.pending_requests += 1;
-        let now = chrono::Utc::now().timestamp_millis();
-        let wait_ms = (state.last_api_call_at_ms + COPILOT_MIN_API_INTERVAL_MS - now).max(0);
-        state.last_api_call_at_ms = now + wait_ms;
-        wait_ms
-    };
-
-    if wait_ms > 0 {
-        sleep(Duration::from_millis(wait_ms as u64)).await;
-    }
-
-    let result =
-        execute_upstream_request(state, payload, provider, auth_token, active_key_row).await;
-
-    {
-        let limiter = copilot_rate_limiter();
-        let mut state = limiter.lock().await;
-        state.pending_requests = state.pending_requests.saturating_sub(1);
-    }
-
-    result
+    dispatch::dispatch_provider_request(
+        state,
+        headers,
+        &provider,
+        payload,
+        &auth_token,
+        active_key_row,
+        cursor_token.as_deref(),
+    )
+    .await
 }
 
 async fn execute_upstream_request(
@@ -248,13 +227,43 @@ async fn execute_upstream_request(
     active_key_row: &serde_json::Value,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     let provider_str = provider.to_string();
-    let prepared_payload = prepare_payload(provider, payload, auth_token, active_key_row).await?;
+    let prepared_payload =
+        prepare_payload(provider, payload.clone(), auth_token, active_key_row).await?;
     let request_body = request::translate_request(provider, &prepared_payload);
 
     let res = if provider == "antigravity" {
-        execute_antigravity_request(
+        let state_clone = state.clone();
+        let provider_clone = provider.to_string();
+        let auth_token_clone = auth_token.to_string();
+        let active_key_row_clone = active_key_row.clone();
+        let prepared_payload_clone = prepared_payload.clone();
+        let request_body_clone = request_body.clone();
+
+        antigravity::execute_antigravity_request(active_key_row, move |base_url| {
+            let state = state_clone.clone();
+            let provider = provider_clone.clone();
+            let auth_token = auth_token_clone.clone();
+            let active_key_row = active_key_row_clone.clone();
+            let prepared_payload = prepared_payload_clone.clone();
+            let request_body = request_body_clone.clone();
+            let base_url = base_url.map(|s| s.to_string());
+            async move {
+                send_upstream_request(
+                    state,
+                    &provider,
+                    &auth_token,
+                    &active_key_row,
+                    &prepared_payload,
+                    &request_body,
+                    base_url.as_deref(),
+                )
+                .await
+            }
+        })
+        .await?
+    } else if provider == "cursor" {
+        cursor::execute_cursor_request(
             state.clone(),
-            provider,
             auth_token,
             active_key_row,
             &prepared_payload,
@@ -274,17 +283,106 @@ async fn execute_upstream_request(
         .await?
     };
 
+    let mut res = res;
+    if res.status() == StatusCode::UNAUTHORIZED
+        && matches!(provider, "copilot" | "cursor")
+    {
+        if let Ok(Some(refreshed)) = crate::token::refresh_account_token(active_key_row).await {
+            let refreshed_token = refreshed
+                .session_token
+                .or(refreshed.access_token)
+                .unwrap_or_else(|| auth_token.to_string());
+            res = send_upstream_request(
+                state.clone(),
+                provider,
+                &refreshed_token,
+                active_key_row,
+                &prepared_payload,
+                &request_body,
+                None,
+            )
+            .await?;
+        }
+    }
+
     // 5. Transform Response
-    if !res.status().is_success() {
-        let status = res.status();
+    let status = res.status();
+    let content_type = res
+        .headers()
+        .get("content-type")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("unknown");
+
+    eprintln!(
+        "[PROXY] Upstream Response: {} (Content-Type: {})",
+        status, content_type
+    );
+
+    if !status.is_success() {
+        let _provider = payload.provider.clone().unwrap_or_default();
         let body = res.text().await.unwrap_or_default();
-        return Err((status, Json(json!({"error": body}))));
+
+        // Try to parse as JSON to see if we can extract a better error message
+        if let Ok(json_err) = serde_json::from_str::<Value>(&body) {
+            if let Some(err_obj) = json_err.get("error") {
+                if err_obj.is_object() {
+                    let mut normalized = err_obj.clone();
+                    if let Some(obj) = normalized.as_object_mut() {
+                        obj.insert(
+                            "type".to_string(),
+                            Value::String(openai_error_type_from_status(status).to_string()),
+                        );
+                        if status == StatusCode::PAYMENT_REQUIRED {
+                            obj.insert(
+                                "code".to_string(),
+                                Value::String("insufficient_quota".to_string()),
+                            );
+                        }
+                    }
+                    return Err((status, Json(json!({ "error": normalized }))));
+                }
+                return Err(openai_error_response(
+                    status,
+                    err_obj.to_string(),
+                    openai_error_type_from_status(status),
+                    None,
+                ));
+            }
+            return Err(openai_error_response(
+                status,
+                body,
+                openai_error_type_from_status(status),
+                None,
+            ));
+        }
+
+        return Err(openai_error_response(
+            status,
+            body,
+            openai_error_type_from_status(status),
+            None,
+        ));
     }
 
     if prepared_payload.stream {
         let session_key = generate_session_key(active_key_row, &prepared_payload);
-        let sse_stream =
-            stream::translate_stream(provider_str, res.bytes_stream(), state.clone(), session_key);
+        let sse_stream = if provider_str == "cursor" {
+            let content_type = res
+                .headers()
+                .get("content-type")
+                .and_then(|h| h.to_str().ok())
+                .unwrap_or("unknown");
+            let is_sse = content_type.contains("text/event-stream");
+
+            stream::translate_cursor_stream(res.bytes_stream(), state.clone(), session_key, is_sse)
+        } else {
+            stream::translate_stream(
+                provider_str.to_string(),
+                res.bytes_stream(),
+                state.clone(),
+                session_key,
+            )
+        };
         Ok(Sse::new(sse_stream).into_response())
     } else {
         let status = res.status();
@@ -300,125 +398,31 @@ async fn execute_upstream_request(
     }
 }
 
-async fn execute_antigravity_request(
-    state: State<Arc<AppState>>,
-    provider: &str,
-    auth_token: &str,
-    active_key_row: &Value,
-    payload: &ChatCompletionRequest,
-    request_body: &Value,
-) -> Result<reqwest::Response, (StatusCode, Json<serde_json::Value>)> {
-    let base_url = parse_metadata_map(active_key_row.get("metadata").unwrap_or(&Value::Null))
-        .and_then(|metadata| {
-            metadata
-                .get("base_url")
-                .and_then(Value::as_str)
-                .map(str::to_string)
-        });
-    let mut last_error = None;
-
-    for candidate in fallback_base_urls(base_url.as_deref()) {
-        let res = send_upstream_request(
-            state.clone(),
-            provider,
-            auth_token,
-            active_key_row,
-            payload,
-            request_body,
-            Some(candidate.as_str()),
-        )
-        .await;
-
-        match res {
-            Ok(response) => {
-                if response.status() == StatusCode::TOO_MANY_REQUESTS {
-                    // Upstream rate limit. Wait 2.2s and retry once.
-                    sleep(Duration::from_millis(2200)).await;
-                    let retry_res = send_upstream_request(
-                        state.clone(),
-                        provider,
-                        auth_token,
-                        active_key_row,
-                        payload,
-                        request_body,
-                        Some(candidate.as_str()),
-                    )
-                    .await;
-                    if let Ok(retry_response) = retry_res {
-                        if retry_response.status().is_success() {
-                            return Ok(retry_response);
-                        }
-                        last_error = Some((
-                            retry_response.status(),
-                            Json(json!({"error": retry_response.text().await.unwrap_or_default()})),
-                        ));
-                    }
-                } else if response.status().is_success() {
-                    return Ok(response);
-                } else if response.status() == StatusCode::UNAUTHORIZED {
-                    if let Some(retry_response) = retry_antigravity_after_refresh(
-                        state.clone(),
-                        active_key_row,
-                        payload,
-                        request_body,
-                        &candidate,
-                    )
-                    .await?
-                    {
-                        return Ok(retry_response);
-                    }
-                    last_error = Some((
-                        response.status(),
-                        Json(json!({"error": response.text().await.unwrap_or_default()})),
-                    ));
-                } else {
-                    last_error = Some((
-                        response.status(),
-                        Json(json!({"error": response.text().await.unwrap_or_default()})),
-                    ));
-                }
-            }
-            Err(error) => {
-                last_error = Some(error);
-            }
-        }
+fn openai_error_type_from_status(status: StatusCode) -> &'static str {
+    match status {
+        StatusCode::UNAUTHORIZED => "authentication_error",
+        StatusCode::PAYMENT_REQUIRED | StatusCode::TOO_MANY_REQUESTS => "insufficient_quota",
+        StatusCode::NOT_FOUND => "invalid_request_error",
+        _ => "upstream_error",
     }
-
-    Err(last_error.unwrap_or_else(|| {
-        (
-            StatusCode::BAD_GATEWAY,
-            Json(json!({"error": "No Antigravity upstream endpoint succeeded"})),
-        )
-    }))
 }
 
-async fn retry_antigravity_after_refresh(
-    state: State<Arc<AppState>>,
-    active_key_row: &Value,
-    payload: &ChatCompletionRequest,
-    request_body: &Value,
-    candidate: &str,
-) -> Result<Option<reqwest::Response>, (StatusCode, Json<serde_json::Value>)> {
-    let refreshed = crate::token::refresh_account_token(active_key_row)
-        .await
-        .map_err(|error| (StatusCode::BAD_GATEWAY, Json(json!({"error": error}))))?;
-    let Some(token) = refreshed.and_then(|value| value.access_token) else {
-        return Ok(None);
-    };
-    let response = send_upstream_request(
-        state.clone(),
-        "antigravity",
-        token.as_str(),
-        active_key_row,
-        payload,
-        request_body,
-        Some(candidate),
+fn openai_error_response(
+    status: StatusCode,
+    message: String,
+    error_type: &str,
+    code: Option<&str>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        status,
+        Json(json!({
+            "error": {
+                "message": message,
+                "type": error_type,
+                "code": code
+            }
+        })),
     )
-    .await?;
-    if response.status().is_success() {
-        return Ok(Some(response));
-    }
-    Ok(None)
 }
 
 async fn send_upstream_request(
@@ -445,8 +449,9 @@ async fn send_upstream_request(
         (sid, sig)
     };
 
-    let builder = headers::apply_headers(
-        upstream_http_client().post(upstream_url),
+    let mut request_builder = upstream_http_client().post(upstream_url.clone());
+    request_builder = headers::apply_headers(
+        request_builder,
         provider,
         auth_token,
         payload.stream,
@@ -454,7 +459,19 @@ async fn send_upstream_request(
         Some(&session_id),
         prior_signature.as_deref(),
     );
-    builder.json(request_body).send().await.map_err(|error| {
+
+    if provider == "cursor" {
+        let body_bytes = serde_json::to_vec(request_body).unwrap();
+        let mut full_body = Vec::with_capacity(body_bytes.len() + 5);
+        full_body.push(0u8); // Flags: 0 for message
+        full_body.extend_from_slice(&(body_bytes.len() as u32).to_be_bytes());
+        full_body.extend_from_slice(&body_bytes);
+
+        request_builder.body(full_body).send().await
+    } else {
+        request_builder.json(request_body).send().await
+    }
+    .map_err(|error| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({"error": error.to_string()})),
@@ -491,7 +508,8 @@ async fn prepare_payload(
         return Ok(payload);
     }
 
-    let project_id = resolve_antigravity_project_id(auth_token, active_key_row).await?;
+    let project_id =
+        antigravity::resolve_antigravity_project_id(auth_token, active_key_row).await?;
     let mut metadata = payload
         .metadata
         .take()
@@ -500,312 +518,4 @@ async fn prepare_payload(
     metadata.insert("project_id".to_string(), Value::String(project_id));
     payload.metadata = Some(Value::Object(metadata));
     Ok(payload)
-}
-
-async fn resolve_antigravity_project_id(
-    auth_token: &str,
-    active_key_row: &Value,
-) -> Result<String, (StatusCode, Json<serde_json::Value>)> {
-    if let Some(project_id) = antigravity_project_from_row(active_key_row) {
-        return Ok(project_id);
-    }
-
-    let client = crate::auth::antigravity::client::AntigravityClient::new(None)
-        .await
-        .map_err(|error| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": format!("Failed to initialize Antigravity OAuth client: {}", error)})),
-            )
-        })?;
-    let context = client
-        .discover_project_context(auth_token)
-        .await
-        .map_err(|error| {
-            (
-                StatusCode::BAD_GATEWAY,
-                Json(json!({"error": format!("Failed to resolve Antigravity project: {}", error)})),
-            )
-        })?;
-    let project_id = client
-        .ensure_onboarded(auth_token, &context)
-        .await
-        .map_err(|error| {
-            (
-                StatusCode::BAD_GATEWAY,
-                Json(json!({"error": format!("Failed to resolve Antigravity project: {}", error)})),
-            )
-        })?;
-
-    if let Some(account_id) = active_key_row.get("id").and_then(Value::as_str) {
-        let _ = crate::db::merge_metadata_patch(
-            account_id,
-            "antigravity",
-            json!({ "project_id": project_id, "tier_id": context.tier_id }),
-        )
-        .await;
-    }
-
-    Ok(project_id)
-}
-
-fn antigravity_project_from_row(active_key_row: &Value) -> Option<String> {
-    let metadata = active_key_row
-        .get("metadata")
-        .and_then(parse_metadata_map)
-        .unwrap_or_default();
-    metadata
-        .get("project_id")
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|value| !value.is_empty() && *value != "auto")
-        .map(str::to_string)
-}
-
-fn requested_account_id(payload: &ChatCompletionRequest) -> Option<String> {
-    payload
-        .metadata
-        .as_ref()
-        .and_then(|metadata| metadata.get("account_id").and_then(Value::as_str))
-        .or_else(|| {
-            payload
-                .metadata
-                .as_ref()
-                .and_then(|metadata| metadata.get("accountId").and_then(Value::as_str))
-        })
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_string)
-}
-
-fn parse_metadata_map(value: &Value) -> Option<Map<String, Value>> {
-    match value {
-        Value::Object(map) => Some(map.clone()),
-        Value::String(text) => serde_json::from_str::<Value>(text)
-            .ok()
-            .and_then(|parsed| parsed.as_object().cloned()),
-        _ => None,
-    }
-}
-
-fn copilot_rate_limiter() -> &'static Mutex<CopilotRateLimitState> {
-    COPILOT_RATE_LIMITER.get_or_init(|| Mutex::new(CopilotRateLimitState::default()))
-}
-
-fn antigravity_rate_limiter() -> &'static Mutex<AntigravityRateLimitState> {
-    ANTIGRAVITY_RATE_LIMITER.get_or_init(|| Mutex::new(AntigravityRateLimitState::default()))
-}
-
-fn decrypt_if_needed(token: &str) -> Result<String, (StatusCode, Json<serde_json::Value>)> {
-    if !token.starts_with("Tengra:v1:") {
-        return Ok(token.to_string());
-    }
-    let master_key = crate::security::load_master_key().map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": e.to_string()})),
-        )
-    })?;
-    crate::security::decrypt_token(token, &master_key).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": e.to_string()})),
-        )
-    })
-}
-
-fn is_quota_exhausted(row: &serde_json::Value) -> bool {
-    row.get("metadata")
-        .and_then(|m| m.as_str())
-        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
-        .and_then(|v| {
-            v.get("quota")
-                .and_then(|q| q.get("remaining"))
-                .and_then(|remaining| remaining.as_f64())
-                .map(|remaining| remaining <= 0.0)
-        })
-        .unwrap_or(false)
-}
-
-fn get_upstream_url(
-    provider: &str,
-    payload: &ChatCompletionRequest,
-    active_key_row: &Value,
-    base_url_override: Option<&str>,
-) -> String {
-    match provider {
-        // Anthropic Claude
-        "claude" => "https://api.anthropic.com/v1/messages".to_string(),
-
-        // Google Antigravity (OAuth-based Gemini)
-        "antigravity" => {
-            let base = base_url_override
-                .map(str::to_string)
-                .unwrap_or_else(|| antigravity_base_url(active_key_row));
-            if payload.stream {
-                format!("{}/v1internal:streamGenerateContent?alt=sse", base)
-            } else {
-                format!("{}/v1internal:generateContent", base)
-            }
-        }
-
-        // OpenAI Codex (OAuth-based)
-        "codex" => "https://chatgpt.com/backend-api/codex/responses".to_string(),
-
-        // GitHub Copilot
-        "copilot" => {
-            let _model_owned = extract_model_from_row(active_key_row).unwrap_or_default();
-            let _model = _model_owned.as_str();
-            let plan = get_copilot_plan(active_key_row);
-            let subdomain = match plan.as_str() {
-                "business" => "api.business.githubcopilot.com",
-                "enterprise" => "api.enterprise.githubcopilot.com",
-                _ => "api.githubcopilot.com",
-            };
-
-            format!("https://{}/chat/completions", subdomain)
-        }
-
-        // NVIDIA NIM
-        "nvidia" => "https://integrate.api.nvidia.com/v1/chat/completions".to_string(),
-
-        // OpenAI API (sk-... keys)
-        "openai" => {
-            if is_openai_image_model(&payload.model) {
-                "https://api.openai.com/v1/images/generations".to_string()
-            } else {
-                "https://api.openai.com/v1/chat/completions".to_string()
-            }
-        }
-
-        // Google Gemini API (API key)
-        "gemini" => {
-            let model_owned = extract_model_from_row(active_key_row)
-                .unwrap_or_else(|| "gemini-2.0-flash".to_string());
-            let model = model_owned.as_str();
-            if payload.stream {
-                format!(
-                    "https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?alt=sse",
-                    model
-                )
-            } else {
-                format!(
-                    "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
-                    model
-                )
-            }
-        }
-
-        // Mistral AI
-        "mistral" => "https://api.mistral.ai/v1/chat/completions".to_string(),
-
-        // Groq (fast inference)
-        "groq" => "https://api.groq.com/openai/v1/chat/completions".to_string(),
-
-        // Together AI
-        "together" => "https://api.together.xyz/v1/chat/completions".to_string(),
-
-        // Perplexity AI
-        "perplexity" => "https://api.perplexity.ai/chat/completions".to_string(),
-
-        // Cohere
-        "cohere" => "https://api.cohere.com/v2/chat".to_string(),
-
-        // xAI (Grok)
-        "xai" => "https://api.x.ai/v1/chat/completions".to_string(),
-
-        // DeepSeek
-        "deepseek" => "https://api.deepseek.com/v1/chat/completions".to_string(),
-
-        // OpenRouter (multi-model gateway)
-        "openrouter" => "https://openrouter.ai/api/v1/chat/completions".to_string(),
-
-        // Default: OpenAI-compatible
-        _ => "https://api.openai.com/v1/chat/completions".to_string(),
-    }
-}
-
-fn is_openai_image_model(model: &str) -> bool {
-    let trimmed = model.trim().to_ascii_lowercase();
-    let without_prefix = trimmed.strip_prefix("openai/").unwrap_or(trimmed.as_str());
-    without_prefix.starts_with("gpt-image")
-        || without_prefix == "chatgpt-image-latest"
-        || without_prefix.starts_with("dall-e")
-}
-
-fn extract_model_from_row(row: &Value) -> Option<String> {
-    row.get("model")
-        .and_then(Value::as_str)
-        .map(|s| s.to_string())
-        .or_else(|| {
-            row.get("metadata")
-                .and_then(parse_metadata_map)
-                .and_then(|m| {
-                    m.get("model")
-                        .and_then(Value::as_str)
-                        .map(|s| s.to_string())
-                })
-        })
-}
-
-fn get_copilot_plan(row: &Value) -> String {
-    row.get("metadata")
-        .and_then(parse_metadata_map)
-        .and_then(|m| {
-            m.get("copilot_plan")
-                .or_else(|| m.get("plan"))
-                .and_then(Value::as_str)
-                .map(str::to_string)
-        })
-        .unwrap_or_else(|| "individual".to_string())
-}
-
-fn antigravity_base_url(active_key_row: &Value) -> String {
-    let metadata = active_key_row
-        .get("metadata")
-        .and_then(parse_metadata_map)
-        .unwrap_or_default();
-    metadata
-        .get("base_url")
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(|value| value.trim_end_matches('/').to_string())
-        .unwrap_or_else(|| "https://daily-cloudcode-pa.googleapis.com".to_string())
-}
-
-fn upstream_http_client() -> &'static Client {
-    UPSTREAM_HTTP_CLIENT.get_or_init(|| {
-        Client::builder()
-            // Streaming completions can legitimately run for several minutes.
-            // Keep a long request timeout to avoid cutting active streams mid-response.
-            .timeout(std::time::Duration::from_secs(600))
-            .connect_timeout(std::time::Duration::from_secs(15))
-            .pool_max_idle_per_host(8)
-            .tcp_keepalive(std::time::Duration::from_secs(30))
-            .build()
-            .unwrap_or_else(|_| Client::new())
-    })
-}
-
-fn generate_session_key(
-    row: &serde_json::Value,
-    payload: &crate::proxy::types::ChatCompletionRequest,
-) -> String {
-    let account_id = row
-        .get("id")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("anon")
-        .to_string();
-    let conversation_id = payload
-        .metadata
-        .as_ref()
-        .and_then(|m| {
-            m.get("conversation_id")
-                .or_else(|| m.get("conversationId"))
-                .and_then(serde_json::Value::as_str)
-        })
-        .unwrap_or("default")
-        .to_string();
-    format!("{}:{}", account_id, conversation_id)
 }

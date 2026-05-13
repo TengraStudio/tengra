@@ -42,6 +42,8 @@ export interface CompactionResult {
 }
 
 export class ContextWindowService {
+    static readonly serviceName = 'contextWindowService';
+    static readonly dependencies = [] as const;
     private tokenEstimator: TokenEstimationService;
 
     constructor() {

@@ -62,20 +62,22 @@ describe('LLMService', () => {
         mockLlamaService.isServerRunning.mockResolvedValue(false);
         mockLlamaService.loadModel.mockResolvedValue({ success: true });
         mockLlamaService.getConfig.mockReturnValue({ host: '127.0.0.1', port: 8080 });
-        type LlmDeps = ConstructorParameters<typeof LLMService>[0];
-        service = new LLMService({
-            httpService: mockHttpService as never as LlmDeps['httpService'],
-            configService: mockConfigService as never as LlmDeps['configService'],
-            keyRotationService: mockKeyRotationService as never as LlmDeps['keyRotationService'],
-            settingsService: { getSettings: vi.fn().mockReturnValue({}) } as never as LlmDeps['settingsService'],
-            authService: { getActiveToken: vi.fn().mockResolvedValue(null) } as never as LlmDeps['authService'],
-            proxyService: { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as never as LlmDeps['proxyService'],
-            tokenService: mockTokenService as never as LlmDeps['tokenService'],
-            huggingFaceService: mockHuggingFaceService as never as LlmDeps['huggingFaceService'],
-            llamaService: mockLlamaService as never as LlmDeps['llamaService'],
-            fallbackService: { route: vi.fn(), getChain: vi.fn().mockReturnValue([]) } as never as LlmDeps['fallbackService'],
-            cacheService: mockCacheService as never as LlmDeps['cacheService']
-        });
+        service = new LLMService(
+            mockHttpService as never,
+            mockConfigService as never,
+            mockKeyRotationService as never,
+            { getSettings: vi.fn().mockReturnValue({}) } as never,
+            { getActiveToken: vi.fn().mockResolvedValue(null) } as never,
+            { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as never,
+            mockTokenService as never,
+            mockHuggingFaceService as never,
+            mockLlamaService as never,
+            { route: vi.fn(), getChain: vi.fn().mockReturnValue([]) } as never,
+            mockCacheService as never,
+            { selectChatModel: vi.fn(), selectEmbeddingModel: vi.fn() } as never,
+            { getLinkedAccounts: vi.fn().mockResolvedValue([]) } as never,
+            { on: vi.fn(), emit: vi.fn() } as never
+        );
         (service as never as { imagePersistence: TestValue }).imagePersistence = mockImagePersistence;
     });
 
@@ -175,11 +177,6 @@ describe('LLMService', () => {
         });
     });
 
-    describe('chatAnthropic', () => {
-        it('should throw AuthenticationError if API key is missing', async () => {
-            await expect(service.chatAnthropic([])).rejects.toThrow(AuthenticationError);
-        });
-    });
 
     describe('chat (routing)', () => {
         it('should return cached response without calling route handlers', async () => {

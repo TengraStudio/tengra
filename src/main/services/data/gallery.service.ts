@@ -41,6 +41,8 @@ interface GalleryBatchDownloadResult {
 }
 
 export class GalleryService {
+    static readonly serviceName = 'galleryService';
+    static readonly dependencies = ['databaseService', 'imagePersistence'] as const;
     private galleryRoot: string;
 
     constructor(

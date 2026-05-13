@@ -7,6 +7,8 @@ export interface WorkspaceRules {
 }
 
 export class RuleService {
+    static readonly serviceName = 'ruleService';
+    static readonly dependencies = ['databaseService'] as const;
     private cache: Map<string, WorkspaceRules> = new Map();
 
     constructor(private readonly databaseService: DatabaseService) { }

@@ -7,24 +7,15 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-mod analysis;
-mod auth;
-mod db;
-mod proxy;
-mod quota;
-mod security;
-mod static_config;
-mod terminal;
-mod token;
-mod tools;
-
-use auth::codex::client::CodexClient;
-use auth::codex::pkce::generate_pkce_codes;
-use auth::codex::server::start_callback_server;
-use proxy::server::start_proxy_server;
 use rand::{distributions::Alphanumeric, Rng};
+use serde_json::json;
 use std::env;
 use std::time::Duration;
+use tengra_proxy::auth::codex::client::CodexClient;
+use tengra_proxy::auth::codex::pkce::generate_pkce_codes;
+use tengra_proxy::auth::codex::server::start_callback_server;
+use tengra_proxy::proxy::server::start_proxy_server;
+use tengra_proxy::{auth, db, proxy, quota, security, token};
 use tokio::sync::mpsc;
 use tokio::time::timeout;
 
@@ -69,6 +60,13 @@ async fn main() -> anyhow::Result<()> {
                 .cloned()
                 .unwrap_or_else(|| auth::session::generate_account_id("claude"));
             run_claude_auth_flow(&auth_arg).await?
+        }
+        "--auth-copilot" => {
+            let auth_arg = args
+                .get(2)
+                .cloned()
+                .unwrap_or_else(|| auth::session::generate_account_id("copilot"));
+            run_copilot_auth_flow(&auth_arg).await?
         }
         "--proxy" => {
             let port_str = args.get(2).map(|s| s.as_str()).unwrap_or("8317");
@@ -418,9 +416,6 @@ const VALID_API_KEY_PROVIDERS: &[&str] = &[
     "gemini",     // Google Gemini API
     "mistral",    // Mistral AI
     "groq",       // Groq (fast inference)
-    "together",   // Together AI
-    "perplexity", // Perplexity AI
-    "cohere",     // Cohere
     "xai",        // xAI (Grok)
     "openrouter", // OpenRouter (multi-model gateway)
     "deepseek",   // DeepSeek
@@ -541,4 +536,96 @@ fn generate_oauth_state() -> String {
         .take(32)
         .map(char::from)
         .collect()
+}
+
+async fn run_copilot_auth_flow(account_id: &str) -> anyhow::Result<()> {
+    let client = auth::copilot::client::CopilotClient::new();
+    println!(
+        "Initiating GitHub Copilot auth flow for account: {}",
+        account_id
+    );
+
+    let device_code = client.initiate_device_flow().await?;
+
+    println!("\nACTION REQUIRED:");
+    println!("1. Open: {}", device_code.verification_uri);
+    println!("2. Enter Code: {}", device_code.user_code);
+    println!("\nWaiting for authentication...");
+
+    let mut attempts = 0;
+    let max_attempts = (device_code.expires_in / device_code.interval) as usize;
+
+    while attempts < max_attempts {
+        tokio::time::sleep(tokio::time::Duration::from_secs(
+            device_code.interval as u64,
+        ))
+        .await;
+
+        match client.poll_for_token(&device_code.device_code).await {
+            Ok(token) => {
+                if let Some(err) = token.error {
+                    if err == "authorization_pending" {
+                        attempts += 1;
+                        continue;
+                    }
+                    if err == "slow_down" {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                        attempts += 1;
+                        continue;
+                    }
+                    return Err(anyhow::anyhow!("GitHub Error: {}", err));
+                }
+
+                if let Some(access_token) = token.access_token {
+                    println!("Successfully authenticated with GitHub!");
+
+                    // Exchange for copilot token to verify it works
+                    match client.exchange_for_copilot_token(&access_token).await {
+                        Ok(_) => {
+                            let plan = client
+                                .fetch_copilot_plan(&access_token)
+                                .await
+                                .unwrap_or_else(|_| "individual".to_string());
+
+                            let master_key = security::load_master_key()?;
+                            let encrypted_token =
+                                security::encrypt_token(&access_token, &master_key)?;
+
+                            let metadata = json!({
+                                "provider": "copilot",
+                                "auth_type": "oauth",
+                                "plan": plan,
+                                "copilot_plan": plan,
+                                "scope": token.scope,
+                                "token_type": token.token_type,
+                            });
+
+                            db::upsert_linked_account(
+                                account_id,
+                                "copilot",
+                                &encrypted_token,
+                                None,
+                                None,
+                                Some(&metadata),
+                            )
+                            .await?;
+
+                            println!("Copilot account successfully linked!");
+                            return Ok(());
+                        }
+                        Err(e) => {
+                            println!("Authentication succeeded but Copilot access is missing or disabled: {}", e);
+                            return Err(anyhow::anyhow!("Copilot access check failed"));
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+        attempts += 1;
+    }
+
+    Err(anyhow::anyhow!("Authentication timed out"))
 }

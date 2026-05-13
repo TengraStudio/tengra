@@ -45,8 +45,8 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({
     return (
         <div className="space-y-3 mb-8">
             <div className="flex items-center justify-between px-1">
-                <span className="typo-overline font-bold text-muted-foreground/40 uppercase ">{t('frontend.git.commitSection.sourceControl')}</span>
-                <span className="typo-overline text-muted-foreground/20 font-bold uppercase ">{t('frontend.git.commitSection.readyToStage')}</span>
+                <span className="text-[10px] font-medium text-muted-foreground/50">{t('frontend.git.commitSection.sourceControl')}</span>
+                <span className="text-[10px] font-medium text-muted-foreground/30">{t('frontend.git.commitSection.readyToStage')}</span>
             </div>
 
             <div className="border border-border/40 rounded-xl overflow-hidden bg-muted/10 focus-within:border-primary/30 focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-sm">
@@ -76,20 +76,20 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({
                             ) : (
                                 <IconSparkles className="w-3.5 h-3.5 mr-2 group-hover:animate-pulse" />
                             )}
-                            <span className="typo-overline font-bold uppercase ">
+                            <span className="text-xs font-medium">
                                 {isGenerating ? t('frontend.git.commitSection.thinking') : t('frontend.git.commitSection.aiGenerate')}
                             </span>
                         </Button>
                     </Tooltip>
 
                     <div className="flex items-center gap-2">
-                        <span className="typo-overline text-muted-foreground/30 font-bold uppercase mr-2 hidden sm:inline">
+                        <span className="text-[10px] text-muted-foreground/40 font-medium mr-2 hidden sm:inline">
                             Ctrl + Enter
                         </span>
                         <Button
                             onClick={() => void handleCommit()}
                             disabled={isCommitting || !commitMessage.trim()}
-                            className="h-8 px-5 typo-overline font-bold uppercase bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-lg shadow-primary/10 transition-all active:scale-95"
+                            className="h-8 px-5 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-lg shadow-primary/10 transition-all active:scale-95"
                         >
                             {isCommitting ? (
                                 <IconLoader2 className="w-3.5 h-3.5 animate-spin mr-2" />

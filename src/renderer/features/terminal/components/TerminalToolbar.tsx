@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconAlertTriangle, IconCheck, IconChevronDown, IconMaximize, IconMinimize, IconPlus, IconTerminal } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCheck, IconChevronDown, IconGitCompare, IconMaximize, IconMinimize, IconPlus, IconTerminal } from '@tabler/icons-react';
 import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ import {
 } from '@/store/terminal-toolbar-health.store';
 import { TerminalTab } from '@/types';
 
-import { TERMINAL_WORKSPACE_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
+import { TERMINAL_DIFF_TAB_ID,TERMINAL_WORKSPACE_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
 import type { SplitAnalytics, SplitPreset } from '../utils/split-config';
 
 import { TerminalSplitControls } from './TerminalSplitControls';
@@ -115,6 +115,7 @@ interface TerminalToolbarProps {
     isMaximized: boolean;
     setIsMaximized: (maximized: boolean) => void;
     onToggle: () => void;
+    activeFileType?: string;
 }
 
 export function TerminalToolbar({
@@ -167,6 +168,7 @@ export function TerminalToolbar({
     isMaximized,
     setIsMaximized,
     onToggle,
+    activeFileType,
 }: TerminalToolbarProps) {
     void draggingTabId;
     void dragOverTabId;
@@ -185,8 +187,9 @@ export function TerminalToolbar({
     const workspaceIssuesTab = tabs.find(tab => tab.id === TERMINAL_WORKSPACE_ISSUES_TAB_ID) ?? null;
     const sessionTabs = tabs.filter(tab => tab.id !== TERMINAL_WORKSPACE_ISSUES_TAB_ID);
     const lastSessionTab = sessionTabs[sessionTabs.length - 1] ?? null;
+
     const isWorkspaceIssuesActive = activeTabId === workspaceIssuesTab?.id;
-    const isTerminalActive = Boolean(activeTabId && activeTabId !== workspaceIssuesTab?.id);
+    const isTerminalActive = Boolean(activeTabId && !isWorkspaceIssuesActive);
 
     const handleTerminalViewSelect = () => {
         if (lastSessionTab) {
@@ -200,40 +203,68 @@ export function TerminalToolbar({
         createTerminal(preferredShellId, resolvedDefaultBackendId);
     };
 
+    const diffTab = tabs.find(tab => tab.id === TERMINAL_DIFF_TAB_ID) ?? null;
+    const isDiffActive = activeTabId === diffTab?.id;
+
+    useEffect(() => {
+        if (activeFileType === 'diff' && diffTab && activeTabId !== TERMINAL_DIFF_TAB_ID) {
+            handleTabSelect(TERMINAL_DIFF_TAB_ID);
+        }
+    }, [activeFileType, diffTab, activeTabId, handleTabSelect]);
+
     return (
         <div className={cn(UI_PRIMITIVES.PANEL_SUB_HEADER, "pl-0 bg-background/95 border-b border-border/60")}>
-            <div className="flex-1 px-2 flex items-center gap-1.5">
+            <div className="flex-1 px-2 flex items-center gap-1">
                 {workspaceIssuesTab && (
                     <button
                         type="button"
-                        onClick={() => {
-                            handleTabSelect(workspaceIssuesTab.id);
-                        }}
-                        aria-label={workspaceIssuesTab.name}
-                        title={workspaceIssuesTab.name}
+                        onClick={() => handleTabSelect(workspaceIssuesTab.id)}
                         className={cn(
-                            'h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors',
+                            'h-7 px-2 inline-flex items-center gap-1.5 rounded-md transition-all duration-200',
                             isWorkspaceIssuesActive
-                                ? 'bg-accent/70 text-foreground'
+                                ? 'bg-success/20 text-success shadow-sm'
                                 : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
                         )}
+                        title={workspaceIssuesTab.name}
                     >
                         <IconAlertTriangle className="h-3.5 w-3.5" />
+                        <span className="text-[11px] font-medium whitespace-nowrap">Workspace issues</span>
                     </button>
                 )}
+
+
+                {diffTab && (
+                    <button
+                        type="button"
+                        onClick={() => handleTabSelect(diffTab.id)}
+                        className={cn(
+                            'h-7 px-2 inline-flex items-center gap-1.5 rounded-md transition-all duration-200',
+                            isDiffActive
+                                ? 'bg-primary/20 text-primary shadow-sm'
+                                : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
+                        )}
+                        title={diffTab.name}
+                    >
+                        <IconGitCompare className="h-3.5 w-3.5" />
+                        <span className="text-[11px] font-medium whitespace-nowrap">Diff</span>
+                    </button>
+                )}
+
+                <div className="w-px h-3 bg-border/40 mx-1" />
+
                 <button
                     type="button"
                     onClick={handleTerminalViewSelect}
-                    aria-label={t('frontend.terminal.title')}
-                    title={t('frontend.terminal.title')}
                     className={cn(
-                        'h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors',
+                        'h-7 px-2 inline-flex items-center gap-1.5 rounded-md transition-all duration-200',
                         isTerminalActive
-                            ? 'bg-accent/70 text-foreground'
+                            ? 'bg-accent/70 text-foreground shadow-sm'
                             : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
                     )}
+                    title={t('frontend.terminal.title')}
                 >
                     <IconTerminal className="h-3.5 w-3.5" />
+                    <span className="text-[11px] font-medium whitespace-nowrap">Terminal</span>
                 </button>
             </div>
             <div className="flex items-center gap-1 border-l border-border/50 pl-2 pr-1 shrink-0">

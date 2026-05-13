@@ -44,6 +44,8 @@ const MISS_CACHE_TTL_MS = 45 * 1000;
 const MAX_CACHE_SIZE = 300;
 
 export class MemoryContextService {
+    static readonly serviceName = 'memoryContextService';
+    static readonly dependencies = ['advancedMemoryService'] as const;
     private static cacheHits = 0;
     private static cacheMisses = 0;
     private static inflightReuseCount = 0;

@@ -8,13 +8,17 @@
  * (at your option) any later version.
  */
 
-import { IconChevronRight, IconMarkdown, IconPin, IconX } from '@tabler/icons-react';
+import { IconChevronRight, IconHistory,IconMarkdown, IconPin, IconX } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import type { GitFileHistoryItem } from '@/features/workspace/components/git/types';
+import { FileIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 import { useWorkspaceDiagnostics } from '@/store/diagnostics.store';
 import { EditorTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+
+import { navigateToWorkspace } from '../utils/workspace-navigation';
 
 import { EditorTabContextMenu } from './EditorTabContextMenu';
 
@@ -79,10 +83,10 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     onOpenFile,
     showMarkdownPreview = false,
     onToggleMarkdownPreview,
-    t,
-    workspaceId,
+    t, 
 }) => {
-    const workspaceDiagnostics = useWorkspaceDiagnostics(workspaceId);
+    // The LSP service keys diagnostics by workspace path, not database UUID.
+    const workspaceDiagnostics = useWorkspaceDiagnostics(workspacePath);
     const [contextMenu, setContextMenu] = useState<TabContextMenuState | null>(null);
     const [deletedTabIds, setDeletedTabIds] = useState<Set<string>>(new Set());
     const [breadcrumbDropdown, setBreadcrumbDropdown] = useState<BreadcrumbDropdownState | null>(null);
@@ -95,6 +99,34 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         () => orderedTabs.find(tab => tab.id === contextMenu?.tabId) ?? null,
         [contextMenu?.tabId, orderedTabs]
     );
+
+    const [fileHasHistory, setFileHasHistory] = useState(false);
+    const [gitHistoryState, setGitHistoryState] = useState<{
+        fileName: string;
+        commits: GitFileHistoryItem[];
+        loading: boolean;
+    } | null>(null);
+
+    useEffect(() => {
+        if (!activeTab || !workspacePath) {
+            setFileHasHistory(false);
+            setGitHistoryState(null);
+            return;
+        }
+        let isMounted = true;
+        window.electron.git.getFileHistory(workspacePath, activeTab.path, 1)
+            .then(result => {
+                if (isMounted) {
+                    setFileHasHistory(result.success && !!result.commits && result.commits.length > 0);
+                }
+            });
+        return () => { isMounted = false; };
+    }, [activeTab?.path, workspacePath]);
+
+    const handleOpenGitHistory = () => {
+        if (!activeTab || !workspacePath) {return;}
+        navigateToWorkspace({ type: 'open_file_history', path: activeTab.path });
+    };
 
     useEffect(() => {
         if (!contextMenu) {
@@ -247,8 +279,8 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     };
 
     return (
-        <div className="border-b border-border/30 bg-background">
-            <div className="flex overflow-x-auto scrollbar-none">
+        <div className="border-b border-border/30 bg-background max-w-full overflow-hidden">
+            <div className="flex overflow-x-auto scrollbar-none max-w-[75vw]">
                 {orderedTabs.map(tab => {
                     const isActive = tab.id === activeTabId;
                     const isDirty = tab.content !== tab.savedContent;
@@ -267,14 +299,18 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 setContextMenu({ tabId: tab.id, x: event.clientX, y: event.clientY });
                             }}
                             className={cn(
-                                'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all min-w-120 max-w-200',
+                                'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all min-w-120 max-w-220 shrink-0 relative',
                                 isActive
                                     ? 'bg-muted/70 text-foreground border-t-2 border-t-primary'
                                     : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-t-2 border-t-transparent',
+                                tab.gitStatus === 'M' && 'text-git-modified hover:text-git-modified',
+                                (tab.gitStatus === 'A' || tab.gitStatus === '?') && 'text-git-added hover:text-git-added',
+                                tab.gitStatus === 'D' && 'text-git-deleted hover:text-git-deleted',
                                 hasErrors && !isActive && 'text-destructive hover:text-destructive',
                                 hasWarnings && !hasErrors && !isActive && 'text-warning hover:text-warning'
                             )}
                         >
+                            <FileIcon fileName={tab.name} className="w-3.5 h-3.5 shrink-0 opacity-80" />
                             <span
                                 className={cn(
                                     'truncate flex-1 text-left',
@@ -285,13 +321,22 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 {tab.name}
                             </span>
                             {tab.isPinned && <IconPin className="w-3 h-3 text-primary shrink-0" />}
-                            {(isDirty || hasErrors || hasWarnings) && (
-                                <span 
-                                    className={cn(
-                                        "w-1.5 h-1.5 rounded-full shrink-0",
-                                        hasErrors ? "bg-destructive" : hasWarnings ? "bg-warning" : "bg-warning"
-                                    )} 
-                                />
+                            
+                            {/* Git Status Badge */}
+                            {tab.gitStatus && (
+                                <span className={cn(
+                                    "text-[9px] font-bold px-1 rounded-[2px] shrink-0",
+                                    tab.gitStatus === 'M' ? "text-git-modified bg-git-modified/10" :
+                                    (tab.gitStatus === 'A' || tab.gitStatus === '?') ? "text-git-added bg-git-added/10" :
+                                    tab.gitStatus === 'D' ? "text-git-deleted bg-git-deleted/10" : "text-muted-foreground bg-muted/20"
+                                )}>
+                                    {tab.gitStatus === '?' ? 'U' : tab.gitStatus}
+                                </span>
+                            )}
+
+                            {/* Dirty Indicator (Saved State) */}
+                            {isDirty && (
+                                <span className="w-2 h-2 rounded-full bg-foreground/20 shrink-0" />
                             )}
                             <span
                                 onClick={event => {
@@ -340,8 +385,18 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                         ))}
                     </div>
 
-                    {activeTab.name.toLowerCase().endsWith('.md') && (
-                        <div className="flex items-center ml-auto pl-2">
+                    <div className="flex items-center ml-auto pl-2 gap-1">
+                        {fileHasHistory && (
+                            <button
+                                type="button"
+                                onClick={handleOpenGitHistory}
+                                className="p-1.5 rounded-md transition-all duration-200 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                                title={t('frontend.agent.history')}
+                            >
+                                <IconHistory className="h-4 w-4 transition-transform duration-200" />
+                            </button>
+                        )}
+                        {activeTab.name.toLowerCase().endsWith('.md') && (
                             <button
                                 type="button"
                                 onClick={onToggleMarkdownPreview}
@@ -355,8 +410,8 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                             >
                                 <IconMarkdown className={cn("h-4 w-4 transition-transform duration-200", showMarkdownPreview && "scale-110")} />
                             </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             )}
             {breadcrumbDropdown && (

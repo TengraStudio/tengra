@@ -21,34 +21,34 @@ export const CATEGORY_CONFIG: Record<
   { labelKey: string; color: string; icon: Icon }
 > = {
   preference: {
-    labelKey: 'memory.categories.preference',
+    labelKey: 'frontend.memory.categories.preference',
     color: 'bg-primary/10 text-primary',
     icon: IconSettings,
   },
-  personal: { labelKey: 'memory.categories.personal', color: 'bg-accent/10 text-accent', icon: IconBrain },
+  personal: { labelKey: 'frontend.memory.categories.personal', color: 'bg-accent/10 text-accent', icon: IconBrain },
   workspace: {
-    labelKey: 'memory.categories.workspace',
+    labelKey: 'frontend.memory.categories.workspace',
     color: 'bg-success/10 text-success',
     icon: IconBulb,
   },
-  technical: { labelKey: 'memory.categories.technical', color: 'bg-warning/10 text-warning', icon: IconBolt },
+  technical: { labelKey: 'frontend.memory.categories.technical', color: 'bg-warning/10 text-warning', icon: IconBolt },
   workflow: {
-    labelKey: 'memory.categories.workflow',
+    labelKey: 'frontend.memory.categories.workflow',
     color: 'bg-accent/10 text-accent',
     icon: IconArrowRight,
   },
   relationship: {
-    labelKey: 'memory.categories.relationship',
+    labelKey: 'frontend.memory.categories.relationship',
     color: 'bg-info/10 text-info',
     icon: IconGitMerge,
   },
   fact: {
-    labelKey: 'memory.categories.fact',
+    labelKey: 'frontend.memory.categories.fact',
     color: 'bg-muted/10 text-muted-foreground',
     icon: IconHelpCircle,
   },
   instruction: {
-    labelKey: 'memory.categories.instruction',
+    labelKey: 'frontend.memory.categories.instruction',
     color: 'bg-warning/10 text-warning',
     icon: IconSparkles,
   },

@@ -207,8 +207,8 @@ export const MessageBubble = memo(
                 <div
                     id={id}
                     className={cn(
-                        'w-full animate-fade-in py-2 group',
-                        isFocused && 'bg-primary/5 ring-1 ring-primary/20 rounded-xl'
+                        'group w-full animate-fade-in py-1.5',
+                        isFocused && 'rounded-md bg-muted/30'
                     )}
                 >
                     <VariantsView

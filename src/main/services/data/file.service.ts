@@ -20,6 +20,8 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { app } from 'electron';
 
 export class FileManagementService {
+    static readonly serviceName = 'fileManagementService';
+    static readonly dependencies = [] as const;
     private readonly maxReadBytes = 10 * 1024 * 1024;
     private readonly maxWriteBytes = 10 * 1024 * 1024;
     private readonly maxDownloadBytes = 100 * 1024 * 1024;

@@ -48,13 +48,7 @@ export const ModelSelectorWrapper = memo(({ ctrl }: { ctrl: ControllerType }) =>
             toggleFavorite={ctrl.toggleFavorite}
             isFavorite={ctrl.isFavorite}
             isIconOnly={true}
-            chatMode={
-                ctrl.systemMode === 'thinking'
-                    ? 'thinking'
-                    : ctrl.systemMode === 'agent'
-                        ? 'agent'
-                        : 'instant'
-            }
+            chatMode={ctrl.systemMode === 'fast' ? 'instant' : ctrl.systemMode}
             onChatModeChange={mode => {
                 ctrl.setSystemMode(mode === 'instant' ? 'fast' : mode);
             }}

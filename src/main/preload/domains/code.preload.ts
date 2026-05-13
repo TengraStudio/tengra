@@ -10,15 +10,13 @@
 
 import { CODE_CHANNELS } from '@shared/constants/ipc-channels';
 import {
-    FileSearchResult,
-    TodoItem,
+    FileSearchResult, 
     WorkspaceCodeMap,
     WorkspaceDependencyGraph,
 } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
 export interface CodeBridge {
-    scanTodos: (rootPath: string) => Promise<TodoItem[]>;
     findSymbols: (rootPath: string, query: string) => Promise<FileSearchResult[]>;
     findDefinition: (rootPath: string, symbol: string) => Promise<FileSearchResult | null>;
     findReferences: (rootPath: string, symbol: string) => Promise<FileSearchResult[]>;
@@ -117,8 +115,23 @@ export interface CodeBridge {
         rootPath: string,
         query: string,
         workspaceId?: string,
-        isRegex?: boolean
+        isRegex?: boolean,
+        matchCase?: boolean,
+        matchWholeWord?: boolean
     ) => Promise<FileSearchResult[]>;
+    searchFilesStream: (
+        rootPath: string,
+        query: string,
+        requestId: string,
+        options?: {
+            isRegex?: boolean;
+            matchCase?: boolean;
+            matchWholeWord?: boolean;
+            includeGlob?: string;
+            excludeGlob?: string;
+        }
+    ) => Promise<void>;
+    searchFilesCancel: (requestId: string) => Promise<void>;
     indexWorkspace: (rootPath: string, workspaceId: string) => Promise<void>;
     queryIndexedSymbols: (
         query: string
@@ -139,7 +152,6 @@ export interface CodeBridge {
 
 export function createCodeBridge(ipc: IpcRenderer): CodeBridge {
     return {
-        scanTodos: rootPath => ipc.invoke(CODE_CHANNELS.SCAN_TODOS, rootPath),
         findSymbols: (rootPath, query) => ipc.invoke(CODE_CHANNELS.FIND_SYMBOLS, rootPath, query),
         findDefinition: (rootPath, symbol) => ipc.invoke(CODE_CHANNELS.FIND_DEFINITION, rootPath, symbol),
         findReferences: (rootPath, symbol) => ipc.invoke(CODE_CHANNELS.FIND_REFERENCES, rootPath, symbol),
@@ -157,8 +169,11 @@ export function createCodeBridge(ipc: IpcRenderer): CodeBridge {
         generateWorkspaceDocumentation: (rootPath, maxFiles) =>
             ipc.invoke(CODE_CHANNELS.GENERATE_WORKSPACE_DOCUMENTATION, rootPath, maxFiles),
         analyzeQuality: (rootPath, maxFiles) => ipc.invoke(CODE_CHANNELS.ANALYZE_QUALITY, rootPath, maxFiles),
-        searchFiles: (rootPath, query, workspaceId, isRegex) =>
-            ipc.invoke(CODE_CHANNELS.SEARCH_FILES, rootPath, query, workspaceId, isRegex),
+        searchFiles: (rootPath, query, workspaceId, isRegex, matchCase, matchWholeWord) =>
+            ipc.invoke(CODE_CHANNELS.SEARCH_FILES, rootPath, query, workspaceId, isRegex, matchCase, matchWholeWord),
+        searchFilesStream: (rootPath, query, requestId, options) =>
+            ipc.invoke(CODE_CHANNELS.SEARCH_FILES_STREAM, rootPath, query, requestId, options),
+        searchFilesCancel: requestId => ipc.invoke(CODE_CHANNELS.SEARCH_FILES_CANCEL, requestId),
         indexWorkspace: (rootPath, workspaceId) => ipc.invoke(CODE_CHANNELS.INDEX_WORKSPACE, rootPath, workspaceId),
         queryIndexedSymbols: query => ipc.invoke(CODE_CHANNELS.QUERY_INDEXED_SYMBOLS, query),
         getSymbolAnalytics: rootPath => ipc.invoke(CODE_CHANNELS.GET_SYMBOL_ANALYTICS, rootPath),
