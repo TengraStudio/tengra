@@ -29,12 +29,11 @@ import {
     SettingsPanel,
     SettingsSelectContent,
     SettingsSelectItem,
-    SettingsSelectTrigger,
-    SettingsTabHeader,
+    SettingsSelectTrigger, 
+    SettingsSwitch,
     SettingsTabLayout,
     SettingsTextarea,
     SettingsToggleRow,
-    SettingsSwitch,
 } from './SettingsPrimitives';
 
 interface AiInstructionsTabProps extends SettingsSharedProps {

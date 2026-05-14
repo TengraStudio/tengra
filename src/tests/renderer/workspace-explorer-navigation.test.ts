@@ -22,7 +22,7 @@ const mount: WorkspaceMount = {
     id: 'mount-1',
     name: 'repo',
     type: 'local',
-    rootPath: 'C:\\repo',
+    rootPath: '/repo',
 };
 
 function createEntryRow(name: string, path: string, depth = 0): WorkspaceEntryRow {
@@ -43,10 +43,10 @@ function createEntryRow(name: string, path: string, depth = 0): WorkspaceEntryRo
 }
 
 const rows = [
-    createEntryRow('alpha.ts', 'C:\\repo\\alpha.ts'),
-    createEntryRow('beta.ts', 'C:\\repo\\beta.ts'),
-    createEntryRow('config.json', 'C:\\repo\\config.json'),
-    createEntryRow('zeta.ts', 'C:\\repo\\zeta.ts'),
+    createEntryRow('alpha.ts', '/repo/alpha.ts'),
+    createEntryRow('beta.ts', '/repo/beta.ts'),
+    createEntryRow('config.json', '/repo/config.json'),
+    createEntryRow('zeta.ts', '/repo/zeta.ts'),
 ];
 
 describe('workspace explorer navigation helpers', () => {
@@ -72,7 +72,7 @@ describe('workspace explorer navigation helpers', () => {
         const hiddenEntry: WorkspaceEntry = {
             mountId: mount.id,
             name: 'hidden.ts',
-            path: 'C:\\repo\\hidden.ts',
+            path: '/repo/hidden.ts',
             isDirectory: false,
         };
 

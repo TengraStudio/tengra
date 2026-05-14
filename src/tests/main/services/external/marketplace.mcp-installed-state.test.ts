@@ -16,7 +16,7 @@ import { MarketplaceItem } from '@shared/types/marketplace';
 import fs from 'fs-extra';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const mockedUserDataPath = 'C:\\Users\\agnes\\AppData\\Roaming\\Tengra';
+const mockedUserDataPath = '/AppData/Roaming/Tengra';
 
 vi.mock('electron', () => ({
     app: {

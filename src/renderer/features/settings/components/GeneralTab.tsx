@@ -24,13 +24,13 @@ import type { SettingsSharedProps } from '../types';
 import {
     SettingsField,
     SettingsInput,
+    SettingsPanel,
     SettingsSelectContent,
     SettingsSelectItem,
     SettingsSelectTrigger,
-    SettingsPanel,
     SettingsSwitch,
-    SettingsToggleRow,
     SettingsTabLayout,
+    SettingsToggleRow,
 } from './SettingsPrimitives';
 
 type GeneralTabProps = Pick<

@@ -26,7 +26,7 @@ describe('TodoItemCard', () => {
                     text: 'Write test',
                     completed: false,
                     line: 4,
-                    filePath: 'C:\\workspace\\TODO.md',
+                    filePath: '/workspace/TODO.md',
                     relativePath: 'TODO.md',
                 }}
                 onToggle={onToggle}

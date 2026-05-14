@@ -38,8 +38,8 @@ vi.mock('os', () => ({
     release: vi.fn().mockReturnValue('10.0'),
     platform: vi.fn().mockReturnValue('win32'),
     userInfo: vi.fn().mockReturnValue({ username: 'test-user' }),
-    homedir: vi.fn().mockReturnValue('C:\\Users\\test-user'),
-    tmpdir: vi.fn().mockReturnValue('C:\\Users\\test-user\\AppData\\Local\\Temp')
+    homedir: vi.fn().mockReturnValue('/Users/test-user'),
+    tmpdir: vi.fn().mockReturnValue('/Users/test-user/AppData/Local/Temp')
 }));
 
 describe('SystemService', () => {

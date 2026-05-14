@@ -113,7 +113,7 @@ function createMockTab(overrides?: Partial<EditorTab>): EditorTab {
     return {
         id: 'tab-1',
         mountId: 'mount-1',
-        path: 'C:\\workspace\\file.ts',
+        path: '/workspace/file.ts',
         name: 'file.ts',
         content: 'const x = 1;',
         savedContent: 'const x = 1;',
@@ -129,7 +129,7 @@ function createMockProps(overrides?: Partial<WorkspaceEditorProps>): WorkspaceEd
         updateTabContent: vi.fn(),
         saveActiveTab: vi.fn().mockResolvedValue(undefined),
         workspaceKey: 'test-workspace',
-        workspacePath: 'C:\\workspace',
+        workspacePath: '/workspace',
         emptyState: <div data-testid="empty-state">empty-state</div>,
         ...overrides,
     };

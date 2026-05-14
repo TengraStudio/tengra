@@ -31,7 +31,7 @@ function createWorkspace(index: number): Workspace {
         id: `workspace-${index}`,
         title: `Workspace ${index}`,
         description: `Workspace ${index} description`,
-        path: `C:/workspaces/demo-workspace-${index}`,
+        path: `/workspaces/demo-workspace-${index}`,
         mounts: [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -51,7 +51,7 @@ describe('VirtualizedWorkspaceGrid Stats', () => {
     });
 
     it('logs threshold state changes for virtualization', async () => {
-        const debugSpy = vi.spyOn(appLogger, 'debug').mockImplementation(() => {});
+        const debugSpy = vi.spyOn(appLogger, 'debug').mockImplementation(() => { });
         vi.spyOn(performance, 'now').mockReturnValue(0);
         const workspaceStateMachine = {
             startEdit: vi.fn(),

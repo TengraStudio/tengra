@@ -20,6 +20,8 @@ export interface BackgroundModelSelection {
     source: 'oauth' | 'local' | 'api-key';
 }
 
+
+//TODO: REMOVE IT.
 /**
  * Selects a cheap, low-impact model for background jobs such as memory
  * extraction. This intentionally does not reuse the user's active chat model.

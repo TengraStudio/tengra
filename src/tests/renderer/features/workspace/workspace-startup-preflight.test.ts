@@ -18,7 +18,7 @@ const baseWorkspace: Workspace = {
     id: 'workspace-1',
     title: 'Workspace',
     description: 'Workspace for preflight tests',
-    path: 'C:\\workspace\\demo',
+    path: '/workspace/demo',
     mounts: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),

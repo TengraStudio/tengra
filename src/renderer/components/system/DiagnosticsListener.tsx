@@ -20,7 +20,7 @@ import { appLogger } from '@/utils/renderer-logger';
  */
 export function DiagnosticsListener(): null {
     useEffect(() => {
-        appLogger.info('DiagnosticsListener', 'Initializing global LSP diagnostic listener');
+        appLogger.debug('DiagnosticsListener', 'Initializing global LSP diagnostic listener');
 
         const unsubscribe = window.electron.ipcRenderer.on('lsp:diagnostics-updated', (_event, data: {
             workspaceId: string;
@@ -32,7 +32,7 @@ export function DiagnosticsListener(): null {
 
         return () => {
             unsubscribe();
-            appLogger.info('DiagnosticsListener', 'Disposing global LSP diagnostic listener');
+            appLogger.debug('DiagnosticsListener', 'Disposing global LSP diagnostic listener');
         };
     }, []);
 

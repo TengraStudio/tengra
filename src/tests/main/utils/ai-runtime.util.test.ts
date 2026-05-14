@@ -123,14 +123,14 @@ describe('ai-runtime.util', () => {
                 toolCallId: 'call-2',
                 name: 'write_file',
                 result: {
-                    displaySummary: 'Wrote 47 bytes to C:/repo/app/page.tsx',
+                    displaySummary: 'Wrote 47 bytes to /repo/app/page.tsx',
                 },
                 success: true,
             }],
         });
 
         expect(directoryAnswer).toContain('1 dosya ve 3 klasor');
-        expect(writeAnswer).toBe('Completed tool work: Wrote 47 bytes to C:/repo/app/page.tsx');
+        expect(writeAnswer).toBe('Completed tool work: Wrote 47 bytes to /repo/app/page.tsx');
     });
 
     it('treats resolve_path as solid filesystem evidence for single lookup', () => {
@@ -142,7 +142,7 @@ describe('ai-runtime.util', () => {
                 toolCallId: 'call-rp-1',
                 name: 'resolve_path',
                 result: {
-                    path: 'C:/Users/mockuser/Desktop/projects/todo-app',
+                    path: '/Users/mockuser/Desktop/projects/todo-app',
                     pathExists: false,
                     parentExists: true,
                 },
@@ -155,7 +155,7 @@ describe('ai-runtime.util', () => {
             timestamp: Date.now(),
             kind: 'tool_result',
             toolName: 'resolve_path',
-            summary: 'Resolved path: C:/Users/mockuser/Desktop/projects/todo-app',
+            summary: 'Resolved path: /Users/mockuser/Desktop/projects/todo-app',
             scope: 'turn',
             sourceSurface: 'chat',
             isReusable: true,

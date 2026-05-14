@@ -29,7 +29,7 @@ const WORKSPACE_ID = 'workspace-1';
 const sampleEntry: WorkspaceEntry = {
     mountId: 'mount-1',
     name: 'src',
-    path: 'C:\\repo\\src',
+    path: '/repo/src',
     isDirectory: true,
 };
 

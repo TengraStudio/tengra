@@ -105,7 +105,7 @@ describe('Missing service TODO coverage (functional)', () => {
 
     it('ThemeService returns persisted default theme', () => {
         const service = new ThemeService({
-            getPath: vi.fn(() => 'C:/user-data/db'),
+            getPath: vi.fn(() => '/user-data/db'),
         } as never, () => null);
         expect(service.getThemesDirectory()).toContain('runtime');
     });

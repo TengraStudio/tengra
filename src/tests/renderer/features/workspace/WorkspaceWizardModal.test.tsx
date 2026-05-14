@@ -69,7 +69,7 @@ const renderSetup = (onWorkspaceCreated = vi.fn().mockResolvedValue(true)) => {
 
 describe('WorkspaceSetupModal', () => {
     beforeEach(() => {
-        mountElectronMock('C:\\workspaces\\Demo Workspace\\');
+        mountElectronMock('/workspaces/demo-workspace/');
     });
 
     it('derives a workspace name from a Windows path with a trailing slash', async () => {
@@ -85,7 +85,7 @@ describe('WorkspaceSetupModal', () => {
 
         await waitFor(() => {
             expect(onWorkspaceCreated).toHaveBeenCalledWith(
-                'C:\\workspaces\\Demo Workspace\\',
+                '/workspaces/demo-workspace/',
                 'Demo Workspace',
                 '',
                 [
@@ -93,7 +93,7 @@ describe('WorkspaceSetupModal', () => {
                         id: expect.stringMatching(/^local-/),
                         name: 'Demo Workspace',
                         type: 'local',
-                        rootPath: 'C:\\workspaces\\Demo Workspace\\',
+                        rootPath: '/workspaces/demo-workspace/',
                     },
                 ]
             );

@@ -41,7 +41,7 @@ describe('Db preload bridge', () => {
             id: 'ws-1',
             title: 'Updated',
             description: 'desc',
-            path: 'C:\\workspace',
+            path: '/workspace',
             mounts: [],
             chatIds: [],
             councilConfig: {

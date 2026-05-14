@@ -544,7 +544,7 @@ describe('ModelRegistryService - Remote Models', () => {
                 vi.mocked(mockHuggingFaceService.listInstalledModels).mockResolvedValueOnce([
                     {
                         modelId: 'lmstudio-community/gemma-4-E4B-it-GGUF',
-                        path: 'C:\\Users\\agnes\\AppData\\Roaming\\tengra\\models\\gemma-4-E4B-it-Q4_K_M.gguf',
+                        path: '/AppData/Roaming/tengra/models/gemma-4-E4B-it-Q4_K_M.gguf',
                         createdAt: Date.now(),
                         contextLength: 8192,
                         architecture: 'gemma4',

@@ -21,7 +21,7 @@ describe('buildStoredToolResults', () => {
                 type: 'function',
                 function: {
                     name: 'resolve_path',
-                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                    arguments: '{"path":"/Users/mockuser/Desktop"}',
                 },
             },
             {
@@ -29,7 +29,7 @@ describe('buildStoredToolResults', () => {
                 type: 'function',
                 function: {
                     name: 'list_directory',
-                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                    arguments: '{"path":"/Users/mockuser/Desktop"}',
                 },
             },
         ];
@@ -37,7 +37,7 @@ describe('buildStoredToolResults', () => {
             {
                 id: 'result-1',
                 role: 'tool',
-                content: JSON.stringify({ success: true, path: 'C:/Users/mockuser/Desktop' }),
+                content: JSON.stringify({ success: true, path: '/Users/mockuser/Desktop' }),
                 toolCallId: 'tool-1',
                 timestamp: new Date('2026-04-10T10:00:00.000Z'),
             },
@@ -50,7 +50,7 @@ describe('buildStoredToolResults', () => {
             toolCallId: 'tool-1',
             name: 'resolve_path',
             success: true,
-            result: { success: true, path: 'C:/Users/mockuser/Desktop' },
+            result: { success: true, path: '/Users/mockuser/Desktop' },
         });
     });
 });

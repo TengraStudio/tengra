@@ -463,14 +463,14 @@ describe('ToolExecutor - Extra & Terminal', () => {
         });
 
         const executor = createExecutor();
-        const result = await executor.execute('execute_command', { command: 'Get-Item C:/restricted' });
+        const result = await executor.execute('execute_command', { command: 'Get-Item /restricted' });
 
         expect(result).toEqual({
             success: false,
             result: {
                 success: false,
                 resultKind: 'command_execution',
-                command: 'Get-Item C:/restricted',
+                command: 'Get-Item /restricted',
                 cwd: null,
                 stdout: 'partial-output',
                 stderr: 'Access denied',

@@ -46,7 +46,7 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 vi.mock('@main/services/system/runtime-path.service', () => ({
-    getManagedRuntimeBinaryPath: vi.fn().mockReturnValue('C:/runtime/bin/tengra-proxy.exe'),
+    getManagedRuntimeBinaryPath: vi.fn().mockReturnValue('/runtime/bin/tengra-proxy.exe'),
 }));
 
 vi.mock('fs', async importOriginal => {
@@ -100,7 +100,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             updateFromProxy: vi.fn().mockResolvedValue(undefined),
             reloadLinkedAccountsCache: vi.fn().mockResolvedValue(undefined),
             getActiveToken: vi.fn().mockImplementation((provider) => {
-                if (provider === 'proxy_key') {return Promise.resolve('proxy-api-key');}
+                if (provider === 'proxy_key') { return Promise.resolve('proxy-api-key'); }
                 return Promise.resolve(null);
             }),
             getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
@@ -110,7 +110,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
         loggingService = {
             pushLogEntry: vi.fn(),
         } as never as LoggingService;
-        
+
         service = new ProxyProcessManager(
             settingsService,
             authService,
@@ -148,7 +148,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
         const spawnProxyProcess = vi.fn();
 
         Object.defineProperty(service, 'ensureBinary', {
-            value: vi.fn().mockResolvedValue('C:/runtime/bin/tengra-proxy.exe'),
+            value: vi.fn().mockResolvedValue('/runtime/bin/tengra-proxy.exe'),
         });
         Object.defineProperty(service, 'isPortAcceptingConnections', {
             value: vi.fn().mockResolvedValue(false),
@@ -166,7 +166,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
         await service.start({ port: 8317 });
 
         expect(spawnProxyProcess).toHaveBeenCalledWith(
-            'C:/runtime/bin/tengra-proxy.exe',
+            '/runtime/bin/tengra-proxy.exe',
             {
                 managementPassword: 'management-password',
                 port: 8317,
@@ -249,7 +249,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             value: vi.fn().mockResolvedValue(false),
         });
         Object.defineProperty(service, 'ensureBinary', {
-            value: vi.fn().mockResolvedValue('C:/runtime/bin/tengra-proxy.exe'),
+            value: vi.fn().mockResolvedValue('/runtime/bin/tengra-proxy.exe'),
         });
 
         const status = await service.start({ port: 8317 });
@@ -307,24 +307,24 @@ describe('ProxyProcessManager runtime launch configuration', () => {
     });
 
     it('prefers the explicit CARGO environment variable when present', () => {
-        vi.stubEnv('CARGO', 'C:\\Tools\\cargo\\bin\\cargo.exe');
+        vi.stubEnv('CARGO', '/Tools/cargo/bin/cargo');
         vi.mocked(fs.existsSync).mockReturnValue(false);
 
         const resolveCargoCommand = Reflect.get(service, 'resolveCargoCommand') as (() => string) | undefined;
         expect(resolveCargoCommand).toBeTypeOf('function');
-        expect(resolveCargoCommand?.call(service)).toBe('C:\\Tools\\cargo\\bin\\cargo.exe');
+        expect(resolveCargoCommand?.call(service)).toBe('/Tools/cargo/bin/cargo');
     });
 
     it('falls back to the local cargo binary when available', () => {
         vi.unstubAllEnvs();
-        const homeDir = process.env.USERPROFILE ?? process.env.HOME ?? 'C:\\Users\\mockuser';
+        const homeDir = process.env.USERPROFILE ?? process.env.HOME ?? '/Users/mockuser';
         vi.stubEnv(process.platform === 'win32' ? 'USERPROFILE' : 'HOME', homeDir);
-        
+
         const localCargo = process.platform === 'win32'
             ? path.join(homeDir, '.cargo', 'bin', 'cargo.exe')
             : path.join(homeDir, '.cargo', 'bin', 'cargo');
 
-        vi.mocked(fs.existsSync).mockImplementation((target) => 
+        vi.mocked(fs.existsSync).mockImplementation((target) =>
             path.resolve(String(target)) === path.resolve(localCargo)
         );
 

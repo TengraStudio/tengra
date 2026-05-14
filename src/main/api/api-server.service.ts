@@ -112,11 +112,19 @@ export class ApiServerService extends BaseService {
         this.port = options.port ?? 42069;
     }
 
+    private isInitialized = false;
+
     /**
      * Initialize the API server.
      * Generates a session token, checks proxy status, and starts listening.
      */
     async initialize(): Promise<void> {
+        if (this.isInitialized) {
+            appLogger.debug(this.name, 'API server already initialized, skipping.');
+            return;
+        }
+        this.isInitialized = true;
+        
         appLogger.debug(this.name, 'Initializing API server...');
 
         // Check if proxy is running
@@ -164,23 +172,50 @@ export class ApiServerService extends BaseService {
                     return;
                 }
 
-                this.httpServer.listen(this.port, '127.0.0.1', () => {
-                    // Capture the actual bound port (needed when port 0 is used)
-                    const addr = this.httpServer?.address();
-                    if (addr && typeof addr === 'object') {
-                        this.port = addr.port;
-                    }
-                    appLogger.info(
-                        this.name,
-                        `API server listening on http://localhost:${this.port}`
-                    );
-                    resolve();
-                });
+                let settled = false;
 
-                this.httpServer.on('error', (error) => {
-                    appLogger.error(this.name, `Server error: ${getErrorMessage(error)}`);
-                    reject(error);
-                });
+                const handleFatalError = (error: any) => {
+                    if (settled) return;
+                    
+                    if (error.code === 'EADDRINUSE') {
+                        appLogger.error(this.name, `Port ${this.port} is already in use. API server will not be available.`);
+                        settled = true;
+                        resolve(); // Resolve instead of reject to avoid app crash
+                    } else {
+                        appLogger.error(this.name, `Server error: ${getErrorMessage(error)}`);
+                        settled = true;
+                        reject(error);
+                    }
+                };
+
+                // SECURITY-040: Attach error listeners BEFORE calling listen
+                this.httpServer.on('error', handleFatalError);
+                
+                if (this.wsServer) {
+                    this.wsServer.on('error', (err) => {
+                        appLogger.error(this.name, `WebSocket server error: ${getErrorMessage(err)}`);
+                    });
+                }
+
+                try {
+                    this.httpServer.listen(this.port, '127.0.0.1', () => {
+                        if (settled) return;
+                        
+                        // Capture the actual bound port (needed when port 0 is used)
+                        const addr = this.httpServer?.address();
+                        if (addr && typeof addr === 'object') {
+                            this.port = addr.port;
+                        }
+                        appLogger.info(
+                            this.name,
+                            `API server listening on http://localhost:${this.port}`
+                        );
+                        settled = true;
+                        resolve();
+                    });
+                } catch (error) {
+                    handleFatalError(error);
+                }
             });
         } catch (error) {
             appLogger.error(

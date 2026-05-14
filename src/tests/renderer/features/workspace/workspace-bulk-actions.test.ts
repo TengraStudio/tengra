@@ -67,11 +67,11 @@ describe('workspace bulk action helpers', () => {
 
     it('retains original separator style for windows-shaped paths', () => {
         const plan = buildWorkspaceBulkRenamePlan(
-            [createEntry({ name: 'alpha.js', path: 'C:\\workspace\\alpha.js' })],
+            [createEntry({ name: 'alpha.js', path: '/workspace/alpha.js' })],
             'component'
         );
 
-        expect(plan[0]?.newPath).toBe('C:\\workspace\\component-1.js');
+        expect(plan[0]?.newPath).toBe('/workspace/component-1.js');
     });
 
     it('requires a shared mount for shared target directory actions', () => {

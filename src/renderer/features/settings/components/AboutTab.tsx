@@ -13,13 +13,11 @@ import logoWhite from '@assets/tengra_white.png';
 import { IconAlertTriangle, IconBolt, IconDeviceMobile, IconExternalLink, IconGlobe, IconRefresh } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 
 import {
-    SettingsPanel,
-    SettingsTabHeader,
+    SettingsPanel, 
     SettingsTabLayout,
 } from './SettingsPrimitives';
 

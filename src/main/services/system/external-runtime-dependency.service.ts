@@ -50,9 +50,6 @@ export class ExternalRuntimeDependencyService extends BaseService {
         if (componentId === 'sd-cpp') {
             return this.assessSdCpp();
         }
-        if (componentId === 'ghostty' || componentId === 'alacritty' || componentId === 'warp' || componentId === 'kitty') {
-            return this.assessExecutableComponent(componentId);
-        }
 
         return {
             detected: false,
@@ -166,24 +163,6 @@ export class ExternalRuntimeDependencyService extends BaseService {
 
     private getExecutableCandidatePaths(componentId: string, executableName: string): string[] {
         const candidates = new Set<string>();
-        if (process.platform === 'win32') {
-            const localAppData = process.env['LOCALAPPDATA'] ?? '';
-            const programFiles = process.env['ProgramFiles'] ?? 'C:\\Program Files';
-            if (componentId === 'ghostty') {
-                candidates.add(path.join(programFiles, 'Ghostty', 'ghostty.exe'));
-                candidates.add(path.join(localAppData, 'Ghostty', 'ghostty.exe'));
-            } else if (componentId === 'alacritty') {
-                candidates.add(path.join(programFiles, 'Alacritty', 'alacritty.exe'));
-                candidates.add(path.join(localAppData, 'Alacritty', 'alacritty.exe'));
-            } else if (componentId === 'warp') {
-                candidates.add(path.join(localAppData, 'Warp', 'warp.exe'));
-                candidates.add(path.join(programFiles, 'Warp', 'warp.exe'));
-            } else if (componentId === 'kitty') {
-                candidates.add(path.join(programFiles, 'kitty', 'kitty.exe'));
-                candidates.add(path.join(programFiles, 'Kitty', 'kitty.exe'));
-                candidates.add(path.join(localAppData, 'Programs', 'kitty', 'kitty.exe'));
-            }
-        }
         candidates.add(executableName);
         return Array.from(candidates);
     }

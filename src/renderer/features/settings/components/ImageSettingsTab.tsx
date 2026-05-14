@@ -24,7 +24,7 @@ import {
  * ImageSettingsTab component for managing image generation settings.
  * Allows selecting providers and managing local runtime (SD-CPP).
  */
-export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, t }) => {
+export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings }) => {
     const language = settings?.general.language ?? 'en';
 
     return (

@@ -13,17 +13,22 @@ import { existsSync, promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
+import { BrowserWindow } from 'electron';
+import * as protocol from 'vscode-languageserver-protocol';
+
 import { ipc } from '@main/core/ipc-decorators';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { LLMService } from '@main/services/llm/llm.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { CacheService } from '@main/services/system/cache.service';
+import { DialogService } from '@main/services/system/dialog.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { getManagedRuntimeBinDir } from '@main/services/system/runtime-path.service';
 import { UtilityProcessService } from '@main/services/system/utility-process.service';
 import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
-import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service'; 
+import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import { LspService, WorkspaceServerLanguageId } from '@main/services/workspace/lsp.service';
 import {
     DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
@@ -37,7 +42,7 @@ import {
     WorkspaceEnvKeySchema,
     WorkspaceEnvVarsSchema,
     WorkspaceRootPathSchema
-} from '@shared/schemas/service-hardening.schema'; 
+} from '@shared/schemas/service-hardening.schema';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import type {
     CodeAnnotation,
@@ -52,8 +57,6 @@ import type {
 } from '@shared/types/workspace';
 import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { BrowserWindow } from 'electron';
-import * as protocol from 'vscode-languageserver-protocol';
 
 export type {
     CodeAnnotation,
@@ -82,6 +85,8 @@ export interface WorkspaceServiceDependencies {
     jobSchedulerService?: JobSchedulerService;
     mainWindowProvider?: () => BrowserWindow | null;
     allowedFileRoots?: Set<string>;
+    dialogService?: DialogService;
+    llmService?: LLMService;
 }
 
 interface WorkspaceDirectorySizeEntry {
@@ -404,7 +409,7 @@ function normalizeWorkspacePath(value: string): string {
 export class WorkspaceService extends BaseService {
     static readonly serviceName = 'workspaceService';
     static readonly category = 'lazy';
-    static readonly dependencies = ['lspService', 'utilityProcessService', 'cacheService', 'proxyService', 'databaseService', 'codeIntelligenceService', 'jobSchedulerService', 'mainWindowProvider', 'allowedFileRoots'] as const;
+    static readonly dependencies = ['lspService', 'utilityProcessService', 'cacheService', 'proxyService', 'databaseService', 'codeIntelligenceService', 'jobSchedulerService', 'mainWindowProvider', 'allowedFileRoots', 'dialogService', 'llmService'] as const;
     private static readonly WORKER_FILE_NAME = 'workspace-scanner.worker.cjs';
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private watchCallbacks: Map<string, Set<WorkspaceChangeCallback>> = new Map();
@@ -436,6 +441,8 @@ export class WorkspaceService extends BaseService {
     private jobSchedulerService?: JobSchedulerService;
     private mainWindowProvider?: () => BrowserWindow | null;
     private allowedFileRoots?: Set<string>;
+    private dialogService?: DialogService;
+    private llmService?: LLMService;
 
     constructor(deps: WorkspaceServiceDependencies = {}) {
         super('WorkspaceService');
@@ -448,6 +455,8 @@ export class WorkspaceService extends BaseService {
         this.jobSchedulerService = deps.jobSchedulerService;
         this.mainWindowProvider = deps.mainWindowProvider;
         this.allowedFileRoots = deps.allowedFileRoots;
+        this.dialogService = deps.dialogService;
+        this.llmService = deps.llmService;
     }
 
     /**
@@ -649,6 +658,63 @@ export class WorkspaceService extends BaseService {
     async analyzeDirectoryIpc(dirPath: string): Promise<RuntimeValue> {
         const result = await this.analyzeDirectory(dirPath);
         return serializeToIpc(result);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.UPLOAD_LOGO)
+    async uploadLogoIpc(workspacePath: string): Promise<RuntimeValue> {
+        if (!this.dialogService) {
+            throw new Error('Dialog service not available');
+        }
+        const result = await this.dialogService.showOpenDialog({
+            properties: ['openFile'],
+            filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp'] }],
+        });
+
+        if (!result.success || !('filePaths' in result) || result.filePaths.length === 0) {
+            return serializeToIpc(null);
+        }
+
+        const selectedFilePath = result.filePaths[0];
+        const finalPath = await this.applyLogo(workspacePath, selectedFilePath);
+        return serializeToIpc(finalPath);
+    }
+
+    @ipc(WORKSPACE_CHANNELS.APPLY_LOGO)
+    async applyLogoIpc(workspacePath: string, tempLogoDataUri: string): Promise<RuntimeValue> {
+        if (workspacePath && this.allowedFileRoots) {
+            this.allowedFileRoots.add(path.join(workspacePath));
+        }
+        // If it's already a data URI, we just return it or save it (depending on logic)
+        // For now, mirroring the LogoService behavior
+        if (tempLogoDataUri.startsWith('data:')) {
+            return serializeToIpc(tempLogoDataUri);
+        }
+
+        try {
+            const sourcePath = this.resolveLocalLogoPath(tempLogoDataUri);
+            const buffer = await fs.readFile(sourcePath);
+            const extension = path.extname(sourcePath).toLowerCase().replace('.', '') || 'png';
+            const mimeType = `image/${extension === 'svg' ? 'svg+xml' : extension}`;
+            return serializeToIpc(`data:${mimeType};base64,${buffer.toString('base64')}`);
+        } catch (error) {
+            this.logError('Convert logo to Base64 failed', error as Error);
+            throw error;
+        }
+    }
+
+    private async applyLogo(workspacePath: string, sourcePath: string): Promise<string> {
+        const buffer = await fs.readFile(sourcePath);
+        const extension = path.extname(sourcePath).toLowerCase().replace('.', '') || 'png';
+        const mimeType = `image/${extension === 'svg' ? 'svg+xml' : extension}`;
+        return `data:${mimeType};base64,${buffer.toString('base64')}`;
+    }
+
+    private resolveLocalLogoPath(tempPath: string): string {
+        if (path.isAbsolute(tempPath)) {
+            return tempPath;
+        }
+        // If it's a relative path, we might need more logic here
+        return tempPath;
     }
 
     @ipc(WORKSPACE_CHANNELS.GET_FILE_DEFINITION)

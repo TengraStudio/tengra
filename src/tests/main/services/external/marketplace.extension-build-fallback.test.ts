@@ -17,7 +17,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
     app: {
-        getPath: vi.fn(() => 'C:\\Users\\agnes\\AppData\\Roaming\\Tengra'),
+        getPath: vi.fn(() => '/AppData/Roaming/Tengra'),
     },
 }));
 

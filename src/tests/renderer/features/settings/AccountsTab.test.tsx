@@ -119,7 +119,7 @@ function createAccount(overrides?: Partial<LinkedAccountInfo>): LinkedAccountInf
         id: 'account-1',
         provider: 'antigravity',
         email: 'mockuser@example.com',
-        displayName: 'agnes',
+        displayName: 'testuser',
         isActive: true,
         createdAt: Date.now(),
         ...overrides,

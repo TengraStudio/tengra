@@ -11,7 +11,6 @@
 import { getIpcMethodsForService, registerServiceIpc } from '@main/core/ipc-decorators';
 import { lazyServiceRegistry } from '@main/core/lazy-services';
 import { appLogger } from '@main/logging/logger';
-import { LogoService } from '@main/services/external/logo.service';
 import { UpdateService } from '@main/services/system/update.service';
 import { CodeSandboxService } from '@main/services/workspace/code-sandbox.service';
 import { DockerService } from '@main/services/workspace/docker.service';
@@ -33,7 +32,6 @@ export function registerIpcHandlers(
     appLogger.info('IPC', 'registerIpcHandlers: START');
 
     setIpcEventBus(services.eventBusService);
-    const logoService = container.resolve<LogoService>('logoService');
     
     const servicesToRegister = [
         { name: 'windowService', service: services.windowService },
@@ -52,7 +50,6 @@ export function registerIpcHandlers(
         { name: 'keyRotationService', service: services.keyRotationService },
         { name: 'securityService', service: services.securityService },
         { name: 'workspaceService', service: services.workspaceService },
-        { name: 'logoService', service: logoService },
         { name: 'inlineSuggestionService', service: services.inlineSuggestionService },
         { name: 'agentService', service: services.agentService },
         { name: 'processService', service: services.processService },

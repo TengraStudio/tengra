@@ -19,7 +19,7 @@ describe('buildWorkspaceExplorerDiagnosticsSnapshot', () => {
             id: 'local-workspace',
             name: 'Local',
             type: 'local',
-            rootPath: 'C:/repo',
+            rootPath: '/repo',
         },
     ];
 
@@ -76,7 +76,7 @@ describe('buildWorkspaceExplorerDiagnosticsSnapshot', () => {
             analysis,
             mounts,
             sessions: [],
-            workspaceRootPath: 'C:/repo',
+            workspaceRootPath: '/repo',
         });
 
         expect(snapshot.mountSummary['local-workspace']).toEqual({
@@ -86,20 +86,20 @@ describe('buildWorkspaceExplorerDiagnosticsSnapshot', () => {
             agent: 0,
             total: 4,
         });
-        expect(snapshot.byPath['C:/repo/src']).toMatchObject({
+        expect(snapshot.byPath['/repo/src']).toMatchObject({
             typescript: 2,
             test: 1,
             total: 3,
         });
-        expect(snapshot.byPath['C:/repo/src/app.ts']).toMatchObject({
+        expect(snapshot.byPath['/repo/src/app.ts']).toMatchObject({
             typescript: 1,
             total: 1,
         });
-        expect(snapshot.byPath['C:/repo/src/lsp.ts']).toMatchObject({
+        expect(snapshot.byPath['/repo/src/lsp.ts']).toMatchObject({
             typescript: 1,
             total: 1,
         });
-        expect(snapshot.byPath['C:/repo/scripts/build.js']).toMatchObject({
+        expect(snapshot.byPath['/repo/scripts/build.js']).toMatchObject({
             lint: 1,
             total: 1,
         });
@@ -109,7 +109,7 @@ describe('buildWorkspaceExplorerDiagnosticsSnapshot', () => {
         const snapshot = buildWorkspaceExplorerDiagnosticsSnapshot({
             analysis: null,
             mounts,
-            workspaceRootPath: 'C:/repo',
+            workspaceRootPath: '/repo',
             sessions: [
                 {
                     id: 'session-failed',
@@ -126,7 +126,7 @@ describe('buildWorkspaceExplorerDiagnosticsSnapshot', () => {
                         pathPolicy: 'workspace-root-only',
                         allowedCommands: [],
                         disallowedCommands: [],
-                        allowedPaths: ['C:/repo'],
+                        allowedPaths: ['/repo'],
                     },
                     background: false,
                     archived: false,
@@ -146,7 +146,7 @@ describe('buildWorkspaceExplorerDiagnosticsSnapshot', () => {
                         pathPolicy: 'restricted-off-dangerous',
                         allowedCommands: ['npm'],
                         disallowedCommands: [],
-                        allowedPaths: ['C:/repo'],
+                        allowedPaths: ['/repo'],
                     },
                     background: false,
                     archived: false,

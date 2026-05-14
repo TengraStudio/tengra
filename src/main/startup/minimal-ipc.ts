@@ -20,31 +20,49 @@ class EarlyIpcManager {
     private isReady = false;
     private registeredHandlers = new Set<string>();
     private registeredListeners = new Set<string>();
+    private isInitialized = false;
 
     /**
      * Initializes the minimal IPC handlers.
      * Should be called as early as possible in the boot process.
      */
     public initialize(getMainWindow: () => BrowserWindow | null): void {
+        if (this.isInitialized) {
+            return;
+        }
+        this.isInitialized = true;
+        
+        // Use both console.log and appLogger to be absolutely sure we see this
+        console.log('EarlyIpc: INITIALIZING HANDLERS');
+        appLogger.info('BOOT', 'Initializing EarlyIpc handlers...');
+
         this.getMainWindow = getMainWindow;
 
         const register = (
             channel: string,
             handler: (event: IpcMainInvokeEvent, ...args: RuntimeValue[]) => Promise<RuntimeValue | object> | RuntimeValue | object
         ) => {
+            console.log(`[EarlyIpc] Attempting to register: ${channel}`);
             try {
                 ipcMain.removeHandler(channel);
             } catch { /* ignore */ }
 
-            this.registeredHandlers.add(channel);
-            ipcMain.handle(channel, async (event, ...args) => {
-                try {
-                    return await handler(event, ...args);
-                } catch (e) {
-                    appLogger.error('BOOT', `Early IPC Error [${channel}]`, e);
-                    throw e;
-                }
-            });
+            try {
+                ipcMain.handle(channel, async (event, ...args) => {
+                    console.log(`[EarlyIpc] ${channel} INVOKED`);
+                    try {
+                        return await handler(event, ...args);
+                    } catch (e) {
+                        console.error(`[EarlyIpc] ${channel} ERROR:`, e);
+                        appLogger.error('BOOT', `Early IPC Error [${channel}]`, e);
+                        throw e;
+                    }
+                });
+                this.registeredHandlers.add(channel);
+                console.log(`[EarlyIpc] Successfully registered: ${channel}`);
+            } catch (e) {
+                console.error(`[EarlyIpc] FAILED to register ${channel}:`, e);
+            }
         };
 
         const listen = (channel: string, listener: (event: IpcMainEvent, ...args: RuntimeValue[]) => void) => {
@@ -229,11 +247,13 @@ class EarlyIpcManager {
      * Cleans up all early IPC handlers to allow real services to take over.
      */
     public cleanup(): void {
-        for (const channel of this.registeredHandlers) {
-            try {
-                ipcMain.removeHandler(channel);
-            } catch { /* ignore */ }
-        }
+        appLogger.info('BOOT', 'Cleaning up EarlyIpc state...');
+        
+        // We DO NOT call ipcMain.removeHandler here anymore to avoid race conditions.
+        // Reason: registerIpcHandlers in app.ts uses safeHandle() which already 
+        // overwrites these handlers. If we call removeHandler here AFTER 
+        // registerIpcHandlers has run, we will kill the REAL handlers.
+        
         this.registeredHandlers.clear();
 
         for (const channel of this.registeredListeners) {
@@ -242,6 +262,7 @@ class EarlyIpcManager {
             } catch { /* ignore */ }
         }
         this.registeredListeners.clear();
+        this.isInitialized = false;
     }
 
     /**
@@ -261,4 +282,3 @@ class EarlyIpcManager {
 }
 
 export const EarlyIpc = new EarlyIpcManager();
-

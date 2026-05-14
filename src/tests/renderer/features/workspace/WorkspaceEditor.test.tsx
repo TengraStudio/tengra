@@ -122,7 +122,7 @@ vi.mock('@/components/ui/CodeEditor', () => ({
                 type="button"
                 onClick={() =>
                     onNavigateToLocation?.({
-                        filePath: 'C:\\workspace\\related.ts',
+                        filePath: '/workspace/related.ts',
                         lineNumber: 27,
                     })}
             >
@@ -135,7 +135,7 @@ vi.mock('@/components/ui/CodeEditor', () => ({
                         symbol: 'Widget',
                         results: [
                             {
-                                file: 'C:\\workspace\\related.ts',
+                                file: '/workspace/related.ts',
                                 line: 27,
                                 text: 'const widget = new Widget();',
                                 type: 'content',
@@ -196,7 +196,7 @@ function createMockTab(overrides?: Partial<EditorTab>): EditorTab {
     return {
         id: 'tab-1',
         mountId: 'mount-1',
-        path: 'C:\\workspace\\file.ts',
+        path: '/workspace/file.ts',
         name: 'file.ts',
         content: 'const x = 1;',
         savedContent: 'const x = 1;',
@@ -212,7 +212,7 @@ function createMockProps(overrides?: Partial<WorkspaceEditorProps>): WorkspaceEd
         updateTabContent: vi.fn(),
         saveActiveTab: vi.fn().mockResolvedValue(undefined),
         workspaceKey: 'test-workspace',
-        workspacePath: 'C:\\workspace',
+        workspacePath: '/workspace',
         emptyState: <div data-testid="empty-state">empty-state</div>,
         ...overrides,
     };
@@ -316,7 +316,7 @@ describe('WorkspaceEditor', () => {
         localStorage.setItem(
             'workspace.editor.viewstate:test-workspace',
             JSON.stringify({
-                'C:\\workspace\\file.ts': {
+                '/workspace/file.ts': {
                     lineNumber: 14,
                     column: 6,
                     scrollTop: 320,
@@ -347,7 +347,7 @@ describe('WorkspaceEditor', () => {
                 localStorage.getItem('frontend.workspace.editor.viewstate:test-workspace') ?? '{}'
             ) as Record<string, { lineNumber: number; column: number; scrollTop: number }>;
 
-            expect(persistedState['C:\\workspace\\file.ts']).toMatchObject({
+            expect(persistedState['/workspace/file.ts']).toMatchObject({
                 lineNumber: 8,
                 column: 3,
                 scrollTop: 240,
@@ -371,7 +371,7 @@ describe('WorkspaceEditor', () => {
 
         fireEvent.click(screen.getByText('trigger-open-location'));
 
-        expect(onOpenFile).toHaveBeenCalledWith('C:\\workspace\\related.ts', 27);
+        expect(onOpenFile).toHaveBeenCalledWith('/workspace/related.ts', 27);
     });
 
     it('renders workspace intelligence results and opens the selected result', () => {
@@ -389,7 +389,7 @@ describe('WorkspaceEditor', () => {
         fireEvent.click(screen.getByText('trigger-workspace-results'));
         fireEvent.click(screen.getByText('related.ts'));
 
-        expect(onOpenFile).toHaveBeenCalledWith('C:\\workspace\\related.ts', 27);
+        expect(onOpenFile).toHaveBeenCalledWith('/workspace/related.ts', 27);
     });
 
     it('renders the image preview in the main area for image tabs', () => {

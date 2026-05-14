@@ -37,7 +37,7 @@ const mockMonacoEditorComponent = vi.fn((_props?: { path?: string; options?: obj
 
 const mockModel = {
     uri: {
-        toString: () => 'file:///C:/workspace/src/index.tsx',
+        toString: () => 'file:////workspace/src/index.tsx',
     },
     getLineCount: () => 1,
     getLineContent: () => 'const answer = 42;',
@@ -97,7 +97,7 @@ const mockMonaco = {
             public startColumn: number,
             public endLineNumber: number,
             public endColumn: number
-        ) {}
+        ) { }
     },
     languages: {
         registerInlineCompletionsProvider: mockRegisterInlineCompletionsProvider,
@@ -156,12 +156,16 @@ vi.mock('@/i18n', () => ({
 }));
 
 vi.mock('@/store/settings.store', () => ({
-    useSettingsStore: (selector: (snapshot: { settings: { general: {
-        inlineSuggestionsEnabled: boolean;
-        inlineSuggestionsSource: 'custom';
-        inlineSuggestionsProvider: string;
-        inlineSuggestionsModel: string;
-    } } }) => unknown) =>
+    useSettingsStore: (selector: (snapshot: {
+        settings: {
+            general: {
+                inlineSuggestionsEnabled: boolean;
+                inlineSuggestionsSource: 'custom';
+                inlineSuggestionsProvider: string;
+                inlineSuggestionsModel: string;
+            }
+        }
+    }) => unknown) =>
         selector({
             settings: {
                 general: {
@@ -185,7 +189,7 @@ vi.mock('@/utils/monaco-loader.util', () => ({
 }));
 
 vi.mock('@/utils/textmate-loader', () => ({
-    initTextMateSupport: vi.fn(async () => {}),
+    initTextMateSupport: vi.fn(async () => { }),
 }));
 
 describe('CodeEditor inline suggestions', () => {
@@ -232,8 +236,8 @@ describe('CodeEditor inline suggestions', () => {
             <CodeEditor
                 value="const answer = 42;"
                 language="typescript"
-                workspacePath="C:\\workspace"
-                filePath="C:\\workspace\\index.ts"
+                workspacePath="/workspace"
+                filePath="/workspace/index.ts"
             />
         );
 
@@ -252,15 +256,15 @@ describe('CodeEditor inline suggestions', () => {
             <CodeEditor
                 value="export const value = 1;"
                 language="typescript"
-                workspacePath="C:\\workspace"
-                filePath="C:\\workspace\\src\\index.tsx"
+                workspacePath="/workspace"
+                filePath="/workspace/src/index.tsx"
             />
         );
 
         await waitFor(() => {
             expect(mockMonacoEditorComponent).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    path: 'file:///C:/workspace/src/index.tsx',
+                    path: 'file:///workspace/src/index.tsx',
                 })
             );
         });
@@ -304,8 +308,8 @@ describe('CodeEditor inline suggestions', () => {
             <CodeEditor
                 value="const answer = 42;"
                 language="typescript"
-                workspacePath="C:\\workspace"
-                filePath="C:\\workspace\\src\\index.tsx"
+                workspacePath="/workspace"
+                filePath="/workspace/src/index.tsx"
             />
         );
 
@@ -314,8 +318,8 @@ describe('CodeEditor inline suggestions', () => {
             expect(firstCall).toBeDefined();
             const normalizedWorkspacePath = String(firstCall?.[0]).replace(/\\\\/g, '\\');
             const normalizedFilePath = String(firstCall?.[1]).replace(/\\\\/g, '\\');
-            expect(normalizedWorkspacePath).toBe('C:\\workspace');
-            expect(normalizedFilePath).toBe('C:\\workspace\\src\\index.tsx');
+            expect(normalizedWorkspacePath).toBe('/workspace');
+            expect(normalizedFilePath).toBe('/workspace/src/index.tsx');
             expect(firstCall?.[2]).toBe('const answer = 42;');
             expect(mockSetModelMarkers).toHaveBeenCalledWith(
                 mockModel,
@@ -339,8 +343,8 @@ describe('CodeEditor inline suggestions', () => {
             <CodeEditor
                 value="import { Popover } from '@/components/ui/popover';"
                 language="typescript"
-                workspacePath="C:\\workspace"
-                filePath="C:\\workspace\\src\\index.tsx"
+                workspacePath="/workspace"
+                filePath="/workspace/src/index.tsx"
             />
         );
 

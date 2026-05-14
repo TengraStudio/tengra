@@ -293,7 +293,7 @@ describe('useWorkspaceChatStream', () => {
                     {
                         id: 'tc-1',
                         type: 'function',
-                        function: { name: 'list_directory', arguments: '{"path":"C:\\\\Users"}' },
+                        function: { name: 'list_directory', arguments: '{"path":"/users"}' },
                     },
                 ],
                 chatId: 'chat-tools',

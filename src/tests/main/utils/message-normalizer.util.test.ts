@@ -52,7 +52,7 @@ describe('MessageNormalizer', () => {
                         type: 'function' as const,
                         function: {
                             name: 'list_directory',
-                            arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                            arguments: '{"path":"/Users/mockuser/Desktop"}',
                         },
                     }],
                 },
@@ -63,7 +63,7 @@ describe('MessageNormalizer', () => {
                 type: 'function',
                 function: {
                     name: 'list_directory',
-                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                    arguments: '{"path":"/Users/mockuser/Desktop"}',
                 },
             }]);
         });
@@ -80,7 +80,7 @@ describe('MessageNormalizer', () => {
                         type: 'function',
                         function: {
                             name: 'list_directory',
-                            arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                            arguments: '{"path":"/Users/mockuser/Desktop"}',
                         },
                     }],
                 },
@@ -98,7 +98,7 @@ describe('MessageNormalizer', () => {
                     type: 'function_call',
                     call_id: 'tool-0',
                     name: 'list_directory',
-                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                    arguments: '{"path":"/Users/mockuser/Desktop"}',
                 },
                 {
                     type: 'function_call_output',
@@ -132,7 +132,7 @@ describe('MessageNormalizer', () => {
                         type: 'function' as const,
                         function: {
                             name: '   ',
-                            arguments: '{"path":"C:/Users"}',
+                            arguments: '{"path":"/Users"}',
                         },
                     }],
                 },

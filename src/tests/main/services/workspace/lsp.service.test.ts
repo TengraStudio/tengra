@@ -100,8 +100,8 @@ describe('LspService', () => {
 
     it('does not spawn duplicate servers for the same workspace', async () => {
         await Promise.all([
-            lspService.startServer('workspace-1', 'C:/repo', 'typescript'),
-            lspService.startServer('workspace-1', 'C:/repo', 'typescript'),
+            lspService.startServer('workspace-1', '/repo', 'typescript'),
+            lspService.startServer('workspace-1', '/repo', 'typescript'),
         ]);
 
         expect(mockSpawn).toHaveBeenCalledTimes(1);
@@ -109,7 +109,7 @@ describe('LspService', () => {
 
     it.runIf(process.platform === 'win32')('spawns Windows cmd-based servers through the shell', async () => {
         vi.stubEnv('PATHEXT', '.COM;.EXE;.BAT;.CMD');
-        await lspService.startServer('workspace-1', 'C:/repo', 'typescript');
+        await lspService.startServer('workspace-1', '/repo', 'typescript');
 
         expect(mockSpawn).toHaveBeenCalledWith(
             expect.stringMatching(/cmd\.exe$/i),
@@ -122,30 +122,30 @@ describe('LspService', () => {
     });
 
     it('replaces cached diagnostics for the same document URI', async () => {
-        await lspService.startServer('workspace-1', 'C:/repo', 'typescript');
+        await lspService.startServer('workspace-1', '/repo', 'typescript');
 
         diagnosticsHandler?.({
-            uri: 'file:///C:/repo/src/app.ts',
+            uri: 'file:////repo/src/app.ts',
             diagnostics: [{ message: 'first' }],
         });
         diagnosticsHandler?.({
-            uri: 'file:///C:/repo/src/app.ts',
+            uri: 'file:////repo/src/app.ts',
             diagnostics: [{ message: 'second' }],
         });
 
         expect(lspService.getDiagnostics('workspace-1')).toEqual([
             {
-                uri: 'file:///C:/repo/src/app.ts',
+                uri: 'file:////repo/src/app.ts',
                 diagnostics: [{ message: 'second' }],
             },
         ]);
     });
 
     it('clears diagnostics and document state when the server stops', async () => {
-        await lspService.startServer('workspace-1', 'C:/repo', 'typescript');
-        await lspService.openDocument('workspace-1', 'C:/repo/src/app.ts', 'typescript', 'const value = 1;');
+        await lspService.startServer('workspace-1', '/repo', 'typescript');
+        await lspService.openDocument('workspace-1', '/repo/src/app.ts', 'typescript', 'const value = 1;');
         diagnosticsHandler?.({
-            uri: 'file:///C:/repo/src/app.ts',
+            uri: 'file:////repo/src/app.ts',
             diagnostics: [{ message: 'issue' }],
         });
 
@@ -156,10 +156,10 @@ describe('LspService', () => {
     });
 
     it('stops the instance when notification writes fail', async () => {
-        await lspService.startServer('workspace-1', 'C:/repo', 'typescript');
+        await lspService.startServer('workspace-1', '/repo', 'typescript');
         mockSendNotification.mockRejectedValueOnce(new Error('Cannot call write after a stream was destroyed'));
 
-        await lspService.openDocument('workspace-1', 'C:/repo/src/app.ts', 'typescript', 'const value = 1;');
+        await lspService.openDocument('workspace-1', '/repo/src/app.ts', 'typescript', 'const value = 1;');
 
         expect(mockDispose).toHaveBeenCalled();
         expect(lspService.getDiagnostics('workspace-1')).toEqual([]);
@@ -167,9 +167,9 @@ describe('LspService', () => {
 
     it('matches special filenames to the correct language server support entries', () => {
         const support = lspService.getWorkspaceServerSupport('workspace-1', [
-            'C:/repo/Dockerfile',
-            'C:/repo/.eslintrc',
-            'C:/repo/.bashrc',
+            '/repo/Dockerfile',
+            '/repo/.eslintrc',
+            '/repo/.bashrc',
         ]);
 
         expect(support).toEqual(
@@ -184,7 +184,7 @@ describe('LspService', () => {
     it('reports unavailable servers when no runnable binary exists', () => {
         vi.mocked(fsModule.existsSync).mockReturnValue(false);
 
-        const support = lspService.getWorkspaceServerSupport('workspace-1', ['C:/repo/src/app.ts']);
+        const support = lspService.getWorkspaceServerSupport('workspace-1', ['/repo/src/app.ts']);
 
         expect(support).toEqual([
             expect.objectContaining({

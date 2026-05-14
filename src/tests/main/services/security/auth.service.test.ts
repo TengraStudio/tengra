@@ -316,7 +316,7 @@ describe('AuthService - Account Management', () => {
             accessToken: 'enc:old-access',
             refreshToken: 'enc:old-refresh',
             email: 'mockuser@example.com',
-            displayName: 'agnes',
+            displayName: 'testuser',
             expiresAt: 12345,
             metadata: {
                 email: 'mockuser@example.com',
@@ -338,7 +338,7 @@ describe('AuthService - Account Management', () => {
                 accessToken: 'enc:new-access',
                 refreshToken: 'enc:old-refresh',
                 email: 'mockuser@example.com',
-                displayName: 'agnes',
+                displayName: 'testuser',
                 expiresAt: 12345
             })
         );
@@ -351,7 +351,7 @@ describe('AuthService - Account Management', () => {
             accessToken: 'enc:old-access',
             refreshToken: 'enc:old-refresh',
             email: 'mockuser@example.com',
-            displayName: 'agnes',
+            displayName: 'testuser',
             isActive: true,
             metadata: {
                 email: 'mockuser@example.com',

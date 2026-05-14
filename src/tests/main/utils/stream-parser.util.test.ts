@@ -342,8 +342,8 @@ describe('StreamParser', () => {
     it('should finalize opencode function calls from response.output_item.done events', async () => {
         const stream = new ReadableStream({
             start(controller) {
-                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.added","item":{"id":"tool-0","call_id":"tool-0","type":"function_call","function":{"name":"list_directory","arguments":"{\\"path\\":\\"C:/Users\\"}"}}}\n\n'));
-                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.done","item":{"id":"tool-0","call_id":"tool-0","type":"function_call","function":{"name":"list_directory","arguments":"{\\"path\\":\\"C:/Users\\"}"}}}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.added","item":{"id":"tool-0","call_id":"tool-0","type":"function_call","function":{"name":"list_directory","arguments":"{\\"path\\":\\"/Users\\"}"}}}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.done","item":{"id":"tool-0","call_id":"tool-0","type":"function_call","function":{"name":"list_directory","arguments":"{\\"path\\":\\"/Users\\"}"}}}\n\n'));
                 controller.close();
             }
         });
@@ -358,14 +358,14 @@ describe('StreamParser', () => {
         expect(chunks[0]?.type).toBe('tool_calls');
         expect(chunks[0]?.tool_calls?.[0]?.id).toBe('tool-0');
         expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('list_directory');
-        expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"path":"C:/Users"}');
+        expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"path":"/Users"}');
     });
 
     it('should flush pending function_call deltas when response.completed arrives without done events', async () => {
         const stream = new ReadableStream({
             start(controller) {
                 controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.added","item":{"id":"call_2","call_id":"call_2","name":"list_directory"}}\n\n'));
-                controller.enqueue(new TextEncoder().encode('data: {"type":"response.function_call_arguments.delta","call_id":"call_2","delta":"{\\"path\\":\\"C:/Users\\"}"}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.function_call_arguments.delta","call_id":"call_2","delta":"{\\"path\\":\\"/Users\\"}"}\n\n'));
                 controller.enqueue(new TextEncoder().encode('data: {"type":"response.completed","response":{"id":"resp_1","status":"completed"}}\n\n'));
                 controller.close();
             }
@@ -381,7 +381,7 @@ describe('StreamParser', () => {
         expect(chunks[0]?.type).toBe('tool_calls');
         expect(chunks[0]?.tool_calls?.[0]?.id).toBe('call_2');
         expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('list_directory');
-        expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"path":"C:/Users"}');
+        expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"path":"/Users"}');
     });
 });
 

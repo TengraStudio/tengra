@@ -282,7 +282,7 @@ describe('LLMService', () => {
                 {
                     versionId: 'v1',
                     modelId: 'lmstudio-community/gemma-4-E4B-it-GGUF',
-                    path: 'C:\\models\\gemma-4-E4B-it-Q4_K_M.gguf',
+                    path: '/models/gemma-4-E4B-it-Q4_K_M.gguf',
                     createdAt: Date.now(),
                 }
             ]);
@@ -306,7 +306,7 @@ describe('LLMService', () => {
 
             expect(response.content).toBe('Local HF response');
             expect(mockHuggingFaceService.getModelVersions).toHaveBeenCalledWith('lmstudio-community/gemma-4-E4B-it-GGUF');
-            expect(mockLlamaService.loadModel).toHaveBeenCalledWith('C:\\models\\gemma-4-E4B-it-Q4_K_M.gguf');
+            expect(mockLlamaService.loadModel).toHaveBeenCalledWith('/models/gemma-4-E4B-it-Q4_K_M.gguf');
             expect(mockHttpService.fetch).toHaveBeenCalledWith(
                 'http://127.0.0.1:8080/v1/chat/completions',
                 expect.objectContaining({

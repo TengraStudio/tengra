@@ -5,6 +5,8 @@
  * Entry point for the Main process.
  */
 
+import { app } from 'electron';
+
 import { EarlyIpc } from './startup/minimal-ipc';
 import { initializeAppPaths } from './startup/paths';
 import { getMainWindow } from './startup/window';
@@ -15,15 +17,26 @@ import { getMainWindow } from './startup/window';
  * 2. EarlyIpc Manager sets up minimal handlers to prevent renderer hangs.
  * 3. Dynamic import of 'app' ensures environment is stable before loading heavy logic.
  */
+
+// Critical boot initialization
 initializeAppPaths();
-EarlyIpc.initialize(getMainWindow);
 
-// Defer main application load to the next tick to ensure
-// all module side-effects from early boot are completed.
-setTimeout(() => {
-    void import('./app').catch(err => {
-        console.error('[CRITICAL] Failed to load application logic:', err);
-        process.exit(1);
-    });
-}, 0);
-
+// Wait for app to be ready before initializing IPC handlers
+// Some Electron versions/platforms are flaky with ipcMain before ready
+console.log('MAIN: App starting, isReady:', app.isReady());
+app.whenReady().then(() => {
+    console.log('MAIN: App is ready, initializing EarlyIpc');
+    EarlyIpc.initialize(getMainWindow);
+    
+    // Defer main application load to the next tick to ensure
+    // all module side-effects from early boot are completed.
+    setTimeout(() => {
+        void import('./app').catch(err => {
+            console.error('[CRITICAL] Failed to load application logic:', err);
+            process.exit(1);
+        });
+    }, 0);
+}).catch(err => {
+    console.error('[CRITICAL] app.whenReady failed:', err);
+    process.exit(1);
+});

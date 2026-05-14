@@ -121,7 +121,7 @@ const workspaceFixture = {
     id: 'workspace-1',
     title: 'Workspace One',
     description: 'Primary workspace',
-    path: 'C:\\workspace\\one',
+    path: '/workspace/one',
     mounts: [],
     createdAt: 1,
     updatedAt: 1,

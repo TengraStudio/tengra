@@ -176,7 +176,7 @@ describe('processStreamChunk', () => {
                 id: 't1',
                 index: 0,
                 type: 'function' as const,
-                function: { name: '', arguments: '{"path":"C:/Users/mockuser/Desktop"}' },
+                function: { name: '', arguments: '{"path":"/Users/mockuser/Desktop"}' },
             }],
         };
         const secondResult = processStreamChunk(secondChunk, {
@@ -190,7 +190,7 @@ describe('processStreamChunk', () => {
             type: 'function',
             function: {
                 name: 'list_directory',
-                arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                arguments: '{"path":"/Users/mockuser/Desktop"}',
             },
         }]);
     });
@@ -437,7 +437,7 @@ describe('extractReasoning', () => {
                     type: 'function' as const,
                     function: {
                         name: 'list_directory',
-                        arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                        arguments: '{"path":"/Users/mockuser/Desktop"}',
                     },
                 }],
             };
@@ -636,7 +636,7 @@ describe('extractReasoning', () => {
                     type: 'function' as const,
                     function: {
                         name: 'list_directory',
-                        arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                        arguments: '{"path":"/Users/mockuser/Desktop"}',
                     },
                 }],
             };

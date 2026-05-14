@@ -8,16 +8,16 @@
  * (at your option) any later version.
  */
 
-import { IconActivity, IconBolt, IconLock, IconShield } from '@tabler/icons-react';
+import { IconActivity, IconBolt, IconLock } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
-import { SettingsPanel, SettingsTabHeader, SettingsTabLayout } from './SettingsPrimitives';
 import type { GroupedModels } from '@/types';
 import { AppSettings } from '@/types/settings';
 
 import { AntigravityLimitsSection } from './limits/AntigravityLimitsSection';
 import { CodexLimitsSection } from './limits/CodexLimitsSection';
 import { CopilotLimitsSection } from './limits/CopilotLimitsSection';
+import { SettingsPanel,   SettingsTabLayout } from './SettingsPrimitives';
 
 interface ModelUsageLimitsTabProps {
     settings: AppSettings | null;

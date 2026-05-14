@@ -1709,7 +1709,7 @@
         "maximize": "Maximize panel"
       },
       "placeholder": {
-        "sftpLocalPath": "C:\\\\\\\\\\\\\\\\path\\\\\\\\\\\\\\\\file.txt",
+        "sftpLocalPath": "/path/to/file.txt",
         "wakeWord": "tengra",
         "envValue": "Value",
         "devCommand": "npm run dev",
@@ -3407,11 +3407,11 @@
           "sshDescription": "Connect to a remote SSH workspace.",
           "basicSetupNote": "Basic setup only. You can edit the rest later in workspace settings.",
           "directoryLabel": "Directory",
-          "localBasePathPlaceholder": "C:\\Users\\agnes\\Desktop\\projects",
-          "importPathPlaceholder": "C:\\path\\to\\workspace",
+          "localBasePathPlaceholder": "/path/to/workspace",
+          "importPathPlaceholder": "/path/to/workspace",
           "sshHostPlaceholder": "192.168.1.20",
-          "sshUsernamePlaceholder": "agnes",
-          "sshRootPathPlaceholder": "/home/agnes/project"
+          "sshUsernamePlaceholder": "username",
+          "sshRootPathPlaceholder": "/home/username/project"
         },
         "categories": {
           "web": "Web Application",

@@ -14,7 +14,7 @@ import { TerminalService } from '@main/services/workspace/terminal.service';
 import { app } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const USER_DATA_PATH = 'C:/user-data';
+const USER_DATA_PATH = '/user-data';
 const fileStore = new Map<string, string>();
 const existingPaths = new Set<string>();
 const normalizePath = (targetPath: string) => targetPath.replace(/\\/g, '/');
@@ -131,7 +131,7 @@ describe('TerminalService', () => {
 
     it('creates, writes, resizes, and kills terminal sessions', async () => {
         const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
-        const mockEventBus = { on: vi.fn(() => () => {}) };
+        const mockEventBus = { on: vi.fn(() => () => { }) };
         const service = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, {} as any, () => null);
         service.addBackend({
             id: 'proxy-terminal',
@@ -160,7 +160,7 @@ describe('TerminalService', () => {
 
     it('persists snapshots and restores sessions after restart', async () => {
         const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
-        const mockEventBus = { on: vi.fn(() => () => {}) };
+        const mockEventBus = { on: vi.fn(() => () => { }) };
         const serviceBeforeRestart = new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, {} as any, () => null);
         serviceBeforeRestart.addBackend({
             id: 'proxy-terminal',
@@ -212,7 +212,7 @@ describe('TerminalService', () => {
 
     it('uses userData path from electron app for persistence files', () => {
         const mockSettingsService = { getSettings: vi.fn(() => ({ window: { lowPowerMode: false } })) };
-        const mockEventBus = { on: vi.fn(() => () => {}) };
+        const mockEventBus = { on: vi.fn(() => () => { }) };
         new TerminalService(mockEventBus as any, mockSettingsService as any, {} as any, {} as any, () => null);
         expect(app.getPath).toHaveBeenCalledWith('userData');
     });

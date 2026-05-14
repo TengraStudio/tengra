@@ -450,7 +450,7 @@ describe('useChatGenerator - Tool Logic', () => {
             success: true,
             result: {
                 success: true,
-                displaySummary: 'Wrote 47 bytes to C:/workspace/todo-app/app/page.tsx',
+                displaySummary: 'Wrote 47 bytes to /workspace/todo-app/app/page.tsx',
             },
         });
 
@@ -467,7 +467,7 @@ describe('useChatGenerator - Tool Logic', () => {
                 formatChatError: (err: CatchError) =>
                     err instanceof Error ? err.message : String(err ?? ''),
                 systemMode: 'fast',
-                activeWorkspacePath: 'C:/workspace',
+                activeWorkspacePath: '/workspace',
             });
 
             return {
@@ -658,7 +658,7 @@ describe('useChatGenerator - Tool Logic', () => {
                 formatChatError: (err: CatchError) =>
                     err instanceof Error ? err.message : String(err ?? ''),
                 systemMode: 'agent',
-                activeWorkspacePath: 'C:/workspace/tengra',
+                activeWorkspacePath: '/workspace/tengra',
             });
 
             return {
@@ -676,7 +676,7 @@ describe('useChatGenerator - Tool Logic', () => {
 
         expect(mockExecuteTools).toHaveBeenCalledWith(
             'execute_command',
-            { command: 'Get-ChildItem', cwd: 'C:/workspace/tengra' },
+            { command: 'Get-ChildItem', cwd: '/workspace/tengra' },
             'tool-call-command',
             'chat-1'
         );
@@ -862,11 +862,11 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
             result: {
                 success: true,
                 resultKind: 'path_resolution',
-                path: 'C:/Users/mockuser/Desktop/todo-app',
+                path: '/Users/mockuser/Desktop/todo-app',
                 pathExists: false,
                 parentExists: true,
                 complete: true,
-                displaySummary: 'Resolved path: C:/Users/mockuser/Desktop/todo-app',
+                displaySummary: 'Resolved path: /Users/mockuser/Desktop/todo-app',
             },
         });
 

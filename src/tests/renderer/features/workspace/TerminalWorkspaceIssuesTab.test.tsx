@@ -38,7 +38,7 @@ describe('TerminalWorkspaceIssuesTab', () => {
                             line: 1,
                             source: 'static-analysis',
                         },
-                    ], 
+                    ],
                     lspDiagnostics: [
                         {
                             severity: 'error',
@@ -56,7 +56,7 @@ describe('TerminalWorkspaceIssuesTab', () => {
     it('renders terminal and LSP sections from workspace analysis', async () => {
         render(
             <TerminalWorkspaceIssuesTab
-                workspacePath="C:/repo"
+                workspacePath="/repo"
                 workspaceId="workspace-1"
             />
         );

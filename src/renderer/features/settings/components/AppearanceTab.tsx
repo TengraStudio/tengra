@@ -10,7 +10,7 @@
 
 import { BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import type { ThemeManifest } from '@shared/types/theme';
-import { IconAccessible, IconChevronDown, IconColumns, IconDeviceDesktop, IconLuggage, IconMaximize, IconPalette, IconPlus, IconPointer, IconRefresh, IconTerminal, IconTrash, IconTypography, IconX } from '@tabler/icons-react';
+import { IconAccessible, IconChevronDown, IconColumns, IconDeviceDesktop, IconLuggage, IconMaximize, IconPlus, IconPointer, IconRefresh, IconTerminal, IconTrash, IconX } from '@tabler/icons-react';
 import React, { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,6 @@ import {
 } from '@/features/terminal/constants/terminal-panel-constants';
 import { useTerminalAppearance } from '@/features/terminal/hooks/useTerminalAppearance';
 import { getTerminalTheme } from '@/lib/terminal-theme';
-import { resolveAppFontPreset } from '@/lib/typography-settings';
 import { cn } from '@/lib/utils';
 import { themeRegistry } from '@/themes/theme-registry.service';
 import { useA11ySettings } from '@/utils/accessibility';
@@ -44,7 +43,6 @@ import {
     SettingsSelectItem,
     SettingsSelectTrigger,
     SettingsSwitch,
-    SettingsTabHeader,
     SettingsTabLayout,
     SettingsToggleRow,
 } from './SettingsPrimitives';
@@ -227,7 +225,6 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         label: cursorStyle.name,
     }));
 
-    const resolvedAppFont = resolveAppFontPreset();
     const resolvedTerminalAppearance = useMemo(
         () => resolveTerminalAppearance(getTerminalTheme(), terminalAppearance),
         [terminalAppearance]
@@ -345,26 +342,26 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
             >
                 <div className="px-6 py-2 space-y-4">
                     <SettingsField label={t('frontend.settings.windowResolution')}>
-                    <Select
-                        value={settings?.general.resolution ?? 'auto'}
-                        onValueChange={value => {
-                            void updateGeneral({ resolution: value });
-                        }}
-                    >
-                        <SettingsSelectTrigger>
-                            <SelectValue />
-                        </SettingsSelectTrigger>
-                        <SettingsSelectContent>
-                            {resolutionOptions.map(opt => (
-                                <SettingsSelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </SettingsSelectItem>
-                            ))}
-                        </SettingsSelectContent>
-                    </Select>
-                </SettingsField>
+                        <Select
+                            value={settings?.general.resolution ?? 'auto'}
+                            onValueChange={value => {
+                                void updateGeneral({ resolution: value });
+                            }}
+                        >
+                            <SettingsSelectTrigger>
+                                <SelectValue />
+                            </SettingsSelectTrigger>
+                            <SettingsSelectContent>
+                                {resolutionOptions.map(opt => (
+                                    <SettingsSelectItem key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </SettingsSelectItem>
+                                ))}
+                            </SettingsSelectContent>
+                        </Select>
+                    </SettingsField>
                 </div>
-                
+
             </SettingsPanel>
 
             <SettingsPanel

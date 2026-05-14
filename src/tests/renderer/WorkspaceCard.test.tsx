@@ -26,7 +26,7 @@ describe('WorkspaceCard', () => {
         id: 'workspace-1',
         title: 'Orbit Workspace',
         description: 'Test workspace',
-        path: 'C:/workspace/orbit',
+        path: '/workspace/orbit',
         mounts: [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -91,7 +91,7 @@ describe('WorkspaceCard', () => {
     });
 
     it('logs Stats for slow render duration', async () => {
-        const debugSpy = vi.spyOn(appLogger, 'debug').mockImplementation(() => {});
+        const debugSpy = vi.spyOn(appLogger, 'debug').mockImplementation(() => { });
         let currentNow = 0;
         const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => {
             currentNow += 15;
@@ -101,7 +101,7 @@ describe('WorkspaceCard', () => {
             callback(0);
             return 1;
         });
-        const cancelAnimationFrameSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+        const cancelAnimationFrameSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => { });
 
         render(
             <WorkspaceCardSurfaceProvider

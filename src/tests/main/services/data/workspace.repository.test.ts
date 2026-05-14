@@ -35,7 +35,7 @@ describe('WorkspaceRepository', () => {
     it('throws when the insert does not persist a workspace row', async () => {
         const repository = new WorkspaceRepository(createAdapter(0));
 
-        await expect(repository.createWorkspace('Demo', 'C:\\repos\\demo')).rejects.toThrow(
+        await expect(repository.createWorkspace('Demo', '/repos/demo')).rejects.toThrow(
             'Workspace insert did not persist.'
         );
     });

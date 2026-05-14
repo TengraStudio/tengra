@@ -110,7 +110,7 @@ describe('MessageList', () => {
                     type: 'function',
                     function: {
                         name: 'list_directory',
-                        arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                        arguments: '{"path":"/Users/mockuser/Desktop"}',
                     },
                 }],
             }),
@@ -125,8 +125,8 @@ describe('MessageList', () => {
                 language="en"
                 selectedProvider="antigravity"
                 selectedModel="model-a"
-                onSpeak={() => {}}
-                onStopSpeak={() => {}}
+                onSpeak={() => { }}
+                onStopSpeak={() => { }}
                 speakingMessageId={null}
             />
         );
@@ -142,7 +142,7 @@ describe('MessageList', () => {
                 type: 'function',
                 function: {
                     name: 'resolve_path',
-                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                    arguments: '{"path":"/Users/mockuser/Desktop"}',
                 },
             },
             {
@@ -150,7 +150,7 @@ describe('MessageList', () => {
                 type: 'function',
                 function: {
                     name: 'resolve_path',
-                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                    arguments: '{"path":"/Users/mockuser/Desktop"}',
                 },
             },
         ];
@@ -164,8 +164,8 @@ describe('MessageList', () => {
                 language="en"
                 selectedProvider="antigravity"
                 selectedModel="model-a"
-                onSpeak={() => {}}
-                onStopSpeak={() => {}}
+                onSpeak={() => { }}
+                onStopSpeak={() => { }}
                 speakingMessageId={null}
             />
         );
@@ -187,13 +187,13 @@ describe('MessageList', () => {
                     type: 'function',
                     function: {
                         name: 'resolve_path',
-                        arguments: '{"path":"C:/Users/mockuser/Desktop"}',
+                        arguments: '{"path":"/Users/mockuser/Desktop"}',
                     },
                 }],
                 toolResults: [{
                     toolCallId: 'tool-1',
                     name: 'resolve_path',
-                    result: { path: 'C:/Users/mockuser/Desktop' },
+                    result: { path: '/Users/mockuser/Desktop' },
                     success: true,
                 }],
             }),
@@ -208,8 +208,8 @@ describe('MessageList', () => {
                 language="en"
                 selectedProvider="antigravity"
                 selectedModel="model-a"
-                onSpeak={() => {}}
-                onStopSpeak={() => {}}
+                onSpeak={() => { }}
+                onStopSpeak={() => { }}
                 speakingMessageId={null}
             />
         );
@@ -228,8 +228,8 @@ describe('MessageList', () => {
                 language="en"
                 selectedProvider="antigravity"
                 selectedModel="model-a"
-                onSpeak={() => {}}
-                onStopSpeak={() => {}}
+                onSpeak={() => { }}
+                onStopSpeak={() => { }}
                 speakingMessageId={null}
             />
         );

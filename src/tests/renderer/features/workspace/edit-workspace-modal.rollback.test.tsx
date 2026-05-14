@@ -19,7 +19,7 @@ const workspaceFixture: Workspace = {
     id: 'workspace-1',
     title: 'Stable Title',
     description: 'Stable Description',
-    path: 'C:\\workspaces\\demo-workspace',
+    path: '/workspaces/demo-workspace',
     mounts: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),

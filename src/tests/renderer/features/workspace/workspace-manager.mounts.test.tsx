@@ -22,13 +22,13 @@ const workspaceFixture: Workspace = {
     id: 'workspace-mounts',
     title: 'Workspace Demo',
     description: 'Test workspace',
-    path: 'C:\\workspaces\\demo-workspace',
+    path: '/workspaces/demo-workspace',
     mounts: [
         {
             id: 'mount-local',
             name: 'Local',
             type: 'local',
-            rootPath: 'C:\\workspaces\\demo-workspace',
+            rootPath: '/workspaces/demo-workspace',
         },
     ],
     createdAt: Date.now(),
@@ -181,7 +181,7 @@ const WorkspaceOpenFileHarness: React.FC<WorkspaceOpenFileHarnessProps> = ({ wor
                 onClick={() =>
                     void manager.openFile({
                         mountId: 'mount-local',
-                        path: 'C:\\workspaces\\demo-workspace\\huge.txt',
+                        path: '/workspaces/demo-workspace/huge.txt',
                         name: 'huge.txt',
                         isDirectory: false,
                     })
@@ -241,7 +241,7 @@ describe('useWorkspaceManager mount flows', () => {
         const { rerender } = renderHook(
             ({ workspace }) =>
                 useWorkspaceManager({
-                    workspace, 
+                    workspace,
                     logActivity: () => undefined,
                     t: key => key,
                 }),
@@ -291,7 +291,7 @@ describe('useWorkspaceManager mount flows', () => {
         const base = webElectronMock;
         const readFile = vi.fn().mockResolvedValue({
             success: false,
-            error: 'File too large (max 50MB): C:\\workspaces\\demo-workspace\\huge.txt',
+            error: 'File too large (max 50MB): /workspaces/demo-workspace/huge.txt',
         });
         window.electron = {
             ...base,
@@ -328,13 +328,13 @@ describe('useWorkspaceManager mount flows', () => {
         await act(async () => {
             await result.current.deleteEntry({
                 mountId: 'mount-local',
-                path: 'C:\\workspaces\\demo-workspace\\delete-me.txt',
+                path: '/workspaces/demo-workspace/delete-me.txt',
                 name: 'delete-me.txt',
                 isDirectory: false,
             });
         });
 
-        expect(deleteFile).toHaveBeenCalledWith('C:\\workspaces\\demo-workspace\\delete-me.txt');
+        expect(deleteFile).toHaveBeenCalledWith('/workspaces/demo-workspace/delete-me.txt');
         expect(result.current.refreshSignal).toBe(0);
     });
 });

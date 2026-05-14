@@ -52,7 +52,7 @@ function createPermissionPolicy(): WorkspaceAgentPermissionPolicy {
         pathPolicy: 'workspace-root-only',
         allowedCommands: [],
         disallowedCommands: [],
-        allowedPaths: ['c:/workspace'],
+        allowedPaths: ['/workspace'],
     };
 }
 
@@ -327,7 +327,7 @@ describe('WorkspaceAgentComposer', () => {
                     pathPolicy: 'workspace-root-only',
                     allowedCommands: ['npm', 'git'],
                     disallowedCommands: [],
-                    allowedPaths: ['c:/workspace'],
+                    allowedPaths: ['/workspace'],
                 },
             }),
         });
@@ -346,7 +346,7 @@ describe('WorkspaceAgentComposer', () => {
                     pathPolicy: 'allowlist',
                     allowedCommands: ['npm'],
                     disallowedCommands: [],
-                    allowedPaths: ['c:/workspace'],
+                    allowedPaths: ['/workspace'],
                 },
             }),
         });
@@ -361,16 +361,16 @@ describe('WorkspaceAgentComposer', () => {
             })
         );
 
-        fireEvent.change(inputs[1], { target: { value: 'c:/workspace/src' } });
+        fireEvent.change(inputs[1], { target: { value: '/workspace/src' } });
         fireEvent.click(screen.getAllByRole('button', { name: 'common.add' })[1]);
 
         expect(onUpdatePermissions).toHaveBeenCalledWith(
             expect.objectContaining({
-                allowedPaths: ['c:/workspace', 'c:/workspace/src'],
+                allowedPaths: ['/workspace', '/workspace/src'],
             })
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'common.delete c:/workspace' }));
+        fireEvent.click(screen.getByRole('button', { name: 'common.delete /workspace' }));
 
         expect(onUpdatePermissions).toHaveBeenCalledWith(
             expect.objectContaining({

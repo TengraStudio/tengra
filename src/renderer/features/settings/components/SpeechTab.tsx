@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 
-import { IconPlayerPlay, IconRadio, IconRipple, IconVolume } from '@tabler/icons-react';
+import { IconPlayerPlay, IconRadio, IconVolume } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -25,8 +25,7 @@ import {
     SettingsPanel,
     SettingsSelectContent,
     SettingsSelectItem,
-    SettingsSelectTrigger,
-    SettingsTabHeader,
+    SettingsSelectTrigger, 
     SettingsTabLayout,
 } from './SettingsPrimitives';
 

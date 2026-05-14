@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconBolt,IconCloudDownload, IconCpu, IconPower, IconSettings, IconShieldCheck, IconTerminal } from '@tabler/icons-react';
+import { IconBolt, IconCloudDownload, IconCpu, IconPower, IconShieldCheck, IconTerminal } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import type { SettingsSharedProps } from '../types';
 import {
     SettingsPanel,
     SettingsSwitch,
-    SettingsTabHeader,
     SettingsTabLayout,
     SettingsToggleRow,
 } from './SettingsPrimitives';

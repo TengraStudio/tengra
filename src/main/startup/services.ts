@@ -25,7 +25,6 @@ import { ExtensionService } from '@main/services/extension/extension.service';
 import { CronSchedulerService } from '@main/services/external/cron-scheduler.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { HttpService } from '@main/services/external/http.service';
-import { LogoService } from '@main/services/external/logo.service';
 import { MarketplaceService } from '@main/services/external/marketplace.service';
 import { NotificationDispatcherService } from '@main/services/external/notification-dispatcher.service';
 import { RuleService } from '@main/services/external/rule.service';
@@ -33,7 +32,6 @@ import { SocialMediaService } from '@main/services/external/social-media.service
 import { WebService } from '@main/services/external/web.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { AgentService } from '@main/services/llm/agent.service';
-import { BackgroundModelResolver } from '@main/services/llm/background-model-resolver.service';
 import { BrainService } from '@main/services/llm/brain.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { CopilotService } from '@main/services/llm/copilot/copilot.service';
@@ -55,8 +53,8 @@ import { ModelRegistryService } from '@main/services/llm/model-registry.service'
 import { MultiModelComparisonService } from '@main/services/llm/multi-model-comparison.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service'; 
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
-import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
+import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
@@ -263,11 +261,6 @@ export interface ConstructorInjectionRegistrationResult {
     duplicateServiceNames: Array<{ serviceName: string; ids: string[] }>;
 }
 
-const IGNORED_DUPLICATE_SERVICE_NAMES = new Set([
-    'exportService',
-    'themeService',
-]);
-
 export interface ServiceRegistryEntry {
     id: string;
     serviceClass: ConstructorDrivenServiceClass;
@@ -303,7 +296,8 @@ export function registerConstructorDrivenServices(
             continue;
         }
 
-        const dependencies = (serviceClass.dependencies ?? entry.dependencies).map(resolveDependencyToken);
+        const depsArray = (serviceClass.dependencies ?? entry.dependencies ?? []);
+        const dependencies = depsArray.map(resolveDependencyToken);
 
         if (category === 'lazy') {
             lazyServiceRegistry.register(serviceName, async () => {
@@ -340,7 +334,7 @@ export function registerConstructorDrivenServices(
     }
 
     const duplicateList = Array.from(duplicateServiceNames.entries())
-        .filter(([serviceName, ids]) => ids.length > 1 && !IGNORED_DUPLICATE_SERVICE_NAMES.has(serviceName))
+        .filter(([, ids]) => ids.length > 1)
         .map(([serviceName, ids]) => ({ serviceName, ids }))
         .sort((left, right) => left.serviceName.localeCompare(right.serviceName));
 
@@ -414,7 +408,6 @@ export interface Services {
     lspService: LspService;
     terminalService: TerminalService;
     inlineSuggestionService: InlineSuggestionService;
-    logoService: LazyServiceDependency<LogoService>;
     processService: ProcessService;
     processManagerService: ProcessManagerService;
     galleryService: GalleryService;
@@ -615,6 +608,16 @@ export async function createServices(allowedFileRoots: Set<string>, getMainWindo
     }
 
     terminalService.addBackend(new SSHBackend(sshService));
+    
+    // Manually instantiate ApiServerService with its required options
+    const apiServerService = new ApiServerService({
+        settingsService,
+        proxyProcessManager: container.resolve<ProxyProcessManager>('proxyProcessManager'),
+        toolExecutor: commonServices.toolExecutor as any,
+        llmService: container.resolve<LLMService>('llmService'),
+        modelRegistry: container.resolve<ModelRegistryService>('modelRegistryService'),
+    });
+    container.registerInstance('apiServerService', apiServerService);
 
     // Return the services object for the main application
     const serviceMapStartTime = performance.now();
@@ -625,7 +628,6 @@ export async function createServices(allowedFileRoots: Set<string>, getMainWindo
     services.sshService = createContainerBackedLazyDependency<SSHService>('sshService') as RuntimeValue;
     services.dockerService = createContainerBackedLazyDependency<DockerService>('dockerService') as RuntimeValue;
     services.codeSandboxService = createContainerBackedLazyDependency<CodeSandboxService>('codeSandboxService') as RuntimeValue;
-    services.logoService = createContainerBackedLazyDependency<LogoService>('logoService') as RuntimeValue;
     const serviceMapDurationMs = Math.round(performance.now() - serviceMapStartTime);
     const totalDurationMs = Math.round(performance.now() - benchmarkStartTime);
     appLogger.info('Benchmark', 'Core service load benchmark', {

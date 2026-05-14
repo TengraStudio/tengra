@@ -148,12 +148,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
             );
         });
     }, [availableModels, showHiddenModels, hiddenModels, modelSearch]);
-
-    const allModelIds = useMemo(
-        () => Array.from(new Set(availableModels.map(model => model.id))),
-        [availableModels]
-    );
-
+ 
     if (!settings) {
         return null;
     }

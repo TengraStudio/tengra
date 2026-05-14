@@ -20,13 +20,13 @@ const workspaceFixture: Workspace = {
     id: 'workspace-1',
     title: 'Workspace Demo',
     description: 'Test workspace',
-    path: 'C:\\workspaces\\demo-workspace',
+    path: '/workspaces/demo-workspace',
     mounts: [
         {
             id: 'mount-local',
             name: 'Local',
             type: 'local',
-            rootPath: 'C:\\workspaces\\demo-workspace',
+            rootPath: '/workspaces/demo-workspace',
         },
     ],
     createdAt: Date.now(),
@@ -71,7 +71,7 @@ const mountElectronMock = () => {
 
 const WorkspaceHarness: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
     const manager = useWorkspaceManager({
-        workspace, 
+        workspace,
         logActivity: vi.fn(),
         t: (key: string) => key,
     });
@@ -91,7 +91,7 @@ const WorkspaceHarness: React.FC<{ workspace: Workspace }> = ({ workspace }) => 
                 onClick={() => {
                     const entry = {
                         mountId: 'mount-local',
-                        path: 'C:\\workspaces\\demo-workspace\\README.md',
+                        path: '/workspaces/demo-workspace/README.md',
                         name: 'README.md',
                         isDirectory: false,
                     };
@@ -105,13 +105,13 @@ const WorkspaceHarness: React.FC<{ workspace: Workspace }> = ({ workspace }) => 
                 onClick={() => {
                     void manager.openFile({
                         mountId: 'mount-local',
-                        path: 'C:\\workspaces\\demo-workspace\\README.md',
+                        path: '/workspaces/demo-workspace/README.md',
                         name: 'README.md',
                         isDirectory: false,
                     });
                     void manager.openFile({
                         mountId: 'mount-local',
-                        path: 'c:/workspaces/demo-workspace/README.md',
+                        path: '/workspaces/demo-workspace/README.md',
                         name: 'README.md',
                         isDirectory: false,
                     });
@@ -149,9 +149,9 @@ describe('Workspace mount/tab persistence smoke tests', () => {
             JSON.stringify({
                 openTabs: [
                     {
-                        id: 'mount-local:C:\\workspaces\\demo-workspace\\README.md',
+                        id: 'mount-local:/workspaces/demo-workspace/README.md',
                         mountId: 'mount-local',
-                        path: 'C:\\workspaces\\demo-workspace\\README.md',
+                        path: '/workspaces/demo-workspace/README.md',
                         name: 'README.md',
                         content: '# readme',
                         savedContent: '# readme',
@@ -160,7 +160,7 @@ describe('Workspace mount/tab persistence smoke tests', () => {
                         type: 'code',
                     },
                 ],
-                activeTabId: 'mount-local:C:\\workspaces\\demo-workspace\\README.md',
+                activeTabId: 'mount-local:/workspaces/demo-workspace/README.md',
             })
         );
 
@@ -203,9 +203,9 @@ describe('Workspace mount/tab persistence smoke tests', () => {
             JSON.stringify({
                 openTabs: [
                     {
-                        id: 'mount-local:C:\\workspaces\\demo-workspace\\README.md',
+                        id: 'mount-local:/workspaces/demo-workspace/README.md',
                         mountId: 'mount-local',
-                        path: 'C:\\workspaces\\demo-workspace\\README.md',
+                        path: '/workspaces/demo-workspace/README.md',
                         name: 'README.md',
                         content: '# readme',
                         savedContent: '# readme',
@@ -214,9 +214,9 @@ describe('Workspace mount/tab persistence smoke tests', () => {
                         type: 'code',
                     },
                     {
-                        id: 'mount-local:C:\\workspaces\\demo-workspace\\README.md',
+                        id: 'mount-local:/workspaces/demo-workspace/README.md',
                         mountId: 'mount-local',
-                        path: 'C:\\workspaces\\demo-workspace\\README.md',
+                        path: '/workspaces/demo-workspace/README.md',
                         name: 'README.md',
                         content: '# readme',
                         savedContent: '# readme',
@@ -225,7 +225,7 @@ describe('Workspace mount/tab persistence smoke tests', () => {
                         type: 'code',
                     },
                 ],
-                activeTabId: 'mount-local:C:\\workspaces\\demo-workspace\\README.md',
+                activeTabId: 'mount-local:/workspaces/demo-workspace/README.md',
             })
         );
 

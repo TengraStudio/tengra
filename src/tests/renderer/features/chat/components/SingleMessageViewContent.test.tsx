@@ -161,7 +161,7 @@ describe('SingleMessageViewContent', () => {
                             type: 'function',
                             function: {
                                 name: 'write_file',
-                                arguments: JSON.stringify({ path: 'src/demo.ts', basePath: 'c:/repo' }),
+                                arguments: JSON.stringify({ path: 'src/demo.ts', basePath: '/repo' }),
                             },
                         }],
                         toolResults: [{
@@ -170,7 +170,7 @@ describe('SingleMessageViewContent', () => {
                             success: true,
                             result: {
                                 resultKind: 'file_write',
-                                path: 'c:/repo/src/demo.ts',
+                                path: '/repo/src/demo.ts',
                                 diffId: 'diff-123',
                                 diffStats: {
                                     additions: 4,
@@ -190,14 +190,14 @@ describe('SingleMessageViewContent', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Review' }));
         expect(navigateToWorkspaceMock).toHaveBeenCalledWith({
             type: 'open_diff',
-            path: 'c:/repo/src/demo.ts',
+            path: '/repo/src/demo.ts',
             diffId: 'diff-123',
         });
 
         fireEvent.click(screen.getByRole('button', { name: /src\/demo\.ts/i }));
         expect(navigateToWorkspaceMock).toHaveBeenCalledWith({
             type: 'open_diff',
-            path: 'c:/repo/src/demo.ts',
+            path: '/repo/src/demo.ts',
             diffId: 'diff-123',
         });
     });

@@ -41,7 +41,7 @@ function createSession(): WorkspaceAgentSessionSummary {
             pathPolicy: 'workspace-root-only',
             allowedCommands: ['npm'],
             disallowedCommands: [],
-            allowedPaths: ['c:/workspace'],
+            allowedPaths: ['/workspace'],
         },
         usageStats: {
             model: 'sonnet',

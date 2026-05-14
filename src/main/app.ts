@@ -31,11 +31,16 @@ import {
 } from 'electron';
 
 import { registerLifecycleHandlers } from './startup/lifecycle';
+import { EarlyIpc } from './startup/minimal-ipc';
 import { isDev } from './startup/paths';
 import { preRegisterProtocols, registerProtocols } from './startup/protocols';
 import { getRuntimeStartupDecisions } from './startup/runtime-startup-gate';
 import { closeSplashWindow, shouldShowSplashWindow, showSplashWindow } from './startup/splash';
 import { createWindow, getMainWindow } from './startup/window';
+
+// --- EARLY IPC INITIALIZATION ---
+// Initialize minimal IPC handlers IMMEDIATELY to capture early renderer requests
+EarlyIpc.initialize(getMainWindow);
 
 // --- ABSOLUTE EARLY BOOTSTRAP ---
 // Register critical handlers before anything else happens
@@ -235,7 +240,9 @@ function handleDeepLink(url: string) {
     });
 }
 
+
 app.whenReady().then(async () => {
+
     // 0. Initialize Logger IMMEDIATELY
     const debugLogsEnabled = process.env.TENGRA_DEBUG_LOGS !== 'false';
     const runtimeLogLevel = debugLogsEnabled ? LogLevel.DEBUG : LogLevel.INFO;
@@ -257,7 +264,6 @@ app.whenReady().then(async () => {
     runtimeBootstrapService = minimal.runtimeBootstrapService;
 
     // Link services back to the early IPC handlers
-    const { EarlyIpc } = await import('./startup/minimal-ipc');
     EarlyIpc.linkServices({ 
         settings: settingsService, 
         runtime: runtimeBootstrapService 
@@ -365,7 +371,7 @@ app.whenReady().then(async () => {
     };
 
     const runPostInteractiveTasks = () => {
-        if (postInteractiveTasksStarted) { return; }
+        if (postInteractiveTasksStarted && !isDev) { return; }
         postInteractiveTasksStarted = true;
         void Promise.resolve(ipcModulePromise).then(({ registerPostInteractiveIpcHandlers }) => {
             if (!services) {
@@ -435,6 +441,8 @@ app.whenReady().then(async () => {
         closeSplashWindow();
     } else {
         recordStartupPhase(services, 'coreServicesReadyTime');
+        // Register IPC handlers now that services are ready
+        void registerIpcTask();
     }
 
     // 3. Parallel Background Initialization
@@ -477,7 +485,7 @@ app.whenReady().then(async () => {
 
     // 4. Register IPC Handlers EARLY to prevent renderer hangs
     // We don't wait for the full database health check here
-    const registerIpcTask = (async () => {
+    async function registerIpcTask() {
         if (!services) {
             return;
         }
@@ -532,30 +540,37 @@ app.whenReady().then(async () => {
             container.registerInstance('toolsService', toolsService);
             services.toolsService = toolsService;
 
-            // Initialize Local API Server
-            appLogger.info('Main', 'registerIpcTask: Creating ApiServerService...');
-            const proxyProcessManager = services.proxyService['processManager'] as ProxyProcessManager;
-            const apiServerService = new ApiServerService({
-                port: 42069,
-                settingsService: services.settingsService,
-                proxyProcessManager: proxyProcessManager,
-                toolExecutor: toolExecutor,
-                llmService: services.llmService,
-                modelRegistry: services.modelRegistryService,
-            });
-            services.apiServerService = apiServerService;
-            container.registerInstance('apiServerService', apiServerService);
+            // Initialize Local API Server (if not already done)
+            if (!services.apiServerService) {
+                appLogger.info('Main', 'registerIpcTask: Creating ApiServerService...');
+                const proxyProcessManager = services.proxyService['processManager'] as ProxyProcessManager;
+                const apiServerService = new ApiServerService({
+                    port: 42069,
+                    settingsService: services.settingsService,
+                    proxyProcessManager: proxyProcessManager,
+                    toolExecutor: toolExecutor,
+                    llmService: services.llmService,
+                    modelRegistry: services.modelRegistryService,
+                });
+                services.apiServerService = apiServerService;
+                container.registerInstance('apiServerService', apiServerService);
+            }
 
             // Register main IPC handlers - THIS ALLOWS RENDERER TO PROCEED
-            if (!GLOBAL_STATE.ipcRegistered) {
-                appLogger.info('Main', 'Starting full IPC registration...');
+            if (!GLOBAL_STATE.ipcRegistered || isDev) {
+                if (GLOBAL_STATE.ipcRegistered && isDev) {
+                    appLogger.info('Main', 'Dev mode: Re-registering IPC handlers...');
+                } else {
+                    appLogger.info('Main', 'Starting full IPC registration...');
+                }
                 const startTime = Date.now();
                 
-                // CLEANUP: Remove minimal handlers before registering real ones
-                const { EarlyIpc } = await import('./startup/minimal-ipc');
-                EarlyIpc.cleanup();
-                
+                // Register real handlers FIRST
                 registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, () => GLOBAL_STATE.isReady);
+
+                // Then cleanup minimal handlers (safeHandle will have already overwritten overlapping ones)
+                // Clear early handlers to allow full services to bind
+                EarlyIpc.cleanup();
 
                 GLOBAL_STATE.ipcRegistered = true;
                 appLogger.info('Main', `IPC handlers registered successfully in ${Date.now() - startTime}ms.`);
@@ -565,7 +580,7 @@ app.whenReady().then(async () => {
 
             recordStartupPhase(services, 'ipcReadyTime');
             GLOBAL_STATE.isReady = true;
-            const { EarlyIpc } = await import('./startup/minimal-ipc');
+            
             EarlyIpc.setReady(true);
             appLogger.info('Main', 'System is fully ready. GLOBAL_STATE.isReady set to true.');
 
@@ -581,7 +596,7 @@ app.whenReady().then(async () => {
         } catch (error) {
             appLogger.error('Main', 'Failed to register IPC handlers', error as Error);
         }
-    })();
+    };
 
     // Database initialization task (background)
     const scanWorkspacesForFileRoots = async (dbServices: Services) => {
@@ -615,7 +630,7 @@ app.whenReady().then(async () => {
         }
     })();
 
-    backgroundInitPromise = Promise.all([registerIpcTask, initDatabaseTask]);
+    backgroundInitPromise = Promise.all([initDatabaseTask]);
 
     if (services) {
         registerLifecycleHandlers(services.settingsService, isIpcRegistered);

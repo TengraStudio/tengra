@@ -8,10 +8,9 @@
  * (at your option) any later version.
  */
 
-import { IconActivity, IconCalendar, IconChartBar, IconClock, IconLoader2, IconTrendingUp } from '@tabler/icons-react';
+import { IconCalendar, IconLoader2 } from '@tabler/icons-react';
 import React, { memo } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types';
@@ -21,7 +20,6 @@ import { DetailedStats } from '../types';
 import { OverviewCards } from './statistics/OverviewCards';
 import { TokenUsageChart } from './statistics/TokenUsageChart';
 import {
-    SettingsPanel,
     SettingsTabHeader,
     SettingsTabLayout,
 } from './SettingsPrimitives';

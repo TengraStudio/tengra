@@ -31,10 +31,6 @@ export interface WorkspaceBridge {
     analyzeIdentity: (
         rootPath: string
     ) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
-    generateLogo: (
-        workspacePath: string,
-        options: { prompt: string; style: string; model: string; count: number }
-    ) => Promise<string[]>;
     analyzeDirectory: (dirPath: string) => Promise<{
         hasPackageJson: boolean;
         pkg: Record<string, IpcValue>;
@@ -131,9 +127,7 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
                 { line, column }
             ).then(unwrapWorkspaceResponse),
         analyzeIdentity: rootPath =>
-            ipc.invoke(WORKSPACE_CHANNELS.ANALYZE_IDENTITY, rootPath).then(unwrapWorkspaceResponse),
-        generateLogo: (workspacePath, options) =>
-            ipc.invoke(WORKSPACE_CHANNELS.GENERATE_LOGO, workspacePath, options).then(unwrapWorkspaceResponse),
+            ipc.invoke(WORKSPACE_CHANNELS.ANALYZE_IDENTITY, rootPath).then(unwrapWorkspaceResponse), 
         analyzeDirectory: dirPath =>
             ipc.invoke(WORKSPACE_CHANNELS.ANALYZE_DIRECTORY, dirPath).then(unwrapWorkspaceResponse),
         applyLogo: (workspacePath, tempLogoPath) =>

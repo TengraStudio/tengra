@@ -80,7 +80,7 @@ describe('WorkspaceSettingsPanel', () => {
         id: 'workspace-1',
         title: 'Demo Workspace',
         description: '',
-        path: 'C:\\workspace\\demo',
+        path: '/workspace/demo',
         mounts: [],
         createdAt: 1,
         updatedAt: 1,

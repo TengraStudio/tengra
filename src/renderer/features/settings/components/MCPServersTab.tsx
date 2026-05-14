@@ -21,8 +21,8 @@ import { cn } from '@/lib/utils';
 import { useMarketplaceStore } from '@/store/marketplace.store';
 import { pushNotification } from '@/store/notification-center.store';
 import { appLogger } from '@/utils/renderer-logger';
-import {
-    SettingsTabHeader,
+
+import { 
     SettingsTabLayout,
 } from './SettingsPrimitives';
 

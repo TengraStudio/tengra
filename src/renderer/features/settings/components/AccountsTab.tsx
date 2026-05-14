@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { IconBolt, IconChevronDown, IconExternalLink, IconGlobe, IconInfoCircle, IconKey, IconPlus, IconRefresh, IconShield, IconTerminal, IconTrash, IconUserPlus } from '@tabler/icons-react';
+import { IconBolt, IconChevronDown, IconExternalLink, IconGlobe, IconKey, IconPlus, IconRefresh, IconShield, IconTerminal, IconTrash, IconUserPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { ProviderIcon } from '@/components/shared/ProviderIcon';
@@ -37,7 +37,6 @@ import {
 } from './SettingsPrimitives';
 
 /* Batch-02: Extracted Long Classes */
-const C_ACCOUNTSTAB_1 = "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-muted/30 text-foreground";
 const C_ACCOUNTSTAB_2 = "flex flex-1 items-center gap-3 rounded-xl border border-border/40 bg-background px-4 py-2.5 font-mono typo-body text-muted-foreground shadow-sm sm:gap-4";
 const C_ACCOUNTSTAB_3 = "h-10 w-10 min-w-10 rounded-xl border-border/30 text-muted-foreground hover:border-destructive/20 hover:bg-destructive/10 hover:text-destructive transition-colors";
 const C_ACCOUNTSTAB_4 = "group/docs flex h-auto items-center gap-2 p-0 typo-body font-medium text-muted-foreground/60 hover:text-primary transition-colors";

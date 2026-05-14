@@ -18,6 +18,7 @@
     "scripts": {
         "dev": "node scripts/dev-vite.js",
         "build": "node scripts/build-all.js",
+        "build:fast": "node scripts/build-all.js --fast",
         "build:package": "node scripts/build-all.js --package",
         "build:publish": "node scripts/build-all.js --publish",
         "test": "vitest run",
@@ -148,6 +149,7 @@
         "rehype-katex": "^7.0.1",
         "remark-gfm": "^4.0.1",
         "remark-math": "^6.0.0",
+        "sqlite3": "^6.0.1",
         "ssh2": "^1.17.0",
         "tailwind-merge": "^3.5.0",
         "tailwindcss-animate": "^1.0.7",
@@ -191,6 +193,10 @@
             {
                 "from": "src/renderer/i18n/locales",
                 "to": "locales"
+            },
+            {
+                "from": "runtime-manifest.json",
+                "to": "runtime-manifest.json"
             }
         ],
         "win": {
@@ -204,6 +210,13 @@
                     "to": "assets/bin",
                     "filter": [
                         "tengra-*.exe"
+                    ]
+                },
+                {
+                    "from": "assets/runtime/win32-x64",
+                    "to": "assets/runtime/win32-x64",
+                    "filter": [
+                        "**/*"
                     ]
                 },
                 {
@@ -231,6 +244,20 @@
                     "to": "assets/bin",
                     "filter": [
                         "tengra-*"
+                    ]
+                },
+                {
+                    "from": "assets/runtime/darwin-arm64",
+                    "to": "assets/runtime/darwin-arm64",
+                    "filter": [
+                        "**/*"
+                    ]
+                },
+                {
+                    "from": "assets/runtime/darwin-x64",
+                    "to": "assets/runtime/darwin-x64",
+                    "filter": [
+                        "**/*"
                     ]
                 },
                 {
@@ -271,6 +298,13 @@
                     "to": "assets/bin",
                     "filter": [
                         "tengra-*"
+                    ]
+                },
+                {
+                    "from": "assets/runtime/linux-x64",
+                    "to": "assets/runtime/linux-x64",
+                    "filter": [
+                        "**/*"
                     ]
                 },
                 {
